@@ -30,4 +30,5 @@ _link-z80:
 	$(MAKE) EXT=-z80$(E)
 
 _link-gbz80:
-	$(MAKE) EXT=-gbz80$(E)
+	$(MAKE) EXT=-gbz80$(E) CFLAGS=-DGAMEBOY
+
