@@ -347,8 +347,8 @@ t_uc51::inst_pop(uchar code)
 
   cell= get_direct(fetch());
   stck= iram->get_cell(sfr->get(SP));
-  sp= sfr->wadd(SP, -1);
   cell->write(stck->read());
+  sp= sfr->wadd(SP, -1);
   tick(1);
   return(resGO);
 }
@@ -399,11 +399,9 @@ t_uc51::inst_movx_a_$dptr(uchar code)
 int
 t_uc51::inst_movx_a_$ri(uchar code)
 {
-  class cl_cell *cell;
   t_mem d= 0;
 
-  cell= iram->get_cell(get_reg(code & 0x01)->read());
-  d= cell->read();
+  d= get_reg(code & 0x01)->read();
   acc->write(read_mem(MEM_XRAM, sfr->read(P2)*256 + d));
   tick(1);
   return(resGO);
@@ -467,7 +465,7 @@ t_uc51::inst_mov_a_rn(uchar code)
 int
 t_uc51::inst_movx_$dptr_a(uchar code)
 {
-  write_mem(MEM_XRAM, sfr->read(DPH)*256 + sfr->read(DPL), acc->read());
+  set_mem(MEM_XRAM, sfr->get(DPH)*256 + sfr->get(DPL), acc->read());
   tick(1);
   return(resGO);
 }
@@ -482,12 +480,10 @@ t_uc51::inst_movx_$dptr_a(uchar code)
 int
 t_uc51::inst_movx_$ri_a(uchar code)
 {
-  class cl_cell *cell;
   t_mem d= 0;
 
-  cell= iram->get_cell(get_reg(code & 0x01)->read());
-  d= cell->read();
-  write_mem(MEM_XRAM, sfr->read(P2)*256 + d, acc->read());
+  d= get_reg(code & 0x01)->read();
+  set_mem(MEM_XRAM, sfr->read(P2)*256 + d, acc->read());
   tick(1);
   return(resGO);
 }
