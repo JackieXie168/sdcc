@@ -53,7 +53,7 @@ public:
 	    uint  Iaddr,
 	    bool  Iclr_bit,
 	    char  *Iname);
-  ~cl_it_src(void);
+  virtual ~cl_it_src(void);
 
           bool is_active(void);
   virtual void set_active_status(bool Aactive);

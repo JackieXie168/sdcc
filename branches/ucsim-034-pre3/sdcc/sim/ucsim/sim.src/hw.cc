@@ -46,11 +46,14 @@ cl_hw::cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, char *aid_string):
     id_string= strdup(aid_string);
   else
     id_string= strdup("unknown hw element");
+  hws_to_inform= new cl_list(2, 2);
 }
 
 cl_hw::~cl_hw(void)
 {
   free(id_string);
+  hws_to_inform->disconn_all();
+  delete hws_to_inform;
 }
 
 
@@ -58,18 +61,18 @@ cl_hw::~cl_hw(void)
  * Callback functions for changing memory locations
  */
 
-t_mem
+/*t_mem
 cl_hw::read(class cl_mem *mem, t_addr addr)
 {
   // Simply return the value
   return(mem->get(addr));
-}
+}*/
 
-void
+/*void
 cl_hw::write(class cl_mem *mem, t_addr addr, t_mem *val)
 {
   // Do not change *val by default
-}
+}*/
 
 
 /*
@@ -81,6 +84,19 @@ cl_hw::tick(int cycles)
 {
   return(0);
 }
+
+void
+cl_hw::inform_partners(enum hw_event he, void *params)
+{
+  int i;
+
+  for (i= 0; i < hws_to_inform->count; i++)
+    {
+      class cl_hw *hw= (class cl_hw *)(hws_to_inform->at(i));
+      hw->happen(this, he, params);
+    }
+}
+
 
 void
 cl_hw::print_info(class cl_console *con)
@@ -110,6 +126,19 @@ cl_hws::add(void *item)
       hw->added((class cl_hw *)item);
     }
   return(res);
+}
+
+
+void
+cl_hws::mem_cell_changed(class cl_mem *mem, t_addr addr)
+{
+  int i;
+  
+  for (i= 0; i < count; i++)
+    {
+      class cl_hw *hw= (class cl_hw *)(at(i));
+      hw->mem_cell_changed(mem, addr);
+    }
 }
 
 

@@ -32,10 +32,14 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #include "stypes.h"
 #include "pobjcl.h"
-#include "uccl.h"
 #include "guiobjcl.h"
 
+// cmd.src
 #include "newcmdcl.h"
+
+// local
+#include "memcl.h"
+#include "uccl.h"
 
 
 class cl_hw: public cl_guiobj
@@ -46,17 +50,26 @@ public:
   enum hw_cath cathegory;
   int id;
   char *id_string;
+  class cl_list *hws_to_inform;
 
 public:
   cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, char *aid_string);
-  ~cl_hw(void);
+  virtual ~cl_hw(void);
 
   virtual void adding(class cl_hw *new_hw) {}
   virtual void added(class cl_hw *new_hw) {}
-  virtual t_mem read(class cl_mem *mem, t_addr addr);
-  virtual void write(class cl_mem *mem, t_addr addr, t_mem *val);
+  virtual t_mem read(class cl_cell *cell) { return(cell->get()); }
+  virtual void write(class cl_cell */*cell*/, t_mem */*val*/) {}
+
+  virtual t_mem set_cmd(t_mem /*value*/) { return(0); }
+  virtual void mem_cell_changed(class cl_mem */*mem*/, t_addr /*addr*/) {}
 
   virtual int tick(int cycles);
+  virtual void reset(void) {}
+  virtual void happen(class cl_hw */*where*/, enum hw_event /*he*/,
+		      void */*params*/) {}
+  virtual void inform_partners(enum hw_event he, void *params);
+
   virtual void print_info(class cl_console *con);
 };
 
@@ -65,6 +78,7 @@ class cl_hws: public cl_list
 public:
   cl_hws(void): cl_list(2, 2) {}
   virtual t_index add(void *item);
+  virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
 };
 
 

@@ -455,7 +455,7 @@ COMMAND_DO_WORK_UC(cl_fill_cmd)
       {
 	t_mem d;
 	d= what;
-	mem->write(i, &d);
+	mem->write(i, d);
       }
   }
   else

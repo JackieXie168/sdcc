@@ -213,8 +213,8 @@ cl_z80::disass(t_addr addr, char *sep)
 		int k= code&0xfff;
 		if (code&0x800)
 		  k|= -4096;
-		sprintf(temp, "0x%06lx",
-			(k+1+(signed int)addr) % rom->size);
+		sprintf(temp, "0x%06"_A_"x",
+			t_addr((k+1+(signed int)addr) % rom->size));
 		break;
 	      }
 	    default:

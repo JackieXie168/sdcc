@@ -34,17 +34,40 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #include "newcmdcl.h"
 
+#include "timer0cl.h"
 
-class cl_timer2: public cl_hw
+
+#define T2MODE_RELOAD	0
+#define T2MODE_CAPTURE	1
+#define T2MODE_BAUDRATE	2
+#define T2MODE_OFF	3
+
+
+class cl_timer2: public cl_timer0
 {
+protected:
+  class cl_it_src *exf2it;
+  t_mem mask_RCLK, mask_TCLK, mask_CP_RL2;
+  t_mem RCLK, TCLK, CP_RL2, EXEN2;
+  long t2ex_edge;
+  class cl_cell *cell_rcap2l, *cell_rcap2h;
 public:
-  cl_timer2(class cl_uc *auc);
-  //virtual int init(void);
+  cl_timer2(class cl_uc *auc, int aid, char *aid_string,
+	    class cl_it_src *exf2_it);
+  virtual int init(void);
 
+  virtual void added(class cl_hw *new_hw);
   //virtual ulong read(class cl_mem *mem, long addr);
-  //virtual void write(class cl_mem *mem, long addr, ulong *val);
+  virtual void write(class cl_cell *cell, t_mem *val);
 
-  //virtual int tick(int cycles);
+  virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
+
+  virtual int  tick(int cycles);
+  virtual int  do_t2_baud(int cycles);
+  virtual void do_t2_capture(int *cycles, bool nocount);
+  virtual void do_t2_reload(int *cycles, bool nocount);
+  virtual void happen(class cl_hw *where, enum hw_event he, void *params);
+  
   virtual void print_info(class cl_console *con);
 };
 

@@ -86,7 +86,8 @@ COMMAND_DO_WORK_SIM(cl_run_cmd)
 	    }
 	  else
 	    {
-	      b= new cl_fetch_brk(sim->uc->make_new_brknr(), end,
+	      b= new cl_fetch_brk(sim->uc->mem(MEM_ROM),
+				  sim->uc->make_new_brknr(), end,
 				  brkDYNAMIC, 1);
 	      sim->uc->fbrk->add_bp(b);
 	    }
@@ -161,7 +162,8 @@ COMMAND_DO_WORK_SIM(cl_next_cmd)
       next= sim->uc->PC + de->length;
       if (!sim->uc->fbrk_at(next))
 	{
-	  b= new cl_fetch_brk(sim->uc->make_new_brknr(),
+	  b= new cl_fetch_brk(sim->uc->mem(MEM_ROM),
+			      sim->uc->make_new_brknr(),
 			      next, brkDYNAMIC, 1);
 	  sim->uc->fbrk->add(b);
 	}

@@ -68,9 +68,10 @@ COMMAND_DO_WORK_UC(cl_set_mem_cmd)
 	int i;
 	t_addr addr;
 	for (i= 0, addr= start;
-	     i < len && addr < mem->size;
+	     i < len && addr <= mem->size;
 	     i++, addr++)
-	  mem->write(addr, &(array[i]));
+	  mem->set(addr, array[i]);
+	uc->check_errors();
 	mem->dump(start, start+len-1, 8, con);
       }
   }
@@ -126,7 +127,7 @@ COMMAND_DO_WORK_UC(cl_set_bit_cmd)
 //			 class cl_cmdline *cmdline, class cl_console *con)
 COMMAND_DO_WORK_UC(cl_set_port_cmd)
 {
-  class cl_hw *hw;
+  class cl_hw *hw= 0;
   long l= 0, pn= -1;
   class cl_cmd_arg *params[4]= { cmdline->param(0),
 				 cmdline->param(1),
@@ -141,6 +142,7 @@ COMMAND_DO_WORK_UC(cl_set_port_cmd)
   else if (cmdline->syntax_match(uc, NUMBER NUMBER)) {
     pn= params[0]->value.number;
     l= params[1]->value.number;
+    hw= uc->get_hw(HW_PORT, pn, 0);
   }
   else
     con->dd_printf("%s\n", short_help?short_help:"Error: wrong syntax\n");
@@ -148,7 +150,12 @@ COMMAND_DO_WORK_UC(cl_set_port_cmd)
       pn > 3)
     con->dd_printf("Error: wrong port\n");
   else
-    uc->port_pins[pn]= l;
+    {
+      if (hw)
+	hw->set_cmd(l);
+      else
+	con->dd_printf("Error: no port\n");
+    }
   return(DD_FALSE);;
 }
 

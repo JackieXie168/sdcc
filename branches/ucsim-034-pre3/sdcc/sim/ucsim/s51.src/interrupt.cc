@@ -31,17 +31,34 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 // local
 #include "interruptcl.h"
 #include "regs51.h"
+#include "uc51cl.h"
 
 
 cl_interrupt::cl_interrupt(class cl_uc *auc):
   cl_hw(auc, HW_INTERRUPT, 0, "irq")
 {}
 
-/*int
+int
 cl_interrupt::init(void)
 {
+  class cl_mem *sfr;
+
+  sfr= uc->mem(MEM_SFR);
+  if (sfr)
+    sfr->register_hw(IE, this, 0);
   return(0);
-}*/
+}
+
+void
+cl_interrupt::write(class cl_cell *cell, t_mem *val)
+{
+  ((class t_uc51 *)uc)->was_reti= DD_TRUE;
+}
+
+void
+cl_interrupt::mem_cell_changed(class cl_mem *mem, t_addr addr)
+{
+}
 
 void
 cl_interrupt::print_info(class cl_console *con)

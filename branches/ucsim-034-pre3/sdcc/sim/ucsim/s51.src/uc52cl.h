@@ -45,14 +45,14 @@ public:
   t_uc52(int Itype, int Itech, class cl_sim *asim);
   virtual void mk_hw_elements(void);
 
-  virtual uchar *get_indirect(uchar addr, int *res);
+  virtual class cl_cell *get_indirect(uchar addr, int *res);
 
-  virtual int  do_timers(int cycles);
+  /*virtual void do_extra_hw(int cycles);
   virtual int  do_timer2(int cycles);
   virtual int  do_t2_baud(int cycles);
   virtual void do_t2_capture(int *cycles, bool nocount);
   virtual void do_t2_reload(int *cycles, bool nocount);
-  virtual int  serial_bit_cnt(int mode);
+  virtual int  serial_bit_cnt(int mode);*/
 };
 
 
