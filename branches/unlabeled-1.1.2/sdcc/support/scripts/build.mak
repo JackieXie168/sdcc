@@ -15,27 +15,44 @@ VER = 2.2.1
 # Used as a branch name.
 SHORTVER = 221
 
+# Options:
+# linux-linux	 Building on Linux, targeting Linux
+# linux-ming32	 Building on Linux, targeting mingw32 based win32
+# cygwin-mingw32 Building via cygwin on win32, targeting mingw32
+
+COMPILE_MODE = linux-mingw32
+
 ROOT_GBDK = :pserver:anonymous@cvs.gbdk.sourceforge.net:/cvsroot/gbdk
 ROOT_SDCC = :pserver:anonymous@cvs.sdcc.sourceforge.net:/cvsroot/sdcc
 
-# For mingw32 hosted on Linux
-# Source extension - what the gcc generated files have appended
-#SE =
-# Dest extenstion - what extension we want them to have.
-#E = .exe
-#SDCC_ROOT = \\\\gbdk
-
-# For mingw32 on win32
-# Source extension - what the gcc generated files have appended
-#SE = .exe
-# Dest extenstion - what extension we want them to have.
-#E = .exe
-#SDCC_ROOT = \\\\gbdk
-
+ifeq ($(COMPILE_MODE),linux-linux)
 # For Linux
 SE = 
 E =
 SDCC_ROOT = /usr/lib/sdcc
+endif
+
+ifeq ($(COMPILE_MODE),linux-mingw32)
+# For mingw32 hosted on Linux
+# Tools name prefix
+TNP = i386-mingw32-
+# Source extension - what the gcc generated files have appended
+SE =
+# Dest extenstion - what extension we want them to have.
+E = .exe
+SDCC_ROOT = \\\\gbdk
+# Set to cross to bypass the detection
+CROSS_LIBGC = 1
+endif
+
+ifeq ($(COMPILE_MODE),cygwin-mingw32)
+# For mingw32 on win32
+# Source extension - what the gcc generated files have appended
+SE = .exe
+# Dest extenstion - what extension we want them to have.
+E = .exe
+SDCC_ROOT = \\\\gbdk
+endif
 
 all: logged_in dist
 
@@ -57,7 +74,7 @@ tidy:
 	-strip $(BUILD)/bin/*
 
 sdcc-bin: sdcc/sdccconf.h
-	make -C sdcc sdcc-bin
+	make -C sdcc sdcc-bin CROSS_LIBGC=$(CROSS_LIBGC)
 	mkdir -p $(BUILD)/bin
 	for i in \
 	sdcc sdcpp link-z80 as-z80 aslink asx8051 sdcdb; \
@@ -94,8 +111,13 @@ lcc:
 	cp gbdk-support/lcc/lcc$(E) $(BUILD)/bin
 
 sdcc/sdccconf.h: sdcc/configure
-	cd sdcc; \
+ifdef $(TNP)
+	cd sdcc; CCC=$(TNP)c++; CC=$(TNP)gcc; \
 	./configure --datadir=$(SDCC_ROOT)
+else
+	cd sdcc; CCC=$(TNP)c++; CC=$(TNP)gcc; \
+	./configure --datadir=$(SDCC_ROOT)
+endif
 
 dist: _sdcc lcc tidy
 
