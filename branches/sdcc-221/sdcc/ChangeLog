@@ -1,0 +1,4 @@
+sdcc-2.2.1
+ * First with a ChangeLog, so it is far from complete.
+ * z80: Fixed rsh for constants 9-15, added banked call support.
+	
