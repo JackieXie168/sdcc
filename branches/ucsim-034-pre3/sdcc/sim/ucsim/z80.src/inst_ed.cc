@@ -75,7 +75,7 @@ cl_z80::inst_ed(void)
       if (regs.A & 0x80) regs.F |= BIT_S;
       /* Skip BIT_A for now */
     return(resGO);
-    case 0x45: // RETN
+    case 0x45: // RETN (return from non-maskable interrupt)
       pop2(PC);
     return(resGO);
 #if 0
@@ -99,7 +99,7 @@ cl_z80::inst_ed(void)
       tw = fetch2();
       regs.BC = get2(tw);
     return(resGO);
-    case 0x4D: // RETI
+    case 0x4D: // RETI (return from interrupt)
       pop2(PC);
     return(resGO);
     case 0x4F: // LD R,A

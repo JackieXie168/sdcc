@@ -802,6 +802,10 @@ cl_z80::inst_and(t_mem code)
     case 0xA7: // AND A
       and_A_bytereg(regs.A);
     break;
+    case 0xE6: // AND nn
+      and_A_bytereg(fetch());
+    break;
+
     default:
       return(resINV_INST);
     break;
@@ -840,6 +844,10 @@ cl_z80::inst_xor(t_mem code)
     case 0xAF: // XOR A
       xor_A_bytereg(regs.A);
     break;
+    case 0xEE: // XOR nn
+      xor_A_bytereg(fetch());
+    break;
+
     default:
       return(resINV_INST);
     break;
@@ -877,6 +885,9 @@ cl_z80::inst_or(t_mem code)
     break;
     case 0xB7: // OR A
       or_A_bytereg(regs.A);
+    break;
+    case 0xF6: // OR nn
+      or_A_bytereg(fetch());
     break;
     default:
       return(resINV_INST);
@@ -986,7 +997,54 @@ cl_z80::inst_rst(t_mem code)
 int
 cl_z80::inst_ret(t_mem code)
 {
-  pop2(PC);
+  switch(code) {
+    case 0xC0: // RET NZ
+      if (!(regs.F & BIT_Z)) {
+        pop2(PC);
+      }
+    break;
+    case 0xC8: // RET Z
+      if ((regs.F & BIT_Z)) {
+        pop2(PC);
+      }
+    break;
+    case 0xC9: // RET
+      pop2(PC);
+    break;
+    case 0xD0: // RET NC
+      if (!(regs.F & BIT_C)) {
+        pop2(PC);
+      }
+    break;
+    case 0xD8: // RET C
+      if ((regs.F & BIT_C)) {
+        pop2(PC);
+      }
+    break;
+    case 0xE0: // RET PO
+      if (!(regs.F & BIT_P)) {
+        pop2(PC);
+      }
+    break;
+    case 0xE8: // RET PE
+      if ((regs.F & BIT_P)) {
+        pop2(PC);
+      }
+    break;
+    case 0xF0: // RET P
+      if (!(regs.F & BIT_S)) {
+        pop2(PC);
+      }
+    break;
+    case 0xF8: // RET M
+      if ((regs.F & BIT_S)) {
+        pop2(PC);
+      }
+    break;
+    default:
+      return(resINV_INST);
+    break;
+  }
   return(resGO);
 }
 

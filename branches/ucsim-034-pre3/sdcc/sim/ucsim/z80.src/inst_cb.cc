@@ -332,11 +332,11 @@ cl_z80::inst_cb_bit(t_mem code)
     case 0x1: // BIT x,C
       bit_byte(regs.bc.l, bit_bitnum); break;
     case 0x2: // BIT x,D
-      bit_byte(regs.bc.h, bit_bitnum); break;
+      bit_byte(regs.de.h, bit_bitnum); break;
     case 0x3: // BIT x,E
-      bit_byte(regs.bc.l, bit_bitnum); break;
+      bit_byte(regs.de.l, bit_bitnum); break;
     case 0x4: // BIT x,H
-      bit_byte(regs.bc.h, bit_bitnum); break;
+      bit_byte(regs.hl.h, bit_bitnum); break;
     case 0x5: // BIT x,L
       bit_byte(regs.hl.l, bit_bitnum); break;
     case 0x6: // BIT x,(HL)
@@ -399,9 +399,9 @@ cl_z80::inst_cb_set(t_mem code)
     case 0x3: // SET x,E
       regs.de.l |= (1 << bit_bitnum); break;
     case 0x4: // SET x,H
-      regs.de.h |= (1 << bit_bitnum); break;
+      regs.hl.h |= (1 << bit_bitnum); break;
     case 0x5: // SET x,L
-      regs.de.h |= (1 << bit_bitnum); break;
+      regs.hl.h |= (1 << bit_bitnum); break;
     case 0x6: // SET x,(HL)
       { unsigned char tmp;
         tmp = get1(regs.HL);
