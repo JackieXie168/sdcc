@@ -49,6 +49,20 @@ t_uc52::t_uc52(int Itype, int Itech, class cl_sim *asim):
   it_sources->add(exf2it);
 }
 
+t_addr
+t_uc52::get_mem_size(enum mem_class type)
+{
+  switch (type)
+    {
+    case MEM_ROM:  return(0x10000);
+    case MEM_XRAM: return(0x10000);
+    case MEM_IRAM: return(0x100);
+    case MEM_SFR:  return(0x100);
+    case MEM_TYPES:
+    default: return(0);
+    }
+  return(0);
+}
 
 void
 t_uc52::mk_hw_elements(void)
