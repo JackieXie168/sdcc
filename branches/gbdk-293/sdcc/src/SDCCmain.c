@@ -148,7 +148,7 @@ static PORT *_ports[] = {
    &mcs51_port,
 #endif
 #if !OPT_DISABLE_GBZ80
-    &gbz80_port
+    &gbz80_port,
 #endif
 #if !OPT_DISABLE_Z80
     &z80_port,
