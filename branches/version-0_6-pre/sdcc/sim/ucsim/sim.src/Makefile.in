@@ -37,7 +37,6 @@ srcdir          = @srcdir@
 OBJECTS         = stack.o mem.o sim.o itsrc.o brk.o arg.o \
 		  guiobj.o uc.o hw.o simif.o
 
-
 # Compiling entire program or any subproject
 # ------------------------------------------
 all: checkconf sim_lib
@@ -46,6 +45,11 @@ test_mem_speed: $(PRJDIR)/lib*.a test_mem_speed.o
 	$(CXX) -o $@ test_mem_speed.o -L$(PRJDIR) -Wl,--start-group -lsim -lutil -lcmd -Wl,--end-group
 
 sim.src: all
+
+
+#include $(PRJDIR)/packages.mk
+s51:
+	$(MAKE) -C $(PRJDIR)/s51.src all
 
 
 # Compiling and installing everything and runing test
