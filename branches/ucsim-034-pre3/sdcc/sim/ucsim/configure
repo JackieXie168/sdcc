@@ -22,6 +22,8 @@ ac_help="$ac_help
 ac_help="$ac_help
   --enable-z80            compile simulator for Z80"
 ac_help="$ac_help
+  --enable-xa            compile simulator for XA"
+ac_help="$ac_help
   --enable-serio          compile serio GUI tool (needs curses)"
 
 # Initialize some variables set by options.
@@ -654,6 +656,16 @@ if test "${enable_z80+set}" = set; then
 fi
 else
   enable_z80="no"
+fi
+
+# Check whether --enable-xa or --disable-xa was given.
+if test "${enable_xa+set}" = set; then
+  enableval="$enable_xa"
+  if test $enable_xa != "no"; then
+    enable_xa="yes"
+fi
+else
+  enable_xa="no"
 fi
 
 # Check whether --enable-portmon or --disable-portmon was given.
@@ -3073,6 +3085,7 @@ cmd.src/Makefile
 s51.src/Makefile
 avr.src/Makefile
 z80.src/Makefile
+xa.src/Makefile
 gui.src/Makefile
 gui.src/serio.src/Makefile
 doc/Makefile
@@ -3118,6 +3131,7 @@ s%@enable_dlso@%$enable_dlso%g
 s%@enable_51@%$enable_51%g
 s%@enable_avr@%$enable_avr%g
 s%@enable_z80@%$enable_z80%g
+s%@enable_xa@%$enable_xa%g
 s%@enable_serio@%$enable_serio%g
 s%@CXX@%$CXX%g
 s%@CXXCPP@%$CXXCPP%g
@@ -3183,6 +3197,7 @@ cmd.src/Makefile
 s51.src/Makefile
 avr.src/Makefile
 z80.src/Makefile
+xa.src/Makefile
 gui.src/Makefile
 gui.src/serio.src/Makefile
 doc/Makefile

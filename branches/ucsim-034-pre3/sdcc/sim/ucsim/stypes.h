@@ -87,6 +87,9 @@ struct cpu_entry
 #define CPU_Z80		0x0001
 #define CPU_ALL_Z80	(CPU_Z80)
 
+#define CPU_XA		0x0001
+#define CPU_ALL_XA	(CPU_XA)
+
 #define CPU_CMOS	0x0001
 #define CPU_HMOS	0x0002
 
