@@ -54,6 +54,9 @@ public:
   virtual struct dis_entry *dis_tbl(void);
   //virtual struct name_entry *sfr_tbl(void);
   //virtual struct name_entry *bit_tbl(void);
+  virtual int inst_length(t_mem code, t_addr addr);
+  virtual int inst_length(t_mem code);
+  virtual int longest_inst(void);
   virtual char *disass(t_addr addr, char *sep);
   virtual void print_regs(class cl_console *con);
 
