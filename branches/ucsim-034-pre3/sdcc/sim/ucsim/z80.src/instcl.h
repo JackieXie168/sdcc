@@ -36,4 +36,11 @@
   virtual int inst_di(t_mem code);
   virtual int inst_ei(t_mem code);
 
+  virtual int inst_dd(void);
+  virtual int inst_dd_ld(t_mem code);
+  virtual int inst_dd_add(t_mem code);
+  virtual int inst_dd_push(t_mem code);
+  virtual int inst_dd_inc(t_mem code);
+  virtual int inst_dd_dec(t_mem code);
+
 /* End of avr.src/instcl.h */

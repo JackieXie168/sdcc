@@ -665,6 +665,7 @@ int
 cl_z80::inst_length(t_mem code, t_addr addr)
 {
   struct dis_entry *tabl= dis_tbl();
+  //t_mem next;
   char tmpstr[60];
   uint32 i;
 
@@ -955,6 +956,9 @@ cl_z80::exec_inst(void)
 
     case 0xc8: case 0xc9: return(inst_ret(code));
     case 0xca: return(inst_jp(code));
+
+      /* CB escapes out to 2 byte opcodes(CB include), opcodes
+         to do register bit manipulations */
     /* case 0xcb: illegal, let fall thru */
     case 0xcc: case 0xcd: return(inst_call(code));
     case 0xce: return(inst_adc(code));
@@ -975,7 +979,10 @@ cl_z80::exec_inst(void)
     case 0xda: return(inst_jp(code));
     case 0xdb: return(inst_in(code));
     case 0xdc: return(inst_call(code));
-    /* case 0xdd: illegal, fall thru */
+      /* DD escapes out to 2 to 4 byte opcodes(DD included)
+        with a variety of uses.  It can precede the CB escape
+        sequence to extend CB codes with IX+immed_byte */
+    case 0xdd: return(inst_dd());
     case 0xde: return(inst_sbc(code));
     case 0xdf: return(inst_rst(code));
 
