@@ -21,6 +21,7 @@ SHORTVER = 221
 # cygwin-mingw32 Building via cygwin on win32, targeting mingw32
 
 COMPILE_MODE = linux-mingw32
+SDCC_OR_GBDK = sdcc
 
 ROOT_GBDK = :pserver:anonymous@cvs.gbdk.sourceforge.net:/cvsroot/gbdk
 ROOT_SDCC = :pserver:anonymous@cvs.sdcc.sourceforge.net:/cvsroot/sdcc
@@ -29,7 +30,7 @@ ifeq ($(COMPILE_MODE),linux-linux)
 # For Linux
 SE = 
 E =
-SDCC_ROOT = /usr/lib/sdcc
+SDCC_ROOT = /usr/lib/$(SDCC_OR_GBDK)
 endif
 
 ifeq ($(COMPILE_MODE),linux-mingw32)
@@ -40,7 +41,7 @@ TNP = i386-mingw32-
 SE =
 # Dest extenstion - what extension we want them to have.
 E = .exe
-SDCC_ROOT = \\\\gbdk
+SDCC_ROOT = /$(SDCC_OR_GBDK)
 # Set to cross to bypass the detection
 CROSS_LIBGC = 1
 endif
@@ -51,7 +52,7 @@ ifeq ($(COMPILE_MODE),cygwin-mingw32)
 SE = .exe
 # Dest extenstion - what extension we want them to have.
 E = .exe
-SDCC_ROOT = \\\\gbdk
+SDCC_ROOT = /$(SDCC_OR_GBDK)
 endif
 
 all: logged_in dist
@@ -71,7 +72,7 @@ _sdcc: sdcc-bin sdcc-misc sdcc-lib sdcc-doc
 tidy:
 	rm -rf `find $(BUILD) -name "CVS"`
 	rm -rf `find $(BUILD)/lib -name "*.asm"`
-	-strip $(BUILD)/bin/*
+	-$(TNP)strip $(BUILD)/bin/*
 
 sdcc-bin: sdcc/sdccconf.h
 	make -C sdcc sdcc-bin CROSS_LIBGC=$(CROSS_LIBGC)
@@ -81,7 +82,7 @@ sdcc-bin: sdcc/sdccconf.h
 	do cp sdcc/bin/$$i$(SE) $(BUILD)/bin/$$i$(E); done
 
 sdcc-misc: sdcc/sdccconf.h
-	make -C sdcc sdcc-bin CROSS_LIBGC=$(CROSS_LIBGC)
+	make -C sdcc sdcc-misc CROSS_LIBGC=$(CROSS_LIBGC)
 	mkdir -p $(BUILD)/bin
 	for i in \
 	sdcdb; \
@@ -114,8 +115,8 @@ sdcc-lib-gen:
 	make -C sdcc sdcc-device
 
 lcc:
-	make -C gbdk-support/lcc SDCCLIB=$(SDCC_ROOT)/
-	cp gbdk-support/lcc/lcc$(E) $(BUILD)/bin
+	make -C gbdk-support/lcc SDCCLIB=$(SDCC_ROOT)/ TNP=$(TNP)
+	cp gbdk-support/lcc/lcc$(SE) $(BUILD)/bin/lcc$(E)
 
 sdcc/sdccconf.h: sdcc/configure
 ifdef TNP
