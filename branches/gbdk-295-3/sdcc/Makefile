@@ -30,7 +30,7 @@ endif
 	for lib in $(SDCC_LIBS); do $(MAKE) -C $$lib; done
 
 sdcc-cc: sdcc-libs
-	$(MAKE) -C src
+	$(MAKE) -C src $(PASS_ON)
 
 sdcc-aslink:
 	for as in $(SDCC_ASLINK); do $(MAKE) -C $$as; done
