@@ -1,4 +1,3 @@
-# Generated automatically from Makefile.cross.in by configure.
 # Primary targets:
 # gc.a - builds basic library
 # libgc.a - builds library for use with g++ "-fgc-keyword" extension
@@ -9,11 +8,11 @@
 #	 c++ interface to gc.a
 # cord/de - builds dumb editor based on cords.
 ABI_FLAG=
-CC		= gcc $(ABI_FLAG)
-CXX		= c++ $(ABI_FLAG)
-AS		= as $(ABI_FLAG)
+CC		= @CC@ $(ABI_FLAG)
+CXX		= @CXX@ $(ABI_FLAG)
+AS		= @AS@ $(ABI_FLAG)
 PRJDIR		= ../..
-srcdir		= .
+srcdir		= @srcdir@
 #  The above doesn't work with gas, which doesn't run cpp.
 #  Define AS as `gcc -c -x assembler-with-cpp' instead.
 #  Under Irix 6, you will have to specify the ABI for as if you specify
@@ -132,6 +131,7 @@ RANLIB= ranlib
 # to be generated in different directories.  In this case, the destination directory
 # should contain a copy of the original include directory.
 srcdir = .
+VPATH = $(srcdir)
 
 OBJS= alloc.o reclaim.o allchblk.o misc.o mach_dep.o os_dep.o mark_rts.o headers.o mark.o obj_map.o blacklst.o finalize.o new_hblk.o dbg_mlc.o malloc.o stubborn.o checksums.o solaris_threads.o irix_threads.o linux_threads.o typd_mlc.o ptr_chck.o mallocx.o solaris_pthreads.o
 
