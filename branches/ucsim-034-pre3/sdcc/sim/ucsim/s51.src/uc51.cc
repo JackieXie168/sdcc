@@ -135,18 +135,18 @@ t_uc51::t_uc51(int Itype, int Itech, class cl_sim *asim):
 
   /*for (i= 0; i < 4; i++)
     port_pins[i]= 0xff;*/
-  it_sources->add(new cl_it_src(bmEX0, TCON, bmIE0, 0x0003, true,
-				"external #0"));
-  it_sources->add(new cl_it_src(bmET0, TCON, bmTF0, 0x000b, true,
-				"timer #0"));
-  it_sources->add(new cl_it_src(bmEX1, TCON, bmIE1, 0x0013, true,
-				"external #1"));
-  it_sources->add(new cl_it_src(bmET1, TCON, bmTF1, 0x001b, true,
-				"timer #1"));
-  it_sources->add(new cl_it_src(bmES , SCON, bmTI , 0x0023, false,
+  /*it_sources->add(new cl_it_src(bmEX0, TCON, bmIE0, 0x0003, true,
+    "external #0"));*/
+  /*it_sources->add(new cl_it_src(bmET0, TCON, bmTF0, 0x000b, true,
+    "timer #0"));*/
+  /*it_sources->add(new cl_it_src(bmEX1, TCON, bmIE1, 0x0013, true,
+    "external #1"));*/
+  /*it_sources->add(new cl_it_src(bmET1, TCON, bmTF1, 0x001b, true,
+    "timer #1"));*/
+  /*it_sources->add(new cl_it_src(bmES , SCON, bmTI , 0x0023, false,
 				"serial transmit"));
   it_sources->add(new cl_it_src(bmES , SCON, bmRI , 0x0023, false,
-				"serial receive"));
+  "serial receive"));*/
 }
 
 
@@ -199,8 +199,8 @@ t_uc51::mk_hw_elements(void)
   h->init();
   hws->add(h= new cl_port(this, 3));
   h->init();
-  hws->add(h= new cl_interrupt(this));
-  h->init();
+  hws->add(interrupt= new cl_interrupt(this));
+  interrupt->init();
   hws->add(h= new cl_uc51_dummy_hw(this));
   h->init();
   /*
@@ -463,7 +463,7 @@ t_uc51::reset(void)
 
   result= resGO;
 
-  was_reti= DD_FALSE;
+  //was_reti= DD_FALSE;
 }
 
 
@@ -784,7 +784,7 @@ t_uc51::do_inst(int step)
 	step--;
       if (state == stGO)
 	{
-	  was_reti= DD_FALSE;
+	  interrupt->was_reti= DD_FALSE;
 	  pre_inst();
 	  result= exec_inst();
 	  post_inst();
@@ -837,21 +837,20 @@ t_uc51::do_inst(int step)
   return(result);
 }
 
-void
+/*void
 t_uc51::post_inst(void)
-{
-  uint tcon= sfr->get(TCON);
-  uint p3= sfr->read(P3);
+{*/
+  //uint tcon= sfr->get(TCON);
+  //uint p3= sfr->read(P3);
 
-  cl_uc::post_inst();
+  //cl_uc::post_inst();
   //set_p_flag();
 
   // Setting up external interrupt request bits (IEx)
-  if ((tcon & bmIT0))
+  /*if ((tcon & bmIT0))
     {
       // IE0 edge triggered
-      if (/*(prev_p3 & bm_INT0) &&
-	    !(p3 & port_pins[3] & bm_INT0)*/p3_int0_edge)
+      if (p3_int0_edge)
 	{
 	  // falling edge on INT0
 	  sim->app->get_commander()->
@@ -872,8 +871,7 @@ t_uc51::post_inst(void)
   if ((tcon & bmIT1))
     {
       // IE1 edge triggered
-      if (/*(prev_p3 & bm_INT1) &&
-	    !(p3 & port_pins[3] & bm_INT1)*/p3_int1_edge)
+      if (p3_int1_edge)
 	{
 	  // falling edge on INT1
 	  sfr->set_bit1(TCON, bmIE1);
@@ -887,10 +885,10 @@ t_uc51::post_inst(void)
 	sfr->set_bit0(TCON, bmIE1);
       else
 	sfr->set_bit1(TCON, bmIE1);
-    }
+	}*/
   //prev_p3= p3 & port_pins[3];
   //prev_p1= p3 & port_pins[1];
-}
+//}
 
 
 /*
@@ -913,9 +911,9 @@ t_uc51::do_interrupt(void)
 {
   int i, ie= 0;
 
-  if (was_reti)
+  if (interrupt->was_reti)
     {
-      was_reti= DD_FALSE;
+      interrupt->was_reti= DD_FALSE;
       return(resGO);
     }
   if (!((ie= sfr->get(IE)) & bmEA))
@@ -936,7 +934,7 @@ t_uc51::do_interrupt(void)
 	    {
 	      state= stGO;
 	      sfr->set_bit0(PCON, bmIDL);
-	      was_reti= 1;
+	      interrupt->was_reti= DD_TRUE;
 	      return(resGO);
 	    }
 	  if (is->clr_bit)
@@ -1111,7 +1109,7 @@ t_uc51::inst_swap(uchar code)
 cl_uc51_dummy_hw::cl_uc51_dummy_hw(class cl_uc *auc):
   cl_hw(auc, HW_DUMMY, 0, "_51_dummy")
 {
-  uc51= (class t_uc51 *)uc;
+  //uc51= (class t_uc51 *)uc;
 }
 
 int
@@ -1124,15 +1122,16 @@ cl_uc51_dummy_hw::init(void)
     }
   //acc= sfr->register_hw(ACC, this, 0);
   //sp = sfr->register_hw(SP , this, 0);
-  register_cell(sfr, ACC, &acc, wtd_restore_write);
-  register_cell(sfr, SP , &sp , wtd_restore);
+  use_cell(sfr, PSW, &cell_psw, wtd_restore);
+  register_cell(sfr, ACC, &cell_acc, wtd_restore_write);
+  register_cell(sfr, SP , &cell_sp , wtd_restore);
   return(0);
 }
 
 void
 cl_uc51_dummy_hw::write(class cl_cell *cell, t_mem *val)
 {
-  if (cell == acc)
+  if (cell == cell_acc)
     {
       bool p;
       int i;
@@ -1147,19 +1146,19 @@ cl_uc51_dummy_hw::write(class cl_cell *cell, t_mem *val)
 	  uc>>= 1;
 	}
       if (p)
-	uc51->psw->set_bit1(bmP);
+	cell_psw->set_bit1(bmP);
       else
-	uc51->psw->set_bit0(bmP);
+	cell_psw->set_bit0(bmP);
     }
-  else if (cell == sp)
+  else if (cell == cell_sp)
     {
-      if (*val > uc51->sp_max)
-	uc51->sp_max= *val;
+      if (*val > uc->sp_max)
+	uc->sp_max= *val;
       uc->sp_avg= (uc->sp_avg+(*val))/2;
     }
 }
 
-void
+/*void
 cl_uc51_dummy_hw::happen(class cl_hw *where, enum hw_event he, void *params)
 {
   struct ev_port_changed *ep= (struct ev_port_changed *)params;
@@ -1177,7 +1176,7 @@ cl_uc51_dummy_hw::happen(class cl_hw *where, enum hw_event he, void *params)
 	  !(p3n & bm_INT1))
 	uc51->p3_int1_edge++;
     }
-}
+}*/
 
 
 /* End of s51.src/uc51.cc */

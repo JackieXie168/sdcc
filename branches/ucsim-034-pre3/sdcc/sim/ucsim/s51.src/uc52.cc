@@ -42,11 +42,11 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 t_uc52::t_uc52(int Itype, int Itech, class cl_sim *asim):
   t_uc51(Itype, Itech, asim)
 {
-  it_sources->add(new cl_it_src(bmET2, T2CON, bmTF2, 0x002b, false,
-				"timer #2 TF2"));
-  exf2it= new cl_it_src(bmET2, T2CON, bmEXF2, 0x002b, false,
+  /*it_sources->add(new cl_it_src(bmET2, T2CON, bmTF2, 0x002b, false,
+    "timer #2 TF2"));*/
+  /*exf2it= new cl_it_src(bmET2, T2CON, bmEXF2, 0x002b, false,
 			"timer #2 EXF2");
-  it_sources->add(exf2it);
+			it_sources->add(exf2it);*/
 }
 
 
@@ -56,7 +56,7 @@ t_uc52::mk_hw_elements(void)
   class cl_hw *h;
 
   t_uc51::mk_hw_elements();
-  hws->add(h= new cl_timer2(this, 2, "timer2", exf2it));
+  hws->add(h= new cl_timer2(this, 2, "timer2", t2_default|t2_down));
   h->init();
 }
 

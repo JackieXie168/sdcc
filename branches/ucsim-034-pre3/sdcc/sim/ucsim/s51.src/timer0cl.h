@@ -40,7 +40,6 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 class cl_timer0: public cl_hw
 {
 protected:
-  class t_uc51 *uc51;
   class cl_cell *cell_tmod, *cell_tcon, *cell_tl, *cell_th;
   t_mem mask_M0, mask_M1, mask_C_T, mask_GATE, mask_TR, mask_INT,
     mask_T, mask_TF;
@@ -49,6 +48,8 @@ protected:
 public:
   cl_timer0(class cl_uc *auc, int aid, char *aid_string);
   virtual int init(void);
+
+  virtual void added_to_uc(void);
 
   //virtual t_mem read(class cl_cell *cell);
   virtual void write(class cl_cell *cell, t_mem *val);
@@ -60,7 +61,7 @@ public:
   virtual int do_mode1(int cycles);
   virtual int do_mode2(int cycles);
   virtual int do_mode3(int cycles);
-  virtual void overflow(void) {}
+  virtual void overflow(void);
   virtual void happen(class cl_hw *where, enum hw_event he, void *params);
 
   virtual void print_info(class cl_console *con);

@@ -33,7 +33,6 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 cl_timer0::cl_timer0(class cl_uc *auc, int aid, char *aid_string):
   cl_hw(auc, HW_TIMER, aid, aid_string)
 {
-  uc51= (class t_uc51 *)auc;
   cell_tmod= cell_tcon= 0;
   if (aid == 0)
     {
@@ -72,6 +71,11 @@ cl_timer0::cl_timer0(class cl_uc *auc, int aid, char *aid_string):
       mask_M0= mask_M1= mask_GATE= mask_INT= 0;
     }
   else {}
+  make_partner(HW_PCA, 0);
+  make_partner(HW_PCA, 1);
+  make_partner(HW_PCA, 2);
+  make_partner(HW_PCA, 3);
+  make_partner(HW_PCA, 4);
 }
 
 int
@@ -81,17 +85,15 @@ cl_timer0::init(void)
 
   if (sfr)
     {
-      t_mem d;
+      //t_mem d;
       if (id == 0 || id == 1)
 	{
 	  //cell_tmod= sfr->register_hw(TMOD, this, 0);
 	  register_cell(sfr, TMOD, &cell_tmod, wtd_restore_write);
-	  d= cell_tmod->get();
-	  write(cell_tmod, &d);
+	  //d= cell_tmod->get(); write(cell_tmod, &d);
 	  //cell_tcon= sfr->register_hw(TCON, this, 0);
 	  register_cell(sfr, TCON, &cell_tcon, wtd_restore_write);
-	  d= cell_tcon->get();
-	  write(cell_tcon, &d);
+	  //d= cell_tcon->get(); write(cell_tcon, &d);
 	  INT= sfr->read(P3) & mask_INT;
 	}
       else if (id == 2)
@@ -99,8 +101,7 @@ cl_timer0::init(void)
 	  cell_tmod= 0;
 	  //cell_tcon= sfr->register_hw(T2CON, this, 0);
 	  register_cell(sfr, T2CON, &cell_tcon, wtd_restore_write);
-	  d= cell_tcon->get();
-	  write(cell_tcon, &d);
+	  //d= cell_tcon->get(); write(cell_tcon, &d);
 	}
       //cell_tl= sfr->get_cell(addr_tl);
       //cell_th= sfr->get_cell(addr_th);
@@ -108,6 +109,17 @@ cl_timer0::init(void)
       use_cell(sfr, addr_th, &cell_th, wtd_restore);
     }
   return(0);
+}
+
+void
+cl_timer0::added_to_uc(void)
+{
+  if (id == 0)
+    uc->it_sources->add(new cl_it_src(bmET0, TCON, bmTF0, 0x000b, true,
+				      "timer #0", 2));
+  else if (id == 1)
+    uc->it_sources->add(new cl_it_src(bmET1, TCON, bmTF1, 0x001b, true,
+				      "timer #1", 4));
 }
 
 /*t_mem
@@ -330,6 +342,12 @@ cl_timer0::do_mode3(int cycles)
 	  cell_tcon->set_bit1(bmTF1);
       }
   return(0);
+}
+
+void
+cl_timer0::overflow(void)
+{
+  inform_partners(EV_OVERFLOW, 0);
 }
 
 void

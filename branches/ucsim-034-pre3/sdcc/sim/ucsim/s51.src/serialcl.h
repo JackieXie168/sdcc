@@ -40,7 +40,6 @@ class cl_serial: public cl_hw
 protected:
   bool there_is_t2, t2_baud;
   class cl_cell *sbuf, *pcon, *scon;
-  class t_uc51 *uc51;
   struct termios saved_attributes_in; // Attributes of serial interface
   struct termios saved_attributes_out;
   FILE *serial_in;	// Serial line input
@@ -65,7 +64,8 @@ public:
   virtual ~cl_serial(void);
   virtual int init(void);
 
-  virtual void added(class cl_hw *new_hw);
+  virtual void new_hw_added(class cl_hw *new_hw);
+  virtual void added_to_uc(void);
   virtual t_mem read(class cl_cell *cell);
   virtual void write(class cl_cell *cell, t_mem *val);
 

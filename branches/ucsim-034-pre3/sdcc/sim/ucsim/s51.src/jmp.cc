@@ -38,6 +38,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "uc51cl.h"
 #include "regs51.h"
 #include "types51.h"
+#include "interruptcl.h"
 
 
 /*
@@ -267,7 +268,7 @@ t_uc51::inst_reti(uchar code)
   sp= sfr->wadd(SP, -1);
   PC= h*256 + l;
 
-  was_reti= DD_TRUE;
+  interrupt->was_reti= DD_TRUE;
   class it_level *il= (class it_level *)(it_levels->top());
   if (il &&
       il->level >= 0)

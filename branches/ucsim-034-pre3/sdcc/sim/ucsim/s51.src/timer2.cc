@@ -31,28 +31,42 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 
 cl_timer2::cl_timer2(class cl_uc *auc, int aid, char *aid_string,
-		     class cl_it_src *exf2_it):
+		     int afeatures):
   cl_timer0(auc, /*2*/aid, /*"timer2"*/aid_string)
 {
-  exf2it= exf2_it;
+  features= afeatures;
+  exf2it= 0;
   mask_RCLK= bmRCLK;
   mask_TCLK= bmTCLK;
   mask_CP_RL2= bmCP_RL2;
+  make_partner(HW_UART, 0);
+  if (features & (t2_down|t2_clock_out))
+    register_cell(uc->mem(MEM_SFR), T2MOD, &cell_t2mod, wtd_restore_write);
 }
 
 int
 cl_timer2::init(void)
 {
   cl_timer0::init();
-  cell_rcap2l= uc->mem(MEM_SFR)->get_cell(RCAP2L);
-  cell_rcap2h= uc->mem(MEM_SFR)->get_cell(RCAP2H);
-  class cl_hw *s= uc->get_hw(HW_UART, 0);
-  if (s)
-    hws_to_inform->add(s);
+  //cell_rcap2l= uc->mem(MEM_SFR)->get_cell(RCAP2L);
+  //cell_rcap2h= uc->mem(MEM_SFR)->get_cell(RCAP2H);
+  use_cell(uc->mem(MEM_SFR), RCAP2L, &cell_rcap2l, wtd_restore);
+  use_cell(uc->mem(MEM_SFR), RCAP2H, &cell_rcap2h, wtd_restore);
+  bit_t2ex= uc->read_mem(MEM_SFR, P1) & bmT2EX;
   return(0);
 }
 
 void
+cl_timer2::added_to_uc(void)
+{
+  uc->it_sources->add(new cl_it_src(bmET2, T2CON, bmTF2, 0x002b, false,
+				    "timer #2 TF2", 7));
+  exf2it= new cl_it_src(bmET2, T2CON, bmEXF2, 0x002b, false,
+			"timer #2 EXF2", 7);
+  uc->it_sources->add(exf2it);
+}
+
+/*void
 cl_timer2::mem_cell_changed(class cl_mem *mem, t_addr addr)
 {
   class cl_mem *sfr= uc->mem(MEM_SFR);
@@ -78,18 +92,23 @@ cl_timer2::mem_cell_changed(class cl_mem *mem, t_addr addr)
       cell_rcap2l= sfr->get_cell(RCAP2L);
       cell_rcap2h= sfr->get_cell(RCAP2H);
     }
-}
+}*/
 
-void
+/*void
 cl_timer2::added(class cl_hw *new_hw)
 {
   if (new_hw->cathegory == HW_UART)
     hws_to_inform->add(new_hw);
-}
+}*/
 
 void
 cl_timer2::write(class cl_cell *cell, t_mem *val)
 {
+  int oldmode= mode;
+  bool oldtr= TR;
+
+  if (exf2it)
+    exf2it->activate();
   if (cell == cell_tcon)
     {
       C_T = *val & mask_C_T;
@@ -98,7 +117,6 @@ cl_timer2::write(class cl_cell *cell, t_mem *val)
       TCLK= *val & mask_TCLK;
       CP_RL2= *val & mask_CP_RL2;
       EXEN2 = *val & bmEXEN2;
-      int oldmode= mode;
       if (!(RCLK || TCLK) &&
 	  !CP_RL2)
 	mode= T2MODE_RELOAD;
@@ -111,45 +129,50 @@ cl_timer2::write(class cl_cell *cell, t_mem *val)
 	mode= T2MODE_OFF;
       if (mode != oldmode)
 	inform_partners(EV_T2_MODE_CHANGED, val);
-      T_edge= t2ex_edge= 0;
     }
+  else if (cell == cell_t2mod)
+    {
+      bit_dcen= (*val & bmDCEN) != 0;
+      bit_t2oe= (*val & bmT2OE) != 0;
+      if ((features & t2_down) &&
+	  bit_dcen &&
+	  mode == T2MODE_RELOAD)
+	{
+	  mode= T2MODE_DOWN;
+	  if (exf2it)
+	    exf2it->deactivate();
+	}
+      if ((features & t2_clock_out) &&
+	  bit_t2oe)
+	mode= T2MODE_CLKOUT;
+    }
+  if (mode != oldmode ||
+      TR && !oldtr ||
+      !TR && oldtr)
+    T_edge= t2ex_edge= 0;
 }
 
 int
 cl_timer2::tick(int cycles)
-{
-  bool nocount= DD_FALSE;
-
-  exf2it->activate();
-  
-  if (!TR)
-    /* Timer OFF */
-    return(resGO);
-
-  if (mode == T2MODE_BAUDRATE)
-    return(do_t2_baud(cycles));
-
-  /* Determining nr of input clocks */
-  if (C_T)
+{ 
+  switch (mode)
     {
-      // Counter mode, falling edge on P1.0 (T2)
-      if (/*(uc51->prev_p1 & bmT2) &&
-	    !(uc51->sfr->read(P1) & bmT2)*/
-	  T_edge)
-	{
-	  cycles= 1;
-	  T_edge= 0;
-	}
-      else
-	nocount= DD_TRUE;
-    }
-  /* Counting */
-  while (cycles--)
-    {
-      if (CP_RL2)
-	do_t2_capture(&cycles, nocount);
-      else
-	do_t2_reload(&cycles, nocount);
+    case T2MODE_BAUDRATE:
+      do_t2_baud(cycles);
+      break;
+    case T2MODE_CAPTURE:
+      do_t2_capture(cycles);
+      break;
+    case T2MODE_RELOAD:
+      do_t2_reload(cycles);
+      break;
+    case T2MODE_DOWN:
+      do_t2_down(cycles);
+      break;
+    case T2MODE_CLKOUT:
+      do_t2_clock_out(cycles);
+      break;
+    default: break;
     }
   
   return(resGO);
@@ -162,37 +185,30 @@ cl_timer2::tick(int cycles)
 int
 cl_timer2::do_t2_baud(int cycles)
 {
-  //t_mem t2con= uc51->sfr->get(T2CON);
-  //uint p1= get_mem(MEM_SFR, P1);
-
-  /* Baud Rate Generator */
-  if (/*(uc51->prev_p1 & bmT2EX) &&
-      !(uc51->sfr->read(P1) & bmT2EX) &&
-      (t2con & bmEXEN2)*/
-      EXEN2 && t2ex_edge)
-    cell_tcon->set_bit1(bmEXF2);
-  if (C_T)
+  if (EXEN2 && t2ex_edge)
     {
-      if (/*(uc51->prev_p1 & bmT2) &&
-	    !(uc51->sfr->read(P1) & bmT2)*/
-	  T_edge)
-	cycles= 1;
-      else
-	cycles= 0;
+      cell_tcon->set_bit1(bmEXF2);
+      t2ex_edge= 0;
     }
+
+  if (!TR)
+    return(0);
+
+  if (C_T)
+    (cycles= T_edge), T_edge= 0;
   else
     cycles*= 6;
-  if (TR)
-    while (cycles--)
-      {
-	if (!cell_tl->add(1))
-	  if (!cell_th->add(1))
-	    {
-	      cell_th->set(cell_rcap2h->get());
-	      cell_tl->set(cell_rcap2l->get());
-	      inform_partners(EV_OVERFLOW, 0);
-	    }
-      }
+
+  while (cycles--)
+    {
+      if (!cell_tl->add(1))
+	if (!cell_th->add(1))
+	  {
+	    cell_th->set(cell_rcap2h->get());
+	    cell_tl->set(cell_rcap2l->get());
+	    inform_partners(EV_OVERFLOW, 0);
+	  }
+    }
   return(resGO);
 }
 
@@ -202,33 +218,26 @@ cl_timer2::do_t2_baud(int cycles)
  */
 
 void
-cl_timer2::do_t2_capture(int *cycles, bool nocount)
+cl_timer2::do_t2_capture(int cycles)
 {
-  //uint p1= get_mem(MEM_SFR, P1);
-  //t_mem t2con= uc51->sfr->get(T2CON);
-
-  /* Capture mode */
-  if (nocount)
-    *cycles= 0;
-  else
+  if (EXEN2 && t2ex_edge)
     {
-      if (!cell_tl->add(1))
-	{
-	  if (!cell_th->add(1))
-	    cell_tcon->set_bit1(bmTF2);
-	}
-    }
-  // capture
-  if (/*(uc51->prev_p1 & bmT2EX) &&
-      !(uc51->sfr->read(P1) & bmT2EX) &&
-      (t2con & bmEXEN2)*/
-      EXEN2 && t2ex_edge)
-    {
+      cell_tcon->set_bit1(bmEXF2);
       cell_rcap2h->set(cell_th->get());
       cell_rcap2l->set(cell_tl->get());
-      cell_tcon->set_bit1(bmEXF2);
-      //uc51->prev_p1&= ~bmT2EX; // Falling edge has been handled
       t2ex_edge= 0;
+    }
+
+  if (!TR)
+    return;
+
+  if (C_T)
+    (cycles= T_edge), T_edge= 0;
+
+  if (!cell_tl->add(1))
+    {
+      if (!cell_th->add(1))
+	cell_tcon->set_bit1(bmTF2);
     }
 }
 
@@ -238,42 +247,114 @@ cl_timer2::do_t2_capture(int *cycles, bool nocount)
  */
 
 void
-cl_timer2::do_t2_reload(int *cycles, bool nocount)
+cl_timer2::do_t2_reload(int cycles)
 {
-  int overflow;
-  bool ext2= 0;
-  
-  /* Auto-Relode mode */
-  overflow= 0;
-  if (nocount)
-    *cycles= 0;
-  else
+  if (EXEN2 && t2ex_edge)
     {
+      cell_tcon->set_bit1(bmEXF2);
+      cell_th->set(cell_rcap2h->get());
+      cell_tl->set(cell_rcap2l->get());
+      t2ex_edge= 0;
+    }
+
+  if (!TR)
+    return;
+
+  if (C_T)
+    (cycles= T_edge), T_edge= 0;
+
+  if (!cell_tl->add(1))
+    {
+      if (!cell_th->add(1))
+	{
+	  cell_tcon->set_bit1(mask_TF);
+	  cell_th->set(cell_rcap2h->get());
+	  cell_tl->set(cell_rcap2l->get());
+	}
+    }
+}
+
+void
+cl_timer2::do_t2_down(int cycles)
+{
+  bool toggle= DD_FALSE;
+
+  if (!TR)
+    return;
+
+  if (C_T)
+    (cycles= T_edge), T_edge= 0;
+
+  if (bit_t2ex)
+    // UP
+    while (cycles--)
       if (!cell_tl->add(1))
 	{
 	  if (!cell_th->add(1))
 	    {
 	      cell_tcon->set_bit1(mask_TF);
-	      overflow++;
+	      cell_th->set(cell_rcap2h->get());
+	      cell_tl->set(cell_rcap2l->get());
+	      toggle= DD_TRUE;
 	    }
 	}
-    }
-  // reload
-  if (/*(uc51->prev_p1 & bmT2EX) &&
-      !(uc51->sfr->read(P1) & bmT2EX) &&
-      (uc51->sfr->get(T2CON) & bmEXEN2)*/
-      EXEN2 && t2ex_edge)
+  else
+    // DOWN
+    while (cycles--)
+      {
+	t_mem l, h;
+	if ((l= cell_tl->add(-1)) == 0xff)
+	  h= cell_th->add(-1);
+	else
+	  h= cell_th->get();
+	if ((TYPE_UWORD)(h*256+l) <
+	    (TYPE_UWORD)(cell_rcap2h->get()*256+cell_rcap2l->get()))
+	  {
+	    cell_tcon->set_bit1(mask_TF);
+	    cell_th->set(0xff);
+	    cell_tl->set(0xff);
+	    toggle= DD_TRUE;
+	  }
+      }
+  if (toggle)
     {
-      ext2= DD_TRUE;
+      class cl_cell *p1= uc->mem(MEM_SFR)->get_cell(P1);
+      p1->set(p1->get() ^ bmEXF2);
+    }
+}
+
+void
+cl_timer2::do_t2_clock_out(int cycles)
+{
+  if (EXEN2 && t2ex_edge)
+    {
       cell_tcon->set_bit1(bmEXF2);
-      //uc51->prev_p1&= ~bmT2EX; // Falling edge has been handled
       t2ex_edge= 0;
     }
-  if (overflow ||
-      ext2)
+
+  if (!TR)
+    return;
+
+  if (C_T)
+    (cycles= T_edge), T_edge= 0;
+  else
+    cycles*= 6;
+
+  while (cycles--)
     {
-      cell_th->set(cell_rcap2h->get());
-      cell_tl->set(cell_rcap2l->get());
+      if (!cell_tl->add(1))
+	if (!cell_th->add(1))
+	  {
+	    cell_th->set(cell_rcap2h->get());
+	    cell_tl->set(cell_rcap2l->get());
+	    inform_partners(EV_OVERFLOW, 0);
+	    if (!C_T)
+	      {
+		// toggle T2 on P1
+		class cl_cell *p1= uc->mem(MEM_SFR)->get_cell(P1);
+		p1->set(p1->get() ^ bmT2);
+	      }
+	  }
     }
 }
 
@@ -288,12 +369,13 @@ cl_timer2::happen(class cl_hw *where, enum hw_event he, void *params)
     {
       t_mem p1n= ep->new_pins & ep->new_value;
       t_mem p1o= ep->pins & ep->prev_value;
-      if ((p1n & mask_T) &&
-	  !(p1o & mask_T))
+      if (!(p1n & mask_T) &&
+	  (p1o & mask_T))
 	T_edge++;
       if (!(p1n & bmT2EX) &&
 	  (p1o & bmT2EX))
 	t2ex_edge++;
+      bit_t2ex= p1n & bmT2EX;
     }
 }
 

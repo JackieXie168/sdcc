@@ -111,16 +111,46 @@ cl_hw::cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, char *aid_string):
     id_string= strdup(aid_string);
   else
     id_string= strdup("unknown hw element");
-  hws_to_inform= new cl_list(2, 2);
+  partners= new cl_list(2, 2);
   watched_cells= new cl_list(2, 2);
 }
 
 cl_hw::~cl_hw(void)
 {
   free(id_string);
-  hws_to_inform->disconn_all();
-  delete hws_to_inform;
+  //hws_to_inform->disconn_all();
+  delete partners;
   delete watched_cells;
+}
+
+
+void
+cl_hw::new_hw_adding(class cl_hw *new_hw)
+{
+}
+
+void
+cl_hw::new_hw_added(class cl_hw *new_hw)
+{
+  int i;
+
+  for (i= 0; i < partners->count; i++)
+    {
+      class cl_partner_hw *ph= (class cl_partner_hw *)(partners->at(i));
+      ph->refresh(new_hw);
+    }
+}
+
+class cl_hw *
+cl_hw::make_partner(enum hw_cath cath, int id)
+{
+  class cl_partner_hw *ph;
+  class cl_hw *hw;
+
+  ph= new cl_partner_hw(uc, cath, id);
+  partners->add(ph);
+  hw= ph->get_partner();
+  return(hw);
 }
 
 
@@ -203,10 +233,10 @@ cl_hw::inform_partners(enum hw_event he, void *params)
 {
   int i;
 
-  for (i= 0; i < hws_to_inform->count; i++)
+  for (i= 0; i < partners->count; i++)
     {
-      class cl_hw *hw= (class cl_hw *)(hws_to_inform->at(i));
-      hw->happen(this, he, params);
+      class cl_partner_hw *ph= (class cl_partner_hw *)(partners->at(i));
+      ph->happen(this, he, params);
     }
 }
 
@@ -228,7 +258,7 @@ cl_hws::add(void *item)
   for (i= 0; i < count; i++)
     {
       class cl_hw *hw= (class cl_hw *)(at(i));
-      hw->adding((class cl_hw *)item);
+      hw->new_hw_adding((class cl_hw *)item);
     }
   // add
   res= cl_list::add(item);
@@ -236,8 +266,9 @@ cl_hws::add(void *item)
   for (i= 0; i < count; i++)
     {
       class cl_hw *hw= (class cl_hw *)(at(i));
-      hw->added((class cl_hw *)item);
+      hw->new_hw_added((class cl_hw *)item);
     }
+  ((class cl_hw *)item)->added_to_uc();
   return(res);
 }
 
@@ -252,6 +283,72 @@ cl_hws::mem_cell_changed(class cl_mem *mem, t_addr addr)
       class cl_hw *hw= (class cl_hw *)(at(i));
       hw->mem_cell_changed(mem, addr);
     }
+}
+
+
+/*
+ *____________________________________________________________________________
+ */
+
+cl_partner_hw::cl_partner_hw(class cl_uc *auc, enum hw_cath cath, int aid):
+  cl_base()
+{
+  uc= auc;
+  cathegory= cath;
+  id= aid;
+  partner= uc->get_hw(cathegory, id, 0);
+}
+
+class cl_hw *
+cl_partner_hw::get_partner(void)
+{
+  return(partner);
+}
+
+void
+cl_partner_hw::refresh(void)
+{
+  class cl_hw *hw= uc->get_hw(cathegory, id, 0);
+
+  if (!hw)
+    return;
+  if (partner)
+    {
+      // partner is already set
+      if (partner != hw)
+	{
+	  // partner changed?
+	  partner= hw;
+	}
+      else
+	partner= hw;
+    }
+  partner= hw;
+}
+
+void
+cl_partner_hw::refresh(class cl_hw *new_hw)
+{
+  if (!new_hw)
+    return;
+  if (cathegory == new_hw->cathegory &&
+      id == new_hw->id)
+    {
+      if (partner)
+	{
+	  // partner changed?
+	  partner= new_hw;
+	}
+      else
+	partner= new_hw;
+    }
+}
+
+void
+cl_partner_hw::happen(class cl_hw *where, enum hw_event he, void *params)
+{
+  if (partner)
+    partner->happen(where, he, params);
 }
 
 

@@ -37,9 +37,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 class t_uc52: public t_uc51
 {
 protected:
-  class cl_it_src *exf2it;
-  int   s_rec_t2;	// T2 overflows for receiving
-  int   s_tr_t2;	// T2 overflows for sending
+  //class cl_it_src *exf2it;
+  //int   s_rec_t2;	// T2 overflows for receiving
+  //int   s_tr_t2;	// T2 overflows for sending
 
 public:
   t_uc52(int Itype, int Itech, class cl_sim *asim);

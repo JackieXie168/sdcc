@@ -87,7 +87,7 @@ public:
   class cl_list *mems;
   class cl_hws *hws;
 
-  class cl_list *it_sources;	// Sources of interrupts
+  class cl_irqs *it_sources;	// Sources of interrupts
   class cl_list *it_levels;	// Follow interrupt services
   class cl_list *st_ops;	// Track stack operations
 

@@ -45,9 +45,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 cl_serial::cl_serial(class cl_uc *auc):
   cl_hw(auc, HW_UART, 0, "uart")
-{
-  uc51= (class t_uc51 *)uc;
-}
+{}
 
 cl_serial::~cl_serial(void)
 {
@@ -149,7 +147,7 @@ cl_serial::init(void)
 }
 
 void
-cl_serial::added(class cl_hw *new_hw)
+cl_serial::new_hw_added(class cl_hw *new_hw)
 {
   if (new_hw->cathegory == HW_TIMER &&
       new_hw->id == 2)
@@ -158,6 +156,15 @@ cl_serial::added(class cl_hw *new_hw)
       t_mem d= uc->mem(MEM_SFR)->get(T2CON);
       t2_baud= d & (bmRCLK | bmTCLK);
     }
+}
+
+void
+cl_serial::added_to_uc(void)
+{
+  uc->it_sources->add(new cl_it_src(bmES , SCON, bmTI , 0x0023, false,
+				    "serial transmit", 6));
+  uc->it_sources->add(new cl_it_src(bmES , SCON, bmRI , 0x0023, false,
+				    "serial receive", 6));
 }
 
 t_mem

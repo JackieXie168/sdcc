@@ -47,22 +47,28 @@ cl_port::init(void)
     case 1:
       {
 	addr_p= P1;
-	class cl_hw *hw;
+	/*class cl_hw *hw;
 	if ((hw= uc->get_hw(HW_TIMER, 2, 0)))
-	  hws_to_inform->add(hw);
+	hws_to_inform->add(hw);*/
+	make_partner(HW_TIMER, 2);
+	make_partner(HW_PCA, 0);
 	break;
       }
     case 2: addr_p= P2; break;
     case 3:
       {
 	addr_p= P3;
-	class cl_hw *hw;
-	if ((hw= uc->get_hw(HW_TIMER, 0, 0)))
+	//class cl_hw *hw;
+	/*if ((hw= uc->get_hw(HW_TIMER, 0, 0)))
 	  hws_to_inform->add(hw);
 	if ((hw= uc->get_hw(HW_TIMER, 1, 0)))
 	  hws_to_inform->add(hw);
 	if ((hw= uc->get_hw(HW_DUMMY, 0, 0)))
-	  hws_to_inform->add(hw);
+	hws_to_inform->add(hw);*/
+	make_partner(HW_TIMER, 0);
+	make_partner(HW_TIMER, 1);
+	make_partner(HW_INTERRUPT, 0);
+	make_partner(HW_DUMMY, 0);
 	break;
       }
     default: addr_p= P0; return(1);
@@ -102,21 +108,32 @@ cl_port::write(class cl_cell *cell, t_mem *val)
   //printf("port[%d] write 0x%x\n",id,val);
 }
 
-t_mem
-cl_port::set_cmd(t_mem value)
+void
+cl_port::set_cmd(class cl_cmdline *cmdline, class cl_console *con)
 {
   struct ev_port_changed ep;
+  class cl_cmd_arg *params[1]= { cmdline->param(0) };
+  long value;
 
-  ep.id= id;
-  ep.addr= addr_p;
-  ep.pins= port_pins;
-  port_pins= value;
-  ep.prev_value= cell_p->get();
-  ep.new_value= cell_p->get();
-  ep.new_pins= port_pins;
-  if (ep.pins != ep.new_pins)
-    inform_partners(EV_PORT_CHANGED, &ep);
-  return(value);
+  if (cmdline->syntax_match(uc, NUMBER))
+    {
+      value= params[0]->value.number & 0xff;
+
+      ep.id= id;
+      ep.addr= addr_p;
+      ep.pins= port_pins;
+      port_pins= value;
+      ep.prev_value= cell_p->get();
+      ep.new_value= cell_p->get();
+      ep.new_pins= port_pins;
+      if (ep.pins != ep.new_pins)
+	inform_partners(EV_PORT_CHANGED, &ep);
+    }
+  else
+    {
+      con->dd_printf("Error: wrong systax\n");
+      value= 0;
+    }
 }
 
 /*void

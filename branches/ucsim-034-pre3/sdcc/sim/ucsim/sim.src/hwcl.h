@@ -90,19 +90,22 @@ public:
   enum hw_cath cathegory;
   int id;
   char *id_string;
-  class cl_list *hws_to_inform;
 protected:
+  class cl_list *partners;
   class cl_list *watched_cells;
 public:
   cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, char *aid_string);
   virtual ~cl_hw(void);
 
-  virtual void adding(class cl_hw *new_hw) {}
-  virtual void added(class cl_hw *new_hw) {}
+  virtual void new_hw_adding(class cl_hw *new_hw);
+  virtual void new_hw_added(class cl_hw *new_hw);
+  virtual void added_to_uc(void) {}
+  virtual class cl_hw *make_partner(enum hw_cath cath, int id);
+
   virtual t_mem read(class cl_cell *cell) { return(cell->get()); }
   virtual void write(class cl_cell */*cell*/, t_mem */*val*/) {}
 
-  virtual t_mem set_cmd(t_mem /*value*/) { return(0); }
+  virtual void set_cmd(class cl_cmdline *cmdline, class cl_console *con) {}
   virtual class cl_cell *register_cell(class cl_mem *mem, t_addr addr,
 				       class cl_cell **store,
 				       enum what_to_do_on_cell_change awtd);
@@ -131,7 +134,19 @@ public:
 
 class cl_partner_hw: public cl_base
 {
-  
+protected:
+  class cl_uc *uc;
+  enum hw_cath cathegory;
+  int id;
+  class cl_hw *partner;
+public:
+  cl_partner_hw(class cl_uc *auc, enum hw_cath cath, int aid);
+
+  virtual class cl_hw *get_partner(void);
+  virtual void refresh(void);
+  virtual void refresh(class cl_hw *new_hw);
+
+  virtual void happen(class cl_hw *where, enum hw_event he, void *params);
 };
 
 

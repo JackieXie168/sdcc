@@ -40,6 +40,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "brkcl.h"
 #include "stypes.h"
 
+#include "interruptcl.h"
+
 
 class t_uc51: public cl_uc
 {
@@ -60,7 +62,8 @@ public:
 
 public:
   // Simulation of interrupt system
-  bool  was_reti;	// Instruction had an effect on IE
+  class cl_interrupt *interrupt;
+  //bool  was_reti;	// Instruction had an effect on IE
 
 public:
   int result;		// result of instruction execution
@@ -101,7 +104,7 @@ protected:
   virtual class cl_cell *get_reg(uchar regnum);
 
   virtual int   exec_inst(void);
-  virtual void  post_inst(void);
+  //virtual void  post_inst(void);
 
   virtual int inst_unknown(uchar code);
   virtual int inst_nop(uchar code);			/* 00 */
@@ -220,14 +223,14 @@ protected:
 class cl_uc51_dummy_hw: public cl_hw
 {
 protected:
-  class t_uc51 *uc51;
-  class cl_cell *acc, *sp;
+  //class t_uc51 *uc51;
+  class cl_cell *cell_acc, *cell_sp, *cell_psw;
 public:
   cl_uc51_dummy_hw(class cl_uc *auc);
   virtual int init(void);
 
   virtual void write(class cl_cell *cell, t_mem *val);
-  virtual void happen(class cl_hw *where, enum hw_event he, void *params);
+  //virtual void happen(class cl_hw *where, enum hw_event he, void *params);
 };
 
 

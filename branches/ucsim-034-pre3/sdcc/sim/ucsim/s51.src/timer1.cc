@@ -1,5 +1,5 @@
 /*
- * Simulator of microcontrollers (timer1.cc)
+ * Simulator of microcontrollers (s51.src/timer1.cc)
  *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
  * 
@@ -31,7 +31,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 cl_timer1::cl_timer1(class cl_uc *auc, int aid, char *aid_string):
   cl_timer0(auc, aid, aid_string)
-{}
+{
+  make_partner(HW_UART, 0);
+}
 
 /*int
 cl_timer1::init(void)
@@ -39,12 +41,12 @@ cl_timer1::init(void)
   return(0);
 }*/
 
-void
+/*void
 cl_timer1::added(class cl_hw *new_hw)
 {
   if (new_hw->cathegory == HW_UART)
     hws_to_inform->add(new_hw);
-}
+}*/
 
 int
 cl_timer1::do_mode3(int cycles)
@@ -52,11 +54,11 @@ cl_timer1::do_mode3(int cycles)
   return(0);
 }
 
-void
+/*void
 cl_timer1::overflow(void)
 {
   inform_partners(EV_OVERFLOW, 0);
-}
+}*/
 
 void
 cl_timer1::print_info(class cl_console *con)
@@ -85,4 +87,4 @@ cl_timer1::print_info(class cl_console *con)
 }
 
 
-/* End of timer1.cc */
+/* End of s51.src/timer1.cc */

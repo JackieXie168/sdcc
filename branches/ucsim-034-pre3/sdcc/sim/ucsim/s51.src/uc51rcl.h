@@ -53,12 +53,7 @@ public:
 
   //virtual void proc_write(t_addr addr);
 
-  virtual void do_extra_hw(int cycles);
-  virtual int  do_timer2(int cycles);
-  virtual int  do_t2_clockout(int cycles);
-  virtual int  serial_bit_cnt(int mode);
   virtual void received(int c);
-  //virtual int  do_wdt(int cycles);
 
   virtual int inst_movx_a_$dptr(uchar code);		/* e0 */
   virtual int inst_movx_a_$ri(uchar code);		/* e2,e3 */

@@ -122,7 +122,7 @@ cl_uc::cl_uc(class cl_sim *asim):
   idle_ticks= new cl_ticker(+1, TICK_IDLE, "idle");
   counters= new cl_list(2, 2);
   it_levels= new cl_list(2, 2);
-  it_sources= new cl_list(2, 2);
+  it_sources= new cl_irqs(2, 2);
   class it_level *il= new it_level(-1, 0, 0, 0);
   it_levels->push(il);
   st_ops= new cl_list(2, 2);
@@ -417,9 +417,11 @@ cl_uc::build_cmdset(class cl_cmdset *cmdset)
 "set bit addr 0|1   Set specified bit to 0 or 1",
 "long help of set bit"));
     cmd->init();
-    cset->add(cmd= new cl_set_port_cmd("port", 0,
-"set port hw data   Set data connected to port",
-"long help of set port"));
+    cset->add(cmd= new cl_set_hw_cmd("hardware", 0,
+"set hardware cathegory params...\n"
+"                   Set parameters of specified hardware element",
+"long help of set hardware"));
+    cmd->add_name("hw");
     cmd->init();
     cset->add(cmd= new cl_set_option_cmd("option", 0,
 "set option name value\n"
@@ -448,7 +450,7 @@ cl_uc::build_cmdset(class cl_cmdset *cmdset)
 "info hardware cathegory\n"
 "                   Status of hardware elements of the CPU",
 "long help of info hardware"));
-    cmd->add_name("h	w");
+    cmd->add_name("hw");
     cmd->init();
   }
   cmdset->add(cmd= new cl_super_cmd("info", 0,
@@ -977,7 +979,7 @@ cl_uc::inst_length(t_mem code)
   int i;
 
   for (i= 0; tabl[i].mnemonic && (code & tabl[i].mask) != tabl[i].code; i++) ;
-  return(tabl[i].mnemonic?tabl[i].length:1);	 
+  return(tabl[i].mnemonic?tabl[i].length:1);    
 }
 
 int

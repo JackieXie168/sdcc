@@ -38,7 +38,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 t_uc89c51r::t_uc89c51r(int Itype, int Itech, class cl_sim *asim):
   t_uc51r(Itype, Itech, asim)
 {
-  it_sources->add_at(4, new cl_it_src(bmEC, CCON, bmCCF4, 0x0033, false,
+  /*it_sources->add_at(4, new cl_it_src(bmEC, CCON, bmCCF4, 0x0033, false,
 				      "PCA module #4"));
   it_sources->add_at(4, new cl_it_src(bmEC, CCON, bmCCF3, 0x0033, false,
 				      "PCA module #3"));
@@ -49,7 +49,7 @@ t_uc89c51r::t_uc89c51r(int Itype, int Itech, class cl_sim *asim):
   it_sources->add_at(4, new cl_it_src(bmEC, CCON, bmCCF0, 0x0033, false,
 				      "PCA module #0"));
   it_sources->add_at(4, new cl_it_src(bmEC, CCON, bmCF, 0x0033, false,
-				      "PCA counter"));
+  "PCA counter"));*/
 }
 
 
@@ -61,14 +61,14 @@ t_uc89c51r::mk_hw_elements(void)
   t_uc51r::mk_hw_elements();
   hws->add(h= new cl_pca(this, 0));
   h->init();
-  hws->add(h= new cl_pca(this, 1));
+  /*hws->add(h= new cl_pca(this, 1));
   h->init();
   hws->add(h= new cl_pca(this, 2));
   h->init();
   hws->add(h= new cl_pca(this, 3));
   h->init();
   hws->add(h= new cl_pca(this, 4));
-  h->init();
+  h->init();*/
   hws->add(h= new cl_89c51r_dummy_hw(this));
   h->init();
 }
@@ -83,7 +83,7 @@ t_uc89c51r::reset(void)
   sfr->set_bit1(CCAPM2, bmECOM);
   sfr->set_bit1(CCAPM3, bmECOM);
   sfr->set_bit1(CCAPM4, bmECOM);
-  t0_overflows= 0;
+  //t0_overflows= 0;
   dpl0= dph0= dpl1= dph1= 0;
   sfr->set(IPH, 0);
 }
@@ -119,6 +119,7 @@ t_uc89c51r::pre_inst(void)
       sfr->set(DPL, dpl0);
       sfr->set(DPH, dph0);
     }
+  t_uc51r::pre_inst();
 }
 
 void
@@ -134,152 +135,7 @@ t_uc89c51r::post_inst(void)
       dpl0= sfr->get(DPL);
       dph0= sfr->get(DPH);
     }
-}
-
-
-/*
- * Simulating timers
- *
- * Calling inherited method to simulate timer #0, #1, #2 and then 
- * simulating Programmable Counter Array
- */
-
-void
-t_uc89c51r::do_extra_hw(int cycles)
-{
-  t_uc51r::do_extra_hw(cycles);
-  do_pca(cycles);
-}
-
-int
-t_uc89c51r::t0_overflow(void)
-{
-  uchar cmod= sfr->get(CMOD) & (bmCPS0|bmCPS1);
-
-  if (cmod == bmCPS1)
-    t0_overflows++;
-  return(0);
-}
-
-
-/*
- * Simulating Programmable Counter Array
- */
-
-int
-t_uc89c51r::do_pca(int cycles)
-{
-  int ret= resGO;
-  uint ccon= sfr->get(CCON);
-
-  if (!(ccon & bmCR))
-    return(resGO);
-  if (state == stIDLE &&
-      (ccon & bmCIDL))
-    return(resGO);
-
-  switch (sfr->get(CMOD) & (bmCPS1|bmCPS0))
-    {
-    case 0:
-      ret= do_pca_counter(cycles);
-      break;
-    case bmCPS0:
-      ret= do_pca_counter(cycles*3);
-      break;
-    case bmCPS1:
-      ret= do_pca_counter(t0_overflows);
-      t0_overflows= 0;
-      break;
-    case (bmCPS0|bmCPS1):
-      if ((prev_p1 & bmECI) != 0 &
-	  (sfr->get/*FIXME:read?*/(P1) & bmECI) == 0)
-	do_pca_counter(1);
-      break;
-    }
-  return(ret);
-}
-
-int
-t_uc89c51r::do_pca_counter(int cycles)
-{
-  while (cycles--)
-    {
-      if (sfr->add(CL, 1) == 0)
-	{
-	  if (sfr->add(CH, 1) == 0)
-	    {
-	      /* CH,CL overflow */
-	      sfr->set_bit1(CCON, bmCF);
-	      do_pca_module(0);
-	      do_pca_module(1);
-	      do_pca_module(2);
-	      do_pca_module(3);
-	      do_pca_module(4);
-	    }
-	}
-    }
-  return(resGO);
-}
-
-int
-t_uc89c51r::do_pca_module(int nr)
-{
-  uchar CCAPM[5]= {0xda, 0xdb, 0xdc, 0xdd, 0xde};
-  uchar CCAPL[5]= {0xea, 0xeb, 0xec, 0xed, 0xee};
-  uchar CCAPH[5]= {0xfa, 0xfb, 0xfc, 0xfd, 0xfe};
-  uchar bmCEX[5]= {bmCEX0, bmCEX1, bmCEX2, bmCEX3, bmCEX4};
-  uchar bmCCF[5]= {bmCCF0, bmCCF1, bmCCF2, bmCCF3, bmCCF4};
-  uchar ccapm= sfr->get(CCAPM[nr]);
-  uint p1= sfr->get(P1);
-
-  if (
-      ((ccapm & bmCAPP) &&
-       (prev_p1 & bmCEX[nr]) == 0 &&
-       (p1 & bmCEX[nr]) != 0)
-      ||
-      ((ccapm & bmCAPN) &&
-       (prev_p1 & bmCEX[nr]) != 0 &&
-       (p1 & bmCEX[nr]) == 0)
-      )
-    {
-      /* Capture */
-      sfr->set(CCAPL[nr], sfr->get(CL));
-      sfr->set(CCAPH[nr], sfr->get(CH));
-      sfr->set_bit1(CCON, bmCCF[nr]);
-    }
-
-  if (ccapm & bmECOM)
-    {
-      /* Comparator enabled */
-      if (sfr->get(CL) == sfr->get(CCAPL[nr]) &&
-	  sfr->get(CH) == sfr->get(CCAPH[nr]))
-	{
-	  /* Match */
-	  if (nr == 4 &&
-	      (sfr->get(CMOD) & bmWDTE))
-	    {
-	      reset();
-	    }
-	  sfr->set_bit1(CCON, bmCCF[nr]);
-	  if (ccapm & bmTOG)
-	    {
-	      /* Toggle */
-	      sfr->set(P1, sfr->get(P1) ^ bmCEX[nr]);
-	    }
-	}
-      if (ccapm & bmPWM)
-	{
-	  /* PWM */
-	  if (sfr->get(CL) == 0)
-	    sfr->set(CCAPL[nr], sfr->get(CCAPH[nr]));
-	  if (sfr->get(CL) < sfr->get(CCAPL[nr]))
-	    sfr->set(P1, sfr->get(P1) & ~(bmCEX[nr]));
-	  else
-	    sfr->set_bit1(P1, bmCEX[nr]);
-	}
-    }
-
-  return(resGO);
+  t_uc51r::post_inst();
 }
 
 
