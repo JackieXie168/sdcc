@@ -2,7 +2,7 @@
  * Simulator of microcontrollers (uc390cl.h)
  *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
- * 
+ *
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
  *
  * uc390cl.h - implemented by Karl Bongers, karl@turbobit.com
@@ -37,30 +37,50 @@ class t_uc390: public t_uc52
 {
 public:
   t_uc390(int Itype, int Itech, class cl_sim *asim);
-  int flat24_flag; /* true if flat24 mode code: ((ACON:9Dh & 3) == 0x2) */
+  virtual void mk_hw_elements (void);
 
-/* mods for dual-dptr */
-virtual int inst_inc_addr(uchar code);
-virtual int inst_inc_dptr(uchar code);
-virtual int inst_jmp_$a_dptr(uchar code);
-virtual int inst_mov_dptr_$data(uchar code);
-virtual int inst_movc_a_$a_dptr(uchar code);
-virtual int inst_movx_a_$dptr(uchar code);
-virtual int inst_movx_$dptr_a(uchar code);
+  virtual void clear_sfr (void);
 
-/* mods for flat24 */
-virtual int inst_ajmp_addr(uchar code);
-virtual int inst_ljmp(uchar code);
-virtual int inst_acall_addr(uchar code);
-virtual int inst_lcall(uchar code, uint addr);
-virtual int inst_ret(uchar code);
-virtual int inst_reti(uchar code);
+  // making objects
+  virtual t_addr get_mem_size (enum mem_class type);
 
-/* mods for disassembly of flat24 */
-virtual struct dis_entry *dis_tbl(void);
-virtual char * disass(t_addr addr, char *sep);
+  // manipulating memories
+  virtual t_mem read_mem (enum mem_class type, t_addr addr);
+  virtual t_mem get_mem (enum mem_class type, t_addr addr);
+  virtual void  write_mem (enum mem_class type, t_addr addr, t_mem val);
+  virtual void  set_mem (enum mem_class type, t_addr addr, t_mem val);
 
+  /* mods for dual-dptr */
+  virtual int inst_inc_dptr(uchar code);
+  virtual int inst_jmp_$a_dptr(uchar code);
+  virtual int inst_mov_dptr_$data(uchar code);
+  virtual int inst_movc_a_$a_dptr(uchar code);
+  virtual int inst_movx_a_$dptr(uchar code);
+  virtual int inst_movx_$dptr_a(uchar code);
+
+  /* mods for flat24 */
+  virtual int inst_ajmp_addr(uchar code);
+  virtual int inst_ljmp(uchar code);
+  virtual int inst_acall_addr(uchar code);
+  virtual int inst_lcall(uchar code, uint addr);
+  virtual int inst_ret(uchar code);
+  virtual int inst_reti(uchar code);
+
+  /* mods for 10 bit stack */
+  virtual int inst_push (uchar code);
+  virtual int inst_pop (uchar code);
+
+  /* mods for disassembly of flat24 */
+  virtual struct dis_entry *dis_tbl(void);
+  virtual char * disass(t_addr addr, char *sep);
+  virtual void   print_regs(class cl_console *con);
+
+protected:
+  int flat24_flag; /* true if processor == ds390f */
+  virtual void push_byte (t_mem uc);
+  virtual t_mem pop_byte (void);
 };
 
-#endif
 /* End of s51.src/uc390cl.h */
+
+#endif
