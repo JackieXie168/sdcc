@@ -645,6 +645,31 @@ cl_memory_cell::del_operator(class cl_brk *brk)
     }
 }
 
+void
+cl_memory_cell::del_operator(class cl_hw *hw)
+{
+  if (!operators)
+    return;
+  class cl_memory_operator *op= operators;
+  if (operators->match(hw))
+    {
+      operators= op->get_next();
+      delete op;
+    }
+  else
+    {
+      while (op->get_next() &&
+	     !op->get_next()->match(hw))
+	op= op->get_next();
+      if (op->get_next())
+	{
+	  class cl_memory_operator *m= op->get_next();
+	  op->set_next(m->get_next());;
+	  delete m;
+	}
+    }
+}
+
 
 class cl_memory_cell *
 cl_memory_cell::add_hw(class cl_hw *hw, int *ith, t_addr addr)
@@ -652,6 +677,12 @@ cl_memory_cell::add_hw(class cl_hw *hw, int *ith, t_addr addr)
   class cl_hw_operator *o= new cl_hw_operator(this, addr, data, mask, hw);
   append_operator(o);
   return(this);
+}
+
+void
+cl_memory_cell::remove_hw(class cl_hw *hw)
+{
+  del_operator(hw);
 }
 
 /*class cl_hw *
@@ -991,6 +1022,18 @@ cl_address_space::register_hw(t_addr addr, class cl_hw *hw,
   if (announce)
     ;//uc->sim->/*app->*/mem_cell_changed(this, addr);//FIXME
   return(cell);
+}
+
+void
+cl_address_space::unregister_hw(class cl_hw *hw)
+{
+  t_addr idx;
+  
+  for (idx= 0; idx < size; idx++)
+    {
+      class cl_memory_cell *cell= cells[idx];
+      cell->remove_hw(hw);
+    }
 }
 
 

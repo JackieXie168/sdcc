@@ -54,6 +54,22 @@ cl_watched_cell::cl_watched_cell(class cl_address_space *amem, t_addr aaddr,
     }
 }
 
+cl_watched_cell::~cl_watched_cell(void)
+{
+  if (store)
+    *store= 0;
+}
+
+bool
+cl_watched_cell::match(class cl_memory_cell *the_cell)
+{
+  if (cell)
+    return(cell == the_cell);
+  if (store)
+    return(*store == the_cell);
+  return(DD_FALSE);
+}
+
 void
 cl_watched_cell::mem_cell_changed(class cl_address_space *amem, t_addr aaddr,
 				  class cl_hw *hw)
@@ -214,6 +230,14 @@ cl_hw::register_cell(class cl_address_space *mem, t_addr addr,
   return(cell);
 }
 
+void
+cl_hw::unregister_cell(class cl_memory_cell *the_cell)
+{
+  if (the_cell)
+    the_cell->remove_hw(this);
+  unuse_cell(the_cell);
+}
+
 class cl_memory_cell *
 cl_hw::use_cell(class cl_address_space *mem, t_addr addr,
 		class cl_memory_cell **store,
@@ -227,6 +251,25 @@ cl_hw::use_cell(class cl_address_space *mem, t_addr addr,
     *store= cell;
   watched_cells->add(wc);
   return(cell);
+}
+
+void
+cl_hw::unuse_cell(class cl_memory_cell *the_cell)
+{
+  int i;
+
+  for (i= 0; i < watched_cells->count; i++)
+    {
+      class cl_watched_cell *wc=
+	dynamic_cast<class cl_watched_cell *>(watched_cells->object_at(i));
+      if (!wc)
+	continue;
+      if (wc->match(the_cell))
+	{
+	  watched_cells->disconn_at(i);
+	  delete wc;
+	}
+    }
 }
 
 void

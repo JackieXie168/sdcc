@@ -249,8 +249,10 @@ public:
   virtual void append_operator(class cl_memory_operator *op);
   virtual void prepend_operator(class cl_memory_operator *op);
   virtual void del_operator(class cl_brk *brk);
+  virtual void del_operator(class cl_hw *hw);
 
   virtual class cl_memory_cell *add_hw(class cl_hw *hw, int *ith, t_addr addr);
+  virtual void remove_hw(class cl_hw *hw);
   //virtual class cl_hw *get_hw(int ith);
   virtual class cl_event_handler *get_event_handler(void);
 };
@@ -306,6 +308,7 @@ public:
   virtual class cl_memory_cell *register_hw(t_addr addr, class cl_hw *hw,
 					    int *ith,
 					    bool announce);
+  virtual void unregister_hw(class cl_hw *hw);
 
   virtual void set_brk(t_addr addr, class cl_brk *brk);
   virtual void del_brk(t_addr addr, class cl_brk *brk);
