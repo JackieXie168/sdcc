@@ -61,6 +61,9 @@ public:
   virtual void print_regs(class cl_console *con);
 
   virtual int exec_inst(void);
+
+  virtual char *get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset);
+
 #include "instcl.h"
 };
 

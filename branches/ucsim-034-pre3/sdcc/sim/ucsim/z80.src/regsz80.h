@@ -1,6 +1,8 @@
 /*
  * Simulator of microcontrollers (regsz80.h)
  *
+ * some z80 code base from Karl Bongers karl@turbobit.com
+ *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
  * 
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
@@ -55,8 +57,8 @@ struct t_regs
   DEF_REGPAIR(BC, bc);
   DEF_REGPAIR(DE, de);
   DEF_REGPAIR(HL, hl);
-  TYPE_UWORD IX;
-  TYPE_UWORD IY;
+  DEF_REGPAIR(IX, ix);
+  DEF_REGPAIR(IY, iy);
   TYPE_UWORD SP;
   /* there are alternate AF,BC,DE,HL register sets, and a few instructions
      that swap one for the other */
@@ -65,6 +67,7 @@ struct t_regs
   DEF_REGPAIR(aBC, a_bc);
   DEF_REGPAIR(aDE, a_de);
   DEF_REGPAIR(aHL, a_hl);
+  TYPE_UBYTE iv;  /* interrupt vector, see ed 47 ld A,IV.. */
 };
 
 #define BIT_C	0x01  // carry status(out of bit 7)

@@ -45,7 +45,7 @@ Hex		Instruction		Comment (applies to Z80 only)
 17		RLA
 18 dd	      *	JR	dd
 19		ADD	HL,DE
-1A		LD	A,DE
+1A		LD	A,(DE)
 1B		DEC	DE
 1C		INC	E
 1D		DEC	E

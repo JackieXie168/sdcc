@@ -36,11 +36,62 @@
   virtual int inst_di(t_mem code);
   virtual int inst_ei(t_mem code);
 
+  virtual int inst_fd(void);
+  virtual int inst_fd_ld(t_mem code);
+  virtual int inst_fd_add(t_mem code);
+  virtual int inst_fd_push(t_mem code);
+  virtual int inst_fd_inc(t_mem code);
+  virtual int inst_fd_dec(t_mem code);
+  virtual int inst_fd_misc(t_mem code);
+
   virtual int inst_dd(void);
   virtual int inst_dd_ld(t_mem code);
   virtual int inst_dd_add(t_mem code);
   virtual int inst_dd_push(t_mem code);
   virtual int inst_dd_inc(t_mem code);
   virtual int inst_dd_dec(t_mem code);
+  virtual int inst_dd_misc(t_mem code);
+
+  virtual int inst_ed(void);
+  virtual int inst_ed_(t_mem code);
+
+  virtual int inst_cb(void);
+  virtual int inst_cb_rlc(t_mem code);
+  virtual int inst_cb_rrc(t_mem code);
+  virtual int inst_cb_rl(t_mem code);
+  virtual int inst_cb_rr(t_mem code);
+  virtual int inst_cb_sla(t_mem code);
+  virtual int inst_cb_sra(t_mem code);
+  virtual int inst_cb_slia(t_mem code);
+  virtual int inst_cb_srl(t_mem code);
+  virtual int inst_cb_bit(t_mem code);
+  virtual int inst_cb_res(t_mem code);
+  virtual int inst_cb_set(t_mem code);
+
+  virtual int inst_ddcb(void);
+  virtual int inst_ddcb_rlc(t_mem code);
+  virtual int inst_ddcb_rrc(t_mem code);
+  virtual int inst_ddcb_rl(t_mem code);
+  virtual int inst_ddcb_rr(t_mem code);
+  virtual int inst_ddcb_sla(t_mem code);
+  virtual int inst_ddcb_sra(t_mem code);
+  virtual int inst_ddcb_slia(t_mem code);
+  virtual int inst_ddcb_srl(t_mem code);
+  virtual int inst_ddcb_bit(t_mem code);
+  virtual int inst_ddcb_res(t_mem code);
+  virtual int inst_ddcb_set(t_mem code);
+
+  virtual int inst_fdcb(void);
+  virtual int inst_fdcb_rlc(t_mem code);
+  virtual int inst_fdcb_rrc(t_mem code);
+  virtual int inst_fdcb_rl(t_mem code);
+  virtual int inst_fdcb_rr(t_mem code);
+  virtual int inst_fdcb_sla(t_mem code);
+  virtual int inst_fdcb_sra(t_mem code);
+  virtual int inst_fdcb_slia(t_mem code);
+  virtual int inst_fdcb_srl(t_mem code);
+  virtual int inst_fdcb_bit(t_mem code);
+  virtual int inst_fdcb_res(t_mem code);
+  virtual int inst_fdcb_set(t_mem code);
 
 /* End of avr.src/instcl.h */
