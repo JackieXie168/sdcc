@@ -170,7 +170,7 @@ public:
   virtual class cl_brk *brk_by_nr(int nr);
   virtual class cl_brk *brk_by_nr(class brk_coll *bpcoll, int nr);
   virtual void rm_ebrk(t_addr addr, char *id);
-  virtual void rm_brk(int nr);
+  virtual bool rm_brk(int nr);
   virtual void put_breaks(void);
   virtual void remove_all_breaks(void);
   virtual int make_new_brknr(void);

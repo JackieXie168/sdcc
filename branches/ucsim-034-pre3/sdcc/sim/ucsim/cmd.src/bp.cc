@@ -191,7 +191,10 @@ COMMAND_DO_WORK_UC(cl_delete_cmd)
 	{
 	  long num;
 	  if (param->get_ivalue(&num))
-	    uc->rm_brk(num);
+	    {
+	      if (!uc->rm_brk(num))
+		con->dd_printf("Error\n");
+	    }
 	}
     }
   return(DD_FALSE);

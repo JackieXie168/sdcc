@@ -59,7 +59,7 @@ if test $enable_z80 != "no"; then
 fi,
 enable_z80="no")
 AC_ARG_ENABLE(xa,
-[  --enable-xa            compile simulator for XA],
+[  --enable-xa             compile simulator for XA],
 if test $enable_xa != "no"; then
     enable_xa="yes"
 fi,

@@ -94,8 +94,9 @@ COMMAND_DO_WORK_SIM(cl_run_cmd)
 	}
     }
   con->dd_printf("Simulation started, PC=0x%06x\n", sim->uc->PC);
-  if (sim->uc->fbrk_at(start))
+  if (sim->uc->fbrk_at(sim->uc->PC))
     sim->uc->do_inst(1);
+
   sim->start(con);
   return(DD_FALSE);
 }
@@ -127,7 +128,9 @@ COMMAND_DO_WORK_SIM(cl_stop_cmd)
 //		     class cl_cmdline *cmdline, class cl_console *con)
 COMMAND_DO_WORK_UC(cl_step_cmd)
 {
+  printf("step %x\n",uc->PC);
   uc->do_inst(1);
+  printf("step done %x\n",uc->PC);
   uc->print_regs(con);
   return(0);
 }
@@ -177,7 +180,10 @@ COMMAND_DO_WORK_SIM(cl_next_cmd)
 //	  sim->uc->fbrk->add_bp(b);
 
 	  sim->uc->fbrk->add(b);
+	  b->activate();
 	}
+      if (sim->uc->fbrk_at(sim->uc->PC))
+	sim->uc->do_inst(1);
       sim->start(con);
       //sim->uc->do_inst(-1);
     }

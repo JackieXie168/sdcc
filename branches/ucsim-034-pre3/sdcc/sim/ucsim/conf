@@ -21,6 +21,7 @@ case $TARGET in
 	--enable-dlso \
 	--enable-serio \
 	--enable-z80 \
+	--enable-xa \
 	"$@"
 	;;
     mingw)
@@ -31,6 +32,7 @@ case $TARGET in
 	--disable-dlso \
 	--disable-serio \
 	--enable-z80 \
+	--enable-xa \
 	"$@"
 	;;
 esac

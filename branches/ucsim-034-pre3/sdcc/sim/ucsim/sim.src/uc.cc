@@ -1525,15 +1525,22 @@ cl_uc::rm_ebrk(t_addr addr, char *id)
 
 /* Remove a breakpoint specified by its number */
 
-void
+bool
 cl_uc::rm_brk(int nr)
 {
   class cl_brk *bp;
 
   if ((bp= brk_by_nr(fbrk, nr)))
-    fbrk->del_bp(bp->addr);
+    {
+      fbrk->del_bp(bp->addr);
+      return(DD_TRUE);
+    }
   else if ((bp= brk_by_nr(ebrk, nr)))
-    ebrk->del_bp(ebrk->index_of(bp), 0);
+    {
+      ebrk->del_bp(ebrk->index_of(bp), 0);
+      return(DD_TRUE);
+    }
+  return(DD_FALSE);
 }
 
 void
@@ -1573,41 +1580,6 @@ cl_uc::mk_ebrk(enum brk_perm perm, class cl_mem *mem,
   op= toupper(op);
 
   b= new cl_ev_brk(mem, make_new_brknr(), addr, perm, hit, op);
-  /*switch (mem->type)
-    {
-    case MEM_ROM:
-      if (op == 'R')
-	b= new cl_rc_brk(mem, make_new_brknr(), addr, perm, hit);
-      else
-	return(0);
-      break;
-    case MEM_IRAM:
-      if (op == 'R')
-	b= new cl_ri_brk(mem, make_new_brknr(), addr, perm, hit);
-      else if (op == 'W')
-	b= new cl_wi_brk(mem, make_new_brknr(), addr, perm, hit);
-      else
-	return(0);
-      break;
-    case MEM_XRAM:
-      if (op == 'R')
-	b= new cl_rx_brk(mem, make_new_brknr(), addr, perm, hit);
-      else if (op == 'W')
-	b= new cl_wx_brk(mem, make_new_brknr(), addr, perm, hit);
-      else
-	return(0);
-      break;
-    case MEM_SFR:
-      if (op == 'R')
-	b= new cl_rs_brk(mem, make_new_brknr(), addr, perm, hit);
-      else if (op == 'W')
-	b= new cl_ws_brk(mem, make_new_brknr(), addr, perm, hit);
-      else
-	return(0);
-      break;
-    default:
-      return(0);
-      }*/
   b->init();
   return(b);
 }
