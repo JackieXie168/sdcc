@@ -58,7 +58,7 @@ void _printTStates(void);
 
 /** Set to one to print more messages about expected values etc. 
  */
-#define DEBUG	0
+#define DEBUG	1
 
 #if DEBUG
 #define DPRINTF(_a)  printf _a
@@ -128,7 +128,7 @@ int main(void)
     /* overflow may occur for this array element.                   */
 
     /* 32766 is the highest value for a 16 bitter */
-    Number_Of_Runs = 10000;
+    Number_Of_Runs = 10;
 
     runTime = clock();
 

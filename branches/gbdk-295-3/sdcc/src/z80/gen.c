@@ -1035,7 +1035,9 @@ static char *aopGet(asmop *aop, int offset, bool bit16)
 	    tsprintf(s, "!*hl");
 	}
 	else {
-	    tsprintf(s,"!*ixx", aop->aopu.aop_stk+offset);
+	    if (aop->aopu.aop_stk >= 0)
+		offset += _G.stack.param_offset;
+	    tsprintf(s,"!*ixx ; x", aop->aopu.aop_stk+offset);
 	}
 	ALLOC_ATOMIC(rs,strlen(s)+1);
 	strcpy(rs,s);   
@@ -1171,6 +1173,8 @@ static void aopPut (asmop *aop, const char *s, int offset)
 		emit2("ld !*hl,%s", s);
 	}
 	else {
+	    if (aop->aopu.aop_stk >= 0)
+		offset += _G.stack.param_offset;
 	    if (!canAssignToPtr(s)) {
 		emit2("ld a,%s", s);
 		emit2("ld !*ixx,a", aop->aopu.aop_stk+offset);

@@ -3,12 +3,16 @@
 PROC = z80
 PORT = consolez80
 
-CC = /home/michaelh/projects/gbdk-support/lcc/lcc
+TOPDIR = ../../..
+CC = $(TOPDIR)/bin/sdcc
+
+LIB = /home/michaelh/projects/gbdk-lib
+
 # -DNOENUM is here to make the results more predictable
-CFLAGS = -Wl-m -mz80/consolez80 -Wf--dumpall -v --prefix=/home/michaelh/projects/gbdk-current/
+CFLAGS = -mz80 -v -I$(LIB)/include
 CFLAGS += -DREG= -DNOSTRUCTASSIGN -DNOENUM
-LIBDIR = /home/michaelh/projects/gbdk-lib/build/
-LD = link-$(PROC)
+LIBDIR = /home/michaelh/projects/gbdk-lib/build/small/asxxxx
+LD = $(TOPDIR)/bin/link-$(PROC)
 LDFLAGS = -v
 AS = as-$(PROC)
 
@@ -17,7 +21,7 @@ OBJ = dhry.o
 all: dhry
 
 dhry: dhry.s $(OBJ)
-	-$(CC) $(CFLAGS) -o dhry.gb dhry.o
+	$(LD) -n -- -i dhry.ihx -m -b_DATA=0x8000 -b_CODE=0x200 -k$(LIBDIR)/consolez80/ -lconsolez80.lib -k$(LIBDIR)/z80/ -lz80.lib $(LIBDIR)/consolez80/crt0.o $(OBJ)
 	cat dhry.ihx | ../../makebin/makebin  > dhry.rom
 
 dhry.s: dhry.c

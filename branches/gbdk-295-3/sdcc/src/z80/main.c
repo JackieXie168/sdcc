@@ -260,7 +260,7 @@ static const char *_z80_linkCmd[] = {
 };
 
 static const char *_z80_asmCmd[] = {
-    "as-z80", "-plosgff", "$1.asm", NULL
+    "as-z80", "-plosgff", "$1.o", "$1.asm", NULL
 };
 
 /** $1 is always the basename.
