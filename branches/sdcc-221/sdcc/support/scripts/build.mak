@@ -93,7 +93,7 @@ sdcc-misc: sdcc/sdccconf.h
 
 sdcc-doc:
 	(cd sdcc; tar cf - doc) | (cd $(BUILD); tar xf -)
-	cp sdcc/README sdcc/COPYING $(BUILD)
+	cp sdcc/README sdcc/COPYING sdcc/ChangeLog $(BUILD)
 	mkdir -p $(BUILD)/sim
 	for i in COPYING INSTALL README TODO; \
 	do cp sdcc/sim/ucsim/$$i $(BUILD)/sim; done
