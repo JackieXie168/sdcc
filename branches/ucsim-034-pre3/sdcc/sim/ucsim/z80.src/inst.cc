@@ -568,25 +568,21 @@ cl_z80::inst_jr(t_mem code)
     case 0x20: // JR NZ,dd
       if (!(regs.F & BIT_Z)) {
         PC += j;
-      } else {
       }
     break;
     case 0x28: // JR Z,dd
       if ((regs.F & BIT_Z)) {
         PC += j;
-      } else {
       }
     break;
     case 0x30: // JR NC,dd
       if (!(regs.F & BIT_C)) {
         PC += j;
-      } else {
       }
     break;
     case 0x38: // JR C,dd
       if ((regs.F & BIT_C)) {
         PC += j;
-      } else {
       }
     break;
   }
@@ -871,6 +867,12 @@ cl_z80::inst_cp(t_mem code)
     case 0xBF: // CP A
       cp_bytereg(regs.A);
     break;
+    case 0xFE: // CP nn
+      { unsigned char utmp;
+        utmp = fetch();
+        cp_bytereg(utmp);
+      }
+    break;
   }
   return(resGO);
 }
@@ -887,7 +889,7 @@ cl_z80::inst_rst(t_mem code)
       //PC = 0x08;
       switch (regs.A) {
         case 0:
-          //exit(0);
+          /* exit(0); */
         break;
 
         case 1:
@@ -1172,7 +1174,7 @@ cl_z80::inst_jp(t_mem code)
       }
     break;
     case 0xE9: // JP (HL)
-      PC = get2(regs.HL);
+      PC = regs.HL;
     break;
   }
   return(resGO);

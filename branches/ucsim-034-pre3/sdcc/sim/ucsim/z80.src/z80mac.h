@@ -205,11 +205,11 @@
 
 #define sbc_HL_wordreg(reg) { \
     unsigned int tmp; \
-      tmp = (unsigned short)regs.A - (unsigned short)(reg); \
+      tmp = (unsigned int)regs.HL - (unsigned int)(reg); \
       if (regs.F & BIT_C) --tmp; \
       regs.F &= ~(BIT_ALL);  /* clear these */ \
       regs.HL = (unsigned short) tmp; \
-      if (tmp > 0xff) regs.F |= BIT_C; \
+      if (tmp > 0xffff) regs.F |= BIT_C; \
       if (regs.HL == 0) regs.F |= BIT_Z; \
       if (regs.HL & 0x8000) regs.F |= BIT_S; \
       regs.F |= BIT_N; \
@@ -250,7 +250,7 @@
 #define inc(var) /* 8-bit increment */ { var++; \
    regs.F &= ~(BIT_N |BIT_P |BIT_A |BIT_Z |BIT_S);  /* clear these */ \
    if (var == 0) regs.F |= BIT_Z; \
-   if (var == 0x80) regs.F |= BIT_S; \
+   if (var & 0x80) regs.F |= BIT_S; \
    if ((var & 0x0f) == 0) regs.A |= BIT_A; \
    }
 
@@ -259,7 +259,7 @@
  regs.F &= ~(BIT_N |BIT_P |BIT_A |BIT_Z |BIT_S);  /* clear these */ \
  regs.F |= BIT_N;  /* Not add */ \
  if (var == 0) regs.F |= BIT_Z; \
- if (var == 0x80) regs.F |= BIT_S; \
+ if (var & 0x80) regs.F |= BIT_S; \
  if ((var & 0x0f) == 0) regs.A |= BIT_A; \
  }
 
