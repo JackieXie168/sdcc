@@ -1,0 +1,8 @@
+ifeq ($(TARGETCC),)
+  TARGETCC = $(TOOLSPREFIX)gcc
+endif
+ifeq ($(TARGETCXX),)
+  TARGETCXX = $(TOOLSPREFIX)g++
+endif
+TARGETRANLIB = $(TOOLSPREFIX)ranlib
+TARGETSTRIP = $(TOOLSPREFIX)strip
