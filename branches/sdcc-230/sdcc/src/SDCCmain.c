@@ -319,6 +319,7 @@ printVersionInfo ()
 #ifdef SDCC_SUB_VERSION_STR
 	   "/" SDCC_SUB_VERSION_STR
 #endif
+	   " (" __DATE__ ")"
 #ifdef __CYGWIN__
 	   " (CYGWIN)\n"
 #else
