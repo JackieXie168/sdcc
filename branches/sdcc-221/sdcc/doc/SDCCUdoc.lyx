@@ -1,5 +1,4 @@
-#This file was created by <sandeep> Sun Mar 26 12:40:23 2000
-#LyX 1.0 (C) 1995-1999 Matthias Ettrich and the LyX Team
+#LyX 1.1 created this file. For more info see http://www.lyx.org/
 \lyxformat 2.15
 \textclass linuxdoc
 \language english
@@ -75,7 +74,7 @@ inline assembler code
  to use other simulators.
  The latest version can be downloaded from 
 \series bold 
-http://www.geocities.com/ResearchTriangle/Forum/1353
+http://sdcc.sourceforge.net/
 \layout Standard
 
 All packages used in this compiler system are 
@@ -122,7 +121,7 @@ What you need before you start installation of SDCC ? A C Compiler, not
  GCC is free , and is available for almost all major platforms, if you are
  using 
 \emph on 
-linux
+Linux
 \emph default 
  you probably already have it, if you are using 
 \emph on 
@@ -11752,14 +11751,86 @@ As always, the code is the authoritave reference - see z80/ralloc.c and z80/gen.
  IY is currently unusued.
  Return values are stored in HL.
  One bad side effect of using IX as the base pointer is that a functions
- stack frame is limited to 127 bytes - this will be fixed in a later version.bc
+ stack frame is limited to 127 bytes - this will be fixed in a later version.
+\layout Subsection
+
+Options
+\layout Itemize
+
+-m[processor] Sets the processor to generate code for.
+ Supported are mcs51 (default), z80, and gbz80.
+ The gbz80 is the z80 derrivitave found in the Nintendo Gameboy - see http://gbd
+k.sourceforge.net/ and http://www.devrs.com/ for more information.
+ It is recommended that the processor type be set first before any other
+ options.
+\layout Itemize
+
+--asm=[asm] Sets the assembler and linker to use for gbz80 mode.
+ Currently supported values for [asm] are asxxx, rgbds, and isas.
+ The default is asxxxx.
+ rgbds is available seperatly from http://www.otakunozoku.com/ and is fully
+ supported in 2.2.1, including the linker.
+ ISAS is the Intelligent Systems Assembler, a commercial package and is
+ not fully tested.
+ The asxxxx is not supported directly from sdcc due to the different ways
+ that the z80 and mcs51 linkers handle their arguments.
+ It is recommended that the lcc frontend be used instead.
+\layout Subsubsection
+
+Extensions
+\layout Itemize
+
+#paragma bank=[str] Changes the bank that code is generated into for the
+ gbz80 port.
+ [str] may be one of HOME, CODE, a number, or an assembler specific directive.
+ If a number is given then the code will be put into the given bank in an
+ assembler independent way.
+\layout Itemize
+
+The banked attribute.
+ sdcc supports inter-bank calls through the 'banked' attribute.
+ For example,
+\layout Code
+
+void silly(void) banked
+\layout Code
+
+{
+\layout Code
+
+...
+\layout Code
+
+}
+\layout Code
+
+will generate a banked function that can be called from any other bank.
+ The system library must implement 'banked_call' and 'banked_ret' appropriatly.
+ 
+\protected_separator 
+Currently indirect banked calls and hence pointers to banked functions are
+ not suported.
+\layout Subsubsection
+
+Interfacing with assembler
 \layout Standard
 
-9
+Check z80/ralloc.c and z80/gen.c to confirm the details below.
+ They were current as at 2.2.1.
+\layout Standard
+
+The z80 and gbz80 generators use almost the same call stack.
+ On the z80 IX, DE and BC must be preserved by the called function.
+ On the gbz80 only BC needs to be preserved.
+ The argument stack begins at SP+2, ie just above the return address.
+ For a banked call the return address is six bytes long.
+ Arguments are pushed right to left which, as the z80 stack grows down,
+ means that left to right increases in absolute address.
+ There is no packing performed while pushing, so a BYTE pushes as a BYTE.
 \layout Standard
 
 
-\begin_inset LatexCommand \index
+\begin_inset LatexCommand \index{}
 
 \end_inset 
 
