@@ -42,6 +42,12 @@ srcdir          = @srcdir@
 
 OBJECTS_SHARED	= glob.o \
 		  inst.o \
+		  inst_cb.o \
+		  inst_dd.o \
+		  inst_ed.o \
+		  inst_fd.o \
+		  inst_ddcb.o \
+		  inst_fdcb.o \
 		  simz80.o z80.o
 OBJECTS_EXE	= sz80.o
 OBJECTS		= $(OBJECTS_SHARED) $(OBJECTS_EXE)
