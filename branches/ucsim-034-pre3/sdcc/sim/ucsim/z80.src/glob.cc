@@ -57,7 +57,7 @@ struct dis_entry disass_z80[]= {
 
   { 0x0010, 0x00ff, 'R', 2, "DJNZ %d" },
   { 0x0011, 0x00ff, ' ', 3, "LD DE,%w" },
-  { 0x0012, 0x00ff, ' ', 1, "LD DE,A" },
+  { 0x0012, 0x00ff, ' ', 1, "LD (DE),A" },
   { 0x0013, 0x00ff, ' ', 1, "INC DE" },
   { 0x0014, 0x00ff, ' ', 1, "INC D" },
   { 0x0015, 0x00ff, ' ', 1, "DEC D" },

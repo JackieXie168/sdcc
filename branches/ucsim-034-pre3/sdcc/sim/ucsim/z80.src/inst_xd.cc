@@ -246,8 +246,11 @@ cl_z80::inst_Xd_inc(t_mem code)
     case 0x34: // INC (IX+dd)
       {
         t_addr addr;
+        unsigned char tmp;
         addr = add_u16_disp(regs_IX_OR_IY,fetch());
-        store1(addr, (unsigned short)(get1(addr)+1) );
+        tmp = get1(addr);
+        inc(tmp);
+        store1(addr, tmp);
       }
     break;
     default:
@@ -273,8 +276,11 @@ cl_z80::inst_Xd_dec(t_mem code)
     case 0x35: // DEC (IX+dd)
       {
         t_addr addr;
+        unsigned char tmp;
         addr = add_u16_disp(regs_IX_OR_IY,fetch());
-        store1(addr, (unsigned short) (get1(addr)-1) );
+        tmp = get1(addr);
+        dec(tmp);
+        store1(addr, tmp);
       }
     break;
     default:
@@ -501,14 +507,13 @@ cl_z80::inst_Xd(void)
         regs.SP+=2;
       return(resGO);
 
-/* fixme: following doesn't seem right.... */
       case 0xE3: // EX (SP),IX
         {
           TYPE_UWORD tempw;
 
           tempw = regs_IX_OR_IY;
-          regs_IX_OR_IY = get1(regs.SP);
-          store1(regs.SP, tempw);
+          regs_IX_OR_IY = get2(regs.SP);
+          store2(regs.SP, tempw);
         }
       return(resGO);
 

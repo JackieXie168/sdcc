@@ -1210,7 +1210,10 @@ cl_z80::inst_sub(t_mem code)
       sub_A_bytereg(regs.hl.l);
     break;
     case 0x96: // SUB (HL)
-      regs.A -= (get1(regs.HL)); /* fixme: flags ? */
+      { unsigned char tmp1;
+        tmp1 = get1(regs.HL);
+        sub_A_bytereg(tmp1);
+      }
     break;
     case 0x97: // SUB A
       regs.A = 0;
