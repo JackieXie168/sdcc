@@ -257,7 +257,7 @@ struct dis_entry disass_z80[]= {
   { 0x00c1, 0x00ff, ' ', 1, "pop bc" },
   { 0x00c2, 0x00ff, 'A', 3, "jp nz, %w" },
   { 0x00c3, 0x00ff, 'A', 3, "jp %w" },
-  { 0x00c4, 0x00ff, 'A', 3, "call nz,%w" },
+  { 0x00c4, 0x00ff, 'l', 3, "call nz,%w" },
   { 0x00c5, 0x00ff, ' ', 1, "push bc" },
   { 0x00c6, 0x00ff, ' ', 2, "add a,%b" },
   { 0x00c7, 0x00ff, ' ', 1, "rst 0" },
@@ -266,8 +266,8 @@ struct dis_entry disass_z80[]= {
   { 0x00c9, 0x00ff, ' ', 1, "ret" },
   { 0x00ca, 0x00ff, 'A', 3, "jp z,%w" },
   { 0x00cb, 0x00ff, ' ', 2, "?cb?" }, /* ESC code to lots of op-codes, all 2-byte */
-  { 0x00cc, 0x00ff, 'A', 3, "call z,%w" },
-  { 0x00cd, 0x00ff, 'A', 3, "call %w" },
+  { 0x00cc, 0x00ff, 'l', 3, "call z,%w" },
+  { 0x00cd, 0x00ff, 'l', 3, "call %w" },
   { 0x00ce, 0x00ff, ' ', 2, "adc A,%b" },
   { 0x00cf, 0x00ff, ' ', 1, "rst 8" },
 
@@ -275,7 +275,7 @@ struct dis_entry disass_z80[]= {
   { 0x00d1, 0x00ff, ' ', 1, "pop de" },
   { 0x00d2, 0x00ff, 'A', 3, "jp nc,%w" },
   { 0x00d3, 0x00ff, ' ', 2, "out (%b),a" },
-  { 0x00d4, 0x00ff, 'A', 3, "call nc,%w" },
+  { 0x00d4, 0x00ff, 'l', 3, "call nc,%w" },
   { 0x00d5, 0x00ff, ' ', 1, "push de" },
   { 0x00d6, 0x00ff, ' ', 2, "sub %b" },
   { 0x00d7, 0x00ff, ' ', 1, "rst 10H" },
@@ -284,8 +284,9 @@ struct dis_entry disass_z80[]= {
   { 0x00d9, 0x00ff, ' ', 1, "exx" },
   { 0x00da, 0x00ff, 'A', 3, "jp c,%w" },
   { 0x00db, 0x00ff, ' ', 2, "in a,(%b)" },
-  { 0x00dc, 0x00ff, 'A', 3, "call c,%w" },
-  { 0x00dd, 0x00ff, ' ', 2, "?dd?" },  /* ESC codes,about 284, vary lengths, IX centric */
+  { 0x00dc, 0x00ff, 'l', 3, "call c,%w" },
+
+  { 0x00dd, 0x00ff, ' ', 2, "?dd?" },  /* 0xdd - ESC codes,about 284, vary lengths, IX centric */
   { 0x00de, 0x00ff, ' ', 2, "sbc a,%b" },
   { 0x00df, 0x00ff, ' ', 1, "rst 18H" },
 
@@ -293,7 +294,7 @@ struct dis_entry disass_z80[]= {
   { 0x00e1, 0x00ff, ' ', 1, "pop hl" },
   { 0x00e2, 0x00ff, 'A', 3, "jp po,%w" },
   { 0x00e3, 0x00ff, ' ', 1, "ex (sp),hl" },
-  { 0x00e4, 0x00ff, 'A', 3, "call po,%w" },
+  { 0x00e4, 0x00ff, 'l', 3, "call po,%w" },
   { 0x00e5, 0x00ff, ' ', 1, "push hl" },
   { 0x00e6, 0x00ff, ' ', 2, "and %b" },
   { 0x00e7, 0x00ff, ' ', 1, "rst 20H" },
@@ -302,7 +303,7 @@ struct dis_entry disass_z80[]= {
   { 0x00e9, 0x00ff, 'A', 1, "jp (hl)" },
   { 0x00ea, 0x00ff, 'A', 3, "jp pe,%w" },
   { 0x00eb, 0x00ff, ' ', 1, "ex de,hl" },
-  { 0x00ec, 0x00ff, ' ', 3, "call pe, %w" },
+  { 0x00ec, 0x00ff, 'l', 3, "call pe, %w" },
   { 0x00ed, 0x00ff, ' ', 2, "?ed?" },  /* ESC code to about 80 opcodes of various lengths */
   { 0x00ee, 0x00ff, ' ', 2, "xor %b" },
   { 0x00ef, 0x00ff, ' ', 1, "rst 28H" },
@@ -311,7 +312,7 @@ struct dis_entry disass_z80[]= {
   { 0x00f1, 0x00ff, ' ', 1, "pop af" },
   { 0x00f2, 0x00ff, 'A', 3, "jp p,%w" },
   { 0x00f3, 0x00ff, ' ', 1, "di" },
-  { 0x00f4, 0x00ff, 'A', 3, "call p,%w" },
+  { 0x00f4, 0x00ff, 'l', 3, "call p,%w" },
   { 0x00f5, 0x00ff, ' ', 1, "push af" },
   { 0x00f6, 0x00ff, ' ', 2, "or %b" },
   { 0x00f7, 0x00ff, ' ', 1, "rst 30H" },
@@ -320,7 +321,7 @@ struct dis_entry disass_z80[]= {
   { 0x00f9, 0x00ff, ' ', 1, "ld sp,hl" },
   { 0x00fa, 0x00ff, ' ', 3, "jp m,%w" },
   { 0x00fb, 0x00ff, ' ', 1, "ei" },
-  { 0x00fc, 0x00ff, 'A', 3, "call m,%w" },
+  { 0x00fc, 0x00ff, 'l', 3, "call m,%w" },
   { 0x00fd, 0x00ff, ' ', 1, "?fd?" }, /* ESC codes,about 284, vary lengths, IY centric */
   { 0x00fe, 0x00ff, ' ', 2, "cp %b" },
   { 0x00ff, 0x00ff, ' ', 1, "rst 38H" },

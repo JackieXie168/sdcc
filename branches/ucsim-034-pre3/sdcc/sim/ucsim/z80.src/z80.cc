@@ -708,14 +708,13 @@ cl_z80::disass(t_addr addr, char *sep)
 
   p= work;
   
-  code= get_mem(MEM_ROM, addr) & 0xff;
-#if 0
+  code= get_mem(MEM_ROM, addr);
+
   i= 0;
   while ((code & dis_tbl()[i].mask) != dis_tbl()[i].code &&
-	 dis_tbl()[i].mnemonic)
+         dis_tbl()[i].mnemonic)
     i++;
-#endif
-  i = code;
+
   if (dis_tbl()[i].mnemonic == NULL)
     {
       buf= (char*)malloc(30);
@@ -724,7 +723,7 @@ cl_z80::disass(t_addr addr, char *sep)
     }
   b= dis_tbl()[i].mnemonic;
   if (*b== '?') {
-    switch(i) {
+    switch(dis_tbl()[i].code) {
       case 0xcb:  /* ESC code to lots of op-codes, all 2-byte */
         buf= (char*)malloc(60);
         i = our_dis_z80(buf, (uint32) addr);

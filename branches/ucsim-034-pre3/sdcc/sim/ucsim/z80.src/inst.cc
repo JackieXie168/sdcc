@@ -31,6 +31,13 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "z80cl.h"
 #include "regsz80.h"
 
+// shift positions
+#define BITPOS_C 0  // 1
+#define BITPOS_P 2  // 4H
+#define BITPOS_A 4  // 10H
+#define BITPOS_Z 6  // 40H
+#define BITPOS_S 7  // 80H
+
 #define store2(addr, val) { ram->set((t_addr) (addr), val & 0xff); \
                             ram->set((t_addr) (addr+1), (val >> 8) & 0xff); }
 #define store1(addr, val) ram->set((t_addr) (addr), val)
@@ -42,6 +49,16 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define push1(val) {regs.SP-=1; store1(regs.SP,(val));}
 #define pop2(var) {var=get2(regs.SP),regs.SP+=2;}
 //#define pop1(var) {var=get1(regs.SP),regs.SP+=1;}
+
+#define sub_A_bytereg(br) { \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      if (regs.A < br) regs.F |= BIT_C; \
+      regs.A -= (br); \
+      regs.F |= BIT_N; /* not addition */ \
+      if (regs.A == 0) regs.F |= BIT_Z; \
+      if (regs.A & 0x80) regs.F |= BIT_S; \
+      /* Skip BIT_A for now */ \
+  }
 
 /*
  * No Instruction
@@ -321,42 +338,53 @@ cl_z80::inst_ld(t_mem code)
 int
 cl_z80::inst_inc(t_mem code)
 {
+
+#define inc(var) /* 8-bit increment */ { var++; \
+   regs.F &= ~(BIT_N |BIT_P |BIT_A |BIT_Z |BIT_S);  /* clear these */ \
+   if (var == 0) regs.F |= BIT_Z; \
+   if (var == 0x80) regs.F |= BIT_S; \
+   if ((var & 0x0f) == 0) regs.A |= BIT_A; \
+   }
+
   switch(code) {
     case 0x03: // INC BC
       ++regs.BC;
     break;
     case 0x04: // INC B
-      ++regs.bc.h;
+      inc(regs.bc.h);
     break;
     case 0x0C: // INC C
-      ++regs.bc.l;
+      inc(regs.bc.l);
     break;
     case 0x13: // INC DE
       ++regs.DE;
     break;
     case 0x14: // INC D
-      ++regs.de.h;
+      inc(regs.de.h);
     break;
     case 0x1C: // INC E
-      ++regs.de.l;
+      inc(regs.de.l);
     break;
     case 0x23: // INC HL
       ++regs.HL;
     break;
     case 0x24: // INC H
-      ++regs.hl.h;
+      inc(regs.hl.h);
     break;
     case 0x2C: // INC L
-      ++regs.hl.l;
+      inc(regs.hl.l);
     break;
     case 0x33: // INC SP
       ++regs.SP;
     break;
     case 0x34: // INC (HL)
-      store1(regs.HL, get1(regs.HL)+1);
+      {unsigned char t=get1(regs.HL);
+         inc(t);
+         store1(regs.HL, t);
+      }
     break;
     case 0x3C: // INC A
-      ++regs.A;
+      inc(regs.A);
     break;
   }
   return(resGO);
@@ -365,42 +393,56 @@ cl_z80::inst_inc(t_mem code)
 int
 cl_z80::inst_dec(t_mem code)
 {
+
+#define dec(var)  { \
+ --var; \
+ regs.F &= ~(BIT_N |BIT_P |BIT_A |BIT_Z |BIT_S);  /* clear these */ \
+ regs.F |= BIT_N;  /* Not add */ \
+ if (var == 0) regs.F |= BIT_Z; \
+ if (var == 0x80) regs.F |= BIT_S; \
+ if ((var & 0x0f) == 0) regs.A |= BIT_A; \
+ }
+
   switch(code) {
     case 0x05: // DEC B
-      --regs.bc.h;
+      dec(regs.bc.h);
     break;
     case 0x0B: // DEC BC
       --regs.BC;
     break;
     case 0x0D: // DEC C
-      --regs.bc.l;
+      dec(regs.bc.l);
     break;
     case 0x15: // DEC D
-      --regs.de.h;
+      dec(regs.de.h);
     break;
     case 0x1B: // DEC DE
       --regs.DE;
     break;
     case 0x1D: // DEC E
-      --regs.de.l;
+      dec(regs.de.l);
     break;
     case 0x25: // DEC H
-      --regs.hl.h;
+      dec(regs.hl.h);
     break;
     case 0x2B: // DEC HL
       --regs.HL;
     break;
     case 0x2D: // DEC L
-      --regs.hl.l;
+      dec(regs.hl.l);
     break;
     case 0x35: // DEC (HL)
-      store1(regs.HL, get1(regs.HL)-1);
+      //store1(regs.HL, get1(regs.HL)-1);
+      {unsigned char t=get1(regs.HL);
+         dec(t);
+         store1(regs.HL, t);
+      }
     break;
     case 0x3B: // DEC SP
       --regs.SP;
     break;
     case 0x3D: // DEC A
-      --regs.A;
+      dec(regs.A);
     break;
   }
   return(resGO);
@@ -409,63 +451,143 @@ cl_z80::inst_dec(t_mem code)
 int
 cl_z80::inst_rlca(t_mem code)
 {
+  regs.F &= ~(BIT_C | BIT_A | BIT_N);  /* clear these */
+  if (regs.F & BIT_C) {
+    if (regs.A & 0x80)
+      regs.F |= BIT_C;
+    regs.A = (regs.A << 1) | 1;
+
+  } else {
+    if (regs.A & 0x80)
+      regs.F |= BIT_C;
+    regs.A <<= 1;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_rrca(t_mem code)
 {
+  regs.F &= ~(BIT_C | BIT_A | BIT_N);  /* clear these */
+  if (regs.F & BIT_C) {
+    if (regs.A & 0x01)
+      regs.F |= BIT_C;
+    regs.A = (regs.A >> 1) | 1;
+
+  } else {
+    if (regs.A & 0x01)
+      regs.F |= BIT_C;
+    regs.A >>= 1;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_ex(t_mem code)
 {
+  /* 0x08 // EX AF,AF' */
+  unsigned char tmp;
+  TYPE_UWORD tempw;
+
+  switch (code) {
+    case 0x08: // EX AF,AF'
+      tmp = regs.aA;
+      regs.aA = regs.A;
+      regs.A = tmp;
+
+      tmp = regs.aF;
+      regs.aF = regs.F;
+      regs.F = tmp;
+    break;
+
+    case 0xE3: // EX (SP),HL
+      tempw = regs.HL;
+      regs.HL = get2(regs.SP);
+      store2(regs.SP, tempw);
+    break;
+
+    case 0xEB: // EX DE,HL
+      tempw = regs.DE;
+      regs.DE = regs.HL;
+      regs.HL = tempw;
+    break;
+  }
+
   return(resGO);
 }
 
 int
 cl_z80::inst_add(t_mem code)
 {
+#define add_HL_Word(wr) { \
+      unsigned int tmp; \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      tmp = (unsigned int)regs.HL + (unsigned int)(wr); \
+      if (tmp > 0xffff) regs.F |= BIT_C; \
+      regs.HL = (unsigned short) tmp; }
+
   switch(code) {
     case 0x09: // ADD HL,BC
-      regs.HL += regs.BC;
+      add_HL_Word(regs.BC);
     break;
     case 0x19: // ADD HL,DE
-      regs.HL += regs.DE;
+      add_HL_Word(regs.DE);
     break;
     case 0x29: // ADD HL,HL
-      regs.HL += regs.HL;
+      add_HL_Word(regs.HL);
     break;
     case 0x39: // ADD HL,SP
-      regs.HL += regs.SP;
+      add_HL_Word(regs.SP);
     break;
+
+#define add_A_bytereg(br) { \
+    unsigned int tmp; \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      tmp = (unsigned short)regs.A + (unsigned short)(br); \
+      regs.A = (unsigned short) tmp; \
+      /* C Z S A */ \
+      if (tmp > 0xff) regs.F |= BIT_C; \
+      if (regs.A == 0) regs.F |= BIT_Z; \
+      if (regs.A & 0x80) regs.F |= BIT_S; \
+      /* Skip BIT_A for now */ \
+  }
+
     case 0x80: // ADD A,B
-      regs.A += regs.bc.h;
+      add_A_bytereg(regs.bc.h);
     break;
     case 0x81: // ADD A,C
-      regs.A += regs.bc.l;
+      add_A_bytereg(regs.bc.l);
     break;
     case 0x82: // ADD A,D
-      regs.A += regs.de.h;
+      add_A_bytereg(regs.de.h);
     break;
     case 0x83: // ADD A,E
-      regs.A += regs.de.l;
+      add_A_bytereg(regs.de.l);
     break;
     case 0x84: // ADD A,H
-      regs.A += regs.hl.h;
+      add_A_bytereg(regs.hl.h);
     break;
     case 0x85: // ADD A,L
-      regs.A += regs.hl.l;
+      add_A_bytereg(regs.hl.l);
     break;
+
     case 0x86: // ADD A,(HL)
-      regs.A += get1(regs.HL);
+      { unsigned char utmp;
+        utmp = get1(regs.HL);
+        add_A_bytereg(utmp);
+      }
     break;
+
     case 0x87: // ADD A,A
-      regs.A += regs.A;
+      add_A_bytereg(regs.A);
     break;
+
     case 0xC6: // ADD A,nn
-      regs.A += fetch();
+      {
+        unsigned char utmp1;
+        utmp1 = fetch();
+        add_A_bytereg(utmp1);
+      }
     break;
   }
 
@@ -490,12 +612,18 @@ cl_z80::inst_djnz(t_mem code)
 int
 cl_z80::inst_rra(t_mem code)
 {
+  regs.F &= ~(BIT_C | BIT_A | BIT_N);  /* clear these */
+  if (regs.A & 0x01) regs.F |= BIT_C;
+  regs.A >>= 1;
   return(resGO);
 }
 
 int
 cl_z80::inst_rla(t_mem code)
 {
+  regs.F &= ~(BIT_C | BIT_A | BIT_N);  /* clear these */
+  if (regs.A & 0x80) regs.F |= BIT_C;
+  regs.A <<= 1;
   return(resGO);
 }
 
@@ -540,72 +668,358 @@ cl_z80::inst_jr(t_mem code)
 int
 cl_z80::inst_daa(t_mem code)
 {
+  /************* from MH's z80ops.c:
+      unsigned char incr=0, carry=cy;
+      if((f&0x10) || (a&0x0f)>9) incr=6;
+      if((f&1) || (a>>4)>9) incr|=0x60;
+      if(f&2)suba(incr,0);
+      else {
+         if(a>0x90 && (a&15)>9)incr|=0x60;
+         adda(incr,0);
+      }
+      f=((f|carry)&0xfb);
+   ********/
+  /* I have not tried to understand this archaic bit of BCD logic(kpb),
+     taking the lazy way out for now and just transcribing MH's code.
+   */
+  unsigned char incr;
+  if ((regs.F & BIT_A) || ((regs.A & 0x0f) > 9))
+       incr = 6;
+  else incr = 0;
+
+  if ((regs.F & BIT_C) || ((regs.A & 0xf0) > 0x90))
+    incr |= 0x60;
+
+  if (regs.F & BIT_N) {  /* not addition */
+    sub_A_bytereg(incr);
+  } else {
+     if ((regs.A > 0x90) && ((regs.A & 0x0f) >9)) incr |= 0x60;
+     add_A_bytereg(incr);
+  }
+
   return(resGO);
 }
 
 int
 cl_z80::inst_cpl(t_mem code)
 {
+  regs.F |= (BIT_A | BIT_N);
+  regs.A = ~regs.A;
   return(resGO);
 }
 
 int
 cl_z80::inst_scf(t_mem code)
 {
+  /* Set Carry Flag */
+  regs.F |= BIT_C;
   return(resGO);
 }
 
 int
 cl_z80::inst_ccf(t_mem code)
 {
+  /* Clear Carry Flag */
+  regs.F &= ~BIT_C;
   return(resGO);
 }
 
 int
 cl_z80::inst_halt(t_mem code)
 {
-  return(resGO);
+  return(resHALT);
 }
 
 int
 cl_z80::inst_adc(t_mem code)
 {
+#define adc_A_bytereg(br) { \
+    unsigned int tmp; \
+      tmp = (unsigned short)regs.A + (unsigned short)(br); \
+      if (regs.F & BIT_C) ++tmp; \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      regs.A = (unsigned short) tmp; \
+      if (tmp > 0xff) regs.F |= BIT_C; \
+      if (regs.A == 0) regs.F |= BIT_Z; \
+      if (regs.A & 0x80) regs.F |= BIT_S; \
+      /* Skip BIT_A for now */ \
+  }
+  switch(code) {
+    case 0x88: // ADC A,B
+      adc_A_bytereg(regs.bc.h);
+    break;
+    case 0x89: // ADC A,C
+      adc_A_bytereg(regs.bc.l);
+    break;
+    case 0x8A: // ADC A,D
+      adc_A_bytereg(regs.de.h);
+    break;
+    case 0x8B: // ADC A,E
+      adc_A_bytereg(regs.de.l);
+    break;
+    case 0x8C: // ADC A,H
+      adc_A_bytereg(regs.hl.h);
+    break;
+    case 0x8D: // ADC A,L
+      adc_A_bytereg(regs.hl.l);
+    break;
+    case 0x8E: // ADC A,(HL)
+      { unsigned char utmp;
+        utmp = get1(regs.HL);
+        adc_A_bytereg(utmp);
+      }
+    break;
+    case 0x8F: // ADC A,A
+      adc_A_bytereg(regs.A);
+    break;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_sbc(t_mem code)
 {
+#define sbc_A_bytereg(br) { \
+    unsigned int tmp; \
+      tmp = (unsigned short)regs.A - (unsigned short)(br); \
+      if (regs.F & BIT_C) --tmp; \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      regs.A = (unsigned short) tmp; \
+      if (tmp > 0xff) regs.F |= BIT_C; \
+      if (regs.A == 0) regs.F |= BIT_Z; \
+      if (regs.A & 0x80) regs.F |= BIT_S; \
+      /* Skip BIT_A for now */ \
+  }
+  switch(code) {
+    case 0x98: // SBC A,B
+      sbc_A_bytereg(regs.bc.h);
+    break;
+    case 0x99: // SBC A,C
+      sbc_A_bytereg(regs.bc.l);
+    break;
+    case 0x9A: // SBC A,D
+      sbc_A_bytereg(regs.de.h);
+    break;
+    case 0x9B: // SBC A,E
+      sbc_A_bytereg(regs.de.l);
+    break;
+    case 0x9C: // SBC A,H
+      sbc_A_bytereg(regs.hl.h);
+    break;
+    case 0x9D: // SBC A,L
+      sbc_A_bytereg(regs.hl.l);
+    break;
+    case 0x9E: // SBC A,(HL)
+      { unsigned char utmp;
+        utmp = get1(regs.HL);
+        sbc_A_bytereg(utmp);
+      }
+    break;
+    case 0x9F: // SBC A,A
+      sbc_A_bytereg(regs.A);
+    break;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_and(t_mem code)
 {
+#define and_A_bytereg(br) { \
+      regs.A &= (br); \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      if (regs.A == 0) regs.F |= BIT_Z; \
+      if (regs.A & 0x80) regs.F |= BIT_S; \
+  }
+  switch(code) {
+    case 0xA0: // AND B
+      and_A_bytereg(regs.bc.h);
+    break;
+    case 0xA1: // AND C
+      and_A_bytereg(regs.bc.l);
+    break;
+    case 0xA2: // AND D
+      and_A_bytereg(regs.de.h);
+    break;
+    case 0xA3: // AND E
+      and_A_bytereg(regs.de.l);
+    break;
+    case 0xA4: // AND H
+      and_A_bytereg(regs.hl.h);
+    break;
+    case 0xA5: // AND L
+      and_A_bytereg(regs.hl.l);
+    break;
+    case 0xA6: // AND (HL)
+      { unsigned char utmp;
+        utmp = get1(regs.HL);
+        and_A_bytereg(utmp);
+      }
+    break;
+    case 0xA7: // AND A
+      and_A_bytereg(regs.A);
+    break;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_xor(t_mem code)
 {
+#define xor_A_bytereg(br) { \
+      regs.A ^= (br); \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      if (regs.A == 0) regs.F |= BIT_Z; \
+      if (regs.A & 0x80) regs.F |= BIT_S; \
+  }
+  switch(code) {
+    case 0xA8: // XOR B
+      xor_A_bytereg(regs.bc.h);
+    break;
+    case 0xA9: // XOR C
+      xor_A_bytereg(regs.bc.l);
+    break;
+    case 0xAA: // XOR D
+      xor_A_bytereg(regs.de.h);
+    break;
+    case 0xAB: // XOR E
+      xor_A_bytereg(regs.de.l);
+    break;
+    case 0xAC: // XOR H
+      xor_A_bytereg(regs.hl.h);
+    break;
+    case 0xAD: // XOR L
+      xor_A_bytereg(regs.hl.l);
+    break;
+    case 0xAE: // XOR (HL)
+      { unsigned char utmp;
+        utmp = get1(regs.HL);
+        xor_A_bytereg(utmp);
+      }
+    break;
+    case 0xAF: // XOR A
+      xor_A_bytereg(regs.A);
+    break;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_or(t_mem code)
 {
+#define or_A_bytereg(br) { \
+      regs.A |= (br); \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      if (regs.A == 0) regs.F |= BIT_Z; \
+      if (regs.A & 0x80) regs.F |= BIT_S; \
+  }
+  switch(code) {
+    case 0xB0: // OR B
+      or_A_bytereg(regs.bc.h);
+    break;
+    case 0xB1: // OR C
+      or_A_bytereg(regs.bc.l);
+    break;
+    case 0xB2: // OR D
+      or_A_bytereg(regs.de.h);
+    break;
+    case 0xB3: // OR E
+      or_A_bytereg(regs.de.l);
+    break;
+    case 0xB4: // OR H
+      or_A_bytereg(regs.hl.h);
+    break;
+    case 0xB5: // OR L
+      or_A_bytereg(regs.hl.l);
+    break;
+    case 0xB6: // OR (HL)
+      { unsigned char utmp;
+        utmp = get1(regs.HL);
+        or_A_bytereg(utmp);
+      }
+    break;
+    case 0xB7: // OR A
+      or_A_bytereg(regs.A);
+    break;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_cp(t_mem code)
 {
+#define cp_bytereg(br) { unsigned char _tmp1; \
+      regs.F &= ~(BIT_ALL);  /* clear these */ \
+      if (regs.A < br) regs.F |= BIT_C; \
+      _tmp1 = regs.A - (br); \
+      regs.F |= BIT_N; /* not addition */ \
+      if (_tmp1 == 0) regs.F |= BIT_Z; \
+      if (_tmp1 & 0x80) regs.F |= BIT_S; \
+      /* Skip BIT_A for now */ \
+  }
+
+  switch(code) {
+    case 0xB8: // CP B
+      cp_bytereg(regs.bc.h);
+    break;
+    case 0xB9: // CP C
+      cp_bytereg(regs.bc.l);
+    break;
+    case 0xBA: // CP D
+      cp_bytereg(regs.de.h);
+    break;
+    case 0xBB: // CP E
+      cp_bytereg(regs.de.l);
+    break;
+    case 0xBC: // CP H
+      cp_bytereg(regs.hl.h);
+    break;
+    case 0xBD: // CP L
+      cp_bytereg(regs.hl.l);
+    break;
+    case 0xBE: // CP (HL)
+      { unsigned char utmp;
+        utmp = get1(regs.HL);
+        cp_bytereg(utmp);
+      }
+    break;
+    case 0xBF: // CP A
+      cp_bytereg(regs.A);
+    break;
+  }
   return(resGO);
 }
 
 int
 cl_z80::inst_rst(t_mem code)
 {
+  push2(PC+2);
+  switch(code) {
+    case 0xC7: // RST 0
+      PC = 0x0;
+    break;
+    case 0xCF: // RST 8
+      PC = 0x08;
+    break;
+    case 0xD7: // RST 10H
+      PC = 0x10;
+    break;
+    case 0xDF: // RST 18H
+      PC = 0x18;
+    break;
+    case 0xE7: // RST 20H
+      PC = 0x20;
+    break;
+    case 0xEF: // RST 28H
+      PC = 0x28;
+    break;
+    case 0xF7: // RST 30H
+      PC = 0x30;
+    break;
+    case 0xFF: // RST 38H
+      PC = 0x38;
+    break;
+  }
   return(resGO);
 }
 
@@ -655,6 +1069,21 @@ cl_z80::inst_push(t_mem code)
 int
 cl_z80::inst_exx(t_mem code)
 {
+  /* case 0xD9: // EXX - swap BC,DE,HL with alternates */
+  TYPE_UWORD tempw;
+
+  tempw = regs.aBC;
+  regs.BC = regs.aBC;
+  regs.aBC = tempw;
+
+  tempw = regs.aDE;
+  regs.DE = regs.aDE;
+  regs.aDE = tempw;
+
+  tempw = regs.aDE;
+  regs.DE = regs.aDE;
+  regs.aDE = tempw;
+
   return(resGO);
 }
 
@@ -667,33 +1096,37 @@ cl_z80::inst_in(t_mem code)
 int
 cl_z80::inst_sub(t_mem code)
 {
+
   switch(code) {
     case 0x90: // SUB B
-      regs.A -= regs.bc.h;
+      sub_A_bytereg(regs.bc.h);
     break;
     case 0x91: // SUB C
-      regs.A -= regs.bc.l;
+      sub_A_bytereg(regs.bc.l);
     break;
     case 0x92: // SUB D
-      regs.A -= regs.de.h;
+      sub_A_bytereg(regs.de.h);
     break;
     case 0x93: // SUB E
-      regs.A -= regs.de.l;
+      sub_A_bytereg(regs.de.l);
     break;
     case 0x94: // SUB H
-      regs.A -= regs.hl.h;
+      sub_A_bytereg(regs.hl.h);
     break;
     case 0x95: // SUB L
-      regs.A -= regs.hl.l;
+      sub_A_bytereg(regs.hl.l);
     break;
     case 0x96: // SUB (HL)
-      regs.A -= (get1(regs.HL));
+      regs.A -= (get1(regs.HL)); /* fixme: flags ? */
     break;
     case 0x97: // SUB A
       regs.A = 0;
     break;
     case 0xD6: // SUB nn
-      regs.A -= fetch();
+      { unsigned char tmp1;
+        tmp1 = fetch();
+        sub_A_bytereg(tmp1);
+      }
     break;
   }
   return(resGO);
@@ -777,12 +1210,14 @@ cl_z80::inst_jp(t_mem code)
 int
 cl_z80::inst_di(t_mem code)
 {
+  /* disable interrupts */
   return(resGO);
 }
 
 int
 cl_z80::inst_ei(t_mem code)
 {
+  /* enable interrupts */
   return(resGO);
 }
 
@@ -934,27 +1369,37 @@ cl_z80::inst_dd_ld(t_mem code)
 int
 cl_z80::inst_dd_add(t_mem code)
 {
+#define add_IX_Word(wr) { \
+      unsigned int tmp; \
+      regs.F &= ~(BIT_A | BIT_N | BIT_C);  /* clear these */ \
+      tmp = (unsigned int)regs.IX + (unsigned int)(wr); \
+      if (tmp > 0xffff) regs.F |= BIT_C; \
+      regs.IX = (unsigned short) tmp; }
+
   switch (code) {
     case 0x09: // ADD IX,BC
-      regs.IX += regs.BC;
+      add_IX_Word(regs.BC);
       return(resGO);
     case 0x19: // ADD IX,DE
-      regs.IX += regs.DE;
+      add_IX_Word(regs.DE);
       return(resGO);
     case 0x29: // ADD IX,IX
-      regs.IX += regs.IX;
+      add_IX_Word(regs.IX);
       return(resGO);
     case 0x39: // ADD IX,SP
-      regs.IX += regs.SP;
+      add_IX_Word(regs.SP);
     return(resGO);
     case 0x84: // ADD A,HX
-      regs.A += regs.IX;
+      add_A_bytereg(regs.hl.h);
       return(resGO);
     case 0x85: // ADD A,LX
-      regs.A += regs.IX;
+      add_A_bytereg(regs.hl.l);
       return(resGO);
     case 0x86: // ADD A,(IX)
-      regs.A += get2(regs.IX);
+      { unsigned char ourtmp;
+        ourtmp = get1(regs.IX);
+        add_A_bytereg(ourtmp);
+      }
       return(resGO);
   }
   return(resINV_INST);
@@ -979,7 +1424,10 @@ cl_z80::inst_dd_inc(t_mem code)
       ++regs.IX;
     break;
     case 0x24: // INC HX
-      ++regs.hl.h;
+      inc(regs.hl.h);
+    break;
+    case 0x2C: // INC LX
+      inc(regs.hl.l);
     break;
     case 0x34: // INC (IX+dd)
       {
@@ -989,6 +1437,7 @@ cl_z80::inst_dd_inc(t_mem code)
       }
     break;
   }
+  return(resGO);
 }
 
 int
@@ -996,16 +1445,13 @@ cl_z80::inst_dd_dec(t_mem code)
 {
   switch(code) {
     case 0x25: // DEC HX
-      --regs.hl.h;
+      dec(regs.hl.h);
     break;
     case 0x2B: // DEC IX
       --regs.IX;
     break;
-    case 0x2C: // INC LX
-      ++regs.hl.l;
-    break;
     case 0x2D: // DEC LX
-      --regs.hl.l;
+      dec(regs.hl.l);
     break;
     case 0x35: // DEC (IX+dd)
       {
@@ -1015,6 +1461,7 @@ cl_z80::inst_dd_dec(t_mem code)
       }
     break;
   }
+  return(resGO);
 }
 
 int
