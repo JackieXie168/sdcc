@@ -215,6 +215,13 @@ else
     AC_DEFINE_UNQUOTED(OPT_DISABLE_MCS51, 0)
 fi
 
+AC_ARG_ENABLE(ds390-port,--disable-ds390-port: Excludes the Intel ds390 port)
+if test "$enable_ds390_port" = "no"; then
+    AC_DEFINE_UNQUOTED(OPT_DISABLE_DS390, 1)
+else
+    AC_DEFINE_UNQUOTED(OPT_DISABLE_DS390, 0)
+fi
+
 AC_ARG_ENABLE(avr-port,--disable-avr-port: Excludes the AVR port)
 if test "$enable_avr_port" = "no"; then
     AC_DEFINE_UNQUOTED(OPT_DISABLE_AVR, 1)
