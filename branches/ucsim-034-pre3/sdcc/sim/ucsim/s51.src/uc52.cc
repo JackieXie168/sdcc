@@ -61,6 +61,18 @@ t_uc52::mk_hw_elements(void)
 }
 
 
+t_addr
+t_uc52::get_mem_size(enum mem_class type)
+{
+  switch (type)
+    {
+    case MEM_IRAM: return(0x100);
+    default: return(t_uc51::get_mem_size(type));
+    }
+  return(0);
+}
+
+
 /*
  * Calculating address of indirectly addressed IRAM cell
  *

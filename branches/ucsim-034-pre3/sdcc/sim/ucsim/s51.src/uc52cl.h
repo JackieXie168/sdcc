@@ -46,6 +46,7 @@ public:
   virtual void mk_hw_elements(void);
 
   virtual class cl_cell *get_indirect(uchar addr, int *res);
+  virtual t_addr get_mem_size(enum mem_class type);
 
   /*virtual void do_extra_hw(int cycles);
   virtual int  do_timer2(int cycles);
