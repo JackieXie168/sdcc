@@ -43,6 +43,7 @@ protected:
 
 public:
   t_uc52(int Itype, int Itech, class cl_sim *asim);
+  virtual t_addr get_mem_size(enum mem_class type);
   virtual void mk_hw_elements(void);
 
   virtual class cl_cell *get_indirect(uchar addr, int *res);
