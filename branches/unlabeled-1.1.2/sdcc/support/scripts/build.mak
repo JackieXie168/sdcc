@@ -111,12 +111,15 @@ lcc:
 	cp gbdk-support/lcc/lcc$(E) $(BUILD)/bin
 
 sdcc/sdccconf.h: sdcc/configure
-ifdef $(TNP)
-	cd sdcc; CCC=$(TNP)c++; CC=$(TNP)gcc; \
+ifdef TNP
+	cd sdcc; \
+	export CCC=$(TNP)c++; \
+	export RANLIB=$(TNP)ranlib; \
+	export CC=$(TNP)gcc; \
 	./configure --datadir=$(SDCC_ROOT)
+	echo $$CCC
 else
-	cd sdcc; CCC=$(TNP)c++; CC=$(TNP)gcc; \
-	./configure --datadir=$(SDCC_ROOT)
+	cd sdcc; ./configure --datadir=$(SDCC_ROOT)
 endif
 
 dist: _sdcc lcc tidy
