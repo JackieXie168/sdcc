@@ -35,10 +35,11 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 int
 cl_z80::inst_ddcb_rlc(t_mem code)
 {
-  unsigned char tmp,offset;
+  unsigned char tmp;
+  unsigned short addr;
 
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   rlc_byte(tmp);
 
   switch(code) {
@@ -66,7 +67,7 @@ cl_z80::inst_ddcb_rlc(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
 
   return(resGO);
 }
@@ -74,10 +75,10 @@ cl_z80::inst_ddcb_rlc(t_mem code)
 int
 cl_z80::inst_ddcb_rrc(t_mem code)
 {
-  unsigned char tmp,offset;
-
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  unsigned char tmp;
+  unsigned short addr;
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   rrc_byte(tmp);
 
   switch(code) {
@@ -105,7 +106,7 @@ cl_z80::inst_ddcb_rrc(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
 
   return(resGO);
 }
@@ -113,10 +114,10 @@ cl_z80::inst_ddcb_rrc(t_mem code)
 int
 cl_z80::inst_ddcb_rl(t_mem code)
 {
-  unsigned char tmp,offset;
-
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  unsigned char tmp;
+  unsigned short addr;
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   rl_byte(tmp);
 
   switch(code) {
@@ -144,7 +145,7 @@ cl_z80::inst_ddcb_rl(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
 
   return(resGO);
 }
@@ -152,10 +153,10 @@ cl_z80::inst_ddcb_rl(t_mem code)
 int
 cl_z80::inst_ddcb_rr(t_mem code)
 {
-  unsigned char tmp,offset;
-
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  unsigned char tmp;
+  unsigned short addr;
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   rr_byte(tmp);
 
   switch(code) {
@@ -183,7 +184,7 @@ cl_z80::inst_ddcb_rr(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
 
   return(resGO);
 }
@@ -191,10 +192,10 @@ cl_z80::inst_ddcb_rr(t_mem code)
 int
 cl_z80::inst_ddcb_sla(t_mem code)
 {
-  unsigned char tmp,offset;
-
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  unsigned char tmp;
+  unsigned short addr;
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   sla_byte(tmp);
 
   switch(code) {
@@ -222,17 +223,17 @@ cl_z80::inst_ddcb_sla(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
   return(resGO);
 }
 
 int
 cl_z80::inst_ddcb_sra(t_mem code)
 {
-  unsigned char tmp,offset;
-
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  unsigned char tmp;
+  unsigned short addr;
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   sra_byte(tmp);
 
   switch(code) {
@@ -260,17 +261,17 @@ cl_z80::inst_ddcb_sra(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
   return(resGO);
 }
 
 int
 cl_z80::inst_ddcb_slia(t_mem code)
 {
-  unsigned char tmp,offset;
-
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  unsigned char tmp;
+  unsigned short addr;
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   slia_byte(tmp);
 
   switch(code) {
@@ -298,17 +299,17 @@ cl_z80::inst_ddcb_slia(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
   return(resGO);
 }
 
 int
 cl_z80::inst_ddcb_srl(t_mem code)
 {
-  unsigned char tmp,offset;
-
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  unsigned char tmp;
+  unsigned short addr;
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   srl_byte(tmp);
 
   switch(code) {
@@ -336,7 +337,7 @@ cl_z80::inst_ddcb_srl(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
   return(resGO);
 }
 
@@ -344,7 +345,8 @@ cl_z80::inst_ddcb_srl(t_mem code)
 int
 cl_z80::inst_ddcb_bit(t_mem code)
 {
-  unsigned char tmp,offset;
+  unsigned char tmp;
+  unsigned short addr;
 
 #define bit_bitnum ((code >> 3) & 7)
 
@@ -362,8 +364,8 @@ cl_z80::inst_ddcb_bit(t_mem code)
     case 0x5: // BIT x,L
       bit_byte(regs.hl.l, bit_bitnum); break;
     case 0x6: // BIT x,(HL)
-      offset = fetch();
-      tmp = get1(regs.IX + offset);
+      addr = add_u16_disp(regs.IX, fetch());
+      tmp = get1(addr);
       bit_byte(tmp, bit_bitnum);
 
       { unsigned char tmp;
@@ -371,7 +373,7 @@ cl_z80::inst_ddcb_bit(t_mem code)
         bit_byte(tmp, bit_bitnum);
         store1(regs.HL, tmp);
       }
-      store1(regs.IX + offset, tmp);
+      store1(addr, tmp);
     break;
     case 0x7: // BIT x,A
       bit_byte(regs.A, bit_bitnum); break;
@@ -383,12 +385,13 @@ cl_z80::inst_ddcb_bit(t_mem code)
 int
 cl_z80::inst_ddcb_res(t_mem code)
 {
-  unsigned char tmp,offset;
+  unsigned char tmp;
+  unsigned short addr;
 
 #define bit_bitnum ((code >> 3) & 7)
 
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   tmp &= ~(1 << bit_bitnum);
 
   switch(code & 0x7) {
@@ -410,19 +413,20 @@ cl_z80::inst_ddcb_res(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
   return(resGO);
 }
 
 int
 cl_z80::inst_ddcb_set(t_mem code)
 {
-  unsigned char tmp,offset;
+  unsigned char tmp;
+  unsigned short addr;
 
 #define bit_bitnum ((code >> 3) & 7)
 
-  offset = fetch();
-  tmp = get1(regs.IX + offset);
+  addr = add_u16_disp(regs.IX, fetch());
+  tmp = get1(addr);
   tmp |= (1 << bit_bitnum);
 
   switch(code) {
@@ -443,7 +447,7 @@ cl_z80::inst_ddcb_set(t_mem code)
     case 0x7: // SET x,A
       regs.de.h = tmp; break;
   }
-  store1(regs.IX + offset, tmp);
+  store1(addr, tmp);
   return(resGO);
 }
 

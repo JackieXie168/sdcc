@@ -59,8 +59,8 @@ cl_z80::inst_fd_ld(t_mem code)
       regs.iy.l = fetch1();
     return(resGO);
     case 0x36: // LD (IY+dd),nn
-      tw = fetch();
-      store1(regs.IY+tw, fetch());
+      tw = add_u16_disp(regs.IY, fetch());
+      store1(tw, fetch());
     return(resGO);
     case 0x44: // LD B,HY
       regs.iy.h = regs.hl.h;
@@ -210,9 +210,11 @@ cl_z80::inst_fd_add(t_mem code)
     case 0x85: // ADD A,LY
       add_A_bytereg(regs.iy.l);
       return(resGO);
-    case 0x86: // ADD A,(IY)
+    case 0x86: // ADD A,(IY+nn)
       { unsigned char ourtmp;
-        ourtmp = get1(regs.IY);
+        t_addr addr;
+        addr = add_u16_disp(regs.IY, fetch());
+        ourtmp = get1(addr);
         add_A_bytereg(ourtmp);
       }
       return(resGO);
@@ -291,9 +293,11 @@ cl_z80::inst_fd_misc(t_mem code)
     case 0x8D: // ADC A,LY
       adc_A_bytereg(regs.iy.l);
     return(resGO);
-    case 0x8E: // ADC A,(IY)
+    case 0x8E: // ADC A,(IY+nn)
       { unsigned char utmp;
-        utmp = get1(regs.IY);
+        t_addr addr;
+        addr = add_u16_disp(regs.IY, fetch());
+        utmp = get1(addr);
         adc_A_bytereg(utmp);
       }
     return(resGO);
@@ -306,7 +310,7 @@ cl_z80::inst_fd_misc(t_mem code)
     return(resGO);
     case 0x96: // SUB (IY+dd)
       { unsigned char tmp1;
-        tmp1 = get1(regs.IY + fetch());
+        tmp1 = get1(add_u16_disp(regs.IY, fetch()));
         sub_A_bytereg(tmp1);
       }
     return(resGO);
@@ -319,7 +323,7 @@ cl_z80::inst_fd_misc(t_mem code)
     return(resGO);
     case 0x9E: // SBC A,(IY+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IY + fetch());
+        utmp = get1(add_u16_disp(regs.IY, fetch()));
         sbc_A_bytereg(utmp);
       }
     return(resGO);
@@ -332,7 +336,7 @@ cl_z80::inst_fd_misc(t_mem code)
     return(resGO);
     case 0xA6: // AND (IY+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IY + fetch());
+        utmp = get1(add_u16_disp(regs.IY, fetch()));
         and_A_bytereg(utmp);
       }
     return(resGO);
@@ -345,7 +349,7 @@ cl_z80::inst_fd_misc(t_mem code)
     return(resGO);
     case 0xAE: // XOR (IY+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IY + fetch());
+        utmp = get1(add_u16_disp(regs.IY, fetch()));
         xor_A_bytereg(utmp);
       }
     return(resGO);
@@ -358,7 +362,7 @@ cl_z80::inst_fd_misc(t_mem code)
     return(resGO);
     case 0xB6: // OR (IY+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IY + fetch());
+        utmp = get1(add_u16_disp(regs.IY, fetch()));
         or_A_bytereg(utmp);
       }
     return(resGO);
@@ -371,7 +375,7 @@ cl_z80::inst_fd_misc(t_mem code)
     return(resGO);
     case 0xBE: // CP (IY+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IY + fetch());
+        utmp = get1(add_u16_disp(regs.IY, fetch()));
         cp_bytereg(utmp);
       }
     return(resGO);

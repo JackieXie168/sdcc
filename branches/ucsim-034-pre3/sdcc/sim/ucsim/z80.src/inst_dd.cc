@@ -1,5 +1,6 @@
 /*
- * Simulator of microcontrollers (inst.cc)
+ * Simulator of microcontrollers (inst_dd.cc)
+ *  dd escaped multi-byte opcodes.
  *
  * some z80 code base from Karl Bongers karl@turbobit.com
  *
@@ -58,8 +59,8 @@ cl_z80::inst_dd_ld(t_mem code)
       regs.ix.l = fetch1();
     return(resGO);
     case 0x36: // LD (IX+dd),nn
-      tw = fetch();
-      store1(regs.IX+tw, fetch());
+      tw = add_u16_disp(regs.IX, fetch());
+      store1(tw, fetch());
     return(resGO);
     case 0x44: // LD B,HX
       regs.ix.h = regs.hl.h;
@@ -68,7 +69,7 @@ cl_z80::inst_dd_ld(t_mem code)
       regs.ix.l = regs.hl.l;
     return(resGO);
     case 0x46: // LD B,(IX+dd)
-      regs.bc.h = get1( add_u16_disp(regs.IX,fetch()) );
+      regs.bc.h = get1(add_u16_disp(regs.IX,fetch()));
     return(resGO);
     case 0x4C: // LD C,HX
       regs.bc.l = regs.ix.h;
@@ -144,25 +145,25 @@ cl_z80::inst_dd_ld(t_mem code)
       regs.ix.l = regs.A;
     return(resGO);
     case 0x70: // LD (IX+dd),B
-      store1(add_u16_disp(regs.IX, fetch()), regs.bc.h);
+      store1(add_u16_disp(regs.IX,fetch()), regs.bc.h);
     return(resGO);
     case 0x71: // LD (IX+dd),C
-      store1(add_u16_disp(regs.IX, fetch()), regs.bc.l);
+      store1(add_u16_disp(regs.IX,fetch()), regs.bc.l);
     return(resGO);
     case 0x72: // LD (IX+dd),D
-      store1(add_u16_disp(regs.IX, fetch()), regs.de.h);
+      store1(add_u16_disp(regs.IX,fetch()), regs.de.h);
     return(resGO);
     case 0x73: // LD (IX+dd),E
-      store1(add_u16_disp(regs.IX, fetch()), regs.de.l);
+      store1(add_u16_disp(regs.IX,fetch()), regs.de.l);
     return(resGO);
     case 0x74: // LD (IX+dd),H
-      store1(add_u16_disp(regs.IX, fetch()), regs.hl.h);
+      store1(add_u16_disp(regs.IX,fetch()), regs.hl.h);
     return(resGO);
     case 0x75: // LD (IX+dd),L
-      store1(add_u16_disp(regs.IX, fetch()), regs.hl.l);
+      store1(add_u16_disp(regs.IX,fetch()), regs.hl.l);
     return(resGO);
     case 0x77: // LD (IX+dd),A
-      store1(add_u16_disp(regs.IX, fetch()), regs.A);
+      store1(add_u16_disp(regs.IX,fetch()), regs.A);
     return(resGO);
     case 0x7C: // LD A,HX
       regs.A = regs.hl.h;
@@ -171,7 +172,7 @@ cl_z80::inst_dd_ld(t_mem code)
       regs.A = regs.hl.l;
     return(resGO);
     case 0x7E: // LD A,(IX+dd)
-      regs.A = get1(add_u16_disp(regs.IX, fetch()));
+      regs.A = get1(add_u16_disp(regs.IX,fetch()));
     return(resGO);
     case 0xF9: // LD SP,IX
       regs.SP = regs.IX;
@@ -211,7 +212,9 @@ cl_z80::inst_dd_add(t_mem code)
       return(resGO);
     case 0x86: // ADD A,(IX)
       { unsigned char ourtmp;
-        ourtmp = get1(regs.IX);
+        t_addr addr;
+        addr = add_u16_disp(regs.IX, fetch());
+        ourtmp = get1(addr);
         add_A_bytereg(ourtmp);
       }
       return(resGO);
@@ -246,7 +249,7 @@ cl_z80::inst_dd_inc(t_mem code)
     case 0x34: // INC (IX+dd)
       {
         t_addr addr;
-        addr = add_u16_disp(regs.IX, fetch());
+        addr = add_u16_disp(regs.IX,fetch());
         store1(addr, get1(addr)+1);
       }
     break;
@@ -270,7 +273,7 @@ cl_z80::inst_dd_dec(t_mem code)
     case 0x35: // DEC (IX+dd)
       {
         t_addr addr;
-        addr = add_u16_disp(regs.IX, fetch());
+        addr = add_u16_disp(regs.IX,fetch());
         store1(addr, get1(addr)-1);
       }
     break;
@@ -292,7 +295,9 @@ cl_z80::inst_dd_misc(t_mem code)
     return(resGO);
     case 0x8E: // ADC A,(IX)
       { unsigned char utmp;
-        utmp = get1(regs.IX);
+        t_addr addr;
+        addr = add_u16_disp(regs.IX, fetch());
+        utmp = get1(addr);
         adc_A_bytereg(utmp);
       }
     return(resGO);
@@ -305,7 +310,7 @@ cl_z80::inst_dd_misc(t_mem code)
     return(resGO);
     case 0x96: // SUB (IX+dd)
       { unsigned char tmp1;
-        tmp1 = get1(regs.IX + fetch());
+        tmp1 = get1(add_u16_disp(regs.IX, fetch()));
         sub_A_bytereg(tmp1);
       }
     return(resGO);
@@ -318,7 +323,7 @@ cl_z80::inst_dd_misc(t_mem code)
     return(resGO);
     case 0x9E: // SBC A,(IX+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IX + fetch());
+        utmp = get1(add_u16_disp(regs.IX, fetch()));
         sbc_A_bytereg(utmp);
       }
     return(resGO);
@@ -331,7 +336,7 @@ cl_z80::inst_dd_misc(t_mem code)
     return(resGO);
     case 0xA6: // AND (IX+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IX + fetch());
+        utmp = get1(add_u16_disp(regs.IX, fetch()));
         and_A_bytereg(utmp);
       }
     return(resGO);
@@ -344,7 +349,7 @@ cl_z80::inst_dd_misc(t_mem code)
     return(resGO);
     case 0xAE: // XOR (IX+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IX + fetch());
+        utmp = get1(add_u16_disp(regs.IX, fetch()));
         xor_A_bytereg(utmp);
       }
     return(resGO);
@@ -357,7 +362,7 @@ cl_z80::inst_dd_misc(t_mem code)
     return(resGO);
     case 0xB6: // OR (IX+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IX + fetch());
+        utmp = get1(add_u16_disp(regs.IX, fetch()));
         or_A_bytereg(utmp);
       }
     return(resGO);
@@ -370,7 +375,7 @@ cl_z80::inst_dd_misc(t_mem code)
     return(resGO);
     case 0xBE: // CP (IX+dd)
       { unsigned char utmp;
-        utmp = get1(regs.IX + fetch());
+        utmp = get1(add_u16_disp(regs.IX, fetch()));
         cp_bytereg(utmp);
       }
     return(resGO);
@@ -441,7 +446,7 @@ cl_z80::inst_dd(void)
         return(inst_dd_inc(code));
       {
         t_addr addr;
-        addr = add_u16_disp(regs.IX, fetch());
+        addr = add_u16_disp(regs.IX,fetch());
         store1(addr, get1(addr)+1);
       }
 
@@ -510,6 +515,7 @@ cl_z80::inst_dd(void)
       case 0xE9: // JP (IX)
         PC = get2(regs.IX);
       return(resGO);
+
       default:
       return(resINV_INST);
     }

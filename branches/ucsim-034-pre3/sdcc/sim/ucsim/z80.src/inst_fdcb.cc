@@ -36,10 +36,11 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 int
 cl_z80::inst_fdcb_rlc(t_mem code)
 {
-  unsigned char tmp,offset;
+  unsigned char tmp;
+  unsigned short addr;
 
-  offset = fetch();
-  tmp = get1(regs.IY + offset);
+  addr = add_u16_disp(regs.IY, fetch());
+  tmp = get1(addr);
   rlc_byte(tmp);
 
   switch(code) {
@@ -67,7 +68,7 @@ cl_z80::inst_fdcb_rlc(t_mem code)
       regs.A = tmp;
     break;
   }
-  store1(regs.IY + offset, tmp);
+  store1(addr, tmp);
 
   return(resGO);
 }

@@ -555,10 +555,10 @@ DD 7D	      /	LD	A,LX
 DD 7E dd      *	LD	A,(IX+dd)
 DD 84	      /	ADD	A,HX
 DD 85	      /	ADD	A,LX
-DD 86 dd      *	ADD	A,(IX)
+DD 86 dd      *	ADD	A,(IX+dd)  /* add +dd, kpb */
 DD 8C	      /	ADC	A,HX
 DD 8D	      /	ADC	A,LX
-DD 8E dd      *	ADC	A,(IX)
+DD 8E dd      *	ADC	A,(IX+dd)  /* add +dd, kpb */
 DD 94	      /	SUB	HX
 DD 95	      /	SUB	LX
 DD 96 dd      *	SUB	(IX+dd)

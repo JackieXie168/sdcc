@@ -31,7 +31,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 
 /* 
-%d - byte jump 
+%d - signed compl.,byte jump 
 %w - 2-byte jump or imm. value
 %b - byte imm. value
   */
@@ -712,7 +712,7 @@ struct dis_entry disass_z80_dd[]= {
   { 0x0039, 0x00ff, ' ', 1, "ADD IX,SP" },
   { 0x0084, 0x00ff, ' ', 1, "ADD A,HX" },
   { 0x0085, 0x00ff, ' ', 1, "ADD A,LX" },
-  { 0x0086, 0x00ff, ' ', 1, "ADD A,(IX)" },
+  { 0x0086, 0x00ff, ' ', 2, "ADD A,(IX+%d)" },
 
   { 0x0025, 0x00ff, ' ', 1, "DEC HX" },
   { 0x002B, 0x00ff, ' ', 1, "DEC IX" },
@@ -721,7 +721,7 @@ struct dis_entry disass_z80_dd[]= {
 
   { 0x008C, 0x00ff, ' ', 1, "ADC A,HX" },
   { 0x008D, 0x00ff, ' ', 1, "ADC A,LX" },
-  { 0x008E, 0x00ff, ' ', 1, "ADC A,(IX)" },
+  { 0x008E, 0x00ff, ' ', 2, "ADC A,(IX+%d)" },
   { 0x0094, 0x00ff, ' ', 1, "SUB HX" },
   { 0x0095, 0x00ff, ' ', 1, "SUB LX" },
   { 0x0096, 0x00ff, ' ', 2, "SUB (IX+%d)" },
@@ -806,7 +806,7 @@ struct dis_entry disass_z80_fd[]= {
   { 0x0039, 0x00ff, ' ', 1, "ADD IY,SP" },
   { 0x0084, 0x00ff, ' ', 1, "ADD A,HX" },
   { 0x0085, 0x00ff, ' ', 1, "ADD A,LX" },
-  { 0x0086, 0x00ff, ' ', 1, "ADD A,(IY)" },
+  { 0x0086, 0x00ff, ' ', 2, "ADD A,(IY+%d)" },
 
   { 0x0025, 0x00ff, ' ', 1, "DEC HX" },
   { 0x002B, 0x00ff, ' ', 1, "DEC IY" },
@@ -815,7 +815,7 @@ struct dis_entry disass_z80_fd[]= {
 
   { 0x008C, 0x00ff, ' ', 1, "ADC A,HX" },
   { 0x008D, 0x00ff, ' ', 1, "ADC A,LX" },
-  { 0x008E, 0x00ff, ' ', 1, "ADC A,(IY)" },
+  { 0x008E, 0x00ff, ' ', 2, "ADC A,(IY+%d)" },
   { 0x0094, 0x00ff, ' ', 1, "SUB HX" },
   { 0x0095, 0x00ff, ' ', 1, "SUB LX" },
   { 0x0096, 0x00ff, ' ', 2, "SUB (IY+%d)" },
