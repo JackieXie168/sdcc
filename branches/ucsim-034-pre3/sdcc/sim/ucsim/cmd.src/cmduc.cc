@@ -340,7 +340,7 @@ COMMAND_DO_WORK_UC(cl_dc_cmd)
 
   for (;
        start <= end;
-       start+= uc->inst_length(rom->get(start)))
+       start+= uc->inst_length(rom->get(start), start))
     uc->print_disass(start, con);
   last= start;
   return(DD_FALSE);

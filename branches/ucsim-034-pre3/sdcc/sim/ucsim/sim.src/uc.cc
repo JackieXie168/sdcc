@@ -946,7 +946,7 @@ cl_uc::print_disass(t_addr addr, class cl_console *con)
   con->dd_printf("%c ", inst_at(addr)?' ':'?');
   con->dd_printf(rom->addr_format, addr); con->dd_printf(" ");
   con->dd_printf(rom->data_format, code);
-  for (i= 1; i < inst_length(code); i++)
+  for (i= 1; i < inst_length(code, addr); i++)
     {
       con->dd_printf(" ");
       con->dd_printf(rom->data_format, get_mem(MEM_ROM, addr+i));
@@ -972,6 +972,16 @@ cl_uc::print_regs(class cl_console *con)
 
 int
 cl_uc::inst_length(t_mem code)
+{
+  struct dis_entry *tabl= dis_tbl();
+  int i;
+
+  for (i= 0; tabl[i].mnemonic && (code & tabl[i].mask) != tabl[i].code; i++) ;
+  return(tabl[i].mnemonic?tabl[i].length:1);	 
+}
+
+int
+cl_uc::inst_length(t_mem code, t_addr addr)
 {
   struct dis_entry *tabl= dis_tbl();
   int i;
