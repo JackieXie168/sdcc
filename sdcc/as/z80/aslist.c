@@ -16,8 +16,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
-#include <malloc.h>
-
+#include <alloc.h>
 #include "asm.h"
 
 /*)Module	aslist.c
@@ -79,7 +78,7 @@ list()
 {
 	register char *wp;
 	register int *wpt;
-	register int nb;
+	register nb;
 
 	if (lfp == NULL || lmode == NLIST)
 		return;
@@ -355,7 +354,7 @@ list1(wp, wpt, nb, f)
 register char *wp;
 register int *wpt, nb, f;
 {
-	register int i;
+	register i;
 
 	/*
 	 * HEX output Option.

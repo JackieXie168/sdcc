@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lklist.c
@@ -60,7 +60,7 @@ VOID
 slew(fp)
 FILE *fp;
 {
-	register int i;
+	register i;
 
 	if (lop++ >= NLPP) {
 		newpag(fp);
@@ -132,9 +132,9 @@ FILE *fp;
  *		int	j		bubble sort update status
  *		char *	ptr		pointer to an id string
  *		int	nmsym		number of symbols in area
- *		Addr_T	a0		temporary
- *		Addr_T	ai		temporary
- *		Addr_T	aj		temporary
+ *		addr_t	a0		temporary
+ *		addr_t	ai		temporary
+ *		addr_t	aj		temporary
  *		sym *	sp		pointer to a symbol structure
  *		sym **	p		pointer to an array of
  *					pointers to symbol structures
@@ -166,7 +166,7 @@ struct area *xp;
 	register c, i, j;
 	register char *ptr;
 	int nmsym;
-	Addr_T a0, ai, aj;
+	addr_t a0, ai, aj;
 	struct sym *sp;
 	struct sym **p;
 
@@ -334,10 +334,12 @@ struct area *xp;
 #else
 VOID lstarea(struct area *xp)
 {
+	register struct area *op;
 	register struct areax *oxp;
-	register int i, j;
+	register c, i, j;
+	register char *ptr;
 	int nmsym;
-	Addr_T a0, ai, aj;
+	addr_t a0, ai, aj;
 	struct sym *sp;
 	struct sym **p;
 
@@ -480,9 +482,9 @@ VOID lstarea(struct area *xp)
  *		int	j		bubble sort update status
  *		char *	ptr		pointer to an id string
  *		int	nmsym		number of symbols in area
- *		Addr_T	a0		temporary
- *		Addr_T	ai		temporary
- *		Addr_T	aj		temporary
+ *		addr_t	a0		temporary
+ *		addr_t	ai		temporary
+ *		addr_t	aj		temporary
  *		sym *	sp		pointer to a symbol structure
  *		sym **	p		pointer to an array of
  *					pointers to symbol structures
@@ -512,7 +514,7 @@ struct area *xp;
 	register c, i, j;
 	register char *ptr;
 	int nmsym;
-	Addr_T a0, ai, aj;
+	addr_t a0, ai, aj;
 	struct sym *sp;
 	struct sym **p;
 
@@ -676,9 +678,9 @@ VOID lstareatosym(struct area *xp)
 {
 	/* Output the current area symbols to a NO$GMB .sym file */
 	register struct areax *oxp;
-	register int i, j;
+	register i, j;
 	int nmsym;
-	Addr_T a0, ai;
+	addr_t a0, ai;
 	struct sym *sp;
 	struct sym **p;
 
@@ -751,18 +753,14 @@ VOID lstareatosym(struct area *xp)
 			}
 			i = 0;
 			while (i < nmsym) {
-			    	/* no$gmb requires the symbol names to be less than 32 chars long.  Truncate. */
-			    	char name[32];
-				strncpy(name, p[i]->s_id, 31);
-				name[31] = '\0';
-				if ((strncmp("l__", name, 3)!=0)&&(strchr(name,' ')==NULL)) {
+				if ((strncmp("l__", p[i]->s_id, 3)!=0)&&(strchr(p[i]->s_id,' ')==NULL)) {
 					a0=p[i]->s_addr + p[i]->s_axp->a_addr;
 					if (a0>0x7FFFU) {
 						/* Not inside the ROM, so treat as being in bank zero */
-						fprintf(mfp, "00:%04X %s\n", a0, name);
+						fprintf(mfp, "00:%04X %s\n", a0, p[i]->s_id);
 					}
 					else {
-						fprintf(mfp, "%02X:%04X %s\n", a0/16384, a0, name);
+						fprintf(mfp, "%02X:%04X %s\n", a0/16384, a0, p[i]->s_id  );
 					}
 				}
 				i++;
@@ -787,7 +785,7 @@ VOID lstareatosym(struct area *xp)
  *	output file.
  *
  *	local variables:
- *		Addr_T	pc		current program counter address
+ *		addr_t	pc		current program counter address
  *
  *	global variables:
  *		int	hilo		byte order
@@ -798,7 +796,7 @@ VOID lstareatosym(struct area *xp)
  *					output RST file
  *		int	rtcnt		count of data words
  *		int	rtflg[]		output the data flag
- *		Addr_T	rtval[]		relocated data
+ *		addr_t	rtval[]		relocated data
  *		FILE	*tfp		The file handle to the current
  *					LST file being scanned
  *
@@ -818,7 +816,7 @@ VOID
 lkulist(i)
 int i;
 {
-	Addr_T pc;
+	addr_t pc;
 
 	/*
 	 * Exit if listing file is not open
@@ -919,7 +917,7 @@ int i;
 
 VOID
 lkalist(pc)
-Addr_T pc;
+addr_t pc;
 {
 	char str[8];
 	int i;
@@ -1046,7 +1044,7 @@ loop:	if (tfp == NULL)
 
 VOID
 lkglist(pc,v)
-Addr_T pc;
+addr_t pc;
 int v;
 {
 	char str[8];

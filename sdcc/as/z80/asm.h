@@ -82,7 +82,7 @@
 #define	MAXFIL	6		/* Maximum command line input files */
 #define	MAXINC	6		/* Maximum nesting of include files */
 #define	MAXIF	10		/* Maximum nesting of if/else/endif */
-#define	FILSPC	256		/* Chars. in filespec */
+#define	FILSPC	80		/* Chars. in filespec */
 
 #define NLIST	0		/* No listing */
 #define SLIST	1		/* Source only */
@@ -95,7 +95,7 @@
 #define	dca	area[0]		/* Dca, default code area */
 
 
-typedef	unsigned int Addr_T;
+typedef	unsigned int addr_t;
 
 /*
  *	The area structure contains the parameter values for a
@@ -116,8 +116,8 @@ struct	area
 	struct	area *a_ap;	/* Area link */
 	char	a_id[NCPS];	/* Area Name */
 	int	a_ref;		/* Ref. number */
-	Addr_T	a_size;		/* Area size */
-	Addr_T	a_fuzz;		/* Area fuzz */
+	addr_t	a_size;		/* Area size */
+	addr_t	a_fuzz;		/* Area fuzz */
 	int	a_flag;		/* Area flags */
 };
 
@@ -208,7 +208,7 @@ struct	mne
 	char	m_id[NCPS];	/* Mnemonic */
 	char	m_type;		/* Mnemonic subtype */
 	char	m_flag;		/* Mnemonic flags */
-	Addr_T	m_valu;		/* Value */
+	addr_t	m_valu;		/* Value */
 };
 
 /*
@@ -233,7 +233,7 @@ struct	sym
 	char	s_flag;		/* Symbol flags */
 	struct	area *s_area;	/* Area line, 0 if absolute */
 	int	s_ref;		/* Ref. number */
-	Addr_T	s_addr;		/* Address */
+	addr_t	s_addr;		/* Address */
 };
 
 #define	S_GBL		01	/* Global */
@@ -285,11 +285,11 @@ struct	sym
  */
 struct	tsym
 {
-    struct	tsym *t_lnk;	/* Link to next */
-    int t_num;		/* 0-lots$ */
-    char t_flg;		/* flags */
-    struct	area *t_area;	/* Area */
-    Addr_T	t_addr;		/* Address */
+	struct	tsym *t_lnk;	/* Link to next */
+	char t_num;		/* 0-255$ */
+	char t_flg;		/* flags */
+	struct	area *t_area;	/* Area */
+	addr_t	t_addr;		/* Address */
 };
 
 /*
@@ -365,10 +365,10 @@ extern	int	xflag;		/*	-x, listing radix flag
 				 */
 extern	int	fflag;		/*	-f(f), relocations flagged flag
 				 */
-extern	Addr_T	laddr;		/*	address of current assembler line
+extern	addr_t	laddr;		/*	address of current assembler line
 				 *	or value of .if argument
 				 */
-extern	Addr_T	fuzz;		/*	tracks pass to pass changes in the
+extern	addr_t	fuzz;		/*	tracks pass to pass changes in the
 				 *	address of symbols caused by
 				 *	variable length instruction formats
 				 */
@@ -479,7 +479,7 @@ struct	expr
 {
 	char	e_mode;		/* Address mode */
 	char	e_flag;		/* Symbol flag */
-	Addr_T	e_addr;		/* Address */
+	addr_t	e_addr;		/* Address */
 	union	{
 		struct area *e_ap;
 		struct sym  *e_sp;
@@ -512,7 +512,7 @@ extern	char *		strncpy();
 extern	FILE *		afile();
 extern	VOID		asexit();
 extern	VOID		asmbl();
-extern	int		main();
+extern	VOID		main();
 extern	VOID		newdot();
 extern	VOID		phase();
 extern	VOID		usage();
@@ -549,7 +549,7 @@ extern	VOID		rerr();
 
 /* asexpr.c */
 extern	VOID		abscheck();
-extern	Addr_T		absexpr();
+extern	addr_t		absexpr();
 extern	VOID		clrexpr();
 extern	int		digit();
 extern	int		is_abs();
@@ -594,5 +594,6 @@ extern	struct	mne	mne[];
 
 /* Machine dependent functions */
 
+extern	VOID		machin();
 extern	VOID		minit();
 

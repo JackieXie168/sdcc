@@ -38,7 +38,7 @@
 /* BUG: those definitions (and the #include) should be set dynamically
 * (while linking or at runtime) to make this file a _real_ library.
 */
-#include <8051.h>
+#include <at89x2051.h>
 #define XBUFLEN 10
 #define RBUFLEN 10
 

@@ -32,6 +32,18 @@
 #include <ctype.h>
 #include <limits.h>
 #include "sdccconf.h"
+#ifdef _NO_GC
+
+#define GC_malloc malloc
+#define GC_free free
+#define GC_realloc realloc
+
+#else
+
+#include "gc/gc.h"
+
+#endif
+
 #include "src/SDCCset.h"
 #include "src/SDCChasht.h"
 
@@ -48,22 +60,13 @@ typedef short bool;
 #define min(a,b) (a < b ? a : b)
 #endif
 
-/* 
- * #ifndef ALLOC
- * #define  ALLOC(x,sz) if (!(x = calloc(1, sz)))                          \
- *          {                                                           \
- *             fprintf(stderr,"sdcdb: out of memory\n"); \
- *             exit (1);                                                \
- *          }
- * #endif
- * #ifndef ALLOC_ATOMIC
- * #define ALLOC_ATOMIC(x,sz)   if (!(x = calloc(1, sz)))   \
- *          {                                               \
- *             fprintf(stderr,"sdcdb: out of memory\n"); \
- *             exit (1);                                    \
- *          }
- * #endif
- */
+#ifndef ALLOC
+#define  ALLOC(x,sz) if (!(x = GC_malloc(sz)))                          \
+         {                                                           \
+            fprintf(stderr,"sdcdb: out of memory\n"); \
+            exit (1);                                                \
+         }
+#endif
 
 /* generalpurpose stack related macros */
 #define  STACK_DCL(stack,type,size)                   \
@@ -112,7 +115,7 @@ typedef short bool;
 #define  STACK_WALK(stack)    (w_##stack >= (stack + sizeof(stack)/sizeof(*stack)) \
 			       ? NULL : *w_##stack++ )
 
-#include "src/SDCCbitv.h"
+#include "../sdcc.src/SDCCbitv.h"
 
 enum {
     SYM_REC = 1,

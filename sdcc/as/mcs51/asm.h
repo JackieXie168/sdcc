@@ -22,12 +22,9 @@
  *           - prototypes for DefineNoICE_Line
  * 30-Jan-98 JLH:
  *           - add memory space flags to a_flag for 8051
- *
- *  3-Feb-00 KV:
- *	     - add DS80C390 flat mode support.
  */
 
-#define	VERSION	"V01.70 + NoICE + SDCC mods + Flat24 Feb-1999"
+#define	VERSION	"V01.70 + NoICE + SDCC mods Feb-1999"
 
 /*
  * Case Sensitivity Flag
@@ -104,11 +101,7 @@
 #define	dca	area[0]		/* Dca, default code area */
 
 
-/* NB: for Flat24 extentions to work, Addr_T must be at least 24
- * bits. This is checked at runtime when the .flat24 directive 
- * is processed.
- */
-typedef	unsigned int Addr_T;
+typedef	unsigned int addr_t;
 
 /*
  *	The area structure contains the parameter values for a
@@ -129,8 +122,8 @@ struct	area
 	struct	area *a_ap;	/* Area link */
 	char	a_id[NCPS];	/* Area Name */
 	int	a_ref;		/* Ref. number */
-	Addr_T	a_size;		/* Area size */
-	Addr_T	a_fuzz;		/* Area fuzz */
+	addr_t	a_size;		/* Area size */
+	addr_t	a_fuzz;		/* Area fuzz */
 	int	a_flag;		/* Area flags */
 };
 
@@ -172,50 +165,29 @@ struct	area
  *	+-----+-----+-----+-----+-----+-----+-----+-----+
  */
 
-#define	R_WORD	0x00		/* 16 bit */
-#define	R_BYTE	0x01		/*  8 bit */
+#define	R_WORD	0000		/* 16 bit */
+#define	R_BYTE	0001		/*  8 bit */
 
-#define	R_AREA	0x00		/* Base type */
-#define	R_SYM	0x02
+#define	R_AREA	0000		/* Base type */
+#define	R_SYM	0002
 
-#define	R_NORM	0x00		/* PC adjust */
-#define	R_PCR	0x04
+#define	R_NORM	0000		/* PC adjust */
+#define	R_PCR	0004
 
-#define	R_BYT1	0x00		/* Byte count for R_BYTE = 1 */
-#define	R_BYT2	0x08		/* Byte count for R_BYTE = 2 */
+#define	R_BYT1	0000		/* Byte count for R_BYTE = 1 */
+#define	R_BYT2	0010		/* Byte count for R_BYTE = 2 */
 
-#define	R_SGND	0x00		/* Signed Byte */
-#define	R_USGN	0x10		/* Unsigned Byte */
+#define	R_SGND	0000		/* Signed Byte */
+#define	R_USGN	0020		/* Unsigned Byte */
 
-#define	R_NOPAG	0x00		/* Page Mode */
-#define	R_PAG0	0x20		/* Page '0' */
-#define	R_PAG	0x40		/* Page 'nnn' */
+#define	R_NOPAG	0000		/* Page Mode */
+#define	R_PAG0	0040		/* Page '0' */
+#define	R_PAG	0100		/* Page 'nnn' */
 
-#define	R_LSB	0x00		/* low byte */
-#define	R_MSB	0x80		/* high byte */
-
-#define R_BYT3	0x100		/* if R_BYTE is set, this is a 
-				 * 3 byte address, of which
-				 * the linker must select one byte.
-				 */
-#define R_HIB	0x200		/* If R_BYTE & R_BYT3 are set, linker
-				 * will select byte 3 of the relocated
-				 * 24 bit address.
-				 */
+#define	R_LSB	0000		/* low byte */
+#define	R_MSB	0200		/* high byte */
 
 #define R_J11   (R_WORD|R_BYT2)	/* JLH: 11 bit JMP and CALL (8051) */
-#define R_J19   (R_WORD|R_BYT2|R_MSB) /* 19 bit JMP/CALL (DS80C390) */
-#define R_C24   (R_WORD|R_BYT1|R_MSB) /* 24 bit address (DS80C390) */
-#define R_J19_MASK (R_BYTE|R_BYT2|R_MSB)
-
-#define IS_R_J19(x) (((x) & R_J19_MASK) == R_J19)
-#define IS_R_J11(x) (((x) & R_J19_MASK) == R_J11)
-#define IS_C24(x) (((x) & R_J19_MASK) == R_C24)
-
-#define R_ESCAPE_MASK	0xf0	/* Used to escape relocation modes
-				 * greater than 0xff in the .rel
-				 * file.
-				 */
 
 /*
  * Listing Control Flags
@@ -250,7 +222,7 @@ struct	mne
 	char	*m_id;		/* Mnemonic JLH: change from [NCPS] */
 	char	m_type;		/* Mnemonic subtype */
 	char	m_flag;		/* Mnemonic flags */
-	Addr_T	m_valu;		/* Value */
+	addr_t	m_valu;		/* Value */
 };
 
 /*
@@ -275,7 +247,7 @@ struct	sym
 	char	s_flag;		/* Symbol flags */
 	struct	area *s_area;	/* Area line, 0 if absolute */
 	int	s_ref;		/* Ref. number */
-	Addr_T	s_addr;		/* Address */
+	addr_t	s_addr;		/* Address */
 };
 
 #define	S_GBL		01	/* Global */
@@ -311,7 +283,6 @@ struct	sym
 #define	S_ORG		24	/* .org */
 #define	S_MODUL		25	/* .module */
 #define	S_ASCIS		26	/* .ascis */
-#define	S_FLAT24	27      /* .flat24 */
 
 
 /*
@@ -334,7 +305,7 @@ struct	tsym
 	int t_flg;		/* flags */
 
 	struct	area *t_area;	/* Area */
-	Addr_T	t_addr;		/* Address */
+	addr_t	t_addr;		/* Address */
 };
 
 /*
@@ -414,10 +385,10 @@ extern	int	xflag;		/*	-x, listing radix flag
 				 */
 extern	int	fflag;		/*	-f(f), relocations flagged flag
 				 */
-extern	Addr_T	laddr;		/*	address of current assembler line
+extern	addr_t	laddr;		/*	address of current assembler line
 				 *	or value of .if argument
 				 */
-extern	Addr_T	fuzz;		/*	tracks pass to pass changes in the
+extern	addr_t	fuzz;		/*	tracks pass to pass changes in the
 				 *	address of symbols caused by
 				 *	variable length instruction formats
 				 */
@@ -462,9 +433,6 @@ extern	char	tb[NTITL];	/*	Title string buffer
 				 */
 extern	char	stb[NSBTL];	/*	Subtitle string buffer
 				 */
-extern 	int	flat24Mode;	/* 	non-zero if we are using DS390 24 bit 
-			 	 *	flat mode (via .flat24 directive). 
-			 	 */
 extern	char	symtbl[];	/*	string "Symbol Table"
 				 */
 extern	char	aretbl[];	/*	string "Area Table"
@@ -527,12 +495,12 @@ struct	expr
 {
 	char	e_mode;		/* Address mode */
 	char	e_flag;		/* Symbol flag */
-	Addr_T	e_addr;		/* Address */
+	addr_t	e_addr;		/* Address */
 	union	{
 		struct area *e_ap;
 		struct sym  *e_sp;
 	} e_base;		/* Rel. base */
-	int	e_rlcf;		/* Rel. flags */
+	char	e_rlcf;		/* Rel. flags */
 };
 
 /* C Library functions */
@@ -575,7 +543,6 @@ extern	char		getnb();
 extern	VOID		getst();
 extern	int		more();
 extern	VOID		unget();
-extern	VOID		chop_crlf();
 
 /* assym.c */
 extern	struct	area *	alookup();
@@ -592,14 +559,13 @@ extern	VOID		allglob();
 extern	VOID		aerr();
 extern	VOID		diag();
 extern	VOID		err();
-extern 	VOID 		warnBanner(void);
 extern	char *		geterr();
 extern	VOID		qerr();
 extern	VOID		rerr();
 
 /* asexpr.c */
 extern	VOID		abscheck();
-extern	Addr_T		absexpr();
+extern	addr_t		absexpr();
 extern	VOID		clrexpr();
 extern	int		digit();
 extern	int		is_abs();
@@ -617,7 +583,6 @@ extern	VOID		slew();
 /* asout.c */
 extern	int		hibyte();
 extern	int		lobyte();
-extern 	int		byte3(int);
 extern	VOID		out();
 extern	VOID		outab();
 extern	VOID		outarea();
@@ -628,17 +593,13 @@ extern	VOID		outbuf();
 extern	VOID		outchk();
 extern	VOID		outgsd();
 extern	VOID		outrb();
-extern	VOID		outrw(struct expr *, int);
-extern	VOID		outr24(struct expr *, int);
+extern	VOID		outrw();
 extern	VOID		outsym();
 extern	VOID		out_lb();
 extern	VOID		out_lw();
-extern	VOID		out_l24(int, int);
 extern	VOID		out_rw();
 extern	VOID		out_tw();
-extern	VOID		out_t24(int);
 extern	VOID		outr11();	/* JLH */
-extern	VOID		outr19(struct expr *, int, int);
 
 /* asstore.c */
 extern char *StoreString( char *str );
@@ -656,8 +617,8 @@ extern	struct	mne	mne[];
 
 /* Machine dependent functions */
 
+extern	VOID		machin();
 extern	VOID		minit();
-extern VOID machine(struct mne *);
 
 /* SD added THIS define to change
    strcmpi --> strcmp (strcmpi is NOT ANSI) */

@@ -1,4 +1,4 @@
-	/* asexpr.c */
+/* asexpr.c */
 
 /*
  * (C) Copyright 1989-1995
@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
+#include <alloc.h>
 #include "asm.h"
 
 /*)Module	asexpr.c
@@ -27,7 +28,7 @@
  *
  *	asexpr.c contains the following functions:
  *		VOID	abscheck()
- *		Addr_T	absexpr()
+ *		addr_t	absexpr()
  *		VOID	clrexpr()
  *		int	digit()
  *		VOID	expr()
@@ -198,23 +199,6 @@ int n;
 				esp->e_rlcf |= R_MSB ;
 				break;
 			    }
-			    else if (esp->e_base.e_ap && re.e_addr == 16)
-			    {
-			    	if (flat24Mode)
-			       	{
-			       	    esp->e_rlcf |= R_HIB;
-			       	}
-			       	else
-			       	{
-			       	    warnBanner();
-			       	    fprintf(stderr, 
-			       	    	    "(expr >> 16) is only meaningful in "
-			       	    	    ".flat24 mode.\n");
-			       	    qerr();
-			       	}
-			            
-			       break;
-			    }
 			    /* else continue with the normal processing */
 			    abscheck(esp);
 			    esp->e_addr >>= re.e_addr;
@@ -229,7 +213,7 @@ int n;
         unget(c);
 }
 
-/*)Function	Addr_T	absexpr()
+/*)Function	addr_t	absexpr()
  *
  *	The function absexpr() evaluates an expression, verifies it
  *	is absolute (i.e. not position dependent or relocatable), and
@@ -251,7 +235,7 @@ int n;
  *		a 'r' error is reported.
  */
 
-Addr_T
+addr_t
 absexpr()
 {
         struct expr e;
@@ -338,7 +322,7 @@ register struct expr *esp;
         if (c == '-') {
                 expr(esp, 100);
                 abscheck(esp);
-                esp->e_addr = 0-esp->e_addr;
+                esp->e_addr = -esp->e_addr;
                 return;
         }
         if (c == '~') {

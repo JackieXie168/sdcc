@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #include <string.h>
-//#include <alloc.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lklex.c
@@ -81,7 +81,7 @@
 
 VOID
 getid(id, c)
-register int c;
+register c;
 char *id;
 {
 	register char *p;
@@ -134,7 +134,7 @@ char *id;
 
 VOID
 getfid(str, c)
-register int c;
+register c;
 char *str;
 {
 	register char *p;
@@ -175,7 +175,7 @@ char *str;
 char
 getnb()
 {
-	register int c;
+	register c;
 
 	while ((c=get())==' ' || c=='\t')
 		;
@@ -205,7 +205,7 @@ getnb()
 
 VOID
 skip(c)
-register int c;
+register c;
 {
 	if (c < 0)
 		c = getnb();
@@ -239,7 +239,7 @@ register int c;
 char
 get()
 {
-	register int c;
+	register c;
 
 	if ((c = *ip) != 0)
 		++ip;
@@ -315,7 +315,7 @@ unget(c)
 int
 getmap(d)
 {
-	register int c, n, v;
+	register c, n, v;
 
 	if ((c = get()) == '\0')
 		return (-1);
@@ -423,7 +423,7 @@ getmap(d)
 int
 getline()
 {
-	register int i, ftype;
+	register i, ftype;
 	register char *fid;
 
 loop:	if (pflag && cfp && cfp->f_type == F_STD)
@@ -530,7 +530,7 @@ loop:	if (pflag && cfp && cfp->f_type == F_STD)
 int
 more()
 {
-	register int c;
+	register c;
 
 	c = getnb();
 	unget(c);
@@ -562,7 +562,7 @@ more()
 char
 endline()
 {
-	register int c;
+	register c;
 
 	c = getnb();
 	return( (c == '\0' || c == ';') ? 0 : c );

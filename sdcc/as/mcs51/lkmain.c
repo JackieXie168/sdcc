@@ -14,15 +14,11 @@
  *           - use a_type == 0 as "virgin area" flag: set == 1 if -b
  */
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <alloc.h>
 #include "aslink.h"
 
-/* yuck - but including unistd.h causes problems on Cygwin by redefining
- * Addr_T.
- */
-extern int unlink(const char *);
 
 /*)Module	lkmain.c
  *
@@ -36,7 +32,7 @@ extern int unlink(const char *);
  *		FILE *	afile(fn,ft,wf)
  *		VOID	bassav()
  *		VOID	gblsav()
-  *		VOID	link_main()
+  *		VOID	link()
  *		VOID	lkexit()
  *		VOID	main(argc,argv)
  *		VOID	map()
@@ -115,7 +111,7 @@ extern int unlink(const char *);
  *		int	fprintf()	c_library
  *		int	getline()	lklex.c
  *		VOID	library()	lklibr.c
- *		VOID	link_main()	lkmain.c
+ *		VOID	link()		lkmain.c
  *		VOID	lkexit()	lkmain.c
  *		VOID	lnkarea()	lkarea.c
  *		VOID	map()		lkmain.c
@@ -231,7 +227,7 @@ char *argv[];
                         if ((ip[0] == ';') && (ip[1] == '!') && jfp) {
                         	fprintf( jfp, "%s\n", &ip[2] );
                         }
-			link_main();
+			link();
 		}
 		if (pass == 0) {
 			/*
@@ -352,9 +348,9 @@ int i;
 	exit(i);
 }
 
-/*)Function	link_main()
+/*)Function	link()
  *
- *	The function link_main() evaluates the directives for each line of
+ *	The function link() evaluates the directives for each line of
  *	text read from the .rel file(s).  The valid directives processed
  *	are:
  *		X, D, Q, H, M, A, S, T, R, and P.
@@ -384,7 +380,7 @@ int i;
  */
 
 VOID
-link_main()
+link()
 {
 	register int c;
 
@@ -416,7 +412,6 @@ link_main()
 		sdp.s_area = NULL;
 		sdp.s_areax = NULL;
 		sdp.s_addr = 0;
-		// jwk lastExtendedAddress = -1;
 		break;
 
 	case 'M':
@@ -685,10 +680,7 @@ parse()
 				case 'U':
 					uflag = 1;
 					break;
-				case 'r':
-				case 'R':
-					rflag = 1;
-					break;
+
 				case 'x':
 				case 'X':
 					xflag = 0;
@@ -843,7 +835,7 @@ bassav()
  *		int	lkerr		error flag
  *
  *	 functions called:
- *		Addr_T	expr()		lkeval.c
+ *		addr_t	expr()		lkeval.c
  *		int	fprintf()	c_library
  *		VOID	getid()		lklex.c
  *		char	getnb()		lklex.c
@@ -952,7 +944,7 @@ gblsav()
  *		int	lkerr		error flag
  *
  *	 functions called:
- *		Addr_T	expr()		lkeval.c
+ *		addr_t	expr()		lkeval.c
  *		int	fprintf()	c_library
  *		VOID	getid()		lklex.c
  *		char	getnb()		lklex.c
@@ -1096,7 +1088,7 @@ char *ft;
  *	 functions called:
  *		char	getnb()		lklex.c
  *		VOID	unget()		lklex.c
- *		Addr_T	expr()		lkeval.c
+ *		addr_t	expr()		lkeval.c
  *
  *	side effects:
  *		The iram_size may be modified.

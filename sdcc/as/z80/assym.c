@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
-#include <malloc.h>
+#include <alloc.h>
 #include "asm.h"
 
 /*)Module	assym.c
@@ -80,7 +80,7 @@ syminit()
 	struct mne **mpp;
 	register struct sym  *sp;
 	struct sym **spp;
-	register int h;
+	register h;
 
 	mpp = &mnehash[0];
 	while (mpp < &mnehash[NHASH])
@@ -176,7 +176,7 @@ mlookup(id)
 char *id;
 {
 	register struct mne *mp;
-	register int h;
+	register h;
 
 	h = hash(id);
 	mp = mnehash[h];
@@ -221,7 +221,7 @@ lookup(id)
 char *id;
 {
 	register struct sym *sp;
-	register int h;
+	register h;
 
 	h = hash(id);
 	sp = symhash[h];
@@ -268,7 +268,7 @@ VOID
 symglob()
 {
 	register struct sym *sp;
-	register int i;
+	register i;
 
 	for (i=0; i<NHASH; ++i) {
 		sp = symhash[i];
@@ -305,7 +305,7 @@ VOID
 allglob()
 {
 	register struct sym *sp;
-	register int i;
+	register i;
 
 	for (i=0; i<NHASH; ++i) {
 		sp = symhash[i];
@@ -344,7 +344,7 @@ int
 symeq(p1, p2)
 register char *p1, *p2;
 {
-	register int n;
+	register n;
 
 	n = NCPS;
 	do {
@@ -387,7 +387,7 @@ int
 hash(p)
 register char *p;
 {
-	register int h, n;
+	register h, n;
 
 	h = 0;
 	n = NCPS;

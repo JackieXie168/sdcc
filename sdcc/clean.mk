@@ -3,15 +3,15 @@
 clean:
 	rm -f *core *[%~] *.[oa]
 	rm -f .[a-z]*~
-	-rm -f bin/*
+	rm -f bin/*
 
 
 # Deleting all files created by configuring or building the program
 # -----------------------------------------------------------------
 distclean: clean
-	rm -f config.cache config.log config.status Makefile.common
+	rm -f config.cache config.log config.status
 	rm -f sdccconf.h main.mk *.dep
-	rm ports.all ports.build
+
 
 # Like clean but some files may still exist
 # -----------------------------------------

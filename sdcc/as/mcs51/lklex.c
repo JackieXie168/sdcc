@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lklex.c
@@ -139,7 +140,7 @@ char *str;
 		if (p < &str[FILSPC-1])
 			*p++ = c;
 		c = get();
-	} while (c && ((ctype[c] != SPACE)||(c == ':')||(c == '\\')));
+	} while (c && (ctype[c] != SPACE));
 	while (p < &str[FILSPC])
 		*p++ = 0;
 }
@@ -414,7 +415,7 @@ getmap(d)
 int
 getline()
 {
-	register int ftype;
+	register int i, ftype;
 	register char *fid;
 
 loop:	if (pflag && cfp && cfp->f_type == F_STD)
@@ -472,7 +473,9 @@ loop:	if (pflag && cfp && cfp->f_type == F_STD)
 			return(0);
 		}
 	}
-	chop_crlf(ib);
+	i = strlen(ib) - 1;
+	if (ib[i] == '\n')
+		ib[i] = 0;
 	return (1);
 }
 
@@ -538,35 +541,4 @@ endline()
 
 	c = getnb();
 	return( (c == '\0' || c == ';') ? 0 : c );
-}
-
-/*)Function	VOID	chop_crlf(str)
- *
- *		char	*str		string to chop
- *
- *	The function chop_crlf() removes trailing LF or CR/LF from
- *	str, if present.
- *
- *	local variables:
- *		int	i		string length
- *
- *	global variables:
- *		none
- *
- *	functions called:
- *		none
- *
- *	side effects:
- *		none
- */
-
-VOID
-chop_crlf(str)
-char *str;
-{
-	register int i;
-
-	i = strlen(str);
-	if (i >= 1 && str[i-1] == '\n') str[i-1] = 0;
-	if (i >= 2 && str[i-2] == '\r') str[i-2] = 0;
 }

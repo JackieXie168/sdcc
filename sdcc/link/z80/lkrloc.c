@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #include <string.h>
-//#include <alloc.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lkrloc.c
@@ -24,15 +24,15 @@
  *	perform the relocation calculations.
  *
  *	lkrloc.c contains the following functions:
- *		Addr_T	adb_b()
- *		Addr_T	adb_lo()
- *		Addr_T	adb_hi()
- *		Addr_T	adw_w()
- *		Addr_T	adw_lo()
- *		Addr_T	adw_hi()
+ *		addr_t	adb_b()
+ *		addr_t	adb_lo()
+ *		addr_t	adb_hi()
+ *		addr_t	adw_w()
+ *		addr_t	adw_lo()
+ *		addr_t	adw_hi()
  *		VOID	erpdmp()
  *		VOID	errdmp()
- *		Addr_T	evword()
+ *		addr_t	evword()
  *		VOID	prntval()
  *		VOID	rele()
  *		VOID	relerr()
@@ -207,14 +207,14 @@ relt()
  *		int	lkerr		error flag
  *		int	mode		relocation mode
  *		adrr_t	paga		paging base area address
- *		Addr_T	pags		paging symbol address
- *		Addr_T	pc		relocated base address
- *		Addr_T	r		PCR relocation value
- *		Addr_T	reli		relocation initial value
- *		Addr_T	relv		relocation final value
+ *		addr_t	pags		paging symbol address
+ *		addr_t	pc		relocated base address
+ *		addr_t	r		PCR relocation value
+ *		addr_t	reli		relocation initial value
+ *		addr_t	relv		relocation final value
  *		int	rindex		symbol / area index
- *		Addr_T	rtbase		base code address
- *		Addr_T	rtofst		rtval[] index offset
+ *		addr_t	rtbase		base code address
+ *		addr_t	rtofst		rtval[] index offset
  *		int	rtp		index into T data
  *		sym	**s		pointer to array of symbol pointers
  *
@@ -224,11 +224,11 @@ relt()
  *		FILE	*stderr		standard error device
  *
  *	called functions:
- *		Addr_T	adb_b()		lkrloc.c
- *		Addr_T	adb_lo()	lkrloc.c
- *		Addr_T	adb_hi()	lkrloc.c
- *		Addr_T	adw_w()		lkrloc.c
- *		Addr_T	evword()	lkrloc.c
+ *		addr_t	adb_b()		lkrloc.c
+ *		addr_t	adb_lo()	lkrloc.c
+ *		addr_t	adb_hi()	lkrloc.c
+ *		addr_t	adw_w()		lkrloc.c
+ *		addr_t	evword()	lkrloc.c
  *		int	eval()		lkeval.c
  *		int	fprintf()	c_library
  *		VOID	ihx()		lkihx.c
@@ -248,10 +248,10 @@ relt()
 VOID
 relr()
 {
-	register int mode;
-	register Addr_T reli, relv;
+	register mode;
+	register addr_t reli, relv;
 	int aindex, rindex, rtp, error;
-	Addr_T r, rtbase, rtofst, paga, pags, pc;
+	addr_t r, rtbase, rtofst, paga, pags, pc;
 	struct areax **a;
 	struct sym **s;
 
@@ -397,7 +397,7 @@ relr()
 		 */
 		if (mode & R_PCR && mode & R_BYTE) {
 			r = relv & ~0x7F;
-			if (r != (Addr_T) ~0x7F && r != 0)
+			if (r != (addr_t) ~0x7F && r != 0)
 				error = 2;
 		}
 
@@ -478,7 +478,7 @@ char *errmsg[] = {
  *		areax	**a		pointer to array of area pointers
  *		int	aindex		area index
  *		int	mode		relocation mode
- *		Addr_T	relv		relocation value
+ *		addr_t	relv		relocation value
  *		int	rindex		symbol / area index
  *		int	rtp		index into T data
  *		sym	**s		pointer to array of symbol pointers
@@ -490,8 +490,8 @@ char *errmsg[] = {
  *		FILE	*stderr		standard error device
  *
  *	called functions:
- *		Addr_T	adw_w()		lkrloc.c
- *		Addr_T	evword()	lkrloc.c
+ *		addr_t	adw_w()		lkrloc.c
+ *		addr_t	evword()	lkrloc.c
  *		int	eval()		lkeval.c
  *		int	fprintf()	c_library
  *		int	more()		lklex.c
@@ -507,9 +507,9 @@ char *errmsg[] = {
 VOID
 relp()
 {
-	register int aindex, rindex;
+	register aindex, rindex;
 	int mode, rtp;
-	Addr_T relv;
+	addr_t relv;
 	struct areax **a;
 	struct sym **s;
 
@@ -628,13 +628,13 @@ rele()
 	}
 }
 
-/*)Function	Addr_T 	evword()
+/*)Function	addr_t 	evword()
  *
  *	The function evword() combines two byte values
  *	into a single word value.
  *
  *	local variable:
- *		Addr_T	v		temporary evaluation variable
+ *		addr_t	v		temporary evaluation variable
  *
  *	global variables:
  *		hilo			byte ordering parameter
@@ -648,10 +648,10 @@ rele()
  *
  */
 
-Addr_T
+addr_t
 evword()
 {
-	register Addr_T v;
+	register addr_t v;
 
 	if (hilo) {
 		v =  (eval() << 8);
@@ -663,7 +663,7 @@ evword()
 	return(v);
 }
 
-/*)Function	Addr_T 	adb_b(v, i)
+/*)Function	addr_t 	adb_b(v, i)
  *
  *		int	v		value to add to byte
  *		int	i		rtval[] index
@@ -686,15 +686,15 @@ evword()
  *
  */
 
-Addr_T
+addr_t
 adb_b(v, i)
-register Addr_T v;
+register addr_t v;
 register int i;
 {
 	return(rtval[i] += v);
 }
 
-/*)Function	Addr_T 	adb_lo(v, i)
+/*)Function	addr_t 	adb_lo(v, i)
  *
  *		int	v		value to add to byte
  *		int	i		rtval[] index
@@ -705,7 +705,7 @@ register int i;
  *	The MSB rtflg[] is cleared.
  *
  *	local variable:
- *		Addr_T	j		temporary evaluation variable
+ *		addr_t	j		temporary evaluation variable
  *
  *	global variables:
  *		hilo			byte ordering parameter
@@ -721,12 +721,12 @@ register int i;
  *
  */
 
-Addr_T
+addr_t
 adb_lo(v, i)
-Addr_T	v;
+addr_t	v;
 int	i;
 {
-	register Addr_T j;
+	register addr_t j;
 
 	j = adw_w(v, i);
 	/*
@@ -740,7 +740,7 @@ int	i;
 	return (j);
 }
 
-/*)Function	Addr_T 	adb_hi(v, i)
+/*)Function	addr_t 	adb_hi(v, i)
  *
  *		int	v		value to add to byte
  *		int	i		rtval[] index
@@ -751,7 +751,7 @@ int	i;
  *	The LSB rtflg[] is cleared.
  *
  *	local variable:
- *		Addr_T	j		temporary evaluation variable
+ *		addr_t	j		temporary evaluation variable
  *
  *	global variables:
  *		hilo			byte ordering parameter
@@ -767,12 +767,12 @@ int	i;
  *
  */
 
-Addr_T
+addr_t
 adb_hi(v, i)
-Addr_T	v;
+addr_t	v;
 int	i;
 {
-	register Addr_T j;
+	register addr_t j;
 
 	j = adw_w(v, i);
 	/*
@@ -786,7 +786,7 @@ int	i;
 	return (j);
 }
 
-/*)Function	Addr_T 	adw_w(v, i)
+/*)Function	addr_t 	adw_w(v, i)
  *
  *		int	v		value to add to word
  *		int	i		rtval[] index
@@ -796,7 +796,7 @@ int	i;
  *	The new value of rtval[i] / rtval[i+1] is returned.
  *
  *	local variable:
- *		Addr_T	j		temporary evaluation variable
+ *		addr_t	j		temporary evaluation variable
  *
  *	global variables:
  *		hilo			byte ordering parameter
@@ -809,12 +809,12 @@ int	i;
  *
  */
 
-Addr_T
+addr_t
 adw_w(v, i)
-register Addr_T v;
+register addr_t v;
 register int i;
 {
-	register Addr_T j;
+	register addr_t j;
 
 	if (hilo) {
 		j = v + (rtval[i] << 8) + (rtval[i+1] & 0xff);
@@ -828,7 +828,7 @@ register int i;
 	return(j);
 }
 
-/*)Function	Addr_T 	adw_lo(v, i)
+/*)Function	addr_t 	adw_lo(v, i)
  *
  *		int	v		value to add to byte
  *		int	i		rtval[] index
@@ -839,7 +839,7 @@ register int i;
  *	The MSB rtval[] is zeroed.
  *
  *	local variable:
- *		Addr_T	j		temporary evaluation variable
+ *		addr_t	j		temporary evaluation variable
  *
  *	global variables:
  *		hilo			byte ordering parameter
@@ -854,12 +854,12 @@ register int i;
  *
  */
 
-Addr_T
+addr_t
 adw_lo(v, i)
-Addr_T	v;
+addr_t	v;
 int	i;
 {
-	register Addr_T j;
+	register addr_t j;
 
 	j = adw_w(v, i);
 	/*
@@ -873,7 +873,7 @@ int	i;
 	return (j);
 }
 
-/*)Function	Addr_T 	adw_hi(v, i)
+/*)Function	addr_t 	adw_hi(v, i)
  *
  *		int	v		value to add to byte
  *		int	i		rtval[] index
@@ -885,7 +885,7 @@ int	i;
  *	The MSB rtval[] is zeroed.
  *
  *	local variable:
- *		Addr_T	j		temporary evaluation variable
+ *		addr_t	j		temporary evaluation variable
  *
  *	global variables:
  *		hilo			byte ordering parameter
@@ -900,12 +900,12 @@ int	i;
  *
  */
 
-Addr_T
+addr_t
 adw_hi(v, i)
-Addr_T	v;
+addr_t	v;
 int	i;
 {
-	register Addr_T j;
+	register addr_t j;
 
 	j = adw_w(v, i);
 	/*
@@ -1050,7 +1050,7 @@ char *str;
 /*)Function	VOID	prntval(fptr, v)
  *
  *		FILE	*fptr		output file handle
- *		Addr_T	v		value to output
+ *		addr_t	v		value to output
  *
  *	The function prntval() outputs the value v, in the
  *	currently selected radix, to the device specified
@@ -1073,7 +1073,7 @@ char *str;
 VOID
 prntval(fptr, v)
 FILE *fptr;
-Addr_T v;
+addr_t v;
 {
 	if (xflag == 0) {
 		fprintf(fptr, "%04X\n", v);

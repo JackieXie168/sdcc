@@ -8,8 +8,7 @@
 //Last modified 6 Apr 97
 //----------------------------------------------------------------------------
 
-//This module contains definition of I8051 registers
-#include "8052.h"
+#include "reg51.h"//This module contains definition of I8051 registers
 
 
 static unsigned char xdata stx_index_in, srx_index_in, stx_index_out, srx_index_out;

@@ -2,7 +2,7 @@
 # For Borland 5.0, replace bc45 by bc5.
 # If you have the Borland assembler, remove "-DUSE_GENERIC"
 #
-bc=        c:\borland\bcc55
+bc=        c:\bc45
 bcbin=     $(bc)\bin
 bclib=     $(bc)\lib
 bcinclude= $(bc)\include
@@ -39,7 +39,7 @@ OBJS= $(XXXOBJS:XXX=)
 
 all: gctest.exe cord\de.exe test_cpp.exe
 
-$(OBJS) test.obj: gc_priv.h gc_hdrs.h gc.h gcconfig.h BCC_MAKEFILE
+$(OBJS) test.obj: gc_priv.h gc_hdrs.h gc.h gcconfig.h MAKEFILE
 
 gc.lib: $(OBJS)
     -del gc.lib

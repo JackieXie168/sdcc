@@ -19,7 +19,6 @@ exec_prefix     = @exec_prefix@
 bindir          = @bindir@
 libdir          = @libdir@
 datadir         = @datadir@
-sdcc_datadir    = @sdcc_datadir@
 includedir      = @includedir@
 mandir          = @mandir@
 man1dir         = $(mandir)/man1
@@ -38,13 +37,13 @@ all:
 # Compiling and installing everything and runing test
 # ---------------------------------------------------
 install: all installdirs
-	$(CP) *.h $(sdcc_datadir)/include/
+	$(CP) *.h $(datadir)/sdcc51inc/
 
 
 # Deleting all the installed files
 # --------------------------------
 uninstall:
-	for hdr in *.h; do rm -f $(sdcc_datadir)/$$hdr; done
+	for hdr in *.h; do rm -f $(datadir)/$$hdr; done
 
 
 # Performing self-test
@@ -60,7 +59,7 @@ installcheck:
 # Creating installation directories
 # ---------------------------------
 installdirs:
-	[ -d $(sdcc_datadir)/include ] || mkdir -p $(sdcc_datadir)/include
+	[ -d $(datadir)/sdcc51inc ] || mkdir -p $(datadir)/sdcc51inc
 
 
 # Creating dependencies

@@ -100,7 +100,7 @@ extern int cpp_handle_options PARAMS ((cpp_reader*, int, char**));
 extern enum cpp_token cpp_get_token PARAMS ((struct parse_marker*));
 extern void cpp_skip_hspace PARAMS((cpp_reader*));
 extern enum cpp_token cpp_get_non_space_token PARAMS ((cpp_reader *));
-extern int cpp_read_check_assertion (cpp_reader *pfile) ;
+
 
 /* Maintain and search list of included files, for #import.  */
 
@@ -274,7 +274,7 @@ struct cpp_reader {
 
 /* Make sure PFILE->token_buffer has space for at least N more characters. */
 #define CPP_RESERVE(PFILE, N) \
-  ((int) (CPP_WRITTEN (PFILE) + N) > (PFILE)->token_buffer_size \
+  (CPP_WRITTEN (PFILE) + N > (PFILE)->token_buffer_size \
    && (cpp_grow_buffer (PFILE, N), 0))
 
 /* Append string STR (of length N) to PFILE's output buffer.
@@ -645,36 +645,6 @@ extern cpp_buffer* cpp_pop_buffer PARAMS ((cpp_reader *));
 
 extern cpp_hashnode* cpp_lookup PARAMS ((cpp_reader*, const U_CHAR*,
 					 int, int));
-
-/* Define the MS VC6 stuff - Some of these should also be defined for
-the other hosts but they are here until declared safe for all */
-
-#if 1 // defined(_MSC_VER)
-
-void init_parse_file (cpp_reader *pfile) ;
-
-void init_parse_options (struct cpp_options *opts) ;
-
-int push_parse_file (cpp_reader *pfile,char *fname) ;
-
-void cpp_finish (cpp_reader *pfile) ;
-
-void cpp_hash_cleanup (cpp_reader *pfile) ;
-
-void cpp_file_line_for_message (cpp_reader *pfile,char *filename ,int line, int column) ;
-
-void cpp_print_containing_files (cpp_reader *pfile) ;
-
-void cpp_message (cpp_reader *pfile,int is_error,char *msg,char *arg1, char *arg2, char *arg3) ;
-
-void skip_rest_of_line (cpp_reader *pfile) ;
-
-/* Parse an identifier starting with C. */
-
-int parse_name (cpp_reader *pfile, int c) ;
-
-#endif
-
 
 #ifdef __cplusplus
 }

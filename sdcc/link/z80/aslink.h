@@ -89,8 +89,7 @@
 #define	HMASK	077		/* Hash mask */
 #define	NLPP	60		/* Lines per page */
 #define	NTXT	16		/* T values */
-/** PENDING: Taking this to 256 causes a segfault. */
-#define	FILSPC	100		/* File spec length */
+#define	FILSPC	80		/* File spec length */
 
 /*
  *	The "R_" relocation constants define values used in
@@ -106,30 +105,30 @@
  *	    +-----+-----+-----+-----+-----+-----+-----+-----+
  */
 
-#define	R_WORD	0x00		/* 16 bit */
-#define	R_BYTE	0x01		/*  8 bit */
+#define	R_WORD	0000		/* 16 bit */
+#define	R_BYTE	0001		/*  8 bit */
 
-#define	R_AREA	0x00		/* Base type */
-#define	R_SYM	0x02
+#define	R_AREA	0000		/* Base type */
+#define	R_SYM	0002
 
-#define	R_NORM	0x00		/* PC adjust */
-#define	R_PCR	0x04
+#define	R_NORM	0000		/* PC adjust */
+#define	R_PCR	0004
 
-#define	R_BYT1	0x00		/* Byte count for R_BYTE = 1 */
-#define	R_BYT2	0x08		/* Byte count for R_BYTE = 2 */
+#define	R_BYT1	0000		/* Byte count for R_BYTE = 1 */
+#define	R_BYT2	0010		/* Byte count for R_BYTE = 2 */
 
-#define	R_SGND	0x00		/* Signed value */
-#define	R_USGN	0x10		/* Unsigned value */
+#define	R_SGND	0000		/* Signed value */
+#define	R_USGN	0020		/* Unsigned value */
 
-#define	R_NOPAG	0x00		/* Page Mode */
-#define	R_PAG0	0x20		/* Page '0' */
-#define	R_PAG	0x40		/* Page 'nnn' */
+#define	R_NOPAG	0000		/* Page Mode */
+#define	R_PAG0	0040		/* Page '0' */
+#define	R_PAG	0100		/* Page 'nnn' */
 
 /*
  * Valid for R_BYT2:
  */
-#define	R_LSB	0x00		/* output low byte */
-#define	R_MSB	0x80		/* output high byte */
+#define	R_LSB	0000		/* output low byte */
+#define	R_MSB	0200		/* output high byte */
 
 /*
  * Global symbol types.
@@ -179,7 +178,7 @@ extern patch* patches;
 /*
  *	General assembler address type
  */
-typedef unsigned int Addr_T;
+typedef unsigned int addr_t;
 
 /*
  *	The structures of head, area, areax, and sym are created
@@ -225,8 +224,8 @@ struct	area
 {
 	struct	area	*a_ap;	/* Area link */
 	struct	areax	*a_axp;	/* Area extension link */
-	Addr_T	a_addr;		/* Beginning address of area */
-	Addr_T	a_size;		/* Total size of the area */
+	addr_t	a_addr;		/* Beginning address of area */
+	addr_t	a_size;		/* Total size of the area */
 	char	a_type;		/* Area subtype */
 	char	a_flag;		/* Flag byte */
 	char	a_id[NCPS];	/* Name */
@@ -252,8 +251,8 @@ struct	areax
 	struct	areax	*a_axp;	/* Area extension link */
 	struct	area	*a_bap;	/* Base area link */
 	struct	head	*a_bhp;	/* Base header link */
-	Addr_T	a_addr;		/* Beginning address of section */
-	Addr_T	a_size;		/* Size of the area in section */
+	addr_t	a_addr;		/* Beginning address of section */
+	addr_t	a_size;		/* Size of the area in section */
 };
 
 /*
@@ -274,7 +273,7 @@ struct	sym
 	struct	areax	*s_axp;	/* Symbol area link */
 	char	s_type;		/* Symbol subtype */
 	char	s_flag;		/* Flag byte */
-	Addr_T	s_addr;		/* Address */
+	addr_t	s_addr;		/* Address */
 	char	s_id[NCPS];	/* Name */
 };
 
@@ -323,7 +322,7 @@ struct	sdp
 {
 	struct	area  *s_area;	/* Paged Area link */
 	struct	areax *s_areax;	/* Paged Area Extension Link */
-	Addr_T	s_addr;		/* Page address offset */
+	addr_t	s_addr;		/* Page address offset */
 };
 
 /*
@@ -340,9 +339,9 @@ struct	rerr
 {
 	int	aindex;		/* Linking area */
 	int	mode;		/* Relocation mode */
-	Addr_T	rtbase;		/* Base address in section */
+	addr_t	rtbase;		/* Base address in section */
 	int	rindex;		/* Area/Symbol reloaction index */
-	Addr_T	rval;		/* Area/Symbol offset value */
+	addr_t	rval;		/* Area/Symbol offset value */
 };
 
 /*
@@ -572,7 +571,7 @@ extern	int	pass;		/*	linker pass number
 extern	int	rtcnt;		/*	count of elements in the
 				 *	rtval[] and rtflg[] arrays
 				 */
-extern	Addr_T	rtval[];	/*	data associated with relocation
+extern	addr_t	rtval[];	/*	data associated with relocation
 				 */
 extern	int	rtflg[];	/*	indicates if rtval[] value is
 				 *	to be sent to the output file.
@@ -619,7 +618,7 @@ extern	VOID		bassav();
 extern	VOID		gblsav();
 extern	VOID		link();
 extern	VOID		lkexit();
-extern	int		main();
+extern	VOID		main();
 extern	VOID		map();
 #ifdef SDK
 extern	VOID		sym();
@@ -660,14 +659,14 @@ extern	VOID		symdef();
 extern	int		symeq();
 extern	VOID		syminit();
 extern	VOID		symmod();
-extern	Addr_T		symval();
+extern	addr_t		symval();
 
 /* lkeval.c */
 extern	int		digit();
-extern	Addr_T		eval();
-extern	Addr_T		expr();
+extern	addr_t		eval();
+extern	addr_t		expr();
 extern	int		oprio();
-extern	Addr_T		term();
+extern	addr_t		term();
 
 /* lklist.c */
 extern	int		dgt();
@@ -679,13 +678,13 @@ extern	VOID		newpag();
 extern	VOID		slew();
 
 /* lkrloc.c */
-extern	Addr_T		adb_b();
-extern	Addr_T		adb_hi();
-extern	Addr_T		adb_lo();
-extern	Addr_T		adw_w();
-extern	Addr_T		adw_hi();
-extern	Addr_T		adw_lo();
-extern	Addr_T		evword();
+extern	addr_t		adb_b();
+extern	addr_t		adb_hi();
+extern	addr_t		adb_lo();
+extern	addr_t		adw_w();
+extern	addr_t		adw_hi();
+extern	addr_t		adw_lo();
+extern	addr_t		evword();
 extern	VOID		rele();
 extern	VOID		reloc();
 extern	VOID		relt();

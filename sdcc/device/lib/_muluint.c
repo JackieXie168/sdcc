@@ -23,57 +23,15 @@
    what you give them.   Help stamp out software-hoarding!  
 -------------------------------------------------------------------------*/
 
-#ifdef SDCC_MODEL_FLAT24
-
-unsigned int _muluint (unsigned int a, unsigned int b) 
-{
-  a*b; // hush the compiler
-
-  /* muluint=
-      (int)(lsb_a*lsb_b) +
-      (char)(msb_a*lsb_b)<<8 +
-      (char)(lsb_a*msb_b)<<8
-  */
-
-  _asm 
-    mov r2,dph ; msb_a
-    mov r3,dpl ; lsb_a
-
-    mov b,r3 ; lsb_a
-    mov dptr,#__muluint_PARM_2
-    movx a,@dptr ; lsb_b
-    mul ab ; lsb_a*lsb_b
-    mov r0,a
-    mov r1,b
-
-    mov b,r2 ; msb_a
-    movx a,@dptr ; lsb_b
-    mul ab ; msb_a*lsb_b
-    add a,r1
-    mov r1,a
-
-    mov b,r3 ; lsb_a
-    inc dptr
-    movx a,@dptr ; msb_b
-    mul ab ; lsb_a*msb_b
-    add a,r1
-
-    mov dph,a
-    mov dpl,r0
-    ret
-  _endasm;
-}
-
-#else
-
 union uu {
 	struct { unsigned short lo,hi ;} s;
         unsigned int t;
 } ;
 
+
 unsigned int _muluint (unsigned int a, unsigned int b) 
 {
-#ifdef SDCC_MODEL_LARGE
+#ifdef SDCC_MODEL_LARGE    
 	union uu _xdata *x;
 	union uu _xdata *y; 
 	union uu t;
@@ -92,5 +50,3 @@ unsigned int _muluint (unsigned int a, unsigned int b)
 
        return t.t;
 } 
-
-#endif

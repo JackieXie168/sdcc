@@ -1,6 +1,19 @@
 # Makefile for ConsoleZ80, a simple Console based Z80 EMU
-TOPDIR = ../..
+SOURCE = Z80.java ConsoleZ80.java
+VER = 0.1.0
 
-JAVASRC = Z80.java ConsoleZ80.java
+OBJ = $(SOURCE:.java=.class)
 
-include $(TOPDIR)/Makefile.rules
+JAVAC = javac -O
+
+%.class: %.java
+	$(JAVAC) $<
+
+all: $(OBJ)
+
+doc:
+	mkdir -p html
+	javadoc -d html $(SOURCE)
+
+clean:
+	rm -f *.class *~

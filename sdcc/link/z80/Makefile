@@ -1,43 +1,21 @@
-PRJDIR = ../..
+TOPDIR 	= ../..
 
-include $(PRJDIR)/Makefile.common
+include $(TOPDIR)/Makefile.common
 
-OBJDIR	= obj/$(EXT)
+OBJS	= lkarea.o lkdata.o lkeval.o lkhead.o lkihx.o lklex.o \
+	  lklibr.o lklist.o lkmain.o lkrloc.o lks19.o lksym.o \
+	  lkgb.o lkgg.o
+BINS	= link$E
 
-SLIBSRC	= NewAlloc.c
-
-SRC	= lkarea.c lkdata.c lkeval.c lkhead.c lkihx.c lklex.c \
-	  lklibr.c lklist.c lkmain.c lkrloc.c lks19.c lksym.c \
-	  lkgb.c lkgg.c
-
-OBJS	= $(SRC:%.c=$(OBJDIR)/%.o) 
-SLIBOBJS	= $(SLIBSRC:%.c=$(OBJDIR)/%.o) 
-
-BINS	= $(BUILDDIR)link$(EXT)
-
-CFLAGS	+= $(OPTS) -DINDEXLIB -DMLH_MAP -DUNIX -DSDK
 CFLAGS	+= -funsigned-char -DUNIX
-CFLAGS	+= -I$(PRJDIR)/as/$(PORT) -I$(SLIB) 
 
 all:	$(BINS)
 
-$(BINS): $(OBJDIR) $(OBJS) $(SLIBOBJS)
-	$(CC) $(LDFLAGS) -g -o $(BINS) $(OBJS) $(SLIBOBJS) 
+$(BINS): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
-
-$(OBJDIR)/%.o:	%.c
-	$(CC) -c $(CFLAGS) -o $@ $<
-
-$(OBJDIR)/%.o:	$(SLIB)/%.c
-	$(CC) -c $(CFLAGS) -o $@ $<
+%.o:	%.c
+	$(CC) -c $(CFLAGS) -I$(TOPDIR)/as/$(PORT) -o $@ $<
 
 clean:
-	rm -rf $(OBJS) $(BINS) $(OBJDIR)
-
-_link-z80:
-	$(MAKE) EXT=-z80$(E) PORT=z80
-
-_link-gbz80:
-	$(MAKE) EXT=-gbz80$(E) OPTS=-DGAMEBOY PORT=z80
+	rm -f $(OBJS) $(BINS)

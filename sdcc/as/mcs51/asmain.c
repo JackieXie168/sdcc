@@ -11,13 +11,13 @@
  * 29-Oct-97 JLH pass ";!" comments to output file
  */
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
-
+#include <alloc.h>
 #include "asm.h"
 
+extern VOID machine(struct mne *);
 /*)Module	asmain.c
  *
  *	The module asmain.c includes the command argument parser,
@@ -81,7 +81,7 @@
  *		int	fflag		-f(f), relocations flagged flag
  *		int	flevel		IF-ELSE-ENDIF flag will be non
  *					zero for false conditional case
- *		Addr_T	fuzz		tracks pass to pass changes in the
+ *		addr_t	fuzz		tracks pass to pass changes in the
  *					address of symbols caused by
  *					variable length instruction formats
  *		int	gflag		-g, make undefined symbols global flag
@@ -146,9 +146,6 @@
  *		Completion of main() completes the assembly process.
  *		REL, LST, and/or SYM files may be generated.
  */
-
-int fatalErrors=0;
-char relFile[128];
 
 int
 main(argc, argv)
@@ -244,11 +241,8 @@ char *argv[];
 			if (inpfil == 0) {
 				if (lflag)
 					lfp = afile(p, "lst", 1);
-				if (oflag) {
-				  ofp = afile(p, "rel", 1);
-				  // save the file name if we have to delete it on error
-				  strcpy(relFile,afn);
-				}
+				if (oflag)
+					ofp = afile(p, "rel", 1);
 				if (sflag)
 					tfp = afile(p, "sym", 1);
 			}
@@ -323,10 +317,8 @@ char *argv[];
 	if (lflag) {
 		lstsym(lfp);
 	}
-	//printf ("aserr: %d\n", aserr);
-	//printf ("fatalErrors: %d\n", fatalErrors);
-	asexit(fatalErrors);
-	return 0; // hush the compiler
+	asexit(aserr);
+	return 0;
 }
 
 /*)Function	VOID	asexit(i)
@@ -371,11 +363,7 @@ int i;
 	/*for (j=0; j<MAXINC && ifp[j] != NULL; j++) {
 		fclose(ifp[j]);
 		}*/
-	if (i) {
-	  // remove output file
-	  printf ("removing %s\n", relFile);
-	  unlink(relFile);
-	}
+
 	exit(i);
 }
 
@@ -410,7 +398,7 @@ int i;
  *					ASCII character
  *		int	flevel		IF-ELSE-ENDIF flag will be non
  *					zero for false conditional case
- *		Addr_T	fuzz		tracks pass to pass changes in the
+ *		addr_t	fuzz		tracks pass to pass changes in the
  *					address of symbols caused by
  *					variable length instruction formats
  *		int	ifcnd[]		array of IF statement condition
@@ -422,7 +410,7 @@ int i;
  *		int	incline[]	current include file line
  *		int	incfil		current file handle index
  *					for include files
- *		Addr_T	laddr		address of current assembler line
+ *		addr_t	laddr		address of current assembler line
  *					or value of .if argument
  *		int	lmode		listing mode
  *		int	lop		current line number on page
@@ -437,7 +425,7 @@ int i;
  *		int	tlevel		current conditional level
  *
  *	functions called:
- *		Addr_T	absexpr()	asexpr.c
+ *		addr_t	absexpr()	asexpr.c
  *		area *	alookup()	assym.c
  *		VOID	clrexpr()	asexpr.c
  *		int	digit()		asexpr.c
@@ -451,7 +439,7 @@ int i;
  *		char	getnb()		aslex.c
  *		VOID	getst()		aslex.c
  *		sym *	lookup()	assym.c
- *		VOID	machine()	___mch.c
+ *		VOID	machin()	___mch.c
  *		mne *	mlookup()	assym.c
  *		int	more()		aslex.c
  *		VOID *	new()		assym.c
@@ -929,50 +917,6 @@ loop:
 		}
 		lmode = SLIST;
 		break;
-		
-	case S_FLAT24:
-		if (more())
-		{
-		    getst(id, -1);
-		    
-		    if (!strcmpi(id, "on"))
-		    {
-		    	/* Quick sanity check: size of 
-		    	 * Addr_T must be at least 24 bits.
-		    	 */
-		    	if (sizeof(Addr_T) < 3)
-		    	{
-		    	    warnBanner();
-		    	    fprintf(stderr,
-		    	    	    "Cannot enable Flat24 mode: "
-		    	    	    "host system must have 24 bit "
-		    	    	    "or greater integers.\n");
-		    	}
-		    	else
-		    	{
-		    	    flat24Mode = 1;
-		    	}
-		    }
-		    else if (!strcmpi(id, "off"))
-		    {
-		        flat24Mode = 0;
-		    }
-		    else
-		    {
-		        qerr();
-		    }
-		}
-		else
-		{
-		    qerr();
-		}
-	        lmode = SLIST;
-	        #if 0
-	        printf("as8051: ds390 flat mode %sabled.\n",
-	        	flat24Mode ? "en" : "dis");
-	        #endif
-	        break;
-	                                                                
 
 	/*
 	 * If not an assembler directive then go to
@@ -1090,7 +1034,7 @@ int wf;
  *
  *	global variables:
  *		sym	dot		defined as sym[0]
- *		Addr_T	fuzz		tracks pass to pass changes in the
+ *		addr_t	fuzz		tracks pass to pass changes in the
  *					address of symbols caused by
  *					variable length instruction formats
  *
@@ -1119,7 +1063,7 @@ register struct area *nap;
 /*)Function	VOID	phase(ap, a)
  *
  *		area *	ap		pointer to area
- *		Addr_T	a		address in area
+ *		addr_t	a		address in area
  *
  *	Function phase() compares the area ap and address a
  *	with the current area dot.s_area and address dot.s_addr
@@ -1143,7 +1087,7 @@ register struct area *nap;
 VOID
 phase(ap, a)
 struct area *ap;
-Addr_T a;
+addr_t a;
 {
 	if (ap != dot.s_area || a != dot.s_addr)
 		err('p');
@@ -1159,9 +1103,9 @@ char *usetxt[] = {
 	"  a    all user symbols made global",
 	"  l    create list   output file1[LST]",
 	"  o    create object output file1[REL]",
-	"  s    create symbol output file1[SYM]",
-	"  p    disable listing pagination",
-	"  f    flag relocatable references by `    in listing file",
+        "  s    create symbol output file1[SYM]",
+        "  p    disable listing pagination",
+        "  f    flag relocatable references by `    in listing file",
 	" ff    flag relocatable references by mode in listing file",
 	"",
 	0

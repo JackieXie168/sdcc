@@ -16,14 +16,13 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
-
+#include <alloc.h>
 #ifdef SDK
 #include <stdlib.h>
 #include <math.h>
 #undef HUGE
 #endif
 #include "asm.h"
-#include "z80.h"
 
 /*)Module	asmain.c
  *
@@ -88,7 +87,7 @@
  *		int	fflag		-f(f), relocations flagged flag
  *		int	flevel		IF-ELSE-ENDIF flag will be non
  *					zero for false conditional case
- *		Addr_T	fuzz		tracks pass to pass changes in the
+ *		addr_t	fuzz		tracks pass to pass changes in the
  *					address of symbols caused by
  *					variable length instruction formats
  *		int	gflag		-g, make undefined symbols global flag
@@ -153,11 +152,12 @@
  *		REL, LST, and/or SYM files may be generated.
  */
 
-int
-main(int argc, char **argv)
+VOID
+main(argc, argv)
+char *argv[];
 {
 	register char *p;
-	register int c, i;
+	register c, i;
 	struct area *ap;
 
 #ifdef SDK
@@ -320,9 +320,7 @@ main(int argc, char **argv)
 	if (lflag) {
 		lstsym(lfp);
 	}
-	asexit(aserr != 0);
-	/* Never reached */
-	return 0;
+	asexit(aserr);
 }
 
 /*)Function	VOID	asexit(i)
@@ -402,7 +400,7 @@ int i;
  *					ASCII character
  *		int	flevel		IF-ELSE-ENDIF flag will be non
  *					zero for false conditional case
- *		Addr_T	fuzz		tracks pass to pass changes in the
+ *		addr_t	fuzz		tracks pass to pass changes in the
  *					address of symbols caused by
  *					variable length instruction formats
  *		int	ifcnd[]		array of IF statement condition
@@ -414,7 +412,7 @@ int i;
  *		int	incline[]	current include file line
  *		int	incfil		current file handle index
  *					for include files
- *		Addr_T	laddr		address of current assembler line
+ *		addr_t	laddr		address of current assembler line
  *					or value of .if argument
  *		int	lmode		listing mode
  *		int	lop		current line number on page
@@ -429,7 +427,7 @@ int i;
  *		int	tlevel		current conditional level
  *
  *	functions called:
- *		Addr_T	absexpr()	asexpr.c
+ *		addr_t	absexpr()	asexpr.c
  *		area *	alookup()	assym.c
  *		VOID	clrexpr()	asexpr.c
  *		int	digit()		asexpr.c
@@ -443,7 +441,7 @@ int i;
  *		char	getnb()		aslex.c
  *		VOID	getst()		aslex.c
  *		sym *	lookup()	assym.c
- *		VOID	machine()	___mch.c
+ *		VOID	machin()	___mch.c
  *		mne *	mlookup()	assym.c
  *		int	more()		aslex.c
  *		VOID *	new()		assym.c
@@ -466,7 +464,7 @@ asmbl()
 	register struct mne *mp;
 	register struct sym *sp;
 	register struct tsym *tp;
-	register int c;
+	register c;
 	struct area  *ap;
 	struct expr e1;
 	char id[NCPS];
@@ -556,13 +554,12 @@ loop:
 	 * symbol, assembler directive, or assembler mnemonic is
 	 * being processed.
 	 */
-	if ((ctype[c] & LETTER) == 0) {
-            	if (flevel) {
-                        return;
-                } else {
+	if ((ctype[c] & LETTER) == 0)
+		if (flevel) {
+			return;
+		} else {
 			qerr();
 		}
-        }
 	getid(id, c);
 	c = getnb();
 	/*
@@ -757,9 +754,9 @@ loop:
 			  {
 				  
 				  f2 = floor(log(fabs(f1))/log(2))+1;
-				  mantissa = (unsigned int) ((0x1000000*fabs(f1))/exp(f2*log(2))) ;
+				  mantissa = (0x1000000*fabs(f1))/exp(f2*log(2));
 				  mantissa &=0xffffff;
-				  exponent = (unsigned int) (f2 + 0x40) ;
+				  exponent = f2 + 0x40;
 				  if (f1<0)
 				      exponent |=0x80;
 			  }
@@ -1025,7 +1022,7 @@ char *ft;
 int wf;
 {
 	register char *p1, *p2, *p3;
-	register int c;
+	register c;
 	FILE *fp;
 
 	p1 = fn;
@@ -1072,7 +1069,7 @@ int wf;
  *
  *	global variables:
  *		sym	dot		defined as sym[0]
- *		Addr_T	fuzz		tracks pass to pass changes in the
+ *		addr_t	fuzz		tracks pass to pass changes in the
  *					address of symbols caused by
  *					variable length instruction formats
  *
@@ -1101,7 +1098,7 @@ register struct area *nap;
 /*)Function	VOID	phase(ap, a)
  *
  *		area *	ap		pointer to area
- *		Addr_T	a		address in area
+ *		addr_t	a		address in area
  *
  *	Function phase() compares the area ap and address a
  *	with the current area dot.s_area and address dot.s_addr
@@ -1125,7 +1122,7 @@ register struct area *nap;
 VOID
 phase(ap, a)
 struct area *ap;
-Addr_T a;
+addr_t a;
 {
 	if (ap != dot.s_area || a != dot.s_addr)
 		err('p');

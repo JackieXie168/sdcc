@@ -1,4 +1,4 @@
-#include <8051.h>
+#include <reg51.h>
 typedef unsigned char byte;
 
 byte accum_checksum(byte cs, byte val)

@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*Module	lkhead.c
@@ -48,7 +49,7 @@
  *				 	head structure
  *
  *	functions called:
- *		Addr_T	expr()		lkeval.c
+ *		addr_t	expr()		lkeval.c
  *		VOID *	new()		lksym.c
  *		VOID	lkparea()	lkarea.c
  *

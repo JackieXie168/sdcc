@@ -11,7 +11,6 @@ the GPL license. e-mail: salvador@inti.gov.ar, set@computer.org
 ***************************************************************************/
 
 #ifndef __DJGPP__
-#ifndef __MINGW32__
 
 #include <unistd.h>
 #include <sys/wait.h>
@@ -26,21 +25,20 @@ sequence which doesn't work for djgpp.
 
 ***************************************************************************/
 
-int 
-spawnv (int mode, const char *path, char *const argv[])
+int spawnv(int mode, const char *path, char *const argv[])
 {
-  int pStatus;
+ int pStatus;
 
-  if (mode == P_OVERLAY)
-    return execv (path, argv);
-  if (!fork ())
-    {
-      if (execv (path, argv))
-	return -1;
-    }
-  if (mode == P_WAIT)
-    wait (&pStatus);
-  return 0;
+ if (mode==P_OVERLAY)
+    return execv(path,argv);
+ if (!fork())
+   {
+    if (execv(path,argv))
+       return -1;
+   }
+ if (mode==P_WAIT)
+    wait(&pStatus);
+ return 0;
 }
 
 /**[txh]********************************************************************
@@ -50,21 +48,19 @@ spawnv (int mode, const char *path, char *const argv[])
 
 ***************************************************************************/
 
-int 
-spawnvp (int mode, const char *path, char *const argv[])
+int spawnvp(int mode, const char *path, char *const argv[])
 {
-  int pStatus;
+ int pStatus;
 
-  if (mode == P_OVERLAY)
-    return execv (path, argv);
-  if (!fork ())
-    {
-      if (execvp (path, argv))
-	return -1;
-    }
-  if (mode == P_WAIT)
-    wait (&pStatus);
-  return 0;
+ if (mode==P_OVERLAY)
+    return execv(path,argv);
+ if (!fork())
+   {
+    if (execvp(path,argv))
+       return -1;
+   }
+ if (mode==P_WAIT)
+    wait(&pStatus);
+ return 0;
 }
-#endif
 #endif

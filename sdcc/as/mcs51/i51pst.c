@@ -59,7 +59,6 @@ struct	mne	mne[] = {
 	{ NULL,	".org",		S_ORG,		0,	0},
 	{ NULL,	".module",	S_MODUL,	0,	0},
 	{ NULL,	".ascis",	S_ASCIS,	0,	0},
-        { NULL, ".flat24",	S_FLAT24,	0,	0},
 
 	/* 8051 */
 

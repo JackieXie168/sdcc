@@ -27,7 +27,6 @@
 
 /* here are some definition about the CPU */
 #include <at89c55.h>
-#include <stdio.h>
 #define CPUCLKHZ                11059200
 //#define CPUCLKHZ                24000000
 #define BAUDRATE                9600

@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lkihx.c
@@ -85,14 +86,14 @@
  *	in the standard Intel Hex format.
  *
  *	local variables:
- *		Addr_T	chksum		byte checksum
+ *		addr_t	chksum		byte checksum
  *
  *	global variables:
  *		int	hilo		byte order
  *		FILE *	ofp		output file handle
  *		int	rtcnt		count of data words
  *		int	rtflg[]		output the data flag
- *		Addr_T	rtval[]		relocated data
+ *		addr_t	rtval[]		relocated data
  *
  *	functions called:
  *		int	fprintf()	c_library
@@ -104,8 +105,8 @@
 VOID
 ihx(i)
 {
-	register Addr_T chksum;
-	int byte, bytes, address=0;
+	register addr_t chksum;
+
 	if (i) {
 		if (hilo == 0) {
 			chksum = rtval[0];
@@ -117,69 +118,17 @@ ihx(i)
 				chksum++;
 		}
 		fprintf(ofp, ":%02X", chksum);
-		// how much bytes?
-		for (i=0, bytes=0; i<rtcnt; i++) {
-		  if (rtflg[i]) {
-		    bytes++;
-		  }
-		}
-		byte=0;
 		for (i = 0; i < rtcnt ; i++) {
-		  if (rtflg[i]) {
-		    switch (byte) {
-		    case 0: 
-		      address=rtval[0]<<8; 
-		      break;
-		    case 1: 
-		      address+=rtval[1]; 
-		      if ((address+bytes)>0xffff) {
-			fprintf (stderr, "64k boundary cross at %04x\n", address);
-		      }
-		      break;
-		    }
-		    fprintf(ofp, "%02X", rtval[i]);
-		    chksum += rtval[i];
-		    byte++;
-		  }
-		  if (i == 1) {
-		    fprintf(ofp, "00");
-		  }
+			if (rtflg[i]) {
+				fprintf(ofp, "%02X", rtval[i]);
+				chksum += rtval[i];
+			}
+			if (i == 1) {
+				fprintf(ofp, "00");
+			}
 		}
-		fprintf(ofp, "%02X\n", (0-chksum) & 0xff);
+		fprintf(ofp, "%02X\n", (-chksum) & 0xff);
 	} else {
 		fprintf(ofp, ":00000001FF\n");
 	}
-}
-
-/*)Function	ihxEntendedLinearAddress(i)
- *
- *		Addr_T	i		16 bit extended linear address.
- *
- *	The function ihxEntendedLinearAddress() writes an extended
- *	linear address record (type 04) to the output file.
- *
- *	local variables:
- *		Addr_T	chksum		byte checksum
- *
- *	global variables:
- *		FILE *	ofp		output file handle
- *
- *	functions called:
- *		int	fprintf()	c_library
- *
- *	side effects:
- *		The data is output to the file defined by ofp.
- */
-VOID
-ihxEntendedLinearAddress(Addr_T a)
-{
-    Addr_T 	chksum;
-  
-    /* The checksum is the complement of the bytes in the
-     * record: the 2 is record length, 4 is the extended linear
-     * address record type, plus the two address bytes.
-     */ 
-    chksum = 2 + 4 + (a & 0xff) + ((a >> 8) & 0xff);    
-    
-    fprintf(ofp, ":02000004%04X%02X\n", a & 0xffff, (0-chksum) & 0xff);
 }

@@ -30,7 +30,7 @@ VOID
 machine(mp)
 struct mne *mp;
 {
-	register int op, t1, t2;
+	register op, t1, t2;
 	struct expr e1, e2;
 	int rf, v1, v2;
 
@@ -557,7 +557,7 @@ struct mne *mp;
 		outab(op);
 		if (e2.e_base.e_ap == NULL || e2.e_base.e_ap == dot.s_area) {
 			v2 = e2.e_addr - dot.s_addr - 1;
-			if (pass == 2 && ((v2 < -128) || (v2 > 127)))
+			if ((v2 < -128) || (v2 > 127))
 				aerr();
 			outab(v2);
 		} else {

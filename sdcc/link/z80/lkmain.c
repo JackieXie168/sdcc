@@ -1,4 +1,5 @@
 /* lkmain.c */
+
 /*
  * (C) Copyright 1989-1995
  * All Rights Reserved
@@ -14,15 +15,8 @@
 
 #include <stdio.h>
 #include <string.h>
-//#include <alloc.h>
+#include <alloc.h>
 #include "aslink.h"
-
-#ifndef SDK_VERSION_STRING
-#define SDK_VERSION_STRING 	"3.0.0"
-#endif
-#ifndef TARGET_STRING
-#define TARGET_STRING		"gbz80"
-#endif
 
 /*)Module	lkmain.c
  *
@@ -141,7 +135,7 @@ int binary = 0;
 #ifdef GAMEBOY
 char *default_basep[] = {
   "_CODE=0x0200",
-  "_DATA=0xC0A0",
+  "_BSS=0xC0A0",
   NULL
 };
 
@@ -157,12 +151,12 @@ char *default_globlp[] = {
 };
 #endif /* GAMEBOY */
 
-int
+VOID
 main(argc, argv)
 char *argv[];
 {
 	register char *p;
-	register int c, i;
+	register c, i;
 
 #ifdef GAMEBOY
 	nb_rom_banks = 2;
@@ -284,7 +278,7 @@ char *argv[];
 		bsp->b_base = (struct base *)new(sizeof(struct base));
 		bsp = bsp->b_base;
 		bsp->b_strp = (char *)malloc(18);
-		sprintf(bsp->b_strp, "_DATA_%d=0xA000", i);
+		sprintf(bsp->b_strp, "_BSS_%d=0xA000", i);
 	}
 #endif /* GAMEBOY */
 
@@ -449,7 +443,7 @@ int i;
 VOID
 link()
 {
-	register int c;
+	register c;
 
 	if ((c=endline()) == 0) { return; }
 	switch (c) {
@@ -681,6 +675,7 @@ map()
 #else
 VOID map()
 {
+	register i;
 	register struct head *hdp;
 	register struct lbfile *lbfh;
 
@@ -773,6 +768,10 @@ VOID map()
 #ifdef SDK
 VOID sym()
 {
+	register i;
+	register struct head *hdp;
+	register struct lbfile *lbfh;
+
 	/*
 	 * Open sym File
 	 */
@@ -844,7 +843,7 @@ VOID sym()
 int
 parse()
 {
-	register int c;
+	register c;
 	char fid[NINPUT];
 
 	while ((c = getnb()) != 0) {
@@ -1070,7 +1069,7 @@ bassav()
  *		int	lkerr		error flag
  *
  *	 functions called:
- *		Addr_T	expr()		lkeval.c
+ *		addr_t	expr()		lkeval.c
  *		int	fprintf()	c_library
  *		VOID	getid()		lklex.c
  *		char	getnb()		lklex.c
@@ -1083,7 +1082,7 @@ bassav()
 VOID
 setbas()
 {
-	register int v;
+	register v;
 	char id[NCPS];
 
 	bsp = basep;
@@ -1180,7 +1179,7 @@ gblsav()
  *		int	lkerr		error flag
  *
  *	 functions called:
- *		Addr_T	expr()		lkeval.c
+ *		addr_t	expr()		lkeval.c
  *		int	fprintf()	c_library
  *		VOID	getid()		lklex.c
  *		char	getnb()		lklex.c
@@ -1193,7 +1192,7 @@ gblsav()
 VOID
 setgbl()
 {
-	register int v;
+	register v;
 	register struct sym *sp;
 	char id[NCPS];
 
@@ -1275,7 +1274,7 @@ char *fn;
 char *ft;
 {
 	register char *p1, *p2, *p3;
-	register int c;
+	register c;
 	FILE *fp;
 	char fb[FILSPC];
 

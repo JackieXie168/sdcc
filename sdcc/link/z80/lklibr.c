@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lklibr.c
@@ -59,8 +59,8 @@ struct slibraryfile {
 	int loaded;
 	char *libspc;
 	char *str;
-	char relfil[FILSPC];
-	char filename[FILSPC];
+	char relfil[80];
+	char filename[80];
 	pmlibrarysymbol symbols;
 	pmlibraryfile next;
 };
@@ -289,7 +289,7 @@ VOID
 search()
 {
 	register struct sym *sp;
-	register int i, symfnd;
+	register i,symfnd;
 
 	/*
 	 * Look for undefined symbols.  Keep
@@ -398,7 +398,9 @@ search()
 #ifdef INDEXLIB
 
 /* First entry in the library object symbol cache */
-mlibraryfile libr;
+mlibraryfile libr = {
+	"", NULL, NULL
+};
 
 int fndsym( char *name )
 {
@@ -478,7 +480,7 @@ int buildlibraryindex()
 				relfil[NINPUT+1] = '\0';
 				relfil[strlen(relfil) - 1] = '\0';
 				if (path != NULL) {
-					str = (char *)new(strlen(path)+strlen(relfil)+6);
+					str = (char *)malloc(strlen(path)+strlen(relfil)+6);
 					strcpy(str,path);
 #ifdef	OTHERSYSTEM
 #ifdef SDK
@@ -496,7 +498,7 @@ int buildlibraryindex()
 					}
 #endif
 				} else {
-					str = (char *)new(strlen(relfil) + 5);
+					str = (char *)malloc(strlen(relfil) + 5);
 				}
 #ifdef SDK
 #ifdef UNIX
@@ -521,7 +523,7 @@ int buildlibraryindex()
 /*3*/				if ((fp = fopen(str, "r")) != NULL) {
 
 					/* Opened OK - create a new libraryfile object for it */
-					This->next = (pmlibraryfile)new( sizeof( mlibraryfile ));
+					This->next = (pmlibraryfile)malloc( sizeof( mlibraryfile ));
 					if (This->next == NULL) {
 						printf("panic: cant allocate memory.\n");
 						exit(-1);

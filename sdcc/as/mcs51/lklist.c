@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lklist.c
@@ -116,23 +116,6 @@ FILE *fp;
 	lop = 1;
 }
 
-/* Used for qsort call in lstsym */
-static int _cmpSymByAddr(const void *p1, const void *p2)
-{
-    struct sym **s1 = (struct sym **)(p1);
-    struct sym **s2 = (struct sym **)(p2);
-    int delta = ((*s1)->s_addr + (*s1)->s_axp->a_addr) -
-     	   	((*s2)->s_addr + (*s2)->s_axp->a_addr);
-
-    /* Sort first by address, then by name. */
-    if (delta)
-    {
-    	return delta;
-    }
-    return strcmp((*s1)->s_id,(*s2)->s_id);    
-}
-
-
 #if	NCPS-8
 
 /* NCPS != 8 */
@@ -155,9 +138,9 @@ static int _cmpSymByAddr(const void *p1, const void *p2)
  *		int	j		bubble sort update status
  *		char *	ptr		pointer to an id string
  *		int	nmsym		number of symbols in area
- *		Addr_T	a0		temporary
- *		Addr_T	ai		temporary
- *		Addr_T	aj		temporary
+ *		addr_t	a0		temporary
+ *		addr_t	ai		temporary
+ *		addr_t	aj		temporary
  *		sym *	sp		pointer to a symbol structure
  *		sym **	p		pointer to an array of
  *					pointers to symbol structures
@@ -184,12 +167,10 @@ lstarea(xp)
 struct area *xp;
 {
 	register struct areax *oxp;
-	register int i;
-	/* int j; */
+	register int i, j;
 	register char *ptr;
 	int nmsym;
-	/* Addr_T a0; */
-	Addr_T 	   ai, aj;
+	addr_t a0, ai, aj;
 	struct sym *sp;
 	struct sym **p;
 	int memPage;
@@ -308,7 +289,6 @@ struct area *xp;
 		oxp = oxp->a_axp;
 	}
 
-#if 0
 	/*
 	 * Bubble Sort of Addresses in Symbol Table Array
 	 */
@@ -328,9 +308,6 @@ struct area *xp;
 			a0 = ai;
 		}
 	}
-#else
-	qsort(p, nmsym, sizeof(struct sym *), _cmpSymByAddr);
-#endif	
 
 	/*
 	 * Symbol Table Output
@@ -397,9 +374,9 @@ struct area *xp;
  *		int	j		bubble sort update status
  *		char *	ptr		pointer to an id string
  *		int	nmsym		number of symbols in area
- *		Addr_T	a0		temporary
- *		Addr_T	ai		temporary
- *		Addr_T	aj		temporary
+ *		addr_t	a0		temporary
+ *		addr_t	ai		temporary
+ *		addr_t	aj		temporary
  *		sym *	sp		pointer to a symbol structure
  *		sym **	p		pointer to an array of
  *					pointers to symbol structures
@@ -429,7 +406,7 @@ struct area *xp;
 	register c, i, j;
 	register char *ptr;
 	int nmsym;
-	Addr_T a0, ai, aj;
+	addr_t a0, ai, aj;
 	struct sym *sp;
 	struct sym **p;
         int page;
@@ -544,7 +521,6 @@ struct area *xp;
 		oxp = oxp->a_axp;
 	}
 
-#if 0
 	/*
 	 * Bubble Sort of Addresses in Symbol Table Array
 	 */
@@ -564,9 +540,6 @@ struct area *xp;
 			a0 = ai;
 		}
 	}
-#else
-	qsort(p, nmsym, sizeof(struct sym *), _cmpSymByAddr);
-#endif	
 
 	/*
 	 * Symbol Table Output
@@ -613,7 +586,7 @@ struct area *xp;
  *	output file.
  *
  *	local variables:
- *		Addr_T	pc		current program counter address
+ *		addr_t	pc		current program counter address
  *
  *	global variables:
  *		int	hilo		byte order
@@ -624,7 +597,7 @@ struct area *xp;
  *					output RST file
  *		int	rtcnt		count of data words
  *		int	rtflg[]		output the data flag
- *		Addr_T	rtval[]		relocated data
+ *		addr_t	rtval[]		relocated data
  *		FILE	*tfp		The file handle to the current
  *					LST file being scanned
  *
@@ -644,7 +617,7 @@ VOID
 lkulist(i)
 int i;
 {
-	Addr_T pc;
+	addr_t pc;
 
 	/*
 	 * Exit if listing file is not open
@@ -745,7 +718,7 @@ int i;
 
 VOID
 lkalist(pc)
-Addr_T pc;
+addr_t pc;
 {
 	char str[8];
 	int i;
@@ -872,7 +845,7 @@ loop:	if (tfp == NULL)
 
 VOID
 lkglist(pc,v)
-Addr_T pc;
+addr_t pc;
 int v;
 {
 	char str[8];

@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
-
+#include <alloc.h>
 #include "asm.h"
 
 /*)Module	aslex.c
@@ -84,7 +84,7 @@
 
 VOID
 getid(id, c)
-register int c;
+register c;
 char *id;
 {
 	register char *p;
@@ -150,7 +150,7 @@ char *id;
 
 VOID
 getst(id, c)
-register int c;
+register c;
 char *id;
 {
 	register char *p;
@@ -193,7 +193,7 @@ char *id;
 char
 getnb()
 {
-	register int c;
+	register c;
 
 	while ((c=get()) == ' ' || c == '\t')
 		;
@@ -226,7 +226,7 @@ getnb()
 char
 get()
 {
-	register int c;
+	register c;
 
 	if ((c = *ip) != 0)
 		++ip;
@@ -302,7 +302,7 @@ unget(c)
 int
 getmap(d)
 {
-	register int c, n, v;
+	register c, n, v;
 
 	if ((c=get()) == '\0')
 		qerr();
@@ -403,7 +403,7 @@ getmap(d)
 int
 getline()
 {
-register int i;
+register i;
 
 loop:	if (incfil >= 0) {
 		if (fgets(ib, sizeof ib, ifp[incfil]) == NULL) {
@@ -432,8 +432,6 @@ loop:	if (incfil >= 0) {
 	i = strlen(ib) - 1;
 	if (ib[i] == '\n')
 		ib[i] = 0;
-	if (i >= 1 && ib[i-1] == '\r')
-		ib[i-1] = 0;
 	return (1);
 }
 
@@ -463,7 +461,7 @@ loop:	if (incfil >= 0) {
 int
 more()
 {
-	register int c;
+	register c;
 
 	c = getnb();
 	unget(c);
@@ -495,7 +493,7 @@ more()
 char
 endline()
 {
-	register int c;
+	register c;
 
 	c = getnb();
 	return( (c == '\0' || c == ';') ? 0 : c );

@@ -19,7 +19,7 @@ void telec_pet_Estado();
 
 /* Fichero de definición de direcciones de memoria
 	asignadas a los diferentes registros */
-#include <8051.h>
+#include "reg51.h"
 
 /* Direcciones de los puertos P4 y P5 y del TIMER3*/
 sfr P4     = 0xC0;

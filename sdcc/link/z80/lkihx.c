@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
-//#include <alloc.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lkihx.c
@@ -86,14 +86,14 @@
  *	in the standard Intel Hex format.
  *
  *	local variables:
- *		Addr_T	chksum		byte checksum
+ *		addr_t	chksum		byte checksum
  *
  *	global variables:
  *		int	hilo		byte order
  *		FILE *	ofp		output file handle
  *		int	rtcnt		count of data words
  *		int	rtflg[]		output the data flag
- *		Addr_T	rtval[]		relocated data
+ *		addr_t	rtval[]		relocated data
  *
  *	functions called:
  *		int	fprintf()	c_library
@@ -105,7 +105,7 @@
 VOID
 ihx(i)
 {
-	register Addr_T chksum;
+	register addr_t chksum;
 
 	if (i) {
 		if (hilo == 0) {

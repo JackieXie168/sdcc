@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
-
+#include <alloc.h>
 #include "asm.h"
 
 /*)Module	asdata.c
@@ -87,10 +87,10 @@ int	xflag;		/*	-x, listing radix flag
 			 */
 int	fflag;		/*	-f(f), relocations flagged flag
 			 */
-Addr_T	laddr;		/*	address of current assembler line
+addr_t	laddr;		/*	address of current assembler line
 			 *	or value of .if argument
 			 */
-Addr_T	fuzz;		/*	tracks pass to pass changes in the
+addr_t	fuzz;		/*	tracks pass to pass changes in the
 			 *	address of symbols caused by
 			 *	variable length instruction formats
 			 */
@@ -147,7 +147,7 @@ char	module[NCPS];	/*	module name string
  *		char	m_id[NCPS];	Mnemonic
  *		char	m_type;		Mnemonic subtype
  *		char	m_flag;		Mnemonic flags
- *		Addr_T	m_valu;		Value
+ *		addr_t	m_valu;		Value
  *	};
  */
 struct	mne	*mnehash[NHASH];
@@ -174,11 +174,11 @@ struct	mne	*mnehash[NHASH];
  *		char	s_flag;		Symbol flags
  *		struct	area *s_area;	Area line, 0 if absolute
  *		int	s_ref;		Ref. number
- *		Addr_T	s_addr;		Address
+ *		addr_t	s_addr;		Address
  *	};
  */
 struct	sym	sym[] = {
-    { NULL,	NULL,	".",	S_USER,	S_END,	NULL,	0, }
+	NULL,	NULL,	".",	S_USER,	S_END,	NULL,	0,	0
 };
 
 struct	sym	*symp;		/*	pointer to a symbol structure
@@ -206,13 +206,13 @@ struct	sym *symhash[NHASH];	/*	array of pointers to NHASH
  *		struct	area *a_ap;	Area link
  *		char	a_id[NCPS];	Area Name
  *		int	a_ref;		Reference number
- *		Addr_T	a_size;		Area size
- *		Addr_T	a_fuzz;		Area fuzz
+ *		addr_t	a_size;		Area size
+ *		addr_t	a_fuzz;		Area fuzz
  *		int	a_flag;		Area flags
  *	};
  */
 struct	area	area[] = {
-    { NULL,	"_CODE",	0,	0,	0,	A_CON|A_REL }
+	NULL,	"_CODE",	0,	0,	0,	A_CON|A_REL
 };
 
 struct	area	*areap;	/*	pointer to an area structure

@@ -24,12 +24,7 @@ Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include "cpplib.h"
 #include "cpphash.h"
-//extern char *xmalloc PARAMS ((unsigned));
-
-#include "newalloc.h"
-
-#include <string.h>
-#include <stdlib.h>
+extern char *xmalloc PARAMS ((unsigned));
 
 /* Define a generic NULL if one hasn't already been defined.  */
 
@@ -41,8 +36,6 @@ Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #define const
 #define volatile
 #endif
-
-static HASHNODE *hashtab[HASHSIZE];
 
 /*
  * return hash function on name.  must be compatible with the one
@@ -184,7 +177,7 @@ install (
     hash = hashf (name, len, HASHSIZE);
 
   i = sizeof (HASHNODE) + len + 1;
-  hp = (HASHNODE *) Safe_malloc (i);
+  hp = (HASHNODE *) xmalloc (i);
   bucket = hash;
   hp->bucket_hdr = &hashtab[bucket];
   hp->next = hashtab[bucket];

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
+#include <alloc.h>
 #include "asm.h"
 
 /* Return basic file name without path or extension */
@@ -32,7 +33,6 @@ char* BaseFileName( int fileNumber )
 
 		/* Name starts after any colon or backslash (DOS) */
 		p2 = strrchr( p1, '\\' );
-		if (p2 == NULL) p2 = strrchr( p1, '/' );
 		if (p2 == NULL) p2 = strrchr( p1, ':' );
 		if (p2 == NULL) p2 = p1-1;
                 strcpy( baseName, p2+1 );

@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+#include <alloc.h>
 #include "aslink.h"
 
 /*)Module	lksym.c
@@ -28,7 +28,7 @@
  *		int	symeq()
  *		VOID	syminit()
  *		VOID	symmod()
- *		Addr_T	symval()
+ *		addr_t	symval()
  *
  *	lksym.c contains no local/static variables.
  */
@@ -56,6 +56,7 @@
 VOID
 syminit()
 {
+	register h;
 	struct sym **spp;
 
 	spp = &symhash[0];
@@ -95,7 +96,7 @@ syminit()
  *		int	lkerr		error flag
  *
  *	functions called:
- *		Addr_T	eval()		lkeval.c
+ *		addr_t	eval()		lkeval.c
  *		VOID	exit()		c_library
  *		int	fprintf()	c_library
  *		char	get()		lklex.c
@@ -123,7 +124,7 @@ syminit()
 struct sym *
 newsym()
 {
-	register int c, i, nglob;
+	register c, i, nglob;
 	struct sym *tsp;
 	struct sym **s;
 	char id[NCPS];
@@ -175,7 +176,6 @@ newsym()
 	}
 	fprintf(stderr, "Header symbol list overflow\n");
 	lkexit(1);
-	/* Never reached */
 }
 
 /*)Function	sym *	lkpsym(id,f)
@@ -214,7 +214,7 @@ lkpsym(id, f)
 char *id;
 {
 	register struct sym *sp;
-	register int h;
+	register h;
 
 	h = hash(id);
 	sp = symhash[h];
@@ -232,7 +232,7 @@ char *id;
 	return (sp);
 }
 
-/*)Function	Addr_T	symval(tsp)
+/*)Function	addr_t	symval(tsp)
  *
  *		sym *	tsp		pointer to a symbol structure
  *
@@ -241,7 +241,7 @@ char *id;
  *	value to the areax base address.
  *
  *	local variables:
- *		Addr_T	val		relocated address value
+ *		addr_t	val		relocated address value
  *
  *	global variables:
  *		none
@@ -253,11 +253,11 @@ char *id;
  *		none
  */
 
-Addr_T
+addr_t
 symval(tsp)
 register struct sym *tsp;
 {
-	register Addr_T val;
+	register addr_t val;
 
 	val = tsp->s_addr;
 	if (tsp->s_axp) {
@@ -298,7 +298,7 @@ symdef(fp)
 FILE *fp;
 {
 	register struct sym *sp;
-	register int i;
+	register i;
 
 	for (i=0; i<NHASH; ++i) {
 		sp = symhash[i];
@@ -347,7 +347,7 @@ symmod(fp, tsp)
 FILE *fp;
 struct sym *tsp;
 {
-    register int i;
+	register i, j;
 	struct sym **p;
 
 	if ((hp = headp) != NULL) {
@@ -392,7 +392,7 @@ int
 symeq(p1, p2)
 register char *p1, *p2;
 {
-	register int n;
+	register n;
 
 	n = NCPS;
 	do {
@@ -436,7 +436,7 @@ int
 hash(p)
 register char *p;
 {
-	register int h, n;
+	register h, n;
 
 	h = 0;
 	n = NCPS;

@@ -10,7 +10,7 @@ clean:
 # -----------------------------------------------------------------
 distclean: clean
 	rm -f config.cache config.log config.status
-	rm -f Makefile ddconfig.h *.dep
+	rm -f ddconfig.h main.mk *.dep
 
 
 # Like clean but some files may still exist

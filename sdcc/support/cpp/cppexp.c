@@ -27,13 +27,11 @@ Written by Per Bothner 1994. */
 #include "config.h"   
 #include "cpplib.h"
 
-#include "newalloc.h"
+extern char *xmalloc PARAMS ((unsigned));
+extern char *xrealloc PARAMS ((char *, unsigned));
 
-//extern char *xmalloc PARAMS ((unsigned));
-//extern char *xrealloc PARAMS ((char *, unsigned));
-
-#include <stdlib.h>
 #ifdef MULTIBYTE_CHARS
+#include <stdlib.h>
 #include <locale.h>
 #endif
 
@@ -66,7 +64,7 @@ struct arglist {
 #define NULL_PTR ((GENERIC_PTR)0)
 #endif
 
-//extern char *xmalloc ();
+extern char *xmalloc ();
 
 #ifndef CHAR_TYPE_SIZE
 #define CHAR_TYPE_SIZE BITS_PER_UNIT
@@ -226,7 +224,7 @@ parse_number (
     if (largest_digit < digit)
       largest_digit = digit;
     nd = n * base + digit;
-    overflow |= ((ULONG_MAX_over_base < n) | (nd < n)) ;
+    overflow |= ULONG_MAX_over_base < n | nd < n;
     n = nd;
   }
 
@@ -282,7 +280,7 @@ cpp_lex (
 cpp_reader *pfile)
 {
   register int c;
-/*  register int namelen; */
+  register int namelen;
   register struct token *toktab;
   enum cpp_token token;
   struct operation op;
@@ -335,7 +333,7 @@ cpp_reader *pfile)
 	 It is mostly copied from c-lex.c.  */
       {
         register int result = 0;
-	register int num_chars = 0;
+	register num_chars = 0;
 	unsigned width = MAX_CHAR_TYPE_SIZE;
 	int wide_flag = 0;
 	int max_chars;
@@ -367,7 +365,7 @@ cpp_reader *pfile)
 	      {
 		c = cpp_parse_escape (pfile, &ptr);
 		if (width < HOST_BITS_PER_INT
-		  && (unsigned) c >= (1U << width))
+		  && (unsigned) c >= (1 << width))
 		    cpp_pedwarn (pfile,
 				 "escape sequence out of range for character");
 	      }
@@ -648,7 +646,7 @@ right_shift (
 
 #define COMPARE(OP) \
   top->unsignedp = 0;\
-  top->value = (unsigned1 || unsigned2) ? (unsigned long) v1 OP (unsigned long) v2 : (v1 OP v2)
+  top->value = (unsigned1 || unsigned2) ? (unsigned long) v1 OP v2 : (v1 OP v2)
 
 /* Parse and evaluate a C expression, reading from PFILE.
    Returns the value of the expression.  */
@@ -672,7 +670,7 @@ cpp_parse_expr (
   struct operation *stack = init_stack;
   struct operation *limit = stack + INIT_STACK_SIZE;
   register struct operation *top = stack;
-  int lprio, rprio = 0;
+  int lprio, rprio;
 
   top->rprio = 0;
   top->flags = 0;
@@ -977,10 +975,10 @@ cpp_parse_expr (
 	  int old_size = (char*)limit - (char*)stack;
 	  int new_size = 2 * old_size;
 	  if (stack != init_stack)
-	    new_stack = (struct operation*) Safe_realloc (stack, new_size);
+	    new_stack = (struct operation*) xrealloc (stack, new_size);
 	  else
 	    {
-	      new_stack = (struct operation*) Safe_malloc (new_size);
+	      new_stack = (struct operation*) xmalloc (new_size);
 	      bcopy ((char *) stack, (char *) new_stack, old_size);
 	    }
 	  stack = new_stack;

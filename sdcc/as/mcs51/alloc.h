@@ -1,4 +1,7 @@
 /* alloc.h */
 /* DECUS C */
 
-#include <stdlib.h>
+extern	char	*alloc();
+extern	char	*malloc();
+extern	char	*calloc();
+extern	char	*realloc();

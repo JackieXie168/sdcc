@@ -31,12 +31,9 @@
 #include "SDCCval.h"
 #include "SDCCmem.h"
 #include "SDCCast.h"
-#include "port.h"
-#include "newalloc.h"
-#include "SDCCerr.h"
-
 extern int yyerror (char *);
 extern FILE	*yyin;
+extern char srcLstFname[];
 int NestLevel = 0 ;     /* current NestLevel       */
 int stackPtr  = 1 ;     /* stack pointer           */
 int xstackPtr = 0 ;     /* xstack pointer          */
@@ -62,11 +59,11 @@ value *cenum = NULL  ;  /* current enumeration  type chain*/
     symbol     *sym ;      /* symbol table pointer       */
     structdef  *sdef;      /* structure definition       */
     char       yychar[SDCC_NAME_MAX+1];
-    sym_link       *lnk ;      /* declarator  or specifier   */
+    link       *lnk ;      /* declarator  or specifier   */
     int        yyint;      /* integer value returned     */
     value      *val ;      /* for integer constant       */
     initList   *ilist;     /* initial list               */
-    char       *yyinline; /* inlined assembler code */
+    char       yyinline[MAX_INLINEASM]; /* inlined assembler code */
     ast       *asts;     /* expression tree            */
 }
 
@@ -78,12 +75,11 @@ value *cenum = NULL  ;  /* current enumeration  type chain*/
 %token <yyint> MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token <yyint> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token <yyint> XOR_ASSIGN OR_ASSIGN
-%token TYPEDEF EXTERN STATIC AUTO REGISTER CODE EEPROM INTERRUPT SFR AT SBIT
-%token REENTRANT USING  XDATA DATA IDATA PDATA VAR_ARGS CRITICAL NONBANKED BANKED
+%token TYPEDEF EXTERN STATIC AUTO REGISTER CODE INTERRUPT SFR AT SBIT
+%token REENTRANT USING  XDATA DATA IDATA PDATA VAR_ARGS CRITICAL
 %token CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID BIT
-%token STRUCT UNION ENUM ELIPSIS RANGE FAR _XDATA _CODE _GENERIC _NEAR _PDATA _IDATA _EEPROM
-%token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
-%token NAKED
+%token STRUCT UNION ENUM ELIPSIS RANGE FAR _XDATA _CODE _GENERIC _NEAR _PDATA _IDATA
+%token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN 
 %token <yyinline> INLINEASM
 %token IFX ADDRESS_OF GET_VALUE_AT_ADDRESS SPIL UNSPIL GETHBIT
 %token BITWISEAND UNARYMINUS IPUSH IPOP PCALL  ENDFUNCTION JUMPTABLE
@@ -128,23 +124,6 @@ file
 external_definition
    : function_definition     { blockNo=0;}
    | declaration             { 
-			       if ($1 && $1->type
-				&& IS_FUNC($1->type))
-			       {
- 				   /* The only legal storage classes for 
-				    * a function prototype (declaration)
-				    * are extern and static. extern is the
-				    * default. Thus, if this function isn't
-				    * explicitly marked static, mark it
-				    * extern.
-				    */
-				   if ($1->etype 
-				    && IS_SPEC($1->etype)
-				    && !SPEC_STAT($1->etype))
-				   {
-				   	SPEC_EXTR($1->etype) = 1;
-				   }
-			       }
                                addSymChain ($1);
                                allocVariables ($1) ;
 			       cleanUpLevel (SymbolTab,1);
@@ -185,27 +164,6 @@ using_reentrant_interrupt
                         $$->class = SPECIFIER   ;
                         SPEC_CRTCL($$) = 1;
                      }
-   |  NAKED          {  $$ = newLink ();
-                        $$->class = SPECIFIER   ;
-                        SPEC_NAKED($$) = 1;
-                     }
-   |  NONBANKED      {$$ = newLink ();
-                        $$->class = SPECIFIER   ;
-                        SPEC_NONBANKED($$) = 1;
-			if (SPEC_BANKED($$)) {
-			    werror(W_BANKED_WITH_NONBANKED);
-			}
-                     }
-   |  BANKED         {$$ = newLink ();
-                        $$->class = SPECIFIER   ;
-                        SPEC_BANKED($$) = 1;
-			if (SPEC_NONBANKED($$)) {
-			    werror(W_BANKED_WITH_NONBANKED);
-			}
-			if (SPEC_STAT($$)) {
-			    werror(W_BANKED_WITH_STATIC);
-			}
-                     }
    |  Interrupt_storage
                      {
                         $$ = newLink () ;
@@ -225,14 +183,14 @@ function_body
    ;
 
 primary_expr
-   : identifier      {  $$ = newAst_VALUE(symbolVal($1));  }
-   | CONSTANT        {  $$ = newAst_VALUE($1);  }
+   : identifier      {  $$ = newAst(EX_VALUE,symbolVal($1));  }
+   | CONSTANT        {  $$ = newAst(EX_VALUE,$1);  }
    | string_literal  
    | '(' expr ')'    {  $$ = $2 ;                   }
    ;
          
 string_literal
-    : STRING_LITERAL			{ $$ = newAst_VALUE($1); }
+    : STRING_LITERAL			{ $$ = newAst(EX_VALUE,$1); }
     ;
 
 postfix_expr
@@ -248,14 +206,14 @@ postfix_expr
 		      {    
 			$3 = newSymbol($3->name,NestLevel);
 			$3->implicit = 1;
-			$$ = newNode(PTR_OP,newNode('&',$1,NULL),newAst_VALUE(symbolVal($3)));
+			$$ = newNode(PTR_OP,newNode('&',$1,NULL),newAst(EX_VALUE,symbolVal($3)));
 /* 			$$ = newNode('.',$1,newAst(EX_VALUE,symbolVal($3))) ;		        */
 		      }
    | postfix_expr PTR_OP identifier    
                       { 
 			$3 = newSymbol($3->name,NestLevel);
 			$3->implicit = 1;			
-			$$ = newNode(PTR_OP,$1,newAst_VALUE(symbolVal($3)));
+			$$ = newNode(PTR_OP,$1,newAst(EX_VALUE,symbolVal($3)));
 		      }
    | postfix_expr INC_OP   
                       {	$$ = newNode(INC_OP,$1,NULL);}
@@ -274,7 +232,7 @@ unary_expr
    | DEC_OP unary_expr        { $$ = newNode(DEC_OP,NULL,$2);  }
    | unary_operator cast_expr { $$ = newNode($1,$2,NULL)    ;  }
    | SIZEOF unary_expr        { $$ = newNode(SIZEOF,NULL,$2);  }
-   | SIZEOF '(' type_name ')' { $$ = newAst_VALUE(sizeofOp($3)); }
+   | SIZEOF '(' type_name ')' { $$ = newAst(EX_VALUE,sizeofOp($3)); }
    ;
               
 unary_operator
@@ -288,7 +246,7 @@ unary_operator
 
 cast_expr
    : unary_expr
-   | '(' type_name ')' cast_expr { $$ = newNode(CAST,newAst_LINK($2),$4); }
+   | '(' type_name ')' cast_expr { $$ = newNode(CAST,newAst(EX_LINK,$2),$4); }
    ;
 
 multiplicative_expr
@@ -312,40 +270,41 @@ shift_expr
 
 relational_expr
    : shift_expr
-   | relational_expr '<' shift_expr    { 
-	$$ = (port->lt_nge ? 
-	      newNode('!',newNode(GE_OP,$1,$3),NULL) :
-	      newNode('<', $1,$3));
-   }
-   | relational_expr '>' shift_expr    { 
-	   $$ = (port->gt_nle ? 
-		 newNode('!',newNode(LE_OP,$1,$3),NULL) :
-		 newNode('>',$1,$3));
-   }
+   | relational_expr '<' shift_expr    { $$ = newNode('<',$1,$3); }
+   | relational_expr '>' shift_expr    { $$ = newNode('>',$1,$3); }
    | relational_expr LE_OP shift_expr  { 
-	   $$ = (port->le_ngt ? 
-		 newNode('!', newNode('>', $1 , $3 ), NULL) :
-		 newNode(LE_OP,$1,$3));
+       /* $$ = newNode(LE_OP,$1,$3); */
+       /* getting 8051 specific here : will change
+	  LE_OP operation to "not greater than" i.e.
+	  ( a <= b ) === ( ! ( a > b )) */
+       $$ = newNode('!', 
+		    newNode('>', $1 , $3 ),
+		    NULL);
    }
    | relational_expr GE_OP shift_expr  { 
-	   $$ = (port->ge_nlt ? 
-		 newNode('!', newNode('<', $1 , $3 ), NULL) :
-		 newNode(GE_OP,$1,$3));
+       /* $$ = newNode(GE_OP,$1,$3) ; */
+       /* getting 8051 specific here : will change
+	  GE_OP operation to "not less than" i.e.
+	  ( a >= b ) === ( ! ( a < b )) */
+       $$ = newNode('!',
+		    newNode('<', $1 , $3 ),
+		    NULL);
    }
    ;
 
 equality_expr
    : relational_expr
-   | equality_expr EQ_OP relational_expr  { 
-    $$ = (port->eq_nne ? 
-	  newNode('!',newNode(NE_OP,$1,$3),NULL) : 
-	  newNode(EQ_OP,$1,$3));
-   }
-   | equality_expr NE_OP relational_expr { 
-       $$ = (port->ne_neq ? 
-	     newNode('!', newNode(EQ_OP,$1,$3), NULL) : 
-	     newNode(NE_OP,$1,$3));
-   }       
+   | equality_expr EQ_OP relational_expr  { $$ = newNode(EQ_OP,$1,$3);}
+   | equality_expr NE_OP relational_expr  
+          { 
+              /* $$ = newNode(NE_OP,$1,$3); */
+	      /* NE_OP changed :            
+		 expr1 != expr2 is equivalent to
+		 (! expr1 == expr2) */
+	      $$ = newNode('!',
+			   newNode(EQ_OP,$1,$3),
+			   NULL);
+	  }       
    ;
 
 and_expr
@@ -398,9 +357,6 @@ assignment_expr
 				     break;
 			     case DIV_ASSIGN:
 				     $$ = newNode('=',$1,newNode('/',copyAst($1),$3));
-				     break;
-			     case MOD_ASSIGN:
-			     	     $$ = newNode('=',$1,newNode('%',copyAst($1),$3));
 				     break;
 			     case ADD_ASSIGN:
 				     $$ = newNode('=',$1,newNode('+',copyAst($1),$3));
@@ -461,7 +417,7 @@ declaration
          symbol *sym , *sym1;
 
          for (sym1 = sym = reverseSyms($2);sym != NULL;sym = sym->next) {
-	     sym_link *lnk = copyLinkChain($1);
+	     link *lnk = copyLinkChain($1);
 	     /* do the pointer stuff */
 	     pointerTypes(sym->type,lnk);
 	     addDecl (sym,0,lnk) ;
@@ -477,7 +433,7 @@ declaration_specifiers
      /* if the decl $2 is not a specifier */
      /* find the spec and replace it      */
      if ( !IS_SPEC($2)) {
-       sym_link *lnk = $2 ;
+       link *lnk = $2 ;
        while (lnk && !IS_SPEC(lnk->next))
 	 lnk = lnk->next;
        lnk->next = mergeSpec($1,lnk->next);
@@ -491,7 +447,7 @@ declaration_specifiers
      /* if the decl $2 is not a specifier */
      /* find the spec and replace it      */
      if ( !IS_SPEC($2)) {
-       sym_link *lnk = $2 ;
+       link *lnk = $2 ;
        while (lnk && !IS_SPEC(lnk->next))
 	 lnk = lnk->next;
        lnk->next = mergeSpec($1,lnk->next);
@@ -547,12 +503,12 @@ Interrupt_storage
 
 type_specifier
    : type_specifier2
-   | type_specifier2 AT constant_expr
+   | type_specifier2 AT CONSTANT
         {
            /* add this to the storage class specifier  */
            SPEC_ABSA($1) = 1;   /* set the absolute addr flag */
            /* now get the abs addr from value */
-           SPEC_ADDR($1) = (int) floatFromVal(constExprValue($3,TRUE)) ;
+           SPEC_ADDR($1) = (int) floatFromVal ($3) ;
         }
    ;
 
@@ -565,7 +521,8 @@ type_specifier2
    | SHORT  {
                $$=newLink();
                $$->class = SPECIFIER   ;
-	       $$->select.s._short = 1 ;
+               SPEC_LONG($$) = 0      ;
+	       SPEC_SHORT($$) = 1	 ;
             }
    | INT    {
                $$=newLink();
@@ -575,17 +532,18 @@ type_specifier2
    | LONG   {
                $$=newLink();
                $$->class = SPECIFIER   ;
-	       SPEC_LONG($$) = 1       ;
+               SPEC_LONG($$) = 1       ;
+	       SPEC_SHORT($$) = 0;
             }
    | SIGNED {
                $$=newLink();
                $$->class = SPECIFIER   ;
-               $$->select.s._signed = 1;
+               SPEC_USIGN($$) = 0       ;
             }
    | UNSIGNED  {
                $$=newLink();
                $$->class = SPECIFIER   ;
-               SPEC_USIGN($$) = 1      ;
+               SPEC_USIGN($$) = 1       ;
             }
    | VOID   {
                $$=newLink();
@@ -595,6 +553,7 @@ type_specifier2
    | CONST  {
                $$=newLink();
 	       $$->class = SPECIFIER ;
+	       SPEC_SCLS($$) = S_CONSTANT ;
 	       SPEC_CONST($$) = 1;
             }
    | VOLATILE  {
@@ -616,11 +575,6 @@ type_specifier2
                   $$ = newLink () ;
                   $$->class = SPECIFIER  ;
                   SPEC_SCLS($$) = S_CODE ;                 
-               }
-   | EEPROM      {
-                  $$ = newLink () ;
-                  $$->class = SPECIFIER  ;
-                  SPEC_SCLS($$) = S_EEPROM ;
                }
    | DATA      {
                   $$ = newLink ();
@@ -654,7 +608,8 @@ type_specifier2
    | TYPE_NAME    
          {
             symbol *sym;
-            sym_link   *p  ;
+            link   *p  ;
+
             sym = findSym(TypedefTab,NULL,$1) ;
             $$ = p = copyLinkChain(sym->type);
 	    SPEC_TYPEDEF(getSpec(p)) = 0;
@@ -709,23 +664,24 @@ struct_or_union
    ;
 
 opt_stag
-: stag
-|  {  /* synthesize a name add to structtable */
-     $$ = newStruct(genSymName(NestLevel)) ;
-     $$->level = NestLevel ;
-     addSym (StructTab, $$, $$->tag,$$->level,currBlockno, 0);
-};
+   : stag
+   |  {  /* synthesize a name add to structtable */
+         $$ = newStruct(genSymName(NestLevel)) ;
+         $$->level = NestLevel ;
+         addSym (StructTab, $$, $$->tag,$$->level,currBlockno) ;
+      }
+   ;
 
 stag
-:  identifier  {  /* add name to structure table */
-     $$ = findSymWithBlock (StructTab,$1,currBlockno);
-     if (! $$ ) {
-       $$ = newStruct($1->name) ;
-       $$->level = NestLevel ;
-       addSym (StructTab, $$, $$->tag,$$->level,currBlockno,0);
-     }
-};
-
+   :  identifier  {  /* add name to structure table */
+                     $$ = findSymWithBlock (StructTab,$1,currBlockno);
+                     if (! $$ ) {
+                        $$ = newStruct($1->name) ;
+                        $$->level = NestLevel ;
+                        addSym (StructTab, $$, $$->tag,$$->level,currBlockno) ;			 
+                     }
+                  }
+   ;
 
 struct_declaration_list
    : struct_declaration
@@ -751,11 +707,10 @@ struct_declaration
 	       if (!sym->type) {
 		   sym->type = copyLinkChain($1);
 		   sym->etype = getSpec(sym->type);
-		   /* make sure the type is complete and sane */
-		   checkTypeSanity(sym->etype, sym->name);
 	       }
 	       else
 		   addDecl (sym,0,cloneSpec($1));   	       
+	       
 	   }
            $$ = $2;
        }
@@ -798,7 +753,7 @@ enum_specifier
 						    (csym && csym->level == $2->level))
                                                    werror(E_DUPLICATE_TYPEDEF,csym->name);
 
-                                                addSym ( enumTab,$2,$2->name,$2->level,$2->block, 0);
+                                                addSym ( enumTab,$2,$2->name,$2->level,$2->block);
 						addSymChain ($4);
                                                 allocVariables (reverseSyms($4));
                                                 $$ = copyLinkChain(cenum->type);
@@ -878,7 +833,7 @@ declarator2
    | '(' declarator ')'     { $$ = $2; }
    | declarator2 '[' ']'
          {
-            sym_link   *p;
+            link   *p;
 
             p = newLink ();
             DCL_TYPE(p) = ARRAY ;
@@ -887,7 +842,7 @@ declarator2
          }
    | declarator2 '[' constant_expr ']'
          {
-            sym_link   *p ;
+            link   *p ;
 			value *tval;
 			
             p = (tval = constExprValue($3,TRUE))->etype;
@@ -919,7 +874,7 @@ declarator2
          {	   
 	   werror(E_OLD_STYLE,$1->name) ;	  
 	   
-	   /* assume it returns an int */
+	   /* assume it returns an it */
 	   $1->type = $1->etype = newIntLink();
 	   $$ = $1 ;
          }
@@ -959,11 +914,7 @@ pointer
 		 case S_CODE:
 		     DCL_PTR_CONST($3) = 1;
 		     DCL_TYPE($3) = CPOINTER ;
-		 case S_EEPROM:
-		     DCL_TYPE($3) = EEPPOINTER;
 		     break;
-		 default:
-		     werror(W_PTR_TYPE_INVALID);
 		 }
 	     }
 	     else 
@@ -990,7 +941,6 @@ far_near
    | _IDATA    { $$ = newLink() ; DCL_TYPE($$) = IPOINTER ; }
    | _NEAR     { $$ = NULL ; }
    | _GENERIC  { $$ = newLink() ; DCL_TYPE($$) = GPOINTER ; } 
-   | _EEPROM   { $$ = newLink() ; DCL_TYPE($$) = EEPPOINTER ;} 
    |           { $$ = newLink() ; DCL_TYPE($$) = UPOINTER ; }
    ;
 
@@ -1049,7 +999,7 @@ type_name
    | type_specifier_list abstract_declarator 
                {
 		 /* go to the end of the list */
-		 sym_link *p;
+		 link *p;
 		 pointerTypes($2,$1);
 		 for ( p = $2 ; p->next ; p=p->next);
                   p->next = $1 ;
@@ -1116,7 +1066,7 @@ statement
    | jump_statement
    | INLINEASM  ';'      {
                             ast *ex = newNode(INLINEASM,NULL,NULL);
-			    ex->values.inlineasm = Safe_calloc(1,strlen($1)+1);
+			    ALLOC_ATOMIC(ex->values.inlineasm,strlen($1));
 			    strcpy(ex->values.inlineasm,$1);			    
 			    $$ = ex;
                          }   
@@ -1318,7 +1268,7 @@ expr_opt
 jump_statement          
    : GOTO identifier ';'   { 
                               $2->islbl = 1;
-                              $$ = newAst_VALUE(symbolVal($2)); 
+                              $$ = newAst(EX_VALUE,symbolVal($2)); 
                               $$ = newNode(GOTO,$$,NULL);
                            }
    | CONTINUE ';'          {  
@@ -1328,7 +1278,7 @@ jump_statement
 	   $$ = NULL;
        }
        else {
-	   $$ = newAst_VALUE(symbolVal(STACK_PEEK(continueStack)));      
+	   $$ = newAst(EX_VALUE,symbolVal(STACK_PEEK(continueStack)));      
 	   $$ = newNode(GOTO,$$,NULL);
 	   /* mark the continue label as referenced */
 	   STACK_PEEK(continueStack)->isref = 1;
@@ -1339,7 +1289,7 @@ jump_statement
 	   werror(E_BREAK_CONTEXT);
 	   $$ = NULL;
        } else {
-	   $$ = newAst_VALUE(symbolVal(STACK_PEEK(breakStack)));
+	   $$ = newAst(EX_VALUE,symbolVal(STACK_PEEK(breakStack)));
 	   $$ = newNode(GOTO,$$,NULL);
 	   STACK_PEEK(breakStack)->isref = 1;
        }
@@ -1352,4 +1302,21 @@ identifier
    : IDENTIFIER   { $$ = newSymbol ($1,NestLevel) ; }
    ;
 %%
+
+extern unsigned char *yytext;
+extern int column;
+extern char *filename;
+extern int fatalError;
+
+int yyerror(char *s)
+{
+   fflush(stdout);
+
+   if ( yylineno )
+	fprintf(stderr,"\n%s(%d) %s: token -> '%s' ; column %d\n",
+		filename,yylineno,
+		s,yytext,column);
+   fatalError++;
+   return 0;
+}
 

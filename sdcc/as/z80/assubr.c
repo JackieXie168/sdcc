@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
+#include <alloc.h>
 #include "asm.h"
 
 /*)Module	assubr.c
@@ -58,7 +59,7 @@
 
 VOID
 err(c)
-register int c;
+register c;
 {
 	register char *p;
 

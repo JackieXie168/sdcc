@@ -33,8 +33,13 @@ IS       (u|U|l|L)*
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "common.h"
-#include "newalloc.h"
+#include "SDCCglobl.h"
+#include "SDCCsymt.h"
+#include "SDCCval.h"
+#include "SDCCast.h"
+#include "SDCCy.h"
+#include "SDCChasht.h"
+#include "SDCCmem.h"
     
 char *stringLiteral();
 char *currFname;
@@ -52,13 +57,10 @@ int yywrap YY_PROTO((void))
 {
    return(1);
 }
-#define TKEYWORD(token) return (isTargetKeyword(yytext) ? token :\
-			        check_type(yytext))
-char *asmbuff=NULL;
-int asmbuffSize=0;
+
+char asmbuff[MAX_INLINEASM]			;
 char *asmp ;
-extern int check_type		();
- extern int isTargetKeyword     ();
+extern int check_type		(	   );
 extern int checkCurrFile	(char *);
 extern int processPragma	(char *);
 extern int printListing		(int   );
@@ -83,83 +85,51 @@ struct options  save_options  ;
 %}
 %x asm
 %%
-"_asm"         {  
-  count(); 
-  asmp = asmbuff = Safe_realloc (asmbuff, INITIAL_INLINEASM);
-  asmbuffSize=INITIAL_INLINEASM;
-  BEGIN(asm) ;
-}
-<asm>"_endasm" { 
-  count();
-  *asmp = '\0';
-  yylval.yyinline = Safe_calloc (1, strlen(asmbuff)+1);
-  strcpy(yylval.yyinline,asmbuff);
-  BEGIN(INITIAL);
-  return (INLINEASM);
-}
-<asm>.         { 
-  if (asmp-asmbuff >= asmbuffSize-2) {
-    // increase the buffersize with 50%
-    int size=asmp-asmbuff;
-    asmbuffSize=asmbuffSize*3/2;
-    asmbuff = Safe_realloc (asmbuff, asmbuffSize); 
-    asmp=asmbuff+size;
-  }
-  *asmp++ = yytext[0];
-}
-<asm>\n        { 
-  count(); 
-  if (asmp-asmbuff >= asmbuffSize-3) {
-    // increase the buffersize with 50%
-    int size=asmp-asmbuff;
-    asmbuffSize=asmbuffSize*3/2;
-    asmbuff = Safe_realloc (asmbuff, asmbuffSize); 
-    asmp=asmbuff+size;
-  }
-  *asmp++ = '\n' ;
-}
+"_asm"        {  count(); asmp = asmbuff ;BEGIN(asm) ;}
+<asm>"_endasm" { count()	  	; 
+                  *asmp = '\0'				; 
+                  strcpy(yylval.yyinline,asmbuff)		; 
+                  BEGIN(INITIAL)	;
+                  return (INLINEASM)			; }
+<asm>.         { *asmp++ = yytext[0]	; }
+<asm>\n        { count(); *asmp++ = '\n' ;}
 "/*"	       { comment(); }
-"at"	       { count(); TKEYWORD(AT)  ; }
-"auto"	       { count(); return(AUTO); }
-"bit"	       { count(); TKEYWORD(BIT) ; }
-"break"        { count(); return(BREAK); }
-"case"         { count(); return(CASE); }
+"at"	       { count(); return(AT)  ; }
+"auto"	    { count(); return(AUTO); }
+"bit"	       { count(); return(BIT) ; }
+"break"      { count(); return(BREAK); }
+"case"       { count(); return(CASE); }
 "char"         { count(); return(CHAR); }
-"code"         { count(); TKEYWORD(CODE); }
+"code"         { count(); return(CODE); }
 "const"        { count(); return(CONST); }
 "continue"     { count(); return(CONTINUE); }
-"critical"     { count(); TKEYWORD(CRITICAL); } 
-"data"	       { count(); TKEYWORD(DATA);   }
+"critical"     { count(); return(CRITICAL); } 
+"data"	       { count(); return(DATA);   }
 "default"      { count(); return(DEFAULT); }
 "do"           { count(); return(DO); }
 "double"       { count(); werror(W_DOUBLE_UNSUPPORTED);return(FLOAT); }
 "else"         { count(); return(ELSE); }
 "enum"         { count(); return(ENUM); }
 "extern"       { count(); return(EXTERN); }
-"far"          { count(); TKEYWORD(XDATA);  }
-"eeprom"       { count(); TKEYWORD(EEPROM);  }
+"far"          { count(); return(XDATA);  }
 "float"        { count(); return(FLOAT); }
-"flash"        { count(); TKEYWORD(CODE);}
 "for"          { count(); return(FOR); }
 "goto"	       { count(); return(GOTO); }
-"idata"        { count(); TKEYWORD(IDATA);}
+"idata"        { count(); return(IDATA);}
 "if"           { count(); return(IF); }
 "int"          { count(); return(INT); }
 "interrupt"    { count(); return(INTERRUPT);}
-"nonbanked"    { count(); TKEYWORD(NONBANKED);}
-"banked"       { count(); TKEYWORD(BANKED);}
 "long"	       { count(); return(LONG); }
-"near"	       { count(); TKEYWORD(DATA);}
-"pdata"        { count(); TKEYWORD(PDATA); }
-"reentrant"    { count(); TKEYWORD(REENTRANT);}
+"near"		   { count(); return(DATA);}
+"pdata"        { count(); return(PDATA); }
+"reentrant"    { count(); return(REENTRANT);}
 "register"     { count(); return(REGISTER); }
 "return"       { count(); return(RETURN); }
-"sfr"	       { count(); TKEYWORD(SFR)	; }
-"sbit"	       { count(); TKEYWORD(SBIT)	; }
+"sfr"	       { count(); return(SFR)	; }
+"sbit"	       { count(); return(SBIT)	; }
 "short"        { count(); return(SHORT); }
 "signed"       { count(); return(SIGNED); }
 "sizeof"       { count(); return(SIZEOF); }
-"sram"         { count(); TKEYWORD(XDATA);}
 "static"       { count(); return(STATIC); }
 "struct"       { count(); return(STRUCT); }
 "switch"       { count(); return(SWITCH); }
@@ -168,21 +138,17 @@ struct options  save_options  ;
 "unsigned"     { count(); return(UNSIGNED); }
 "void"         { count(); return(VOID); }
 "volatile"     { count(); return(VOLATILE); }
-"using"        { count(); TKEYWORD(USING); }
-"_naked"       { count(); TKEYWORD(NAKED); }
+"using"        { count(); return(USING); }
 "while"        { count(); return(WHILE); }
-"xdata"        { count(); TKEYWORD(XDATA); }
-"_data"	       { count(); TKEYWORD(_NEAR); }
-"_code"	       { count(); TKEYWORD(_CODE); }
-"_eeprom"      { count(); TKEYWORD(_EEPROM); }
-"_flash"       { count(); TKEYWORD(_CODE); }
-"_generic"     { count(); TKEYWORD(_GENERIC); }
-"_near"	       { count(); TKEYWORD(_NEAR); }
-"_sram"        { count(); TKEYWORD(_XDATA);}
-"_xdata"       { count(); TKEYWORD(_XDATA);}
-"_pdata"       { count(); TKEYWORD(_PDATA); }
-"_idata"       { count(); TKEYWORD(_IDATA); }
-"..."	       { count(); return(VAR_ARGS);}
+"xdata"        { count(); return(XDATA); }
+"_data"		   { count(); return(_NEAR); }
+"_code"		   { count(); return(_CODE); }
+"_generic"	   { count(); return(_GENERIC); }
+"_near"		   { count(); return(_NEAR); }
+"_xdata"       { count(); return(_XDATA);}
+"_pdata" { count () ; return(_PDATA); }
+"_idata" { count () ; return(_IDATA); }
+"..."		   { count(); return(VAR_ARGS);}
 {L}({L}|{D})*  { count(); return(check_type()); }
 0[xX]{H}+{IS}? { count(); yylval.val = constVal(yytext); return(CONSTANT); }
 0{D}+{IS}?     { count(); yylval.val = constVal(yytext); return(CONSTANT); }
@@ -214,8 +180,8 @@ struct options  save_options  ;
 "=="           { count(); return(EQ_OP); }
 "!="           { count(); return(NE_OP); }
 ";"            { count(); return(';'); }
-"{"	       { count(); NestLevel++ ;  return('{'); }
-"}"	       { count(); NestLevel--; return('}'); }
+"{"			   { count()	; NestLevel++ ;  return('{'); }
+"}"			   { count(); NestLevel--; return('}'); }
 ","            { count(); return(','); }
 ":"            { count(); return(':'); }
 "="            { count(); return('='); }
@@ -292,7 +258,7 @@ int checkCurrFile ( char *s)
 	/* mark the end of the filename */
 	while (*s != '"') s++;
 	*s = '\0';
-	currFname = Safe_calloc(1,strlen(sb)+1);
+	ALLOC_ATOMIC(currFname,strlen(sb)+1);
 	strcpy(currFname,sb);
 	yylineno = lNum - 2;
     }
@@ -357,67 +323,47 @@ int check_type()
 
 char strLitBuff[2048]			;
 
-/*
- * Change by JTV 2001-05-19 to not concantenate strings
- * to support ANSI hex and octal escape sequences in string liteals 
- */
-
 char *stringLiteral ()
-
 {
-int ch;
-char *str = strLitBuff			;
+       int ch;
+       char *str = strLitBuff			;
+       
+       *str++ = '\"'			;
+       /* put into the buffer till we hit the */
+       /* first \" */
+       while (1) {
 
-*str++ = '\"'			;
-/* put into the buffer till we hit the */
-/* first \" */
-
-while (1) 
-  {
-  ch = input()			;
-
-  if (!ch)
-    break	; /* end of input */
-
-  /* if it is a \ then everything allowed */
-
-  if (ch == '\\') 
-    {
-    *str++ = ch     ; /* backslash in place */
-    *str++ = input()		; /* following char in place */
-    continue			;      /* carry on */
-    }
-
-  /* if new line we have a new line break */
-  if (ch == '\n') 
-    break		;
-
-  /* if this is a quote then we have work to do */
-  /* find the next non whitespace character     */
-  /* if that is a double quote then carry on    */
-
-  if (ch == '\"') 
-    {
-    *str++  = ch ;	/* Pass end of this string or substring to evaluator */
-
-    while ((ch = input()) && isspace(ch)) ;
-
-    if (!ch) 
-      break ; 
-
-    if (ch != '\"') 
-      {
-      unput(ch) ;
-      break ;
-      }
-    }
-
-  *str++  = ch;	      /* Put next substring introducer into output string */
-  }  
-
-*str = '\0';
-
-return strLitBuff			;
+          ch = input()			;
+          if (!ch) 	    break	; /* end of input */
+	  /* if it is a \ then everything allowed */
+	  if (ch == '\\') {
+	     *str++ = ch     ; /* backslash in place */
+	     *str++ = input()		; /* following char in place */
+	     continue			;      /* carry on */
+	     }
+	     
+	 /* if new line we have a new line break */
+	 if (ch == '\n') break		;
+	 
+	 /* if this is a quote then we have work to do */
+	 /* find the next non whitespace character     */
+	 /* if that is a double quote then carry on    */
+	 if (ch == '\"') {
+	 
+	     while ((ch = input()) && isspace(ch)) ;
+	     if (!ch) break		; 
+	     if (ch != '\"') {
+	          unput(ch)			;
+		  break			;
+		  }
+		  
+		  continue		;
+        }
+	*str++  = ch;	  
+     }  
+     *str++ = '\"'			;
+     *str = '\0';
+     return strLitBuff			;
 }
 
 void doPragma (int op, char *cp)
@@ -487,10 +433,6 @@ int process_pragma(char *s)
 	   (*s != '\n')) 
 	s++ ;    
 
-    /* First give the port a chance */
-    if (port->process_pragma && !port->process_pragma(cp))
-	return 0;
-
     /* now compare and do what needs to be done */
     if (strncmp(cp,PRAGMA_SAVE,strlen(PRAGMA_SAVE)) == 0) {
 	doPragma(P_SAVE,cp+strlen(PRAGMA_SAVE));
@@ -554,34 +496,4 @@ int process_pragma(char *s)
 
     werror(W_UNKNOWN_PRAGMA,cp);
     return 0;
-}
-
-/* will return 1 if the string is a part
-   of a target specific keyword */
-int isTargetKeyword(char *s)
-{
-    int i;
-    
-    if (port->keywords == NULL)
-	return 0;
-    for ( i = 0 ; port->keywords[i] ; i++ ) {
-	if (strcmp(port->keywords[i],s) == 0)
-	    return 1;
-    }
-    
-    return 0;
-}
-
-extern int fatalError;
-
-int yyerror(char *s)
-{
-   fflush(stdout);
-
-   if (yylineno && filename)
-	fprintf(stdout,"\n%s(%d) %s: token -> '%s' ; column %d\n",
-		filename,yylineno,
-		s,yytext,column);
-   fatalError++;
-   return 0;
 }

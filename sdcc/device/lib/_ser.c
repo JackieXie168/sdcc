@@ -29,7 +29,7 @@
 /*      $Id$    */
 
 
-#include <8052.h>
+#include <reg51.h>
 
 #include "ser.h"
 

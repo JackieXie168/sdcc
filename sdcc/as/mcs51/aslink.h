@@ -107,50 +107,32 @@
  *	    +-----+-----+-----+-----+-----+-----+-----+-----+
  */
 
-#define	R_WORD	0x00		/* 16 bit */
-#define	R_BYTE	0x01		/*  8 bit */
+#define	R_WORD	0000		/* 16 bit */
+#define	R_BYTE	0001		/*  8 bit */
 
-#define	R_AREA	0x00		/* Base type */
-#define	R_SYM	0x02
+#define	R_AREA	0000		/* Base type */
+#define	R_SYM	0002
 
-#define	R_NORM	0x00		/* PC adjust */
-#define	R_PCR	0x04
+#define	R_NORM	0000		/* PC adjust */
+#define	R_PCR	0004
 
-#define	R_BYT1	0x00		/* Byte count for R_BYTE = 1 */
-#define	R_BYT2	0x08		/* Byte count for R_BYTE = 2 */
+#define	R_BYT1	0000		/* Byte count for R_BYTE = 1 */
+#define	R_BYT2	0010		/* Byte count for R_BYTE = 2 */
 
-#define	R_SGND	0x00		/* Signed Byte */
-#define	R_USGN	0x10		/* Unsigned Byte */
+#define	R_SGND	0000		/* Signed value */
+#define	R_USGN	0020		/* Unsigned value */
 
-#define	R_NOPAG	0x00		/* Page Mode */
-#define	R_PAG0	0x20		/* Page '0' */
-#define	R_PAG	0x40		/* Page 'nnn' */
+#define	R_NOPAG	0000		/* Page Mode */
+#define	R_PAG0	0040		/* Page '0' */
+#define	R_PAG	0100		/* Page 'nnn' */
 
-#define	R_LSB	0x00		/* low byte */
-#define	R_MSB	0x80		/* high byte */
-
-#define R_BYT3	0x100		/* if R_BYTE is set, this is a 
-				 * 3 byte address, of which
-				 * the linker must select one byte.
-				 */
-#define R_HIB	0x200		/* If R_BYTE & R_BYT3 are set, linker
-				 * will select byte 3 of the relocated
-				 * 24 bit address.
-				 */
+/*
+ * Valid for R_BYT2:
+ */
+#define	R_LSB	0000		/* output low byte */
+#define	R_MSB	0200		/* output high byte */
 
 #define R_J11   (R_WORD|R_BYT2)	/* JLH: 11 bit JMP and CALL (8051) */
-#define R_J19   (R_WORD|R_BYT2|R_MSB) /* 19 bit JMP/CALL (DS80C390) */
-#define R_C24   (R_WORD|R_BYT1|R_MSB) /* 24 bit address (DS80C390) */
-#define R_J19_MASK (R_BYTE|R_BYT2|R_MSB)
-
-#define IS_R_J19(x) (((x) & R_J19_MASK) == R_J19)
-#define IS_R_J11(x) (((x) & R_J19_MASK) == R_J11)
-#define IS_C24(x) (((x) & R_J19_MASK) == R_C24)
-
-#define R_ESCAPE_MASK	0xf0	/* Used to escape relocation modes
-				 * greater than 0xff in the .rel
-				 * file.
-				 */
 
 /*
  * Global symbol types.
@@ -184,7 +166,7 @@
 /*
  *	General assembler address type
  */
-typedef unsigned int Addr_T;
+typedef unsigned int addr_t;
 
 /*
  *	The structures of head, area, areax, and sym are created
@@ -230,8 +212,8 @@ struct	area
 {
 	struct	area	*a_ap;	/* Area link */
 	struct	areax	*a_axp;	/* Area extension link */
-	Addr_T	a_addr;		/* Beginning address of area */
-	Addr_T	a_size;		/* Total size of the area */
+	addr_t	a_addr;		/* Beginning address of area */
+	addr_t	a_size;		/* Total size of the area */
 	char	a_type;		/* Area subtype */
 	char	a_flag;		/* Flag byte */
 	char	a_id[NCPS];	/* Name */
@@ -257,8 +239,8 @@ struct	areax
 	struct	areax	*a_axp;	/* Area extension link */
 	struct	area	*a_bap;	/* Base area link */
 	struct	head	*a_bhp;	/* Base header link */
-	Addr_T	a_addr;		/* Beginning address of section */
-	Addr_T	a_size;		/* Size of the area in section */
+	addr_t	a_addr;		/* Beginning address of section */
+	addr_t	a_size;		/* Size of the area in section */
 };
 
 /*
@@ -279,7 +261,7 @@ struct	sym
 	struct	areax	*s_axp;	/* Symbol area link */
 	char	s_type;		/* Symbol subtype */
 	char	s_flag;		/* Flag byte */
-	Addr_T	s_addr;		/* Address */
+	addr_t	s_addr;		/* Address */
 	char	*s_id;		/* Name: JLH change from [NCPS] */
 };
 
@@ -328,7 +310,7 @@ struct	sdp
 {
 	struct	area  *s_area;	/* Paged Area link */
 	struct	areax *s_areax;	/* Paged Area Extension Link */
-	Addr_T	s_addr;		/* Page address offset */
+	addr_t	s_addr;		/* Page address offset */
 };
 
 /*
@@ -345,9 +327,9 @@ struct	rerr
 {
 	int	aindex;		/* Linking area */
 	int	mode;		/* Relocation mode */
-	Addr_T	rtbase;		/* Base address in section */
+	addr_t	rtbase;		/* Base address in section */
 	int	rindex;		/* Area/Symbol reloaction index */
-	Addr_T	rval;		/* Area/Symbol offset value */
+	addr_t	rval;		/* Area/Symbol offset value */
 };
 
 /*
@@ -566,8 +548,6 @@ extern	int	pflag;		/*	print linker command file flag
 				 */
 extern	int	uflag;		/*	Listing relocation flag
 				 */
-extern int 	rflag;		/* 	Extended linear address record flag.
-			 	*/				 
 extern	int	radix;		/*	current number conversion radix:
 				 *	2 (binary), 8 (octal), 10 (decimal),
 				 *	16 (hexadecimal)
@@ -583,7 +563,7 @@ extern	int	pass;		/*	linker pass number
 extern	int	rtcnt;		/*	count of elements in the
 				 *	rtval[] and rtflg[] arrays
 				 */
-extern	Addr_T	rtval[];	/*	data associated with relocation
+extern	addr_t	rtval[];	/*	data associated with relocation
 				 */
 extern	int	rtflg[];	/*	indicates if rtval[] value is
 				 *	to be sent to the output file.
@@ -606,7 +586,7 @@ extern	struct lbname *lbnhead;	/*	pointer to the first
 extern	struct lbfile *lbfhead;	/*	pointer to the first
 				 *	library file structure
 				 */
-extern	Addr_T iram_size;	/*	internal ram size
+extern	addr_t iram_size;	/*	internal ram size
 				 */
 
 
@@ -633,7 +613,7 @@ extern	VOID		bassav();
 extern	VOID		gblsav();
 extern	VOID		iramsav();
 extern	VOID		iramcheck();
-extern	VOID		link_main();
+extern	VOID		link();
 extern	VOID		lkexit();
 extern	int		main();
 extern	VOID		map();
@@ -654,7 +634,6 @@ extern	char		getnb();
 extern	int		more();
 extern	VOID		skip();
 extern	VOID		unget();
-extern	VOID		chop_crlf();
 
 /* lkarea.c */
 extern	VOID		lkparea();
@@ -675,14 +654,14 @@ extern	VOID		symdef();
 extern	int		symeq();
 extern	VOID		syminit();
 extern	VOID		symmod();
-extern	Addr_T		symval();
+extern	addr_t		symval();
 
 /* lkeval.c */
 extern	int		digit();
-extern	Addr_T		eval();
-extern	Addr_T		expr();
+extern	addr_t		eval();
+extern	addr_t		expr();
 extern	int		oprio();
-extern	Addr_T		term();
+extern	addr_t		term();
 
 /* lklist.c */
 extern	int		dgt();
@@ -694,17 +673,13 @@ extern	VOID		newpag();
 extern	VOID		slew();
 
 /* lkrloc.c */
-extern	Addr_T		adb_b();
-extern	Addr_T		adb_hi();
-extern	Addr_T		adb_lo();
-extern	Addr_T          adb_24_hi(Addr_T v, int i);
-extern	Addr_T		adb_24_mid(Addr_T v, int i);
-extern	Addr_T          adb_24_lo(Addr_T v, int i);
-extern	Addr_T		adw_w();
-extern	Addr_T		adw_24(Addr_T, int);
-extern	Addr_T		adw_hi();
-extern	Addr_T		adw_lo();
-extern	Addr_T		evword();
+extern	addr_t		adb_b();
+extern	addr_t		adb_hi();
+extern	addr_t		adb_lo();
+extern	addr_t		adw_w();
+extern	addr_t		adw_hi();
+extern	addr_t		adw_lo();
+extern	addr_t		evword();
 extern	VOID		rele();
 extern	VOID		reloc();
 extern	VOID		relt();
@@ -716,7 +691,6 @@ extern	VOID		errdmp();
 extern	VOID		relerp();
 extern	VOID		erpdmp();
 extern	VOID		prntval();
-extern  int		lastExtendedAddress;
 
 /* lklibr.c */
 extern	VOID		addfile();
@@ -732,14 +706,13 @@ extern	VOID		s19();
 
 /* lkihx.c */
 extern	VOID		ihx();
-extern	VOID		ihxEntendedLinearAddress(Addr_T);
+
 /* lkstore.c */
 extern char 		*StoreString( char *str );
 
 /* lknoice.c */
-extern void             DefineNoICE( char *name, Addr_T value, int page );
+extern void             DefineNoICE( char *name, addr_t value, int page );
 
 /* SD added this to change
 	strcmpi --> strcmp (strcmpi NOT ANSI) */
 #define strcmpi strcmp
-

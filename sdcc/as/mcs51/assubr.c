@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <string.h>
+#include <alloc.h>
 #include "asm.h"
 
 /*)Module	assubr.c
@@ -98,15 +99,12 @@ register int c;
  *		none
  */
 
-extern int fatalErrors;
-
 VOID
 diag()
 {
 	register char *p,*errstr;
 
 	if (eb != ep) {
-	        fatalErrors++;
 		p = eb;
 		fprintf(stderr, "?ASxxxx-Error-<");
 		while (p < ep) {
@@ -128,48 +126,6 @@ diag()
 		}
 	}
 }
-
-/*)Function	VOID	warnBanner()
- *
- *	The function warnBanner() prints a generic warning message
- *	header (including the current source file/line) and positions
- *	the output for a more specific warning message.
- *
- *	It is assumed that the call to warnBanner will be followed with
- *	a fprintf to stderr (or equivalent) with the specific warning
- *	text.
- *
- *	local variables:
- *		none
- *
- *	global variables:
- *		int	cfile		current source file index
- *		int	incfile		current include file index
- *		char	incfn[]		array of include file names
- *		int	incline[]	array of include line numbers
- *		char	srcfn[]		array of source file names
- *		int	srcline[]	array of source line numbers
- *		FILE *	stderr		c_library
- *
- *	functions called:
- *		int	fprintf()	c_library
- *
- *	side effects:
- *		none
- */
-VOID
-warnBanner(void)
-{
-	fprintf(stderr, "?ASxxxx-Warning in line ");
-	if (incfil >= 0) {
-		fprintf(stderr, "%d", incline[incfil]);
-		fprintf(stderr, " of %s\n", incfn[incfil]);
-	} else {
-		fprintf(stderr, "%d", srcline[cfile]);
-		fprintf(stderr, " of %s\n", srcfn[cfile]);
-	}
-	fprintf(stderr, "               ");
-}	
 
 /*)Functions:	VOID	aerr()
  *		VOID	qerr()
