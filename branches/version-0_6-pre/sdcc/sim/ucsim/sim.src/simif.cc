@@ -9,15 +9,22 @@
 
 /* Interface command */
 
-cl_sif_command::cl_sif_command(enum sif_command cmd, char *the_description,
+cl_sif_command::cl_sif_command(enum sif_command cmd,
+			       char *the_name,
+			       char *the_description,
+			       enum sif_answer_type the_answer_type,
+			       int the_params_needed,
 			       class cl_simulator_interface *the_sif):
   cl_base()
 {
   command= cmd;
+  set_name(the_name);
   description= strdup(the_description);
+  answer_type= the_answer_type;
   sif= the_sif;
   parameters= 0;
   answer= 0;
+  params_needed= the_params_needed;
   nuof_params= params_received= 0;
   answer_length= answered_bytes= 0;
   answering= DD_FALSE;
@@ -34,6 +41,8 @@ cl_sif_command::~cl_sif_command(void)
 int
 cl_sif_command::init(void)
 {
+  clear_params();
+  clear_answer();
   return(0);
 }
 
@@ -80,16 +89,20 @@ cl_sif_command::read(class cl_memory_cell *cel)
 {
   t_mem ret= cel->get();
 
+  printf("%s read: (%x)\n", get_name(), ret);
   if (answering &&
       answer)
     {
+      printf("answering...\n");
       if (answered_bytes < answer_length)
 	{
 	  ret= answer[answered_bytes];
 	  answered_bytes++;
+	  printf("answer=%x\n", ret);
 	}
       if (answered_bytes >= answer_length)
 	{
+	  printf("finishing command...\n");
 	  sif->finish_command();
 	}
     }
@@ -99,26 +112,33 @@ cl_sif_command::read(class cl_memory_cell *cel)
 void
 cl_sif_command::write(class cl_memory_cell *cel, t_mem *val)
 {
+  printf("%s write: 0x%x %d of %d at %p\n", get_name(), *val,
+	 params_received, nuof_params, parameters);
   if (nuof_params &&
       params_received < nuof_params &&
       parameters)
     {
+      printf("storing param 0x%x at %d\n",*val,params_received);
       parameters[params_received]= *val;
       params_received++;
       if (params_received >= nuof_params)
 	{
+	  printf("got all params, prod ans\n");
 	  produce_answer();
+	  printf("ans produced, start answering\n");
 	  start_answer();
 	}
     }
+  else
+    printf("%s write: do nothing\n", get_name());
 }
 
 
 void
 cl_sif_command::start(void)
 {
-  printf("Command %d started\n", command);
-  need_params(0);
+  printf("Command %d (%s) started\n", command, get_name());
+  need_params(params_needed);
 }
 
 void
@@ -143,7 +163,7 @@ cl_sif_command::produce_answer(void)
 }
 
 void
-cl_sif_command::produce_answer(t_mem ans)
+cl_sif_command::set_answer(t_mem ans)
 {
   clear_answer();
   answer= (t_mem *)calloc(1, sizeof(t_mem));
@@ -152,21 +172,34 @@ cl_sif_command::produce_answer(t_mem ans)
 }
 
 void
-cl_sif_command::produce_answer(char *ans)
+cl_sif_command::set_answer(int nr, t_mem ans[])
+{
+  clear_answer();
+  answer= (t_mem *)calloc(nr+1, sizeof(t_mem));
+  answer[0]= nr;
+  int i;
+  for (i= 0; i < nr; i++)
+    answer[i+1]= ans[i];
+  answer_length= nr+1;
+}
+
+void
+cl_sif_command::set_answer(char *ans)
 {
   clear_answer();
   if (ans &&
       *ans)
     {
-      answer= (t_mem *)calloc(strlen(ans)+1, sizeof(char));
+      answer= (t_mem *)calloc(strlen(ans)+2, sizeof(char));
       int i= 0;
+      answer[0]= strlen(ans);
       while (ans[i])
 	{
-	  answer[i]= ans[i];
+	  answer[i+1]= ans[i];
 	  i++;
 	}
-      answer[i]= '\0';
-      answer_length= i+1;
+      answer[i+1]= '\0';
+      answer_length= i+2;
     }
 }
 
@@ -180,6 +213,65 @@ cl_sif_command::start_answer(void)
       answering= DD_FALSE;
       sif->finish_command();
     }
+}
+
+
+/* Command: get info about commands */
+
+void
+cl_sif_commands::produce_answer(void)
+{
+  int c, i;
+  if (!sif)
+    return;
+  c= sif->commands->count;
+  answer= (t_mem*)calloc(c+1, sizeof(t_mem));
+  answer[0]= c;
+  for (i= 0; i < c; i++)
+    {
+      answer[i+1]= 0;
+      class cl_sif_command *sc=
+	dynamic_cast<class cl_sif_command *>(sif->commands->object_at(i));
+      if (!sc)
+	continue;
+      answer[i+1]= sc->get_command();
+    }
+  answer_length= c+1;
+}
+
+
+/* Command: get info about a command */
+
+void
+cl_sif_cmdinfo::produce_answer(void)
+{
+  int i;
+  if (!sif)
+    return;
+  t_mem cm;
+  if (!get_parameter(0, &cm))
+    return;
+  answer= (t_mem*)calloc(1+2, sizeof(t_mem));
+  answer[0]= 2;
+  class cl_sif_command *about= 0;
+  for (i= 0; i < sif->commands->count; i++)
+    {
+      class cl_sif_command *sc=
+	dynamic_cast<class cl_sif_command *>(sif->commands->object_at(i));
+      if (sc->get_command() == cm)
+	{
+	  about= sc;
+	  break;
+	}
+    }
+  //if (about != this) about->start();
+  if (about)
+    {
+      answer[1]= about->get_params_needed();
+      answer[2]= about->get_answer_type();
+    }
+  //if (about != this) clear_params();
+  answer_length= 3;
 }
 
 
@@ -218,10 +310,15 @@ cl_simulator_interface::init(void)
       register_cell(as, address, &cell, wtd_restore_write);
     }
   class cl_sif_command *c;
-  commands->add(c= new cl_sif_command(SIFCM_IFVER,
-				      "Get version of interface",
-				      this));
-  c->set_name("if_ver");
+  commands->add(c= new cl_sif_commands(this));
+  c->init();
+  commands->add(c= new cl_sif_ifver(this));
+  c->init();
+  commands->add(c= new cl_sif_simver(this));
+  c->init();
+  commands->add(c= new cl_sif_ifreset(this));
+  c->init();
+  commands->add(c= new cl_sif_cmdinfo(this));
   c->init();
   return(0);
 }
@@ -272,14 +369,21 @@ cl_simulator_interface::set_cmd(class cl_cmdline *cmdline,
 t_mem
 cl_simulator_interface::read(class cl_memory_cell *cel)
 {
-  printf("simif read\n");
+  printf("simif read: ");
   if (!active_command)
     {
       t_mem d= cel->get();
+      printf("no-active, cel=0x%02x\n", d);
       return(~d & cel->get_mask());
     }
   else
-    return(active_command->read(cel));
+    {
+      printf("active=%s\n",active_command->get_name());
+      t_mem ret= active_command->read(cel);
+      if (active_command)
+	printf("active got 0x%02x (cel=0x%02x)\n", ret, cel->get());
+      return(ret);
+    }
   return(cel->get());
 }
 
@@ -289,6 +393,7 @@ cl_simulator_interface::write(class cl_memory_cell *cel, t_mem *val)
   printf("simif write %d 0x%x\n",*val,*val);
   if (!active_command)
     {
+      printf("No active command, look for %d\n", *val);
       int i;
       for (i= 0; i < commands->count; i++)
 	{
@@ -296,16 +401,24 @@ cl_simulator_interface::write(class cl_memory_cell *cel, t_mem *val)
 	    dynamic_cast<class cl_sif_command *>(commands->object_at(i));
 	  if (!c)
 	    continue;
-	  if (*val == c->get_command())
+	  enum sif_command cm= c->get_command();
+	  //printf("Checking %s %d<->%d\n", c->get_name(), cm, *val);
+	  if (*val == cm)
 	    {
+	      printf("Command %s activated\n", c->get_name());
 	      active_command= c;
 	      c->start();
+	      printf("needs %d params\n", c->get_nuof_params());
 	      return;
 	    }
 	}
+      printf("command 0x%x not found, just store\n", *val);
     }
   else
-    active_command->write(cel, val);
+    {
+      printf("write passing to %s\n",active_command->get_name());
+      active_command->write(cel, val);
+    }
 }
 
 
@@ -313,9 +426,12 @@ void
 cl_simulator_interface::finish_command(void)
 {
   if (active_command)
-    printf("Command %d finished\n", active_command->get_command());
+    {
+      printf("Command %s finished\n", active_command->get_name());
+      active_command->clear_answer();
+    }
   else
-    printf("Command finished\n");
+    printf("Command (non-active) finished\n");
   active_command= 0;
 }
 
@@ -341,17 +457,20 @@ cl_simulator_interface::print_info(class cl_console *con)
 		     c->get_name(), c->get_description());
       con->dd_printf("Parameters received %d bytes of %d\n",
 		     c->get_params_received(), c->get_nuof_params());
-      con->dd_printf(" ");
-      int i;
-      for (i= 0; i < c->get_nuof_params(); i++)
+      if (c->get_nuof_params())
 	{
-	  t_mem p;
-	  if (c->get_parameter(i, &p))
-	    con->dd_printf(" %02x", p);
-	  else
-	    con->dd_printf(" --");
+	  con->dd_printf(" ");
+	  int i;
+	  for (i= 0; i < c->get_nuof_params(); i++)
+	    {
+	      t_mem p;
+	      if (c->get_parameter(i, &p))
+		con->dd_printf(" %02x", p);
+	      else
+		con->dd_printf(" --");
+	    }
+	  con->dd_printf("\n");
 	}
-      con->dd_printf("\n");
       con->dd_printf("Answered %d bytes of %d\n",
 		     c->get_answered_bytes(), c->get_answer_length());
       con->dd_printf("Answering: %s\n", (c->get_answering())?"yes":"no");
