@@ -2,9 +2,9 @@ SDCC - a Freeware, retargettable, optimizing ANSI-C compiler
 ------------------------------------------------------------
 $Id$
 
-Welcome to SCC, a freeware, retargettable, optimizing ANSI C compiler
-that currently supports a growing list of processors including the
-Intel mcs51 family, the Zilog Z80, and the ds390.
+Welcome to SDCC, a freeware, retargettable, optimizing ANSI C compiler
+that supports a growing list of processors including the Intel mcs51
+family, the Zilog Z80, and the ds390.
 
 See share/doc/sdcc/INSTALL.txt for the installation instructions for
 the binary kits.
