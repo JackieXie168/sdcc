@@ -55,6 +55,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "memcl.h"
 #include "simcl.h"
 #include "itsrccl.h"
+#include "simifcl.h"
 
 
 /*
@@ -283,6 +284,10 @@ cl_uc::get_mem_width(char *id)
 void
 cl_uc::mk_hw_elements(void)
 {
+  class cl_hw *h;
+
+  hws->add(h= new cl_simulator_interface(this, "rom", -1));
+  h->init();
 }
 
 void
@@ -577,6 +582,10 @@ cmd->init();*/
     cmd->add_name("caddressdecoder");
     cmd->add_name("caddrdecoder");
     cmd->add_name("cadecoder");
+    cset->add(cmd= new cl_info_memory_cmd("info", 0,
+"memory info        Information about memory system",
+"long help of memory info"));
+    cmd->init();
   }
   if (!super_cmd) {
     cmdset->add(cmd= new cl_super_cmd("memory", 0,

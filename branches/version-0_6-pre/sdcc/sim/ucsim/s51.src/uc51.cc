@@ -139,6 +139,8 @@ cl_51core::id_string(void)
 void
 cl_51core::mk_hw_elements(void)
 {
+  cl_uc::mk_hw_elements();
+
   class cl_hw *h;
 
   acc= sfr->get_cell(ACC);

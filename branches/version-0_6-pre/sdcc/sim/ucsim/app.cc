@@ -636,6 +636,10 @@ cl_app::build_cmdset(class cl_cmdset *cmdset)
 "get option [name]  Get value of an option",
 "long help of get option"));
     cmd->init();
+    cset->add(cmd= new cl_show_error_cmd("error", 0,
+"get error          Get class of errors",
+"long help of get error"));
+    cmd->init();
   }
   if (!super_cmd)
     {

@@ -35,7 +35,7 @@ infodir         = @infodir@
 srcdir          = @srcdir@
 
 OBJECTS         = stack.o mem.o sim.o itsrc.o brk.o arg.o \
-		  guiobj.o uc.o hw.o
+		  guiobj.o uc.o hw.o simif.o
 
 
 # Compiling entire program or any subproject
