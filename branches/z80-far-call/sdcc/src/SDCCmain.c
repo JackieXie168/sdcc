@@ -178,7 +178,7 @@ static int _setPort(const char *name)
     exit(1);
 }
 
-static void _buildCmdLine(char *into, char **args, const char **cmds, 
+void _buildCmdLine(char *into, char **args, const char **cmds, 
 			  const char *p1, const char *p2, 
 			  const char *p3, const char **list)
 {
@@ -195,6 +195,8 @@ static void _buildCmdLine(char *into, char **args, const char **cmds,
 	/* See if it has a '$' anywhere - if not, just copy */
 	if ((p = strchr(from, '$'))) {
 	    strncpy(into, from, p - from);
+	    /* NULL terminate it */
+	    into[p-from] = '\0';
 	    from = p+2;
 	    p++;
 	    switch (*p) {
@@ -412,8 +414,9 @@ static void processFile (char *s)
     /* if the extention is type .rel or .r or .REL or .R 
        addtional object file will be passed to the linker */
     if (strcmp(fext,".r") == 0 || strcmp(fext,".rel") == 0 ||
-	strcmp(fext,".R") == 0 || strcmp(fext,".REL") == 0) {
-	
+	strcmp(fext,".R") == 0 || strcmp(fext,".REL") == 0 ||
+	strcmp(fext, port->linker.rel_ext) == 0)
+	{
 	relFiles[nrelFiles++] = s;
 	return ;
     }
@@ -1343,8 +1346,12 @@ int main ( int argc, char **argv , char **envp)
 	!fatalError      &&
 	!noAssemble      &&
 	!options.c1mode  &&
-	(srcFileName || nrelFiles))
-	linkEdit (envp);
+	(srcFileName || nrelFiles)) {
+	if (port->linker.do_link)
+	    port->linker.do_link();
+	else
+	    linkEdit (envp);
+    }
 
     if (yyin && yyin != stdin)
 	fclose(yyin);
