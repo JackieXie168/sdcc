@@ -77,7 +77,7 @@ sdcc-bin: sdcc/sdccconf.h
 	make -C sdcc sdcc-bin CROSS_LIBGC=$(CROSS_LIBGC)
 	mkdir -p $(BUILD)/bin
 	for i in \
-	sdcc sdcpp link-z80 as-z80 aslink asx8051; \
+	sdcc sdcpp as-gbz80 link-gbz80 link-z80 as-z80 aslink asx8051; \
 	do cp sdcc/bin/$$i$(SE) $(BUILD)/bin/$$i$(E); done
 
 sdcc-misc: sdcc/sdccconf.h
