@@ -147,12 +147,41 @@ static struct {
 
 static char *aopGet(asmop *aop, int offset, bool bit16);
 
-static char *_strdup(const char *s)
+static void _tidyUp(char *buf)
 {
-    char *ret;
-    ALLOC_ATOMIC(ret, strlen(s)+1);
-    strcpy(ret, s);
-    return ret;
+    /* Clean up the line so that it is 'prettier' */
+    if (strchr(buf, ':')) {
+	/* Is a label - cant do anything */
+	return;
+    }
+    /* Change the first (and probably only) ' ' to a tab so
+       everything lines up.
+    */
+    while (*buf) {
+	if (*buf == ' ') {
+	    *buf = '\t';
+	    return;
+	}
+	buf++;
+    }
+}
+
+static void emit2(const char *szFormat, ...)
+{
+    char buffer[256];
+    va_list ap;
+
+    va_start(ap, szFormat);
+
+    tvsprintf(buffer, szFormat, ap);
+
+    _tidyUp(buffer);
+    lineCurr = (lineCurr ?
+		connectLine(lineCurr,newLineNode(buffer)) :
+		(lineHead = newLineNode(buffer)));
+
+    lineCurr->isInline = inLine;
+    lineCurr->isDebug  = debugLine;
 }
 
 /*-----------------------------------------------------------------*/
@@ -183,129 +212,6 @@ void emitcode (const char *inst, const char *fmt, ...)
     va_end(ap);
 }
 
-typedef struct {
-    const char *szName;
-    const char *szFormat;
-} TOKEN;
-
-#if 1
-static TOKEN _tokens[] = {
-    { "global", ".globl %s" },
-    { "labeldef", "%s::" },
-    { "tlabeldef", "%05d$:" },
-    { "tlabel", "%05d$" },
-    { "fileprelude", "; Generated using the default tokens." },
-    { "functionheader", 
-      "; ---------------------------------\n"
-      "; Function %s\n"
-      "; ---------------------------------"
-    },
-    { "functionlabeldef", "%s:" },
-    { "pusha", 
-      "push af\n"
-      "\tpush bc\n"
-      "\tpush de\n"
-      "\tpush hl"
-    },
-    { "di", "di" },
-    { "adjustsp", "lda sp,-%d(sp)" },
-    { "prelude", "push bc" },
-    { "leave", 
-      "pop bc\n"
-      "\tret"
-    },
-    { "leavex", 
-      "lda sp,%d(sp)\n"
-      "\tpop bc\n"
-      "\tret"
-    },
-    { "ldahli", "ld a,(hl+)" },
-    { "*hl", "(hl)" },
-    { "ldahlsp", "lda hl,%d(sp)" },
-    { "ldaspsp", "lda sp,%d(sp)" },
-    { "zero", "#0x00" },
-    { "one", "#0x01" },
-    { "*pair", "(%s)" },
-    { "shortjp", "jr" },
-    { "area", ".area _%s" },
-    { "ascii", ".ascii \"%s\"" },
-    { "ds", ".ds %d" },
-    { "db", ".db %d" },
-    { "dbs", ".db %s" },
-    { "dw", ".dw %d" },
-    { "dws", ".dw %s" },
-    { "constbyte", "0x%02X" },
-    { "constword", "0x%04X" },
-    { "immedword", "#0x%04X" },
-    { "immedbyte", "#0x%02X" },
-    { "hashedstr", "#%s" },
-    { "lsbimmeds", "#<%s" },
-    { "msbimmeds", "#>%s" },
-    { "module", ".module %s" }
-};
-#else
-static TOKEN _tokens[] = {
-    { "global", "GLOBAL %s" },
-    { "labeldef", "%s:" },
-    { "tlabeldef", ".l%05d:" },
-    { "tlabel", ".l%05d" },
-    { "fileprelude", 
-      "; Generated using the rgbds tokens.\n"
-      "\tGLOBAL __mulschar\n"
-      "\tGLOBAL __muluchar\n"
-      "\tGLOBAL __mulsint\n"
-      "\tGLOBAL __muluint"
-    },
-    { "functionheader", 
-      "; ---------------------------------\n"
-      "; Function %s\n"
-      "; ---------------------------------"
-    },
-    { "functionlabeldef", "%s:" },
-    { "pusha", 
-      "push af\n"
-      "\tpush bc\n"
-      "\tpush de\n"
-      "\tpush hl"
-    },
-    { "di", "di" },
-    { "adjustsp", "add sp,-%d" },
-    { "prelude", "push bc" },
-    { "leave", 
-      "pop bc\n"
-      "\tret"
-    },
-    { "leavex", 
-      "add sp,%d\n"
-      "\tpop bc\n"
-      "\tret"
-    },
-    { "ldahli", "ld a,[hl+]" },
-    { "*hl", "[hl]" },
-    { "ldahlsp", "ld hl,[sp+%d]" },
-    { "ldaspsp", "add sp,%d" },
-    { "zero", "$00" },
-    { "one", "$01" },
-    { "*pair", "[%s]" },
-    { "shortjp", "jr" },
-    { "area", "SECTION \"%s\",CODE" },
-    { "ascii", "DB \"%s\"" },
-    { "ds", "DS %d" },
-    { "db", "DB %d" },
-    { "dbs", "DB %s" },
-    { "dw", "DW %d" },
-    { "dws", "DW %s" },
-    { "constbyte", "$%02X" },
-    { "constword", "$%04X" },
-    { "immedword", "$%04X" },
-    { "immedbyte", "$%02X" },
-    { "hashedstr", "%s" },
-    { "lsbimmeds", "%s & $FF" },
-    { "msbimmeds", "%s >> 8" },
-    { "module", "; MODULE %s" }
-};
-#endif
-
 /* Z80:
     { "adjustsp", 
       "\tld hl,#-%d\n"
@@ -325,169 +231,6 @@ static TOKEN _tokens[] = {
     }
 }
 */
-
-#define NUM_TOKENS (sizeof(_tokens)/sizeof(_tokens[0]))
-
-static const TOKEN *_findToken(const char *szName)
-{
-    int i;
-    for (i=0; i < NUM_TOKENS; i++) {
-	if (!strcmp(_tokens[i].szName, szName))
-	    return _tokens + i;
-    }
-    return NULL;
-}
-
-static va_list _iprintf(char *pInto, const char *szFormat, va_list ap)
-{
-    char *pStart = pInto;
-    char *sz = _strdup(szFormat);
-
-    while (*sz) {
-	if (*sz == '%') {
-	    switch (*++sz) {
-		/* See if it's a special emitter */
-	    case 'r':
-		wassert(0);
-		break;
-	    default:
-		{
-		    /* Scan out the arg and pass it on to sprintf */
-		    char *p = sz-1, tmp;
-		    while (isdigit(*sz))
-			sz++;
-		    /* Skip the format */
-		    tmp = *++sz;
-		    *sz = '\0';
-		    vsprintf(pInto, p, ap);
-		    /* PENDING: Assume that the arg length was an int */
-		    va_arg(ap, int);
-		    *sz = tmp;
-		}
-	    }
-	    pInto = pStart + strlen(pStart);
-	}
-	else {
-	    *pInto++ = *sz++;
-	}
-    }
-    *pInto = '\0';
-
-    return ap;
-}
-
-static void vtprintf(char *buffer, const char *szFormat, va_list ap)
-{
-    char *sz = _strdup(szFormat);
-    char *pInto = buffer, *p;
-
-    buffer[0] = '\0';
-    
-    while (*sz) {
-	if (*sz == '!') {
-	    /* Start of a token.  Search until the first
-	       [non alplha, *] and call it a token. */
-	    char old;
-	    const TOKEN *t;
-	    p = ++sz;
-	    while (isalpha(*sz) || *sz == '*') {
-		sz++;
-	    }
-	    old = *sz;
-	    *sz = '\0';
-	    /* Now find the token in the token list */
-	    if ((t = _findToken(p))) {
-		ap = _iprintf(pInto, t->szFormat, ap);
-		pInto = buffer + strlen(buffer);
-	    }
-	    else {
-		printf("Cant find token \"%s\"\n", p);
-		wassert(0);
-	    }
-	    *sz = old;
-	}
-	else if (*sz == '%') {
-	    char *pFormat = sz;
-	    char old;
-	    sz++;
-	    while (!isalpha(*sz))
-		sz++;
-	    sz++;
-	    old = *sz;
-	    *sz = '\0';
-	    vsprintf(pInto, pFormat, ap);
-	    pInto = buffer + strlen(buffer);
-	    *sz = old;
-	    va_arg(ap, int);
-	}
-	else {
-	    *pInto++ = *sz++;
-	}
-    }
-    *pInto = '\0';
-}
-
-static void tprintf(char *buffer, const char *szFormat, ...)
-{
-    va_list ap;
-
-    va_start(ap, szFormat);
-    vtprintf(buffer, szFormat, ap);
-}
-
-void tfprintf(FILE *fp, const char *szFormat, ...)
-{
-    va_list ap;
-    char buffer[MAX_INLINEASM];
-
-    va_start(ap, szFormat);
-    vtprintf(buffer, szFormat, ap);
-    fputs(buffer, fp);
-}
-
-void tsprintf(char *buffer, const char *szFormat, ...)
-{
-    va_list ap;
-    va_start(ap, szFormat);
-    vtprintf(buffer, szFormat, ap);
-}
-
-static void _tidyUp(char *buf)
-{
-    /* Clean up the line so that it is 'prettier' */
-    if (strchr(buf, ':')) {
-	/* Is a label - cant do anything */
-	return;
-    }
-    /* Change the first (and probably only) ' ' to a tab so
-       everything lines up.
-    */
-    while (*buf) {
-	if (*buf == ' ') {
-	    *buf = '\t';
-	    return;
-	}
-	buf++;
-    }
-}
-
-static void emit2(const char *szFormat, ...)
-{
-    char buffer[256];
-    va_list ap;
-
-    va_start(ap, szFormat);
-
-    vtprintf(buffer, szFormat, ap);
-
-    _tidyUp(buffer);
-    lineCurr = (lineCurr ?
-		connectLine(lineCurr,newLineNode(buffer)) :
-		(lineHead = newLineNode(buffer)));
-
-    lineCurr->isInline = inLine;
-    lineCurr->isDebug  = debugLine;
-}
 
 const char *getPairName(asmop *aop)
 {
@@ -1042,7 +785,7 @@ static void fetchLitPair(PAIR_ID pairId, asmop *left, int offset)
 	    }
 	}
 	_G.pairs[pairId].last_type = left->type;
-	_G.pairs[pairId].lit = _strdup(l);
+	_G.pairs[pairId].lit = gc_strdup(l);
 	_G.pairs[pairId].offset = offset;
     }
     /* Both a lit on the right and a true symbol on the left */
@@ -1168,15 +911,14 @@ static char *aopGet(asmop *aop, int offset, bool bit16)
 
     case AOP_HL:
 	wassert(IS_GB);
-	emitcode("", ";3");
 	setupPair(PAIR_HL, aop, offset);
-	tprintf(s, "!*hl");
-	return _strdup(s);
+	tsprintf(s, "!*hl");
+	return gc_strdup(s);
 
     case AOP_IY:
 	wassert(IS_Z80);
 	setupPair(PAIR_IY, aop, offset);
-	tprintf(s,"!*iyx", offset);
+	tsprintf(s,"!*iyx", offset);
 	ALLOC_ATOMIC(rs,strlen(s)+1);
 	strcpy(rs,s);   
 	return rs;
@@ -1184,10 +926,10 @@ static char *aopGet(asmop *aop, int offset, bool bit16)
     case AOP_STK:
 	if (IS_GB) {
 	    setupPair(PAIR_HL, aop, offset);
-	    tprintf(s, "!*hl");
+	    tsprintf(s, "!*hl");
 	}
 	else {
-	    tprintf(s,"!*ixx", aop->aopu.aop_stk+offset);
+	    tsprintf(s,"!*ixx", aop->aopu.aop_stk+offset);
 	}
 	ALLOC_ATOMIC(rs,strlen(s)+1);
 	strcpy(rs,s);   
@@ -1267,7 +1009,7 @@ static void aopPut (asmop *aop, char *s, int offset)
 	break;
 	
     case AOP_REG:
-	emitcode("ld","%s,%s ; 2",
+	emitcode("ld","%s,%s",
 		 aop->aopu.aop_reg[offset]->name,s);
 	break;
 	
@@ -1869,13 +1611,12 @@ static void genFunction (iCode *ic)
     /* PENDING: callee-save etc */
 
     /* adjust the stack for the function */
-    emit2("!prelude");
-
     _G.stack.last = sym->stack;
 
-    if (sym->stack) {
-	emit2("!adjustsp", sym->stack);
-    }
+    if (sym->stack)
+	emit2("!enterx", sym->stack);
+    else
+	emit2("!enter");
     _G.stack.offset = sym->stack;
 }
 
@@ -3946,7 +3687,7 @@ static void genGenPointerGet (operand *left,
 	/* Just do it */
 	if (isPtrPair(AOP(left))) 
 	    {
-		tprintf(buffer, "!*pair", getPairName(AOP(left)));
+		tsprintf(buffer, "!*pair", getPairName(AOP(left)));
 		aopPut(AOP(result), buffer, 0);
 	    }
 	else {
@@ -4288,21 +4029,20 @@ static void genJumpTab (iCode *ic)
     aopOp(IC_JTCOND(ic),ic,FALSE);
     /* get the condition into accumulator */
     l = aopGet(AOP(IC_JTCOND(ic)),0,FALSE);
-    MOVA(l);
     if (!IS_GB)
 	emitcode("push", "de");
     emitcode("ld", "e,%s", l);
     emit2("ld d,!zero");
     jtab = newiTempLabel(NULL);
     spillCached();
-    emit2("ld hl,#!tlabel", jtab->key+100);
+    emit2("ld hl,!immed!tlabel", jtab->key+100);
     emitcode("add", "hl,de");
     emitcode("add", "hl,de");
     emitcode("add", "hl,de");
     freeAsmop(IC_JTCOND(ic),NULL,ic);
     if (!IS_GB)
 	emitcode("pop", "de");
-    emitcode("jp", "!*hl");
+    emit2("jp !*hl");
     emitLabel(jtab->key+100);
     /* now generate the jump labels */
     for (jtab = setFirstItem(IC_JTLABELS(ic)) ; jtab;

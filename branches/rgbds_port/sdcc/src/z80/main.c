@@ -16,14 +16,18 @@ Z80_OPTS z80_opts;
 
 static char *_keywords[] = { NULL };
 
+#include "mappings.i"
+
 static void _z80_init(void)
 {
     z80_opts.sub = SUB_Z80;
+    asm_addTree(&_asxxxx_z80);
 }
 
 static void _gbz80_init(void)
 {
     z80_opts.sub = SUB_GBZ80;
+    asm_addTree(&_rgbds_gb);
 }
 
 static int regParmFlg = 0; /* determine if we can register a parameter */
