@@ -37,7 +37,7 @@ Hex		Instruction		Comment (applies to Z80 only)
 0F		RRCA
 10 dd	      *	DJNZ	dd
 11 nnnn		LD	DE,nnnn
-12		LD	DE,A
+12		LD	(DE),A
 13		INC	DE
 14		INC	D
 15		DEC	D

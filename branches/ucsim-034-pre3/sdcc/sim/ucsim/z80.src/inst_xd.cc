@@ -60,10 +60,10 @@ cl_z80::inst_Xd_ld(t_mem code)
       store1(tw, fetch());
     return(resGO);
     case 0x44: // LD B,HX
-      regs_iX_h = regs.hl.h;
+      regs.bc.h = regs_iX_h;
     return(resGO);
     case 0x45: // LD B,LX
-      regs_iX_l = regs.hl.l;
+      regs.bc.h = regs_iX_l;
     return(resGO);
     case 0x46: // LD B,(IX+dd)
       regs.bc.h = get1(add_u16_disp(regs_IX_OR_IY,fetch()));
@@ -163,16 +163,16 @@ cl_z80::inst_Xd_ld(t_mem code)
       store1(add_u16_disp(regs_IX_OR_IY,fetch()), regs.A);
     return(resGO);
     case 0x7C: // LD A,HX
-      regs.A = regs.hl.h;
+      regs.A = regs_iX_h;
     return(resGO);
     case 0x7D: // LD A,LX
-      regs.A = regs.hl.l;
+      regs.A = regs_iX_l;
     return(resGO);
     case 0x7E: // LD A,(IX+dd)
       regs.A = get1(add_u16_disp(regs_IX_OR_IY,fetch()));
     return(resGO);
     case 0xF9: // LD SP,IX
-      regs.SP = regs.IX;
+      regs.SP = regs_IX_OR_IY;
     return(resGO);
   }
   return(resINV_INST);
@@ -207,7 +207,7 @@ cl_z80::inst_Xd_add(t_mem code)
     case 0x85: // ADD A,LX
       add_A_bytereg(regs_iX_l);
       return(resGO);
-    case 0x86: // ADD A,(IX)
+    case 0x86: // ADD A,(IX+dd)
       { unsigned char ourtmp;
         t_addr addr;
         addr = add_u16_disp(regs_IX_OR_IY, fetch());
@@ -247,7 +247,7 @@ cl_z80::inst_Xd_inc(t_mem code)
       {
         t_addr addr;
         addr = add_u16_disp(regs_IX_OR_IY,fetch());
-        store1(addr, get1(addr)+1);
+        store1(addr, (unsigned short)(get1(addr)+1) );
       }
     break;
     default:
@@ -274,7 +274,7 @@ cl_z80::inst_Xd_dec(t_mem code)
       {
         t_addr addr;
         addr = add_u16_disp(regs_IX_OR_IY,fetch());
-        store1(addr, get1(addr)-1);
+        store1(addr, (unsigned short) (get1(addr)-1) );
       }
     break;
     default:
@@ -296,7 +296,7 @@ cl_z80::inst_Xd_misc(t_mem code)
     case 0x8D: // ADC A,LX
       adc_A_bytereg(regs_iX_l);
     return(resGO);
-    case 0x8E: // ADC A,(IX)
+    case 0x8E: // ADC A,(IX+dd)
       { unsigned char utmp;
         t_addr addr;
         addr = add_u16_disp(regs_IX_OR_IY, fetch());

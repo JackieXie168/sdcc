@@ -77,8 +77,8 @@ cl_z80::inst_ld(t_mem code)
     case 0x11: // LD DE,nnnn
       regs.DE = fetch2();
     break;
-    case 0x12: // LD DE,A
-      regs.DE = regs.A;
+    case 0x12: // LD (DE),A
+      store1(regs.DE, regs.A);
     break;
     case 0x16: // LD D,nn
       regs.de.h = fetch();
@@ -103,7 +103,11 @@ cl_z80::inst_ld(t_mem code)
       regs.hl.h = fetch();
     break;
     case 0x2A: // LD HL,(nnnn)
-      regs.HL = fetch2();
+      {
+         unsigned short tw;
+         tw = fetch2();
+         regs.HL = get2(tw);
+      }
     break;
     case 0x2E: // LD L,nn
       regs.hl.l = fetch();
@@ -666,8 +670,8 @@ cl_z80::inst_scf(t_mem code)
 int
 cl_z80::inst_ccf(t_mem code)
 {
-  /* Clear Carry Flag */
-  regs.F &= ~BIT_C;
+  /* Compliment Carry Flag */
+  regs.F ^= BIT_C;
   return(resGO);
 }
 
@@ -938,7 +942,7 @@ cl_z80::inst_rst(t_mem code)
       //PC = 0x08;
       switch (regs.A) {
         case 0:
-          /* exit(0); */
+          ::exit(0);
         break;
 
         case 1:

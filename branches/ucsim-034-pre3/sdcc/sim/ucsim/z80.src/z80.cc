@@ -72,6 +72,11 @@ cl_z80::init(void)
 //  ram= mem(MEM_XRAM);
   ram= rom;
 
+  // zero out ram(this is assumed in regression tests)
+  for (int i=0x8000; i<0x10000; i++) {
+    ram->set((t_addr) i, 0);
+  }
+
   return(0);
 }
 
@@ -130,22 +135,25 @@ cl_z80::bit_tbl(void)
 }*/
 
 int
-cl_z80::inst_length(t_mem code, t_addr addr)
+cl_z80::inst_length(t_addr addr)
 {
   int len = 0;
   char *s;
 
-  s = get_mnemonic_and_length(addr, &len, NULL);
+  s = get_disasm_info(addr, &len, NULL, NULL);
 
   return len;
 }
 
-/* can't use the following, need to look besides first byte */
 int
-cl_z80::inst_length(t_mem code)
+cl_z80::inst_branch(t_addr addr)
 {
-  printf("ERROR:Main app shouldn't call this code, can't do this!\n");
-  exit(1);
+  int b;
+  char *s;
+
+  s = get_disasm_info(addr, NULL, &b, NULL);
+
+  return b;
 }
 
 int
@@ -156,7 +164,10 @@ cl_z80::longest_inst(void)
 
 
 char *
-cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
+cl_z80::get_disasm_info(t_addr addr,
+                        int *ret_len,
+                        int *ret_branch,
+                        int *immed_offset)
 {
   char *b = NULL;
   uint code;
@@ -164,8 +175,10 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
   int immed_n = 0;
   int i;
   int start_addr = addr;
+  struct dis_entry *dis_e;
 
   code= get_mem(MEM_ROM, addr++);
+  dis_e = NULL;
 
   switch(code) {
     case 0xcb:  /* ESC code to lots of op-codes, all 2-byte */
@@ -174,6 +187,7 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
       while ((code & disass_z80_cb[i].mask) != disass_z80_cb[i].code &&
         disass_z80_cb[i].mnemonic)
         i++;
+      dis_e = &disass_z80_cb[i];
       b= disass_z80_cb[i].mnemonic;
       if (b != NULL)
         len += (disass_z80_cb[i].length + 1);
@@ -185,6 +199,7 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
       while ((code & disass_z80_ed[i].mask) != disass_z80_ed[i].code &&
         disass_z80_ed[i].mnemonic)
         i++;
+      dis_e = &disass_z80_ed[i];
       b= disass_z80_ed[i].mnemonic;
       if (b != NULL)
         len += (disass_z80_ed[i].length + 1);
@@ -200,6 +215,7 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
         while ((code & disass_z80_ddcb[i].mask) != disass_z80_ddcb[i].code &&
           disass_z80_ddcb[i].mnemonic)
           i++;
+        dis_e = &disass_z80_ddcb[i];
         b= disass_z80_ddcb[i].mnemonic;
         if (b != NULL)
           len += (disass_z80_ddcb[i].length + 2);
@@ -208,6 +224,7 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
         while ((code & disass_z80_dd[i].mask) != disass_z80_dd[i].code &&
           disass_z80_dd[i].mnemonic)
           i++;
+        dis_e = &disass_z80_dd[i];
         b= disass_z80_dd[i].mnemonic;
         if (b != NULL)
           len += (disass_z80_dd[i].length + 1);
@@ -224,6 +241,7 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
         while ((code & disass_z80_fdcb[i].mask) != disass_z80_fdcb[i].code &&
           disass_z80_fdcb[i].mnemonic)
           i++;
+        dis_e = &disass_z80_fdcb[i];
         b= disass_z80_fdcb[i].mnemonic;
         if (b != NULL)
           len += (disass_z80_fdcb[i].length + 2);
@@ -232,6 +250,7 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
         while ((code & disass_z80_fd[i].mask) != disass_z80_fd[i].code &&
           disass_z80_fd[i].mnemonic)
           i++;
+        dis_e = &disass_z80_fd[i];
         b= disass_z80_fd[i].mnemonic;
         if (b != NULL)
           len += (disass_z80_fd[i].length + 1);
@@ -243,10 +262,16 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
       while ((code & disass_z80[i].mask) != disass_z80[i].code &&
              disass_z80[i].mnemonic)
         i++;
+      dis_e = &disass_z80[i];
       b= disass_z80[i].mnemonic;
       if (b != NULL)
         len += (disass_z80[i].length);
     break;
+  }
+
+
+  if (ret_branch) {
+    *ret_branch = dis_e->branch;
   }
 
   if (immed_offset) {
@@ -274,7 +299,7 @@ cl_z80::disass(t_addr addr, char *sep)
 
   p= work;
 
-  b = get_mnemonic_and_length(addr, &len, &immed_offset);
+  b = get_disasm_info(addr, &len, NULL, &immed_offset);
   
   if (b == NULL) {
     buf= (char*)malloc(30);
