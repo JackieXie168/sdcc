@@ -185,8 +185,8 @@ public:
   virtual struct name_entry *bit_tbl(void);
   virtual void print_disass(t_addr addr, class cl_console *con);
   virtual void print_regs(class cl_console *con);
-  virtual int inst_length(t_mem code);
-  virtual int inst_length(t_mem code, t_addr addr);
+  virtual int inst_length(t_addr addr);
+  virtual int inst_branch(t_addr addr);
   virtual int longest_inst(void);
   virtual bool get_name(t_addr addr, struct name_entry tab[], char *buf);
   virtual char *symbolic_bit_name(t_addr bit_address,

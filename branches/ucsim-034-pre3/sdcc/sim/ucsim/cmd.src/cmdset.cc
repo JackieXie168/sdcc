@@ -145,8 +145,11 @@ COMMAND_DO_WORK_SIM(cl_next_cmd)
 {
   class cl_brk *b;
   t_addr next;
-  struct dis_entry *de;
+  int branch;
+  int inst_len;
 
+#if 0
+  struct dis_entry *de;
   t_mem code= sim->uc->get_mem(MEM_ROM, sim->uc->PC);
   int i= 0;
   de= &(sim->uc->dis_tbl()[i]);
@@ -156,15 +159,23 @@ COMMAND_DO_WORK_SIM(cl_next_cmd)
       i++;
       de= &(sim->uc->dis_tbl()[i]);
     }
-  if ((de->branch == 'a') ||
-      (de->branch == 'l'))
+#endif
+
+  branch = sim->uc->inst_branch(sim->uc->PC);
+  inst_len = sim->uc->inst_length(sim->uc->PC);
+
+  if ((branch == 'a') || (branch == 'l'))
     {
-      next= sim->uc->PC + de->length;
+      next= sim->uc->PC + inst_len;
       if (!sim->uc->fbrk_at(next))
 	{
 	  b= new cl_fetch_brk(sim->uc->mem(MEM_ROM),
 			      sim->uc->make_new_brknr(),
 			      next, brkDYNAMIC, 1);
+
+	  b->init();
+//	  sim->uc->fbrk->add_bp(b);
+
 	  sim->uc->fbrk->add(b);
 	}
       sim->start(con);
