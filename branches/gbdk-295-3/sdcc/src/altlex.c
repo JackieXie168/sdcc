@@ -109,7 +109,7 @@ static int INLINE yungetc(int c)
 //#define UNGETC(_a)	ungetc(_a, yyin)
 #define ISL(_a)		(isalnum(_a) || _a == '_')
 #define ISALNUM(_a)	isalnum(_a)
-#define ISHEX(_a)	isalnum(_a)
+#define ISHEX(_a)	isxdigit(_a)
 
 static char *stringLiteral (void)
 {
@@ -455,6 +455,14 @@ static int _yylex(void)
 	    c = GETC();
 	}
 	while (ISHEX(c)) {
+	    *p++ = c;
+	    c = GETC();
+	}
+	if (c == 'U' || c == 'u' || c == 'L' || c == 'l') {
+	    *p++ = c;
+	    c = GETC();
+	}
+	if (c == 'U' || c == 'u' || c == 'L' || c == 'l') {
 	    *p++ = c;
 	    c = GETC();
 	}
