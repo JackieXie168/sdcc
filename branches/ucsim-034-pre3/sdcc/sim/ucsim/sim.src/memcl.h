@@ -189,7 +189,8 @@ public:
 			   t_mem *array, int len, t_addr *addr);
 
   virtual class cl_cell *get_cell(t_addr addr) {return(0);}
-  virtual class cl_cell *register_hw(t_addr addr, class cl_hw *hw, int *ith)
+  virtual class cl_cell *register_hw(t_addr addr, class cl_hw *hw, int *ith,
+				     bool announce)
   { return(0); }
   virtual void set_brk(t_addr /*addr*/, class cl_brk */*brk*/) {}
   virtual void del_brk(t_addr addr, class cl_brk *brk) {}
@@ -351,7 +352,8 @@ public:
   virtual t_mem add(t_addr addr, long what);
   virtual t_mem wadd(t_addr addr, long what);
 
-  virtual class cl_cell *register_hw(t_addr addr, class cl_hw *hw, int *ith);
+  virtual class cl_cell *register_hw(t_addr addr, class cl_hw *hw, int *ith,
+				     bool announce);
   virtual void set_brk(t_addr addr, class cl_brk *brk);
   virtual void del_brk(t_addr addr, class cl_brk *brk);
 };

@@ -50,7 +50,7 @@ cl_uc390_hw::init(void)
   sfr = uc->mem (MEM_SFR);
   if (sfr)
     {
-      cell_dps   = sfr->register_hw (DPS  , this, 0);
+      /*cell_dps   = sfr->register_hw (DPS  , this, 0);
       cell_p4cnt = sfr->register_hw (P4CNT, this, 0);
       cell_exif  = sfr->register_hw (EXIF , this, 0);
       cell_acon  = sfr->register_hw (ACON , this, 0);
@@ -66,7 +66,24 @@ cl_uc390_hw::init(void)
       cell_mb    = sfr->register_hw (MB   , this, 0);
       cell_mc    = sfr->register_hw (MC   , this, 0);
       cell_wdcon = sfr->register_hw (WDCON, this, 0);
-      cell_c1c   = sfr->register_hw (C1C  , this, 0);
+      cell_c1c   = sfr->register_hw (C1C  , this, 0);*/
+      register_cell (sfr, DPS  , &cell_dps  , wtd_restore);
+      register_cell (sfr, P4CNT, &cell_p4cnt, wtd_restore);
+      register_cell (sfr, EXIF , &cell_exif , wtd_restore);
+      register_cell (sfr, ACON , &cell_acon , wtd_restore);
+      register_cell (sfr, P5CNT, &cell_p5cnt, wtd_restore);
+      register_cell (sfr, C0C  , &cell_c0c  , wtd_restore);
+      register_cell (sfr, PMR  , &cell_pmr  , wtd_restore);
+      register_cell (sfr, MCON , &cell_mcon , wtd_restore);
+      register_cell (sfr, TA   , &cell_ta   , wtd_restore);
+      register_cell (sfr, COR  , &cell_cor  , wtd_restore);
+      register_cell (sfr, MCNT0, &cell_mcnt0, wtd_restore);
+      register_cell (sfr, MCNT1, &cell_mcnt1, wtd_restore);
+      register_cell (sfr, MA   , &cell_ma   , wtd_restore);
+      register_cell (sfr, MB   , &cell_mb   , wtd_restore);
+      register_cell (sfr, MC   , &cell_mc   , wtd_restore);
+      register_cell (sfr, WDCON, &cell_wdcon, wtd_restore);
+      register_cell (sfr, C1C  , &cell_c1c  , wtd_restore);
     }
   return 0;
 }
@@ -222,7 +239,7 @@ cl_uc390_hw::write (class cl_cell *cell, t_mem *val)
     }
 }
 
-void
+/*void
 cl_uc390_hw::mem_cell_changed (class cl_mem *mem, t_addr addr)
 {
   class cl_mem *sfr = uc->mem (MEM_SFR);
@@ -248,7 +265,7 @@ cl_uc390_hw::mem_cell_changed (class cl_mem *mem, t_addr addr)
 	case WDCON: cell_wdcon = sfr->get_cell (WDCON); break;
 	case C1C:   cell_c1c   = sfr->get_cell (C1C);   break;
       }
-}
+}*/
 
 void
 cl_uc390_hw::reset(void)

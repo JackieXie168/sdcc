@@ -53,9 +53,12 @@ cl_pca::init(void)
     {
       fprintf(stderr, "No SFR to register PCA[%d] into\n", id);
     }
-  ccapXl= sfr->register_hw(addr_ccapXl, this, 0);
-  ccapXh= sfr->register_hw(addr_ccapXh, this, 0);
-  ccapmX= sfr->get_cell(addr_ccapmX);
+  //ccapXl= sfr->register_hw(addr_ccapXl, this, 0);
+  //ccapXh= sfr->register_hw(addr_ccapXh, this, 0);
+  register_cell(sfr, addr_ccapXl, &ccapXl, wtd_restore);
+  register_cell(sfr, addr_ccapXh, &ccapXh, wtd_restore);
+  //ccapmX= sfr->get_cell(addr_ccapmX);
+  use_cell(sfr, addr_ccapmX, &ccapmX, wtd_restore);
   return(0);
 }
 
@@ -72,7 +75,7 @@ cl_pca::write(class cl_cell *cell, t_mem *val)
     }
 }
 
-void
+/*void
 cl_pca::mem_cell_changed(class cl_mem *mem, t_addr addr)
 {
   class cl_mem *sfr= uc->mem(MEM_SFR);
@@ -86,7 +89,7 @@ cl_pca::mem_cell_changed(class cl_mem *mem, t_addr addr)
       else if (addr == addr_ccapmX)
 	ccapmX= sfr->get_cell(addr_ccapmX);
     }
-}
+}*/
 
 void
 cl_pca::print_info(class cl_console *con)

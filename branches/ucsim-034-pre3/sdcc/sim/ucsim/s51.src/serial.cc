@@ -75,9 +75,12 @@ cl_serial::init(void)
   sfr= uc->mem(MEM_SFR);
   if (sfr)
     {
-      sbuf= sfr->register_hw(SBUF, this, 0);
-      pcon= sfr->register_hw(PCON, this, 0);
-      scon= sfr->register_hw(SCON, this, 0);
+      //sbuf= sfr->register_hw(SBUF, this, 0);
+      //pcon= sfr->register_hw(PCON, this, 0);
+      //scon= sfr->register_hw(SCON, this, 0);
+      register_cell(sfr, SBUF, &sbuf, wtd_restore_write);
+      register_cell(sfr, PCON, &pcon, wtd_restore_write);
+      register_cell(sfr, SCON, &scon, wtd_restore_write);
     }
 
   serial_in = (FILE*)uc->sim->app->args->get_parg(0, "Ser_in");
@@ -222,33 +225,19 @@ cl_serial::write(class cl_cell *cell, t_mem *val)
     }
 }
 
-void
+/*void
 cl_serial::mem_cell_changed(class cl_mem *mem, t_addr addr)
 {
-  class cl_mem *s= uc->mem(MEM_SFR);
-  class cl_cell *c= 0;
+  class cl_mem *sfr= uc->mem(MEM_SFR);
+  t_mem d;
 
-  if (mem && s && mem == s)
-    {
-      switch (addr)
-	{
-	case SBUF:
-	  c= sbuf= s->get_cell(SBUF);
-	  break;
-	case PCON:
-	  c= pcon= s->get_cell(PCON);
-	  break;
-	case SCON:
-	  c= scon= s->get_cell(SCON);
-	  break;
-	}
-      if (c)
-	{
-	  t_mem d= c->get();
-	  write(c, &d);
-	}
-    }
-}
+  d= sbuf->get();
+  write(sbuf, &d);
+  d= pcon->get();
+  write(pcon, &d);
+  d= scon->get();
+  write(scon, &d);
+}*/
 
 int
 cl_serial::serial_bit_cnt(void)

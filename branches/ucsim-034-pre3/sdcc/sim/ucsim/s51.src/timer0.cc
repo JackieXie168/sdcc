@@ -84,10 +84,12 @@ cl_timer0::init(void)
       t_mem d;
       if (id == 0 || id == 1)
 	{
-	  cell_tmod= sfr->register_hw(TMOD, this, 0);
+	  //cell_tmod= sfr->register_hw(TMOD, this, 0);
+	  register_cell(sfr, TMOD, &cell_tmod, wtd_restore_write);
 	  d= cell_tmod->get();
 	  write(cell_tmod, &d);
-	  cell_tcon= sfr->register_hw(TCON, this, 0);
+	  //cell_tcon= sfr->register_hw(TCON, this, 0);
+	  register_cell(sfr, TCON, &cell_tcon, wtd_restore_write);
 	  d= cell_tcon->get();
 	  write(cell_tcon, &d);
 	  INT= sfr->read(P3) & mask_INT;
@@ -95,12 +97,15 @@ cl_timer0::init(void)
       else if (id == 2)
 	{
 	  cell_tmod= 0;
-	  cell_tcon= sfr->register_hw(T2CON, this, 0);
+	  //cell_tcon= sfr->register_hw(T2CON, this, 0);
+	  register_cell(sfr, T2CON, &cell_tcon, wtd_restore_write);
 	  d= cell_tcon->get();
 	  write(cell_tcon, &d);
 	}
-      cell_tl= sfr->get_cell(addr_tl);
-      cell_th= sfr->get_cell(addr_th);
+      //cell_tl= sfr->get_cell(addr_tl);
+      //cell_th= sfr->get_cell(addr_th);
+      use_cell(sfr, addr_tl, &cell_tl, wtd_restore);
+      use_cell(sfr, addr_th, &cell_th, wtd_restore);
     }
   return(0);
 }
@@ -136,34 +141,21 @@ cl_timer0::write(class cl_cell *cell, t_mem *val)
     }
 }
 
-void
+/*void
 cl_timer0::mem_cell_changed(class cl_mem *mem, t_addr addr)
 {
-  class cl_mem *s= uc->mem(MEM_SFR);
-  class cl_cell *c= 0;
+  //class cl_mem *sfr= uc->mem(MEM_SFR);
+  //t_mem d;
 
-  if (mem && s && mem == s)
-    {
-      switch (addr)
-	{
-	case TMOD:
-	  c= cell_tmod= s->get_cell(TMOD);
-	  break;
-	case TCON:
-	  c= cell_tcon= s->get_cell(TCON);
-	  break;
-	}
-      if (c)
-	{
-	  t_mem d= c->get();
-	  write(c, &d);
-	}
-      if (addr == addr_tl)
-	cell_tl= s->get_cell(addr_tl);
-      if (addr == addr_th)
-	cell_th= s->get_cell(addr_th);
-    }
-}
+  cl_hw::mem_cell_changed(mem, addr);
+
+  //d= cell_tmod->get();
+  //write(cell_tmod, &d);
+  //d= cell_tcon->get();
+  //write(cell_tcon, &d);
+  //if (addr == addr_tl) cell_tl= sfr->get_cell(addr_tl);
+  //if (addr == addr_th) cell_th= sfr->get_cell(addr_th);
+}*/
 
 int
 cl_timer0::tick(int cycles)

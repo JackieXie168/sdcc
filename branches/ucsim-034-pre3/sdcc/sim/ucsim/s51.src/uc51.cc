@@ -311,7 +311,8 @@ t_uc51::disass(t_addr addr, char *sep)
 	      break;
 	    case '8': // addr8 (direct address) at 3rd byte
  	      if (!get_name(get_mem(MEM_ROM, addr+2), sfr_tbl(), temp))
-	        sprintf(temp, "%02"_M_"x", get_mem(MEM_ROM, addr+2));
+		sprintf(temp, "%02"_M_"x", get_mem(MEM_ROM, addr+1));
+	      sprintf(temp, "%02"_M_"x", get_mem(MEM_ROM, addr+2));
 	      break;
 	    case 'b': // bitaddr at 2nd byte
 	      {
@@ -1121,8 +1122,10 @@ cl_uc51_dummy_hw::init(void)
     {
       fprintf(stderr, "No SFR to register %s[%d] into\n", id_string, id);
     }
-  acc= sfr->register_hw(ACC, this, 0);
-  sp = sfr->register_hw(SP , this, 0);
+  //acc= sfr->register_hw(ACC, this, 0);
+  //sp = sfr->register_hw(SP , this, 0);
+  register_cell(sfr, ACC, &acc, wtd_restore_write);
+  register_cell(sfr, SP , &sp , wtd_restore);
   return(0);
 }
 

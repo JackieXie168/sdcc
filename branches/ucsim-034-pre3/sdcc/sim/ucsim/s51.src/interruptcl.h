@@ -45,7 +45,7 @@ public:
   //virtual t_mem read(class cl_cell *cell);
   virtual void write(class cl_cell *cell, t_mem *val);
 
-  virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
+  //virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
 
   //virtual int tick(int cycles);
   virtual void print_info(class cl_console *con);

@@ -42,6 +42,46 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "uccl.h"
 
 
+enum what_to_do_on_cell_change {
+  wtd_none		= 0x01,
+  wtd_write		= 0x02,
+  wtd_restore		= 0x04,
+  wtd_restore_write	= 0x08
+};
+
+#define WTD_WRITE	(wtd_write|wtd_restore_write)
+#define WTD_RESTORE	(wtd_restore|wtd_restore_write)
+
+class cl_hw; // forward
+
+class cl_watched_cell: public cl_base
+{
+protected:
+  class cl_mem *mem;
+  t_addr addr;
+  class cl_cell *cell;
+  class cl_cell **store;
+public:
+  enum what_to_do_on_cell_change wtd;
+public:
+  cl_watched_cell(class cl_mem *amem, t_addr aaddr, class cl_cell **astore,
+		  enum what_to_do_on_cell_change awtd);
+
+  virtual void mem_cell_changed(class cl_mem *amem, t_addr aaddr,
+				class cl_hw *hw);
+};
+
+class cl_used_cell: public cl_watched_cell
+{
+public:
+  cl_used_cell(class cl_mem *amem, t_addr aaddr, class cl_cell **astore,
+	       enum what_to_do_on_cell_change awtd):
+    cl_watched_cell(amem, aaddr, astore, awtd) {}
+
+  /*virtual void mem_cell_changed(class cl_mem *amem, t_addr aaddr,
+    class cl_hw *hw);*/
+};
+
 class cl_hw: public cl_guiobj
 {
 public:
@@ -51,7 +91,8 @@ public:
   int id;
   char *id_string;
   class cl_list *hws_to_inform;
-
+protected:
+  class cl_list *watched_cells;
 public:
   cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, char *aid_string);
   virtual ~cl_hw(void);
@@ -62,7 +103,13 @@ public:
   virtual void write(class cl_cell */*cell*/, t_mem */*val*/) {}
 
   virtual t_mem set_cmd(t_mem /*value*/) { return(0); }
-  virtual void mem_cell_changed(class cl_mem */*mem*/, t_addr /*addr*/) {}
+  virtual class cl_cell *register_cell(class cl_mem *mem, t_addr addr,
+				       class cl_cell **store,
+				       enum what_to_do_on_cell_change awtd);
+  virtual class cl_cell *use_cell(class cl_mem *mem, t_addr addr,
+				  class cl_cell **store,
+				  enum what_to_do_on_cell_change awtd);
+  virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
 
   virtual int tick(int cycles);
   virtual void reset(void) {}
@@ -79,6 +126,12 @@ public:
   cl_hws(void): cl_list(2, 2) {}
   virtual t_index add(void *item);
   virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
+};
+
+
+class cl_partner_hw: public cl_base
+{
+  
 };
 
 

@@ -45,7 +45,8 @@ cl_interrupt::init(void)
 
   sfr= uc->mem(MEM_SFR);
   if (sfr)
-    sfr->register_hw(IE, this, 0);
+    //sfr->register_hw(IE, this, 0);
+    register_cell(sfr, IE, 0, wtd_restore);
   return(0);
 }
 
@@ -55,10 +56,10 @@ cl_interrupt::write(class cl_cell *cell, t_mem *val)
   ((class t_uc51 *)uc)->was_reti= DD_TRUE;
 }
 
-void
+/*void
 cl_interrupt::mem_cell_changed(class cl_mem *mem, t_addr addr)
 {
-}
+}*/
 
 void
 cl_interrupt::print_info(class cl_console *con)

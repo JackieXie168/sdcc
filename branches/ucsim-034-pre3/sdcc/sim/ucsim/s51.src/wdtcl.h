@@ -42,9 +42,8 @@ class cl_wdt: public cl_hw
 {
 protected:
   long wdt, reset_value;
-public:
-  class cl_cell *cell;
-  class t_uc51r *uc51r;
+  class cl_cell *wdtrst;
+  bool written_since_reset;
 public:
   cl_wdt(class cl_uc *auc, long resetvalue);
   virtual int init(void);
@@ -55,6 +54,7 @@ public:
   //virtual t_mem set_cmd(t_mem value);
 
   virtual int tick(int cycles);
+  virtual void reset(void);
   
   virtual void print_info(class cl_console *con);
 };

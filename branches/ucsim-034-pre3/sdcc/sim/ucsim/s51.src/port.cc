@@ -43,19 +43,19 @@ cl_port::init(void)
 {
   switch (id)
     {
-    case 0: sfr_addr= P0; break;
+    case 0: addr_p= P0; break;
     case 1:
       {
-	sfr_addr= P1;
+	addr_p= P1;
 	class cl_hw *hw;
 	if ((hw= uc->get_hw(HW_TIMER, 2, 0)))
 	  hws_to_inform->add(hw);
 	break;
       }
-    case 2: sfr_addr= P2; break;
+    case 2: addr_p= P2; break;
     case 3:
       {
-	sfr_addr= P3;
+	addr_p= P3;
 	class cl_hw *hw;
 	if ((hw= uc->get_hw(HW_TIMER, 0, 0)))
 	  hws_to_inform->add(hw);
@@ -65,15 +65,16 @@ cl_port::init(void)
 	  hws_to_inform->add(hw);
 	break;
       }
-    default: sfr_addr= P0; return(1);
+    default: addr_p= P0; return(1);
     }
-  class cl_mem *m= uc->mem(MEM_SFR);
-  if (!m)
+  class cl_mem *sfr= uc->mem(MEM_SFR);
+  if (!sfr)
     {
       fprintf(stderr, "No SFR to register port into\n");
     }
-  sfr= m->register_hw(sfr_addr, this, (int*)0);
-  prev= sfr->get();
+  //cell_p= sfr->register_hw(addr_p, this, (int*)0);
+  register_cell(sfr, addr_p, &cell_p, wtd_restore_write);
+  prev= cell_p->get();
   return(0);
 }
 
@@ -91,13 +92,13 @@ cl_port::write(class cl_cell *cell, t_mem *val)
 
   (*val)&= 0xff; // 8 bit port
   ep.id= id;
-  ep.addr= sfr_addr;
-  ep.prev_value= sfr->get();
+  ep.addr= addr_p;
+  ep.prev_value= cell_p->get();
   ep.new_value= *val;
   ep.pins= ep.new_pins= port_pins;
   if (ep.prev_value != ep.new_value)
     inform_partners(EV_PORT_CHANGED, &ep);
-  prev= sfr->get();
+  prev= cell_p->get();
   //printf("port[%d] write 0x%x\n",id,val);
 }
 
@@ -107,32 +108,24 @@ cl_port::set_cmd(t_mem value)
   struct ev_port_changed ep;
 
   ep.id= id;
-  ep.addr= sfr_addr;
+  ep.addr= addr_p;
   ep.pins= port_pins;
   port_pins= value;
-  ep.prev_value= sfr->get();
-  ep.new_value= sfr->get();
+  ep.prev_value= cell_p->get();
+  ep.new_value= cell_p->get();
   ep.new_pins= port_pins;
   if (ep.pins != ep.new_pins)
     inform_partners(EV_PORT_CHANGED, &ep);
   return(value);
 }
 
-void
+/*void
 cl_port::mem_cell_changed(class cl_mem *mem, t_addr addr)
 {
-  class cl_mem *s= uc->mem(MEM_SFR);
-  
-  if (mem && s && mem == s)
-    {
-      if (addr == sfr_addr)
-	{
-	  sfr= s->get_cell(sfr_addr);
-	  t_mem d= sfr->get();
-	  write(sfr, &d);
-	}
-    }  
-}
+  cl_hw::mem_cell_changed(mem, addr);
+  t_mem d= sfr->get();
+  write(sfr, &d);
+}*/
 
 void
 cl_port::print_info(class cl_console *con)
@@ -140,7 +133,7 @@ cl_port::print_info(class cl_console *con)
   uchar data;
 
   con->dd_printf("%s[%d]\n", id_string, id);
-  data= sfr->get();//uc->get_mem(MEM_SFR, sfr);
+  data= cell_p->get();//uc->get_mem(MEM_SFR, sfr);
   con->dd_printf("P%d    ", id);
   con->print_bin(data, 8);
   con->dd_printf(" 0x%02x %3d %c (Value in SFR register)\n",
@@ -153,7 +146,7 @@ cl_port::print_info(class cl_console *con)
 		 data, data, isprint(data)?data:'.');
 
   //data= /*uc->*/port_pins/*[id]*/ & sfr->get();//uc->get_mem(MEM_SFR, sfr);
-  data= sfr->read();
+  data= cell_p->read();
   con->dd_printf("Port%d ", id);
   con->print_bin(data, 8);
   con->dd_printf(" 0x%02x %3d %c (Value on the port pins)\n",

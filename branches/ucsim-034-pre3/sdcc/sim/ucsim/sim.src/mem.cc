@@ -1181,7 +1181,7 @@ cl_m::wadd(t_addr addr, long what)
 }
 
 class cl_cell *
-cl_m::register_hw(t_addr addr, class cl_hw *hw, int *ith)
+cl_m::register_hw(t_addr addr, class cl_hw *hw, int *ith, bool announce)
 {
   class cl_cell *cell, *nc;
 
@@ -1229,7 +1229,8 @@ cl_m::register_hw(t_addr addr, class cl_hw *hw, int *ith)
       delete array[addr];
       array[addr]= nc;
     }
-  uc->sim->/*app->*/mem_cell_changed(this, addr);
+  if (announce)
+    uc->sim->/*app->*/mem_cell_changed(this, addr);
   return(nc);
 }
 

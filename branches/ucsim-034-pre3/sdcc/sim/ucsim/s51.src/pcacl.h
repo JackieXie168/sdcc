@@ -50,7 +50,7 @@ public:
   virtual void write(class cl_cell *cell, t_mem *val);
 
   //virtual t_mem set_cmd(t_mem value);
-  virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
+  //virtual void mem_cell_changed(class cl_mem *mem, t_addr addr);
  
   //virtual int tick(int cycles);
   virtual void print_info(class cl_console *con);
