@@ -31,7 +31,7 @@
 
 #define sub_A_bytereg(br) { \
       regs.F &= ~(BIT_ALL);  /* clear these */ \
-      if (regs.A < br) regs.F |= BIT_C; \
+      if (regs.A < br) regs.F |= (BIT_C | BIT_P); \
       regs.A -= (br); \
       regs.F |= BIT_N; /* not addition */ \
       if (regs.A == 0) regs.F |= BIT_Z; \
@@ -160,7 +160,7 @@
       tmp = (unsigned short)regs.A + (unsigned short)(br); \
       regs.A = (unsigned short) tmp; \
       /* C Z S A */ \
-      if (tmp > 0xff) regs.F |= BIT_C; \
+      if (tmp > 0xff) regs.F |= (BIT_C | BIT_P); \
       if (regs.A == 0) regs.F |= BIT_Z; \
       if (regs.A & 0x80) regs.F |= BIT_S; \
       /* Skip BIT_A for now */ \
@@ -172,7 +172,7 @@
       if (regs.F & BIT_C) ++tmp; \
       regs.F &= ~(BIT_ALL);  /* clear these */ \
       regs.A = (unsigned char) tmp; \
-      if (tmp > 0xff) regs.F |= BIT_C; \
+      if (tmp > 0xff) regs.F |= (BIT_C | BIT_P); \
       if (regs.A == 0) regs.F |= BIT_Z; \
       if (regs.A & 0x80) regs.F |= BIT_S; \
       /* Skip BIT_A for now */ \
@@ -184,7 +184,7 @@
       if (regs.F & BIT_C) ++tmp; \
       regs.F &= ~(BIT_ALL);  /* clear these */ \
       regs.HL = (unsigned short) tmp; \
-      if (tmp > 0xffff) regs.F |= BIT_C; \
+      if (tmp > 0xffff) regs.F |= (BIT_C | BIT_P); \
       if (regs.HL == 0) regs.F |= BIT_Z; \
       if (regs.HL & 0x8000) regs.F |= BIT_S; \
       /* Skip BIT_A for now */ \
@@ -196,7 +196,7 @@
       if (regs.F & BIT_C) --tmp; \
       regs.F &= ~(BIT_ALL);  /* clear these */ \
       regs.A = (unsigned char) tmp; \
-      if (tmp > 0xff) regs.F |= BIT_C; \
+      if (tmp > 0xff) regs.F |= (BIT_C | BIT_P); \
       if (regs.A == 0) regs.F |= BIT_Z; \
       if (regs.A & 0x80) regs.F |= BIT_S; \
       regs.F |= BIT_N; \
@@ -209,7 +209,7 @@
       if (regs.F & BIT_C) --tmp; \
       regs.F &= ~(BIT_ALL);  /* clear these */ \
       regs.HL = (unsigned short) tmp; \
-      if (tmp > 0xffff) regs.F |= BIT_C; \
+      if (tmp > 0xffff) regs.F |= (BIT_C | BIT_P); \
       if (regs.HL == 0) regs.F |= BIT_Z; \
       if (regs.HL & 0x8000) regs.F |= BIT_S; \
       regs.F |= BIT_N; \
@@ -251,7 +251,7 @@
    regs.F &= ~(BIT_N |BIT_P |BIT_A |BIT_Z |BIT_S);  /* clear these */ \
    if (var == 0) regs.F |= BIT_Z; \
    if (var & 0x80) regs.F |= BIT_S; \
-   if ((var & 0x0f) == 0) regs.A |= BIT_A; \
+   if ((var & 0x0f) == 0) regs.F |= BIT_A; \
    }
 
 #define dec(var)  { \
@@ -260,7 +260,7 @@
  regs.F |= BIT_N;  /* Not add */ \
  if (var == 0) regs.F |= BIT_Z; \
  if (var & 0x80) regs.F |= BIT_S; \
- if ((var & 0x0f) == 0) regs.A |= BIT_A; \
+ if ((var & 0x0f) == 0) regs.F |= BIT_A; \
  }
 
 

@@ -161,6 +161,7 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
   char *b = NULL;
   uint code;
   int len = 0;
+  int immed_n = 0;
   int i;
   int start_addr = addr;
 
@@ -192,6 +193,8 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
     case 0xdd: /* ESC codes,about 284, vary lengths, IX centric */
       code= get_mem(MEM_ROM, addr++);
       if (code == 0xcb) {
+        immed_n = 2;
+        addr++;  // pass up immed data
         code= get_mem(MEM_ROM, addr++);
         i= 0;
         while ((code & disass_z80_ddcb[i].mask) != disass_z80_ddcb[i].code &&
@@ -214,6 +217,8 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
     case 0xfd: /* ESC codes,sme as dd but IY centric */
       code= get_mem(MEM_ROM, addr++);
       if (code == 0xcb) {
+        immed_n = 2;
+        addr++;  // pass up immed data
         code= get_mem(MEM_ROM, addr++);
         i= 0;
         while ((code & disass_z80_fdcb[i].mask) != disass_z80_fdcb[i].code &&
@@ -244,8 +249,11 @@ cl_z80::get_mnemonic_and_length(t_addr addr, int *ret_len, int *immed_offset)
     break;
   }
 
-  if (immed_offset)
-    *immed_offset = (addr - start_addr);
+  if (immed_offset) {
+    if (immed_n > 0)
+         *immed_offset = immed_n;
+    else *immed_offset = (addr - start_addr);
+  }
 
   if (len == 0)
     len = 1;
@@ -283,14 +291,18 @@ cl_z80::disass(t_addr addr, char *sep)
 	    {
 	    case 'd': // d    jump relative target, signed? byte immediate operand
 	      sprintf(temp, "#%d", (char)get_mem(MEM_ROM, addr+immed_offset));
+	      ++immed_offset;
 	      break;
 	    case 'w': // w    word immediate operand
 	      sprintf(temp, "#0x%04x",
 	         (uint)((get_mem(MEM_ROM, addr+immed_offset)) |
 	                (get_mem(MEM_ROM, addr+immed_offset+1)<<8)) );
+	      ++immed_offset;
+	      ++immed_offset;
 	      break;
 	    case 'b': // b    byte immediate operand
 	      sprintf(temp, "#0x%02x", (uint)get_mem(MEM_ROM, addr+immed_offset));
+	      ++immed_offset;
 	      break;
 	    default:
 	      strcpy(temp, "?");

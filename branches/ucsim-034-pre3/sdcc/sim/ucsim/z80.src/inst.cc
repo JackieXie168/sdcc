@@ -66,7 +66,7 @@ cl_z80::inst_ld(t_mem code)
       store1(regs.BC, regs.A);
     break;
     case 6: // LD B,nn
-      regs.bc.l = fetch();
+      regs.bc.h = fetch();
     break;
     case 0xa: // LD A,(BC)
       regs.A = get1(regs.BC);
@@ -284,8 +284,11 @@ cl_z80::inst_ld(t_mem code)
     case 0x75: // LD (HL),L
       store1(regs.HL, regs.hl.l);
     break;
-    case 0x76: // LD (HL),A
-      store1(regs.HL, regs.de.h);
+    case 0x76: // HALT
+    return(resHALT);
+
+    case 0x77: // LD (HL),A
+      store1(regs.HL, regs.A);
     break;
     case 0x78: // LD A,B
       regs.A = regs.bc.h;
@@ -312,6 +315,9 @@ cl_z80::inst_ld(t_mem code)
     break;
     case 0xF9: // LD SP,HL
       regs.SP = regs.HL;
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -360,6 +366,9 @@ cl_z80::inst_inc(t_mem code)
     case 0x3C: // INC A
       inc(regs.A);
     break;
+    default:
+      return(resINV_INST);
+    break;
   }
   return(resGO);
 }
@@ -406,6 +415,9 @@ cl_z80::inst_dec(t_mem code)
     break;
     case 0x3D: // DEC A
       dec(regs.A);
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -454,6 +466,10 @@ cl_z80::inst_ex(t_mem code)
       tempw = regs.DE;
       regs.DE = regs.HL;
       regs.HL = tempw;
+    break;
+
+    default:
+      return(resINV_INST);
     break;
   }
 
@@ -521,6 +537,10 @@ cl_z80::inst_add(t_mem code)
         add_A_bytereg(utmp1);
       }
     break;
+
+    default:
+      return(resINV_INST);
+    break;
   }
 
   return(resGO);
@@ -584,6 +604,9 @@ cl_z80::inst_jr(t_mem code)
       if ((regs.F & BIT_C)) {
         PC += j;
       }
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -685,6 +708,17 @@ cl_z80::inst_adc(t_mem code)
     case 0x8F: // ADC A,A
       adc_A_bytereg(regs.A);
     break;
+
+    case 0xCE: // ADC A,nn
+      { unsigned char utmp;
+        utmp = fetch();
+        adc_A_bytereg(utmp);
+      }
+    break;
+
+    default:
+      return(resINV_INST);
+    break;
   }
   return(resGO);
 }
@@ -726,6 +760,9 @@ cl_z80::inst_sbc(t_mem code)
         sbc_A_bytereg(utmp);
       }
     break;
+    default:
+      return(resINV_INST);
+    break;
   }
   return(resGO);
 }
@@ -760,6 +797,9 @@ cl_z80::inst_and(t_mem code)
     break;
     case 0xA7: // AND A
       and_A_bytereg(regs.A);
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -796,6 +836,9 @@ cl_z80::inst_xor(t_mem code)
     case 0xAF: // XOR A
       xor_A_bytereg(regs.A);
     break;
+    default:
+      return(resINV_INST);
+    break;
   }
   return(resGO);
 }
@@ -830,6 +873,9 @@ cl_z80::inst_or(t_mem code)
     break;
     case 0xB7: // OR A
       or_A_bytereg(regs.A);
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -872,6 +918,9 @@ cl_z80::inst_cp(t_mem code)
         utmp = fetch();
         cp_bytereg(utmp);
       }
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -922,6 +971,9 @@ cl_z80::inst_rst(t_mem code)
     case 0xFF: // RST 38H
       push2(PC+2);
       PC = 0x38;
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -1008,6 +1060,9 @@ cl_z80::inst_call(t_mem code)
         jnk = fetch2();
       }
     break;
+    default:
+      return(resINV_INST);
+    break;
   }
 
   return(resGO);
@@ -1035,6 +1090,9 @@ cl_z80::inst_push(t_mem code)
     case 0xF5: // PUSH AF
       push1(regs.A);
       push1(regs.F);
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
@@ -1101,6 +1159,9 @@ cl_z80::inst_sub(t_mem code)
         sub_A_bytereg(tmp1);
       }
     break;
+    default:
+      return(resINV_INST);
+    break;
   }
   return(resGO);
 }
@@ -1125,6 +1186,9 @@ cl_z80::inst_pop(t_mem code)
       regs.A = get1(regs.SP++);
       regs.F = get1(regs.SP++);
     break;
+    default:
+      return(resINV_INST);
+    break;
   }
   return(resGO);
 }
@@ -1142,9 +1206,11 @@ cl_z80::inst_jp(t_mem code)
         jnk = fetch2();
       }
     break;
+
     case 0xC3: // JP nnnn
       PC = fetch2();
     break;
+
     case 0xCA: // JP Z,nnnn
       if (regs.F & BIT_Z) {
         PC = fetch2();
@@ -1152,6 +1218,7 @@ cl_z80::inst_jp(t_mem code)
         jnk = fetch2();
       }
     break;
+
     case 0xD2: // JP NC,nnnn
       if (!(regs.F & BIT_C)) {
         PC = fetch2();
@@ -1159,6 +1226,7 @@ cl_z80::inst_jp(t_mem code)
         jnk = fetch2();
       }
     break;
+
     case 0xDA: // JP C,nnnn
       if (regs.F & BIT_C) {
         PC = fetch2();
@@ -1166,6 +1234,7 @@ cl_z80::inst_jp(t_mem code)
         jnk = fetch2();
       }
     break;
+
     case 0xE2: // JP PO,nnnn
       if (regs.F & BIT_P) {
         PC = fetch2();
@@ -1173,8 +1242,36 @@ cl_z80::inst_jp(t_mem code)
         jnk = fetch2();
       }
     break;
+
     case 0xE9: // JP (HL)
       PC = regs.HL;
+    break;
+
+    case 0xea: // JP PO,nnnn
+      if (!(regs.F & BIT_P)) {
+        PC = fetch2();
+      } else {
+        jnk = fetch2();
+      }
+    break;
+
+    case 0xF2: // JP P,nnnn (positive)
+      if (!(regs.F & BIT_S)) {
+        PC = fetch2();
+      } else {
+        jnk = fetch2();
+      }
+    break;
+
+    case 0xfa: // JP M,nnnn (sign negative)
+      if (regs.F & BIT_S) {
+        PC = fetch2();
+      } else {
+        jnk = fetch2();
+      }
+    break;
+    default:
+      return(resINV_INST);
     break;
   }
   return(resGO);
