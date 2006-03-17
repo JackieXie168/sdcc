@@ -119,7 +119,7 @@ include clean.mk
 s51.src: s51$(EXEEXT) shared_lib
 
 s51$(EXEEXT): $(OBJECTS) $(PRJDIR)/*.a
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(LIBS) $(OBJECTS) -o $@
 
 ifeq ($(dlso_ok),yes)
 shared_lib: $(PRJDIR)/s51.so
