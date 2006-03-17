@@ -175,7 +175,7 @@ cl_memory::dump(t_addr start, t_addr stop, int bpl, class cl_console *con)
   if (stop > hva)
     stop= hva;
   while ((start <= stop) &&
-	 (start < hva))
+	 (start <= hva))
     {
       con->dd_printf(addr_format, start); con->dd_printf(" ");
       for (i= 0;
