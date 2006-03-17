@@ -211,12 +211,14 @@ cl_console::cl_console(int portnumber, class cl_app *the_app)
   int sock= connect_to_port(portnumber);
 
   app= the_app;
+  rout= 0;
   if (!(in= fdopen(sock, "r")))
     fprintf(stderr, "cannot open port for input\n");
   if (!(out= fdopen(sock, "w")))
     fprintf(stderr, "cannot open port for output\n");
   //fprintf(stderr, "init socket done\n");
   id= 0;
+  prompt= 0;
   lines_printed= new cl_ustrings(1, 1, "console_cache");
 }
 #endif

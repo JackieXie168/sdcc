@@ -116,6 +116,7 @@ cl_base::set_name(char *new_name, char *def_name)
     name= strdup(new_name);
   else
     name= def;
+  free(def);
   return(name);
 }
 
@@ -659,7 +660,8 @@ cl_list::set_limit(t_index alimit)
 	    memcpy(AItems, Items, count*sizeof(void *));
 	}
       //delete Items;
-      free(Items);
+      if (Items)
+	free(Items);
       Items= AItems;
       Limit= alimit;
     }

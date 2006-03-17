@@ -116,7 +116,14 @@ public:
   char *prompt;
   
 public:
-  cl_console(void): cl_base() { app= 0; in= out= 0; flags= 0; }
+  cl_console(void): cl_base()
+  {
+    app= 0;
+    in= out= 0;
+    flags= 0;
+    rout= 0;
+    prompt= 0;
+  }
   cl_console(char *fin, char *fout, class cl_app *the_app);
   cl_console(FILE *fin, FILE *fout, class cl_app *the_app);
   cl_console(char *fin, FILE *fout);
