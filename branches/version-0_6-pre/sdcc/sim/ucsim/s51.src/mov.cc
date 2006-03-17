@@ -352,9 +352,11 @@ cl_51core::inst_pop(uchar code)
 
   sp_before= sfr->get(SP);
   cell= get_direct(fetch());
-  stck= iram->get_cell(sfr->get(SP));
+  stck= iram->get_cell(/*sfr->get(SP)*/sp_before);
+  /* Order of decrement and write changed to fix POP SP, reported by
+     Alexis Pavlov <alexis.pavlov@certess.com> */
+  sp= sfr->wadd(SP, -1);
   cell->write(data= stck->read());
-  sp= /*sp_after= */sfr->wadd(SP, -1);
   tick(1);
   class cl_stack_op *so=
     new cl_stack_pop(instPC, data, sp_before, sp/*_after*/);

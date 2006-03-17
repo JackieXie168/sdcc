@@ -249,8 +249,8 @@ public:
   virtual void append_operator(class cl_memory_operator *op);
   virtual void prepend_operator(class cl_memory_operator *op);
   virtual void del_operator(class cl_brk *brk);
-  virtual void del_operator(class cl_hw *hw);
-
+  virtual void del_operator(class cl_hw *hw); 	 
+ 
   virtual class cl_memory_cell *add_hw(class cl_hw *hw, int *ith, t_addr addr);
   virtual void remove_hw(class cl_hw *hw);
   //virtual class cl_hw *get_hw(int ith);
@@ -423,7 +423,7 @@ public:
 
 #include "errorcl.h"
 
-ERROR_CLASS_DECL(mem): public cl_error
+class cl_error_mem: public cl_error
 {
 protected:
   class cl_memory *mem;
@@ -432,7 +432,7 @@ public:
   cl_error_mem(class cl_memory *amem, t_addr aaddr);
 };
 
-ERROR_CLASS_DECL(mem_invalid_address): public cl_error_mem
+class cl_error_mem_invalid_address: public cl_error_mem
 {
 public:
   cl_error_mem_invalid_address(class cl_memory *amem, t_addr aaddr);
@@ -440,12 +440,18 @@ public:
   virtual void print(class cl_commander *c);
 };
 
-ERROR_CLASS_DECL(mem_non_decoded): public cl_error_mem
+ class cl_error_mem_non_decoded: public cl_error_mem
 {
 public:
   cl_error_mem_non_decoded(class cl_memory *amem, t_addr aaddr);
 
   virtual void print(class cl_commander *c);
+};
+
+class cl_mem_error_registry: public cl_error_registry
+{
+public:
+  cl_mem_error_registry(void);
 };
 
 

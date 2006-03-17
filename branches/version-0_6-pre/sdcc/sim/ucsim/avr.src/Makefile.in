@@ -12,6 +12,7 @@ CPP		= @CPP@
 CXXCPP		= @CXXCPP@
 RANLIB		= @RANLIB@
 INSTALL		= @INSTALL@
+STRIP		= @STRIP@
 
 PRJDIR		= ..
 
@@ -25,7 +26,7 @@ PICOPT		= @PICOPT@
 SHAREDLIB	= @SHAREDLIB@
 EXEEXT		= @EXEEXT@
 
-LIBS		= @LIBS@ -L$(PRJDIR) -Wl,--start-group -lsim -lutil -lcmd -lguiucsim -Wl,--end-group
+LIBS		= @LIBS@ -L$(PRJDIR) -lsim -lutil -lguiucsim -lcmd -lsim
 DL		= @DL@
 dl_ok		= @dl_ok@
 
@@ -64,13 +65,14 @@ all: checkconf otherlibs avr.src
 # Compiling and installing everything and runing test
 # ---------------------------------------------------
 install: all installdirs
-	$(INSTALL) -s savr$(EXEEXT) $(bindir)
+	$(INSTALL) -s savr$(EXEEXT) $(DESTDIR)$(bindir)/savr$(EXEEXT)
+	$(STRIP) $(DESTDIR)$(bindir)/savr$(EXEEXT)
 
 
 # Deleting all the installed files
 # --------------------------------
 uninstall:
-	rm -f $(bindir)/savr
+	rm -f $(DESTDIR)$(bindir)/savr$(EXEEXT)
 
 
 # Performing self-test
@@ -88,7 +90,7 @@ installcheck:
 # Creating installation directories
 # ---------------------------------
 installdirs:
-	test -d $(bindir) || $(INSTALL) -d $(bindir)
+	test -d $(DESTDIR)$(bindir) || $(INSTALL) -d $(DESTDIR)$(bindir)
 
 
 # Creating dependencies

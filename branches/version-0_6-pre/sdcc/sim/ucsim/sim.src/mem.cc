@@ -48,6 +48,8 @@
 #include "hwcl.h"
 
 
+static class cl_mem_error_registry mem_error_registry;
+
 /*
  *                                                3rd version of memory system
  */
@@ -430,6 +432,7 @@ cl_memory_cell::cl_memory_cell(void):
   flags= CELL_NON_DECODED;
   width= 8;
   *data= 0;
+  operators= NULL;
 
 #ifdef STATISTIC
   nuof_writes= nuof_reads= 0;
@@ -645,31 +648,30 @@ cl_memory_cell::del_operator(class cl_brk *brk)
     }
 }
 
-void
-cl_memory_cell::del_operator(class cl_hw *hw)
-{
-  if (!operators)
-    return;
-  class cl_memory_operator *op= operators;
-  if (operators->match(hw))
-    {
-      operators= op->get_next();
-      delete op;
-    }
-  else
-    {
-      while (op->get_next() &&
-	     !op->get_next()->match(hw))
-	op= op->get_next();
-      if (op->get_next())
-	{
-	  class cl_memory_operator *m= op->get_next();
-	  op->set_next(m->get_next());;
-	  delete m;
-	}
-    }
+void 	 
+cl_memory_cell::del_operator(class cl_hw *hw) 	 
+{ 	 
+  if (!operators) 	 
+    return; 	 
+  class cl_memory_operator *op= operators; 	 
+  if (operators->match(hw)) 	 
+    { 	 
+      operators= op->get_next(); 	 
+      delete op; 	 
+    } 	 
+  else 	 
+    { 	 
+      while (op->get_next() && 	 
+	     !op->get_next()->match(hw)) 	 
+	op= op->get_next(); 	 
+      if (op->get_next()) 	 
+	{ 	 
+	  class cl_memory_operator *m= op->get_next(); 	 
+	  op->set_next(m->get_next());; 	 
+	  delete m; 	 
+	} 	 
+    } 	 
 }
-
 
 class cl_memory_cell *
 cl_memory_cell::add_hw(class cl_hw *hw, int *ith, t_addr addr)
@@ -679,10 +681,10 @@ cl_memory_cell::add_hw(class cl_hw *hw, int *ith, t_addr addr)
   return(this);
 }
 
-void
-cl_memory_cell::remove_hw(class cl_hw *hw)
-{
-  del_operator(hw);
+void 	 
+cl_memory_cell::remove_hw(class cl_hw *hw) 	 
+{ 	 
+  del_operator(hw); 	 
 }
 
 /*class cl_hw *
@@ -1024,18 +1026,17 @@ cl_address_space::register_hw(t_addr addr, class cl_hw *hw,
   return(cell);
 }
 
-void
-cl_address_space::unregister_hw(class cl_hw *hw)
-{
-  t_addr idx;
+void 	 
+cl_address_space::unregister_hw(class cl_hw *hw) 	 
+{ 	 
+  t_addr idx; 	 
   
-  for (idx= 0; idx < size; idx++)
-    {
-      class cl_memory_cell *cell= cells[idx];
-      cell->remove_hw(hw);
-    }
+  for (idx= 0; idx < size; idx++) 	 
+    { 	 
+      class cl_memory_cell *cell= cells[idx]; 	 
+      cell->remove_hw(hw); 	 
+    } 	 
 }
-
 
 void
 cl_address_space::set_brk(t_addr addr, class cl_brk *brk)
@@ -1419,27 +1420,21 @@ cl_decoder_list::compare(void *key1, void *key2)
  */
 
 /* All of memory errors */
-ERROR_CLASS_DEF_PARENT_ON(err_error, mem, "memory",
-			  error_class_base, ERROR_ON);
 
 cl_error_mem::cl_error_mem(class cl_memory *amem, t_addr aaddr)
 {
   mem= amem;
   addr= aaddr;
-  classification= &error_mem_class;
+  classification= mem_error_registry.find("memory");
 }
 
 /* Invalid address in memory access */
-ERROR_CLASS_DEF_PARENT(err_error,
-		       mem_invalid_address,
-		       "invalid_address",
-		       error_mem_class);
 
 cl_error_mem_invalid_address::
 cl_error_mem_invalid_address(class cl_memory *amem, t_addr aaddr):
   cl_error_mem(amem, aaddr)
 {
-  classification= &error_mem_invalid_address_class;
+  classification= mem_error_registry.find("invalid_address");
 }
 
 void
@@ -1452,16 +1447,12 @@ cl_error_mem_invalid_address::print(class cl_commander *c)
 }
 
 /* Non-decoded address space access */
-ERROR_CLASS_DEF_PARENT(err_error,
-		       mem_non_decoded,
-		       "non_decoded",
-		       error_mem_class);
 
 cl_error_mem_non_decoded::
 cl_error_mem_non_decoded(class cl_memory *amem, t_addr aaddr):
   cl_error_mem(amem, aaddr)
 {
-  classification= &error_mem_non_decoded_class;
+  classification= mem_error_registry.find("non_decoded");
 }
 
 void
@@ -1473,5 +1464,12 @@ cl_error_mem_non_decoded::print(class cl_commander *c)
   cmd_fprintf(f, " in memory %s.\n", mem->get_name());
 }
 
+cl_mem_error_registry::cl_mem_error_registry(void)
+{
+  class cl_error_class *prev = mem_error_registry.find("non-classified");
+  prev = register_error(new cl_error_class(err_error, "memory", prev, ERROR_OFF));
+  prev = register_error(new cl_error_class(err_error, "invalid_address", prev));
+  prev = register_error(new cl_error_class(err_error, "non_decoded", prev));
+}
 
 /* End of mem.cc */

@@ -30,11 +30,16 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #ifdef HAVE_GETOPT_H
 # include <getopt.h>
 #endif
-#ifdef SOCKET_AVAIL
+#ifdef _WIN32
+# include <winsock2.h>
+# define SOCKET_AVAIL
+#elif defined HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
 #include <ctype.h>

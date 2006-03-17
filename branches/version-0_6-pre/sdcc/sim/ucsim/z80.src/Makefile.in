@@ -12,6 +12,7 @@ CPP		= @CPP@
 CXXCPP		= @CXXCPP@
 RANLIB		= @RANLIB@
 INSTALL		= @INSTALL@
+STRIP		= @STRIP@
 
 PRJDIR		= ..
 
@@ -25,7 +26,7 @@ PICOPT		= @PICOPT@
 SHAREDLIB	= @SHAREDLIB@
 EXEEXT		= @EXEEXT@
 
-LIBS		= @LIBS@ -L$(PRJDIR) -Wl,--start-group -lutil -lcmd -lsim -lguiucsim -Wl,--end-group
+LIBS		= @LIBS@ -L$(PRJDIR) -lsim -lutil -lguiucsim -lcmd -lsim
 
 DL		= @DL@
 dl_ok		= @dl_ok@
@@ -72,13 +73,14 @@ tests: $(TEST_OBJ)
 # Compiling and installing everything and runing test
 # ---------------------------------------------------
 install: all installdirs
-	$(INSTALL) -s sz80$(EXEEXT) $(bindir)
+	$(INSTALL) -s sz80$(EXEEXT) $(DESTDIR)$(bindir)/sz80$(EXEEXT)
+	$(STRIP) $(DESTDIR)$(bindir)/sz80$(EXEEXT)
 
 
 # Deleting all the installed files
 # --------------------------------
 uninstall:
-	rm -f $(bindir)/sz80$(EXEEXT)
+	rm -f $(DESTDIR)$(bindir)/sz80$(EXEEXT)
 
 
 # Performing self-test
@@ -96,7 +98,7 @@ installcheck:
 # Creating installation directories
 # ---------------------------------
 installdirs:
-	test -d $(bindir) || $(INSTALL) -d $(bindir)
+	test -d $(DESTDIR)$(bindir) || $(INSTALL) -d $(DESTDIR)$(bindir)
 
 
 # Creating dependencies

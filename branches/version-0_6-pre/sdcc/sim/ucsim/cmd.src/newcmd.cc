@@ -32,7 +32,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
+#ifdef _WIN32
+# include <winsock2.h>
+# define SOCKET_AVAIL
+#elif defined HAVE_SYS_SOCKET_H
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
@@ -42,7 +45,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #if FD_HEADER_OK
 # include HEADER_FD
 #endif
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include "i_string.h"
 
 #include "cmdlexcl.h"
@@ -777,8 +782,18 @@ cl_commander::init(void)
     add_console(mk_console(port_number_option.get_value((long)0)));
 #endif
 
+  /* The following code is commented out because it produces gcc warnings
+   * newcmd.cc: In member function `virtual int cl_commander::init()':
+   * newcmd.cc:785: warning: 'Config' might be used uninitialized in this function
+   * newcmd.cc:786: warning: 'cn' might be used uninitialized in this function
+   */
+  /*
   char *Config= config_file_option.get_value(Config);
   char *cn= console_on_option.get_value(cn);
+  */
+  /* Here shoud probably be something else, but is still better then the former code... */
+  char *Config= config_file_option.get_value("");
+  char *cn= console_on_option.get_value("");
 
   if (cn)
     {

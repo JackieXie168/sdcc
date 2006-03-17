@@ -173,24 +173,24 @@ public:
 /*
  * All kind of stack errors
  */
-//extern class cl_error_class error_stack_class;
-//class cl_error_stack: public cl_error
-ERROR_CLASS_DECL(stack): public cl_error
+class cl_error_stack: public cl_error
 {
+private:
+  static class cl_error_class *error_stack_class;
 public:
-  cl_error_stack(void) { classification= &error_stack_class; }
+  cl_error_stack(void);
 };
 
 /*
  * All kind of stack tracker errors
  */
-ERROR_CLASS_DECL(stack_tracker): public cl_error_stack
+class cl_error_stack_tracker: public cl_error_stack
 {
 public:
-  cl_error_stack_tracker(void) { classification= &error_stack_tracker_class; }
+  cl_error_stack_tracker(void);
 };
 
-ERROR_CLASS_DECL(stack_tracker_wrong_handle): public cl_error_stack_tracker
+class cl_error_stack_tracker_wrong_handle: public cl_error_stack_tracker
 {
 public:
   bool write_operation;
@@ -200,7 +200,7 @@ public:
   virtual void print(class cl_commander *c);
 };
 
-ERROR_CLASS_DECL(stack_tracker_empty): public cl_error_stack_tracker
+class cl_error_stack_tracker_empty: public cl_error_stack_tracker
 {
 protected:
   class cl_stack_op *operation;
@@ -211,7 +211,7 @@ public:
   virtual void print(class cl_commander *c);
 };
 
-ERROR_CLASS_DECL(stack_tracker_unmatch): public cl_error_stack_tracker
+class cl_error_stack_tracker_unmatch: public cl_error_stack_tracker
 {
 protected:
   class cl_stack_op *top, *operation;
@@ -223,7 +223,7 @@ public:
   virtual void print(class cl_commander *c);
 };
 
-ERROR_CLASS_DECL(stack_tracker_inconsistent): public cl_error_stack_tracker
+class cl_error_stack_tracker_inconsistent: public cl_error_stack_tracker
 {
 protected:
   class cl_stack_op *operation;
@@ -234,6 +234,12 @@ public:
   virtual ~cl_error_stack_tracker_inconsistent(void);
 
   virtual void print(class cl_commander *c);
+};
+
+class cl_stack_error_registry: public cl_error_registry
+{
+public:
+  cl_stack_error_registry(void);
 };
 
 

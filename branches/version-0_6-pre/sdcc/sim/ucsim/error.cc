@@ -45,61 +45,30 @@ struct id_element error_on_off_names[]= {
   { 0		, 0 }
 };
 
-class cl_error_class error_class_base(err_error, "non-classified", ERROR_ON);
+static class cl_error_registry error_registry;
 
-class cl_list *registered_errors= NIL;
+class cl_list *cl_error_registry::registered_errors= NIL;
 
 /*
  */
 
-cl_error_class::cl_error_class(enum error_type typ, char *aname):
-  cl_base()
-{
-  type= typ;
-  on= ERROR_PARENT;
-  set_name(aname, "not-known");
-  if (!registered_errors)
-    registered_errors= new cl_list(2, 2, "registered errors");
-  registered_errors->add(this);
-}
-
 cl_error_class::cl_error_class(enum error_type typ, char *aname,
-			       enum error_on_off be_on):
+			       enum error_on_off be_on/* = ERROR_PARENT*/):
   cl_base()
 {
   type= typ;
   on= be_on;
   set_name(aname, "not-known");
-  if (!registered_errors)
-    registered_errors= new cl_list(2, 2, "registered errors");
-  registered_errors->add(this);
-}
-
-cl_error_class::cl_error_class(enum error_type typ, char *aname,
-			       class cl_error_class *parent):
-  cl_base()
-{
-  type= typ;
-  on= ERROR_PARENT;
-  set_name(aname, "not-known");
-  if (!registered_errors)
-    registered_errors= new cl_list(2, 2, "registered errors");
-  registered_errors->add(this);
-  if (parent)
-    parent->add_child(this);
 }
 
 cl_error_class::cl_error_class(enum error_type typ, char *aname,
 			       class cl_error_class *parent,
-			       enum error_on_off be_on):
+			       enum error_on_off be_on/* = ERROR_PARENT*/):
   cl_base()
 {
   type= typ;
   on= be_on;
   set_name(aname, "not-known");
-  if (!registered_errors)
-    registered_errors= new cl_list(2, 2, "registered errors");
-  registered_errors->add(this);
   if (parent)
     parent->add_child(this);
 }
@@ -160,8 +129,8 @@ cl_error_class::get_type_name()
 cl_error::cl_error(void):
   cl_base()
 {
-  //type= err_unknown;
-  classification= 0;
+  classification= error_registry.find("non-classified");
+
 }
 
 cl_error::~cl_error(void)
@@ -211,5 +180,10 @@ cl_error::get_type_name()
   return(get_id_string(error_type_names, type, "untyped"));
 }
 
+cl_error_registry::cl_error_registry(void)
+{
+  if (NULL == error_registry.find("non-classified"))
+    register_error(new cl_error_class(err_error, "non-classified", ERROR_ON));
+}
 
 /* End of sim.src/error.cc */
