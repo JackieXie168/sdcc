@@ -1,0 +1,85 @@
+2006-07-24 Borut Razem <borut.razem AT siol.net>
+
+	* snap.php: correct alt tag values for RT and CL icons
+
+2006-07-12 Borut Razem <borut.razem AT siol.net>
+
+	* index.php: sdcc 2.6.0 RC1 announced
+
+2006-07-10 Borut Razem <borut.razem AT siol.net>
+
+	* snap.php: support for i586-mingw32msvc snapshots
+
+2006-07-09 Borut Razem <borut.razem AT siol.net>
+
+	* snap.php, snap_footer.php: added ChangeLog heads
+
+2006-07-08 Borut Razem <borut.razem AT siol.net>
+
+	* snap.php, snap_footer.php: added regression test results
+	* images/*: added
+
+2006-05-11 Borut Razem <borut.razem AT siol.net>
+
+	* snap_header.php: fixed bug [1486015] Changelog not visible from the
+	  Snapshots webpage. Thanks to Jim Paris.
+
+2006-04-24 Frieder Ferlemann <Frieder.Ferlemann AT web.de>
+
+	* left_menu.inc: added links to pdf files
+
+2006-04-21 Borut Razem <borut.razem AT siol.net>
+
+	* index.php, left_menu.inc, snap_header.php:
+	  CVS replaced with Subversion
+	* index.html, links.html, previous.html, snap_footer.html,
+	  snap_header.html:deleted
+
+2005-12-12 Borut Razem <borut.razem AT siol.net>
+
+	* previous.php, snap_header.php, footer.php, index.php, links.php, snap.php:
+	  XHTML 1.0 Transitional
+
+2005-11-25 Borut Razem <borut.razem AT siol.net>
+
+	* previous.php, snap_footer.php, footer.php: added, common footer
+	* index.php, links.php, snap.php: common footer
+
+2005-11-23 Borut Razem <borut.razem AT siol.net>
+
+	* left_menu.inc, index.php, links.php, snap_header.php, snap.php:
+	  added - common left menu
+
+2005-11-12 Borut Razem <borut.razem AT siol.net>
+
+	* index.html: added description if Maarten Brock's contribution,
+	  added Raphael Neider to "who is SDCC" section
+
+2005-11-11 Borut Razem <borut.razem AT siol.net>
+
+	* links.html: fixed documentation requests:
+	  [ 1183225 ] Link suggestions
+	  [ 1036515 ] http://mikrokontrolery.of.pl/
+	  [ 1000901 ] Links
+	  [ 957885 ] Link to simulators
+	  [ 948959 ] Add a link Request
+	  [ 709221 ] SDCC/USB based micro programer (carl.norum@usask.ca)
+	  [ 1164546 ] DS89C450 on USB in a DIL40 package
+	* index.html, previous.html, snap_header.html, snap_footer.html:
+	  new Sourceforge icon, unified menu
+
+2005-11-10 Borut Razem <borut.razem AT siol.net>
+
+	* index.html, links.html, previous.html, snap.html, snap_header.html, snap_footer.html, style.css:
+	  added to CVS, reformatted to use style.css, valid HTML 4.01 Transitional
+
+2005-11-09 Borut Razem <borut.razem AT siol.net>
+
+	* index.html: fixed doc request [ 1201748 ] Adding Maarten Brock's name to "who is
+	  SDCC" section, [ 766655 ] target of link on SDCC links page has moved
+	* links.html: added to CVS
+
+2004-05-13 Borut Razem <borut.razem AT siol.net>
+
+	* index.html: info about SDCC 2.5.0 release
+	* ChangeLog created
