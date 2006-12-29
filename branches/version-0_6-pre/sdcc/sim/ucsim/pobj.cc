@@ -116,7 +116,6 @@ cl_base::set_name(char *new_name, char *def_name)
     name= strdup(new_name);
   else
     name= def;
-  free(def);
   return(name);
 }
 

@@ -26,7 +26,8 @@ PICOPT		= @PICOPT@
 SHAREDLIB	= @SHAREDLIB@
 EXEEXT		= @EXEEXT@
 
-LIBS		= @LIBS@ -L$(PRJDIR) -lsim -lutil -lguiucsim -lcmd -lsim
+#LIBS		= @LIBS@ -L$(PRJDIR) -lsim -lutil -lguiucsim -lcmd -lsim
+LIBS		= @LIBS@ -L$(PRJDIR) -Wl,--start-group -lsim -lutil -lcmd -lguicsim -Wl,--end-group
 DL		= @DL@
 dl_ok		= @dl_ok@
 
@@ -65,7 +66,7 @@ all: checkconf otherlibs avr.src
 # Compiling and installing everything and runing test
 # ---------------------------------------------------
 install: all installdirs
-	$(INSTALL) -s savr$(EXEEXT) $(DESTDIR)$(bindir)/savr$(EXEEXT)
+	$(INSTALL) savr$(EXEEXT) $(DESTDIR)$(bindir)/savr$(EXEEXT)
 	$(STRIP) $(DESTDIR)$(bindir)/savr$(EXEEXT)
 
 

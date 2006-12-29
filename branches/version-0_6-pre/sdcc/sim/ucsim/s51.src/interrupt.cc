@@ -42,7 +42,6 @@ cl_interrupt::cl_interrupt(class cl_uc *auc):
   cl_hw(auc, HW_INTERRUPT, 0, "irq")
 {
   was_reti= DD_FALSE;
-  bit_IT0= bit_IT1= DD_FALSE;
 }
 
 int

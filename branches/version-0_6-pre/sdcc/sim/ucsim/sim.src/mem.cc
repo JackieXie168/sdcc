@@ -180,7 +180,7 @@ cl_memory::dump(t_addr start, t_addr stop, int bpl, class cl_console *con)
       con->dd_printf(addr_format, start); con->dd_printf(" ");
       for (i= 0;
 	   (i < bpl) &&
-	     (start+i < hva) &&
+	     (start+i <= hva) &&
 	     (start+i <= stop);
 	   i++)
 	{
@@ -198,7 +198,7 @@ cl_memory::dump(t_addr start, t_addr stop, int bpl, class cl_console *con)
 	  i++;
 	}
       for (i= 0; (i < bpl) &&
-	     (start+i < hva) &&
+	     (start+i <= hva) &&
 	     (start+i <= stop);
 	   i++)
 	{
@@ -649,28 +649,28 @@ cl_memory_cell::del_operator(class cl_brk *brk)
 }
 
 void 	 
-cl_memory_cell::del_operator(class cl_hw *hw) 	 
-{ 	 
-  if (!operators) 	 
-    return; 	 
-  class cl_memory_operator *op= operators; 	 
-  if (operators->match(hw)) 	 
-    { 	 
-      operators= op->get_next(); 	 
-      delete op; 	 
-    } 	 
-  else 	 
-    { 	 
-      while (op->get_next() && 	 
-	     !op->get_next()->match(hw)) 	 
-	op= op->get_next(); 	 
-      if (op->get_next()) 	 
-	{ 	 
-	  class cl_memory_operator *m= op->get_next(); 	 
-	  op->set_next(m->get_next());; 	 
-	  delete m; 	 
-	} 	 
-    } 	 
+cl_memory_cell::del_operator(class cl_hw *hw)
+{
+  if (!operators)
+    return;
+  class cl_memory_operator *op= operators;
+  if (operators->match(hw))
+    {
+      operators= op->get_next();
+      delete op;
+    }
+  else
+    {
+      while (op->get_next() &&
+	     !op->get_next()->match(hw))
+	op= op->get_next();
+      if (op->get_next())
+	{
+	  class cl_memory_operator *m= op->get_next();
+	  op->set_next(m->get_next());
+	  delete m;
+	}
+    }
 }
 
 class cl_memory_cell *
@@ -1027,15 +1027,15 @@ cl_address_space::register_hw(t_addr addr, class cl_hw *hw,
 }
 
 void 	 
-cl_address_space::unregister_hw(class cl_hw *hw) 	 
-{ 	 
-  t_addr idx; 	 
-  
-  for (idx= 0; idx < size; idx++) 	 
-    { 	 
-      class cl_memory_cell *cell= cells[idx]; 	 
-      cell->remove_hw(hw); 	 
-    } 	 
+cl_address_space::unregister_hw(class cl_hw *hw)
+{
+  t_addr idx;
+
+  for (idx= 0; idx < size; idx++)
+    {
+      class cl_memory_cell *cell= cells[idx];
+      cell->remove_hw(hw);
+    }
 }
 
 void

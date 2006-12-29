@@ -35,6 +35,7 @@
 #include "pobjt.h"
 
 #include "eventcl.h"
+#include "charscl.h"
 
 
 /*									    #

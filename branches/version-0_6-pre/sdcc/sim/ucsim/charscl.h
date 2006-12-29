@@ -36,15 +36,20 @@ public:
   chars &operator+=(char *s) { return(append(s)); }
   chars &operator+=(const chars &cs) { return(append((char*)cs)); }
   // Boolean
+  bool equal(char *);
   bool operator==(char *s);
+  bool operator==(const char *s);
   bool operator==(chars &cs);
   bool operator!=(char *s);
+  bool operator!=(const char *s);
   bool operator!=(chars &cs);
 };
 
 extern chars operator+(char *s, const chars &cs);
 extern bool operator==(char *s, const chars &cs);
+extern bool operator==(const char *s, const chars &cs);
 extern bool operator!=(char *s, const chars &cs);
+extern bool operator!=(const char *s, const chars &cs);
 
 
 #endif

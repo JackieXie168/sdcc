@@ -29,7 +29,8 @@ SDCC		= sdcc
 SDCFLAGS	= --debug --stack-after-data --model-small
 SDCPPFLAGS	= 
 
-LIBS		= @LIBS@ -L$(PRJDIR) -lsim -util -lguiucsim -lcmd -lsim
+#LIBS		= @LIBS@ -L$(PRJDIR) -lsim -util -lguiucsim -lcmd -lsim
+LIBS		= @LIBS@ -L$(PRJDIR) -Wl,--start-group -lutil -lsim -lcmd -lguiucsim -Wl,--end-group
 DL		= @DL@
 dl_ok		= @dl_ok@
 
@@ -119,7 +120,7 @@ include clean.mk
 s51.src: s51$(EXEEXT) shared_lib
 
 s51$(EXEEXT): $(OBJECTS) $(PRJDIR)/*.a
-	$(CXX) $(CXXFLAGS) $(LIBS) $(OBJECTS) -o $@
+	$(CXX) $(CXXFLAGS) $(OBJECTS) $(LIBS) -o $@
 
 ifeq ($(dlso_ok),yes)
 shared_lib: $(PRJDIR)/s51.so

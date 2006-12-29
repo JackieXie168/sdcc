@@ -29,6 +29,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "globals.h"
 #include "appcl.h"
 
+#include "charscl.h"
+
 int
 main(int argc, char *argv[])
 {

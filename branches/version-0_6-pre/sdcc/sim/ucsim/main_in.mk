@@ -44,7 +44,8 @@ man2dir         = $(mandir)/man2
 infodir         = @infodir@
 srcdir          = @srcdir@
 
-OBJECTS         = pobj.o globals.o utils.o error.o app.o option.o
+OBJECTS         = pobj.o globals.o utils.o error.o app.o option.o \
+		  gstring.o chars.o
 SOURCES		= $(patsubst %.o,%.cc,$(OBJECTS))
 UCSIM_OBJECTS	= ucsim.o
 UCSIM_SOURCES	= $(patsubst %.o,%.cc,$(UCSIM_OBJECTS))
