@@ -1,0 +1,52 @@
+VPATH        = @srcdir@
+srcdir       = @srcdir@
+top_builddir = @top_builddir@
+top_srcdir   = @top_srcdir@
+
+include $(top_builddir)/Makefile.common
+
+OBJDIR	= obj$(EXT)
+
+SLIBSRC	= NewAlloc.c
+
+SRC	= lkmain.c lkarea.c lkihx.c \
+	  lklibr.c lkrloc.c lks19.c \
+	  lkgb.c lkgg.c \
+	  ../lkaomf51.c ../lkdata.c \
+	  ../lkeval.c ../lkhead.c ../lklex.c ../lklist.c \
+	  ../lknoice.c ../lkstore.c ../lksym.c \
+	  ../../strcmpi.c
+
+OBJS	= $(SRC:%.c=$(OBJDIR)/%.o)
+SLIBOBJS	= $(SLIBSRC:%.c=$(OBJDIR)/%.o)
+
+BINS	= $(BUILDDIR)link$(EXT)$(EXEEXT)
+
+CPPFLAGS+= -I.. -I$(srcdir)/..
+CFLAGS	+= $(CPPFLAGS) $(OPTS) -DINDEXLIB -DMLH_MAP -DUNIX -DSDK
+CFLAGS	+= -funsigned-char -DUNIX
+CFLAGS	+= -I$(top_builddir)/as/$(PORT) -I$(SLIB)
+
+LDFLAGS = @LDFLAGS@ -lm $(EXTRALIBS)
+
+all:	$(BINS)
+
+$(BINS): $(OBJDIR) $(OBJS) $(SLIBOBJS)
+	$(CC) -g -o $(BINS) $(OBJS) $(SLIBOBJS) $(LDFLAGS)
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(OBJDIR)/%.o:	%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+$(OBJDIR)/%.o:	$(SLIB)/%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+_link-z80:
+	$(MAKE) EXT=-z80$(E) PORT=z80
+
+_link-gbz80:
+	$(MAKE) EXT=-gbz80$(E) OPTS=-DGAMEBOY PORT=z80
+
+include $(srcdir)/clean.mk

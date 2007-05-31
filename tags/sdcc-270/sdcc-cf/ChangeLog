@@ -1,0 +1,62 @@
+2007-05-05 Borut Razem <borut.razem AT siol.net>
+
+	* packages/build.nsis/Makefile: updated to NSIS version 2.27
+
+2007-04-14 Borut Razem <borut.razem AT siol.net>
+
+	* crontab.txt: run do-upload in a separate make task on cf-x86 too
+
+2007-04-10 Borut Razem <borut.razem AT siol.net>
+
+	* crontab.txt: run do-upload in a separate make task in order to
+	  prevent starting upload before other make jobs are finished
+	* bin/dcf.sh: removed duplicated rm -f $DCF_LOCK
+
+2007-03-31 Borut Razem <borut.razem AT siol.net>
+
+	* crontab.txt: define "make" arguments on command line
+	* bin/dcf.sh: introduced trap, relative rsync
+
+2007-03-30 Borut Razem <borut.razem AT siol.net>
+
+	* bin/dcf.sh: enhanced logging
+
+2007-03-25 Borut Razem <borut.razem AT siol.net>
+
+	* bin/dcf.sh: added Distributed Compile Farm
+	* crontab.txt: updated
+
+2007-03-20 Borut Razem <borut.razem AT siol.net>
+
+	* packages/build.readline/Makefile:
+	  introduced CFLAGS, CXXFLAGS and LDFLAGS configure settings
+
+2007-03-18 Borut Razem <borut.razem AT siol.net>
+
+	* packages/*/Makefile: house cleaning
+	* packages/build.ncurses/*: added
+	* crontab.txt: added entry for mirror-doors host
+	* packages/packages.mk, packages/build.readline/Makefile:
+	  added support for universal binaries on Darwin
+	* packages/build.gpsim/Makefile:
+	  introduced CFLAGS, CXXFLAGS and LDFLAGS configure settings
+
+2007-03-17 Borut Razem <borut.razem AT siol.net>
+
+	* packages/build.readline/*: added
+	* crontab.txt: added mirror-doors line
+
+2007-03-13 Borut Razem <borut.razem AT siol.net>
+
+	* crontab.txt: added
+
+2007-03-11 Borut Razem <borut.razem AT siol.net>
+
+	* packages/packages.mk: defined LOCAL_DIR using $(HOME)/... instead of
+	  ~/... so that --prefix=$(LOCAL_DIR) works
+	* packages/build.nsis/Makefile: removed ABS_LOCAL_DIR
+
+2007-03-07 Borut Razem <borut.razem AT siol.net>
+
+	* packages/*: initial check in
+	* packages/build.nsis/Makefile: defined ABS_LOCAL_DIR
