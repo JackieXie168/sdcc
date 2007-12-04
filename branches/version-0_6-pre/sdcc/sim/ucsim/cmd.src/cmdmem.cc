@@ -201,7 +201,7 @@ COMMAND_DO_WORK_UC(cl_memory_createaddressdecoder_cmd)
   else if (chip_begin >= chip->get_size())
     con->dd_printf("Wrong chip area specification\n");
   else if (as_begin < as->start_address ||
-	   as_end >= as->highest_valid_address())
+	   as_end > as->highest_valid_address())
     con->dd_printf("Specified area is out of address space\n");
   else if (as_end-as_begin > chip->get_size()-chip_begin)
     con->dd_printf("Specified area is out of chip size\n");
