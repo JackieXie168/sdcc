@@ -28,7 +28,7 @@ M_OR_MM         = @M_OR_MM@
 
 EXEEXT		= @EXEEXT@
 
-LIB_LIST	= util cmd sim
+LIB_LIST	= ucsimutil cmd sim
 UCSIM_LIBS	= -Wl,--start-group $(patsubst %,-l%,$(LIB_LIST)) -Wl,--end-group
 UCSIM_LIB_FILES	= $(patsubst %,lib%.a,$(LIB_LIST))
 
@@ -58,7 +58,7 @@ enable_ucsim	= @enable_ucsim@
 # ------------------------------------------
 all: checkconf libs
 
-libs: libutil.a
+libs: libucsimutil.a
 
 main_app: checkconf ucsim_app
 
@@ -108,7 +108,7 @@ include clean.mk
 
 # My rules
 # --------
-libutil.a: $(OBJECTS)
+libucsimutil.a: $(OBJECTS)
 	ar -rcu $*.a $(OBJECTS)
 	$(RANLIB) $*.a
 
