@@ -50,7 +50,7 @@ public:
   virtual void  pre_inst(void);
   virtual void  post_inst(void);
   virtual int   it_priority(uchar ie_mask);
-  virtual void  print_regs(class cl_console_base *con);
+  virtual void  print_regs(class cl_console *con);
 
   //virtual void  do_extra_hw(int cycles);
   //virtual int   t0_overflow(void);

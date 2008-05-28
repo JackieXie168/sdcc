@@ -144,7 +144,7 @@ cl_uc89c51r::post_inst(void)
 
 
 void
-cl_uc89c51r::print_regs(class cl_console_base *con)
+cl_uc89c51r::print_regs(class cl_console *con)
 {
   t_addr start;
   uchar data, acc, dps;
