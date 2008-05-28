@@ -87,6 +87,8 @@ struct cpu_entry
 #define CPU_ALL_51	(CPU_51|CPU_31)
 #define CPU_ALL_52	(CPU_52|CPU_32|CPU_51R|CPU_89C51R|CPU_251|CPU_DS390|CPU_DS390F)
 
+#define CPU_CC2430F128 0x1000
+
 #define CPU_AVR		0x0001
 #define CPU_ALL_AVR	(CPU_AVR)
 
