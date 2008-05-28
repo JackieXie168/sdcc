@@ -388,6 +388,8 @@ struct cpu_entry cpus_51[]=
   {"C32"   , CPU_32, CPU_CMOS},
   {"80C32" , CPU_32, CPU_CMOS},
 
+  {"CC2430F128", CPU_CC2430F128, CPU_HMOS},
+
   {"51R"   , CPU_51R, CPU_CMOS},
   {"51RA"  , CPU_51R, CPU_CMOS},
   {"51RB"  , CPU_51R, CPU_CMOS},
