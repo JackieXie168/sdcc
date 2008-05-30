@@ -84,14 +84,33 @@ cl_uccc2430f128::make_memories(void)
   ad->init();
   as->decoders->add(ad);
   ad->activate(0);
+
+  // Code bank 0:0, always exists.
   ad = new cl_address_decoder(as = rom, chip, 0x0000, 0x7fff, 0);
   ad->init();
   as->decoders->add(ad);
   ad->activate(0);
-  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x8000);
+
+  // Code bank 1:1, exsists when MEMCTR.FMAP = 0x01 (reset value).
+  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x08000);
   ad->init();
   as->decoders->add(ad);
   ad->activate(0);
+
+  /*
+  // Code bank 1:0, exists when MEMCTR.FMAP = 0x00.
+  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0);
+  ad->init();
+  as->decoders->add(ad);
+  // Code bank 1:2, exists when MEMCTR.FMAP = 0x10.
+  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x10000);
+  ad->init();
+  as->decoders->add(ad);
+  // Code bank 1:3, exists when MEMCTR.FMAP = 0x11.
+  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x18000);
+  ad->init();
+  as->decoders->add(ad);
+   */
 
   acc = sfr->get_cell(ACC);
   psw = sfr->get_cell(PSW);
