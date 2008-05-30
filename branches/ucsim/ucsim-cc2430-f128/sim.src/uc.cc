@@ -745,6 +745,7 @@ cl_uc::read_hex_file(const char *nam)
   int  i;
   bool ok, get_low= 1;
   uchar low= 0, high;
+  class cl_address_decoder *ad;
 
   if (!rom)
     {
@@ -825,6 +826,42 @@ cl_uc::read_hex_file(const char *nam)
 			    }
 			}
 		    }
+      // Code banking support.
+      else if (rtyp == 4) {
+        ad = (class cl_address_decoder *) rom->decoders->at(1);
+        if (rec[1] == 0) {
+          ad->activated = 0;
+          ad->chip_begin = 0x00000;
+          ad->activate(0);
+          printf("Flashing code to bank 0\n");
+        }
+        else if (rec[1] == 1) {
+          ad->activated = 0;
+          ad->chip_begin = 0x08000;
+          ad->activate(0);
+          printf("Flashing code to bank 1\n");
+        }
+        else if (rec[1] == 2) {
+          ad->activated = 0;
+          ad->chip_begin = 0x10000;
+          ad->activate(0);
+          printf("Flashing code to bank 2\n");
+        }
+        else if (rec[1] == 3) {
+          ad->activated = 0;
+          ad->chip_begin = 0x18000;
+          ad->activate(0);
+          printf("Flashing code to bank 3\n");
+        }
+      }
+      else if (rtyp == 5) {
+        ad = (class cl_address_decoder *) rom->decoders->at(1);
+        ad->activated = 0;
+        ad->chip_begin = 0x08000;
+        ad->activate(0);
+        printf("Mapped bank 1\n");
+      }
+      // End code banking support.
 		  else
 		    if (rtyp != 1)
 		      application->debug("Unknown record type %d(0x%x)\n",
