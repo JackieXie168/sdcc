@@ -23,6 +23,7 @@ cl_memarb::init(void)
   */
   register_cell(sfr, 0xc7, &cell_memctr, wtd_none);
   old_memctr = cell_memctr->read();
+  printf("MEMCTR = 0x%x\n", old_memctr);
   return(0);
 }
 
@@ -30,7 +31,7 @@ int
 cl_memarb::tick(int cycles)
 {
   if (cell_memctr->read() != old_memctr) {
-    printf("MEMCTR changed -> %x\n", cell_memctr->read());
+    printf("MEMCTR changed -> 0x%x\n", cell_memctr->read());
     // remap needed part of the 128k chip into ROM address space
     // using a cl_address_decoder (see some examples in cmd.src/cmdmem.cc)
     old_memctr = cell_memctr->read();
