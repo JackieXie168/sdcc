@@ -742,139 +742,157 @@ cl_uc::read_hex_file(const char *nam)
   uchar rec[300]; // data record
   uchar sum ;     // checksum
   uchar chk ;     // check
-  int  i;
+  int  i, elar, bank;
   bool ok, get_low= 1;
   uchar low= 0, high;
   class cl_address_decoder *ad;
+  ad = (class cl_address_decoder *) rom->decoders->at(1);
+  elar = 0x0000;
+  bank = 1;
 
   if (!rom)
-    {
-      sim->app->get_commander()->
-	dd_printf("No ROM address space to read in.\n");
-      return(-1);
-    }
+  {
+    sim->app->get_commander()->
+      dd_printf("No ROM address space to read in.\n");
+    return(-1);
+  }
 
   if (!nam)
-    {
-      sim->app->get_commander()->
-	dd_printf("cl_uc::read_hex_file File name not specified\n");
-      return(-1);
-    }
+  {
+    sim->app->get_commander()->
+      dd_printf("cl_uc::read_hex_file File name not specified\n");
+    return(-1);
+  }
   else
     if ((f= fopen(nam, "r")) == NULL)
-      {
-	fprintf(stderr, "Can't open `%s': %s\n", nam, strerror(errno));
-	return(-1);
-      }
+    {
+      fprintf(stderr, "Can't open `%s': %s\n", nam, strerror(errno));
+      return(-1);
+    }
 
   //memset(inst_map, '\0', sizeof(inst_map));
   ok= DD_TRUE;
   while (ok &&
-	 rtyp != 1)
+      rtyp != 1)
+  {
+    while (((c= getc(f)) != ':') &&
+        (c != EOF)) ;
+    if (c != ':')
+    {fprintf(stderr, ": not found\n");break;}
+    recnum++;
+    dnum= ReadInt(f, &ok, 1);//printf("dnum=%02x",dnum);
+    chk = dnum;
+    addr= ReadInt(f, &ok, 2);//printf("addr=%04x",addr);
+    chk+= (addr & 0xff);
+    chk+= ((addr >> 8) & 0xff);
+    rtyp= ReadInt(f, &ok, 1);//printf("rtyp=%02x ",rtyp);
+    chk+= rtyp;
+    for (i= 0; ok && (i < dnum); i++)
     {
-      while (((c= getc(f)) != ':') &&
-	     (c != EOF)) ;
-      if (c != ':')
-	{fprintf(stderr, ": not found\n");break;}
-      recnum++;
-      dnum= ReadInt(f, &ok, 1);//printf("dnum=%02x",dnum);
-      chk = dnum;
-      addr= ReadInt(f, &ok, 2);//printf("addr=%04x",addr);
-      chk+= (addr & 0xff);
-      chk+= ((addr >> 8) & 0xff);
-      rtyp= ReadInt(f, &ok, 1);//printf("rtyp=%02x ",rtyp);
-      chk+= rtyp;
-      for (i= 0; ok && (i < dnum); i++)
-	{
-	  rec[i]= ReadInt(f, &ok, 1);//printf("%02x",rec[i]);
-	  chk+= rec[i];
-	}
-      if (ok)
-	{
-	  sum= ReadInt(f, &ok, 1);//printf(" sum=%02x\n",sum);
-	  if (ok)
-	    {
-	      if (((sum + chk) & 0xff) == 0)
-		{
-		  if (rtyp == 0)
-		    {
-		      if (rom->width > 8)
-			addr/= 2;
-		      for (i= 0; i < dnum; i++)
-			{
-			  if (rom->width <= 8)
-			    {
-			      rom->set(addr, rec[i]);
-			      addr++;
-			      written++;
-			    }
-			  else if (rom->width <= 16)
-			    {
-			      if (get_low)
-				{
-				  low= rec[i];
-				  get_low= 0;
-				}
-			      else
-				{
-				  high= rec[i];
-				  rom->set(addr, (high*256)+low);
-				  addr++;
-				  written++;
-				  get_low= 1;
-				}
-			    }
-			}
-		    }
-      // Code banking support.
-      else if (rtyp == 4) {
-        ad = (class cl_address_decoder *) rom->decoders->at(1);
-        if (rec[1] == 0) {
-          ad->activated = 0;
-          ad->chip_begin = 0x00000;
-          ad->activate(0);
-          printf("Flashing code to bank 0\n");
-        }
-        else if (rec[1] == 1) {
-          ad->activated = 0;
-          ad->chip_begin = 0x08000;
-          ad->activate(0);
-          printf("Flashing code to bank 1\n");
-        }
-        else if (rec[1] == 2) {
-          ad->activated = 0;
-          ad->chip_begin = 0x10000;
-          ad->activate(0);
-          printf("Flashing code to bank 2\n");
-        }
-        else if (rec[1] == 3) {
-          ad->activated = 0;
-          ad->chip_begin = 0x18000;
-          ad->activate(0);
-          printf("Flashing code to bank 3\n");
-        }
-      }
-      else if (rtyp == 5) {
-        ad = (class cl_address_decoder *) rom->decoders->at(1);
-        ad->activated = 0;
-        ad->chip_begin = 0x08000;
-        ad->activate(0);
-        printf("Mapped bank 1\n");
-      }
-      // End code banking support.
-		  else
-		    if (rtyp != 1)
-		      application->debug("Unknown record type %d(0x%x)\n",
-					 rtyp, rtyp);
-		}
-	      else
-		application->debug("Checksum error (%x instead of %x) in "
-				   "record %ld.\n", chk, sum, recnum);
-	    }
-	  else
-	    application->debug("Read error in record %ld.\n", recnum);
-	}
+      rec[i]= ReadInt(f, &ok, 1);//printf("%02x",rec[i]);
+      chk+= rec[i];
     }
+    if (ok)
+    {
+      sum= ReadInt(f, &ok, 1);//printf(" sum=%02x\n",sum);
+      if (ok)
+      {
+        if (((sum + chk) & 0xff) == 0)
+        {
+          if (rtyp == 0)
+          {
+            if (elar == 0x0000) {
+              if (bank != 0 && addr <= 0x7fff) {
+                bank = 0;
+                ad->activated = 0;
+                ad->chip_begin = 0x00000;
+                ad->activate(0);
+                printf("Flashing to bank %d...\n", bank);
+              }
+              else if (bank != 1 && addr >= 0x8000) {
+                bank = 1;
+                ad->activated = 0;
+                ad->chip_begin = 0x08000;
+                ad->activate(0);
+                printf("Flashing to bank %d...\n", bank);
+              }
+            }
+            else if (elar == 0x0001) {
+              if (bank != 2 && addr <= 0x7fff) {
+                bank = 2;
+                ad->activated = 0;
+                ad->chip_begin = 0x10000;
+                ad->activate(0);
+                printf("Flashing to bank %d...\n", bank);
+              }
+              else if (bank != 3 && addr >= 0x8000) {
+                bank = 3;
+                ad->activated = 0;
+                ad->chip_begin = 0x18000;
+                ad->activate(0);
+                printf("Flashing to bank %d...\n", bank);
+              }
+            }
+
+            if (rom->width > 8)
+              addr/= 2;
+            for (i= 0; i < dnum; i++)
+            {
+              if (rom->width <= 8)
+              {
+                rom->set(addr, rec[i]);
+                addr++;
+                written++;
+              }
+              else if (rom->width <= 16)
+              {
+                if (get_low)
+                {
+                  low= rec[i];
+                  get_low= 0;
+                }
+                else
+                {
+                  high= rec[i];
+                  rom->set(addr, (high*256)+low);
+                  addr++;
+                  written++;
+                  get_low= 1;
+                }
+              }
+            }
+          }
+          // Code banking support.
+          else if (rtyp == 4) {
+            if (rec[1] == 0) {
+              elar = 0x0000;
+              printf("elar = 0x%x\n", elar);
+            }
+            else if (rec[1] == 1) {
+              elar = 0x0001;
+              printf("elar = 0x%x\n", elar);
+            }
+          }
+          else if (rtyp == 5) {
+            ad->activated = 0;
+            ad->chip_begin = 0x08000;
+            ad->activate(0);
+            printf("Mapped bank 1\n");
+          }
+          // End code banking support.
+          else
+            if (rtyp != 1)
+              application->debug("Unknown record type %d(0x%x)\n",
+                  rtyp, rtyp);
+        }
+        else
+          application->debug("Checksum error (%x instead of %x) in "
+              "record %ld.\n", chk, sum, recnum);
+      }
+      else
+        application->debug("Read error in record %ld.\n", recnum);
+    }
+  }
   if (rom->width > 8 &&
       !get_low)
     rom->set(addr, low);
