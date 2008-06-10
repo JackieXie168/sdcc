@@ -11,6 +11,7 @@ class cl_memarb: public cl_hw
   protected:
     class cl_address_space *sfr;
     class cl_address_space *rom;
+    class cl_address_decoder *ad;
     class cl_memory_cell *cell_memctr;
     t_mem old_memctr;
   public:

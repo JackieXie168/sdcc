@@ -15,6 +15,7 @@ cl_memarb::init(void)
 {
   sfr = uc->address_space("sfr");
   rom = uc->address_space("rom");
+  ad = (class cl_address_decoder *) rom->decoders->at(1);
   register_cell(sfr, 0xc7, &cell_memctr, wtd_none);
   old_memctr = cell_memctr->read();
   printf("MEMCTR = 0x%x\n", old_memctr);
@@ -24,26 +25,25 @@ cl_memarb::init(void)
 int
 cl_memarb::tick(int cycles)
 {
-  class cl_address_decoder *ad = (class cl_address_decoder *) rom->decoders->at(1);
   t_mem memctr = cell_memctr->read();
   if (memctr != old_memctr) {
     printf("MEMCTR changed -> 0x%x\n", memctr);
     old_memctr = memctr;
     ad->activated = 0;
     if ((memctr & 0x30) == 0x00) {
-      printf("Mapping bank 0...\n", memctr);
+      printf("Mapping bank 0...\n");
       ad->chip_begin = 0x00000;
     }
     else if ((memctr & 0x30) == 0x10) {
-      printf("Mapping bank 1...\n", memctr);
+      printf("Mapping bank 1...\n");
       ad->chip_begin = 0x08000;
     }
     else if ((memctr & 0x30) == 0x20) {
-      printf("Mapping bank 2...\n", memctr);
+      printf("Mapping bank 2...\n");
       ad->chip_begin = 0x10000;
     }
     else if ((memctr & 0x30) == 0x30) {
-      printf("Mapping bank 3...\n", memctr);
+      printf("Mapping bank 3...\n");
       ad->chip_begin = 0x18000;
     }
     ad->activate(0);
