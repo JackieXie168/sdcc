@@ -1,28 +1,33 @@
 #include <stdio.h>
 #include "ddconfig.h"
-#include "uccc2430f128cl.h"
+#include "uccc2430cl.h"
 #include "regs51.h"
 #include "memarbcl.h"
 // SOC specific hardware elements
 // #include "..."
 
-cl_uccc2430f128::cl_uccc2430f128(int Itype, int Itech, class cl_sim *asim):
+cl_uccc2430::cl_uccc2430(int Itype, int Itech, class cl_sim *asim):
   cl_51core(Itype, Itech, asim)
 {
 }
 
 void
-cl_uccc2430f128::mk_hw_elements(void)
+cl_uccc2430::mk_hw_elements(void)
 {
   class cl_hw *h;
 
   cl_51core::mk_hw_elements();
-  hws->add(h = new cl_memarb(this));
-  h->init();
+
+  switch (type) {
+    case CPU_CC2430F128:
+      hws->add(h = new cl_memarb(this));
+      h->init();
+      break;
+  }
 }
 
 void
-cl_uccc2430f128::make_memories(void)
+cl_uccc2430::make_memories(void)
 {
   class cl_address_space *as;
 
@@ -77,55 +82,60 @@ cl_uccc2430f128::make_memories(void)
   as->decoders->add(ad);
   ad->activate(0);
 
-  chip = new cl_memory_chip("flash_chip", 0x20000, 8);
+  switch (type) {
+    case CPU_CC2430F32:
+      chip = new cl_memory_chip("flash_chip", 0x8000, 8);
+      break;
+    case CPU_CC2430F64:
+      chip = new cl_memory_chip("flash_chip", 0x10000, 8);
+      break;
+    case CPU_CC2430F128:
+      chip = new cl_memory_chip("flash_chip", 0x20000, 8);
+      break;
+  }
   chip->init();
   memchips->add(chip);
-  ad = new cl_address_decoder(as = xram, chip, 0x0000, 0xdeff, 0);
+
+  switch (type) {
+    case CPU_CC2430F32:
+      ad = new cl_address_decoder(as = xram, chip, 0x0000, 0x7fff, 0);
+      break;
+    case CPU_CC2430F64: case CPU_CC2430F128:
+      ad = new cl_address_decoder(as = xram, chip, 0x0000, 0xdeff, 0);
+      break;
+  }
   ad->init();
   as->decoders->add(ad);
   ad->activate(0);
 
-  // Code bank 0:0, always exists.
-  ad = new cl_address_decoder(as = rom, chip, 0x0000, 0x7fff, 0);
-  ad->init();
-  as->decoders->add(ad);
-  ad->activate(0);
-
-  // Code bank 1:1, exsists when MEMCTR.FMAP = 0x01 (reset value).
-  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x08000);
-  ad->init();
-  as->decoders->add(ad);
-  ad->activate(0);
-
-  /*
-  // Code bank 1:0, exists when MEMCTR.FMAP = 0x00.
-  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0);
-  ad->init();
-  as->decoders->add(ad);
-  // Code bank 1:2, exists when MEMCTR.FMAP = 0x10.
-  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x10000);
-  ad->init();
-  as->decoders->add(ad);
-  // Code bank 1:3, exists when MEMCTR.FMAP = 0x11.
-  ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x18000);
-  ad->init();
-  as->decoders->add(ad);
-   */
+  switch (type) {
+    case CPU_CC2430F32:
+      ad = new cl_address_decoder(as = rom, chip, 0x0000, 0x7fff, 0);
+      ad->init();
+      as->decoders->add(ad);
+      ad->activate(0);
+      break;
+    case CPU_CC2430F64:
+      ad = new cl_address_decoder(as = rom, chip, 0x0000, 0xffff, 0);
+      ad->init();
+      as->decoders->add(ad);
+      ad->activate(0);
+      break;
+    case CPU_CC2430F128:
+      // Code bank 0
+      ad = new cl_address_decoder(as = rom, chip, 0x0000, 0x7fff, 0);
+      ad->init();
+      as->decoders->add(ad);
+      ad->activate(0);
+      // Code bank 1
+      ad = new cl_address_decoder(as = rom, chip, 0x8000, 0xffff, 0x08000);
+      ad->init();
+      as->decoders->add(ad);
+      ad->activate(0);
+      break;
+  }
 
   acc = sfr->get_cell(ACC);
   psw = sfr->get_cell(PSW);
-}
-
-void
-cl_uccc2430f128::clear_sfr(void)
-{
-  cl_51core::clear_sfr();
-}
-
-class cl_memory_cell *
-cl_uccc2430f128::get_indirect(uchar addr, int *res)
-{
-  *res = resGO;
-  return (iram->get_cell(addr));
 }
 

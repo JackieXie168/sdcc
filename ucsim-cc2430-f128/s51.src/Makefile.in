@@ -55,7 +55,7 @@ OBJECTS_SHARED	= glob.o sim51.o \
 		  wdt.o pca.o \
 		  uc51.o uc52.o uc51r.o uc89c51r.o uc251.o \
 		  uc390.o uc390hw.o \
-			uccc2430f128.o memarb.o
+			uccc2430.o memarb.o
 OBJECTS_EXE	= s51.o 
 OBJECTS		= $(OBJECTS_SHARED) $(OBJECTS_EXE)
 

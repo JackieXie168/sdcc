@@ -14,6 +14,7 @@ class cl_memarb: public cl_hw
     class cl_address_decoder *ad;
     class cl_memory_cell *cell_memctr;
     t_mem old_memctr;
+    t_mem old_acc;
   public:
     cl_memarb(class cl_uc *auc);
     //virtual ~cl_memarb(void);
