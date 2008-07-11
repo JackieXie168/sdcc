@@ -742,13 +742,14 @@ cl_uc::read_hex_file(const char *nam)
   uchar rec[300]; // data record
   uchar sum ;     // checksum
   uchar chk ;     // check
-  int  i, elar, bank;
+  int  i;
   bool ok, get_low= 1;
   uchar low= 0, high;
+  int elar = 0; // Extended Linear Address Record
   class cl_address_decoder *ad;
-  ad = (class cl_address_decoder *) rom->decoders->at(1);
-  elar = 0x0000;
-  bank = 1;
+  ad = (class cl_address_decoder *) rom->decoders->at(0);
+  class cl_memory *flash;
+  flash = (class cl_memory *) ad->memchip;
 
   if (!rom)
   {
@@ -799,48 +800,21 @@ cl_uc::read_hex_file(const char *nam)
       {
         if (((sum + chk) & 0xff) == 0)
         {
-          if (rtyp == 0)
+          // Code banking support.
+          if (rtyp == 4) {
+            elar = ((rec[0] << 4) + rec[1]) << 16;
+            printf("elar = 0x%x\n", elar);
+          }
+          else if (rtyp == 0)
           {
-            if (elar == 0x0000) {
-              if (bank != 0 && addr <= 0x7fff) {
-                bank = 0;
-                ad->activated = 0;
-                ad->chip_begin = 0x00000;
-                ad->activate(0);
-                printf("Flashing to bank %d...\n", bank);
-              }
-              else if (bank != 1 && addr >= 0x8000) {
-                bank = 1;
-                ad->activated = 0;
-                ad->chip_begin = 0x08000;
-                ad->activate(0);
-                printf("Flashing to bank %d...\n", bank);
-              }
-            }
-            else if (elar == 0x0001) {
-              if (bank != 2 && addr <= 0x7fff) {
-                bank = 2;
-                ad->activated = 0;
-                ad->chip_begin = 0x10000;
-                ad->activate(0);
-                printf("Flashing to bank %d...\n", bank);
-              }
-              else if (bank != 3 && addr >= 0x8000) {
-                bank = 3;
-                ad->activated = 0;
-                ad->chip_begin = 0x18000;
-                ad->activate(0);
-                printf("Flashing to bank %d...\n", bank);
-              }
-            }
-
             if (rom->width > 8)
               addr/= 2;
             for (i= 0; i < dnum; i++)
             {
               if (rom->width <= 8)
               {
-                rom->set(addr, rec[i]);
+                //rom->set(addr, rec[i]);
+                flash->set(elar + addr, rec[i]);
                 addr++;
                 written++;
               }
@@ -862,24 +836,6 @@ cl_uc::read_hex_file(const char *nam)
               }
             }
           }
-          // Code banking support.
-          else if (rtyp == 4) {
-            if (rec[1] == 0) {
-              elar = 0x0000;
-              printf("elar = 0x%x\n", elar);
-            }
-            else if (rec[1] == 1) {
-              elar = 0x0001;
-              printf("elar = 0x%x\n", elar);
-            }
-          }
-          else if (rtyp == 5) {
-            ad->activated = 0;
-            ad->chip_begin = 0x08000;
-            ad->activate(0);
-            printf("Mapped bank 1\n");
-          }
-          // End code banking support.
           else
             if (rtyp != 1)
               application->debug("Unknown record type %d(0x%x)\n",
