@@ -2,6 +2,7 @@
 #include "ddconfig.h"
 #include "uccc2430cl.h"
 #include "regs51.h"
+#include "regcc2430.h"
 #include "memarbcl.h"
 // SOC specific hardware elements
 // #include "..."
