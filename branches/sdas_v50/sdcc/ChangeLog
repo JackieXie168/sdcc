@@ -1,3 +1,7 @@
+2010-01-19 Borut Razem <borut.razem AT siol.net>
+
+	* sdas/*: overwritten by files from ASxxxx V50
+
 2010-01-18 Borut Razem <borut.razem AT siol.net>
 
 	* src/SDCCmain.c, sdas/linksrc/lkmain.c, sdas/linksrc/aslink.h:

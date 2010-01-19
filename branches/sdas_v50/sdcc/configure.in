@@ -769,8 +769,8 @@ fi
 
 if test $OPT_DISABLE_MCS51 = 0; then
   AC_CONFIG_FILES([src/mcs51/Makefile
-                   sdas/as8051/Makefile])
-  test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/mcs51/Makefile
+                   sdas/as8051/Makefile
+                   sdas/as8xcxxx/Makefile])  test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/mcs51/Makefile
                                                        device/lib/small/Makefile
                                                        device/lib/medium/Makefile
                                                        device/lib/large/Makefile])

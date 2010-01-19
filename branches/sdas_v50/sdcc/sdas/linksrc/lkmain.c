@@ -1,32 +1,27 @@
-/* lkmain.c
-
-   Copyright (C) 1989-1998 Alan R. Baldwin
-   721 Berkeley St., Kent, Ohio 44240
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 3, or (at your option) any
-later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+/* lkmain.c */
 
 /*
- * 31-Oct-97 JLH:
- *			 - add jflag and jfp to control NoICE output file generation
- *	3-Nov-97 JLH:
- *			 - use a_type == 0 as "virgin area" flag: set == 1 if -b
+ *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Alan R. Baldwin
+ * 721 Berkeley St.
+ * Kent, Ohio  44240
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include "sdld.h"
 #include "aslink.h"
 
 /*)Module	lkmain.c
@@ -41,12 +36,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  *		FILE *	afile()
  *		VOID	bassav()
  *		VOID	gblsav()
- *		VOID	link_main()
+ *		int	intsiz()
+ *		VOID	link()
  *		VOID	lkexit()
- *		VOID	main()
+ *		int	fndext()
+ *		int	fndidx()
+ *		int	main()
  *		VOID	map()
  *		int	parse()
- *		VOID	setbas()
+ *		VOID	doparse()
  *		VOID	setgbl()
  *		VOID	usage()
  *
@@ -56,154 +54,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  *
  */
 
-/* sdld 8051 & 6808 specific */
-/*JCF:	Creates some of the default areas so they are allocated in the right order.*/
-void Areas51 (void)
-{
-	char * rel[] = {
-		"XH",
-		"H 7 areas 0 global symbols",
-		"A _CODE size 0 flags 0",		/*Each .rel has one, so...*/
-		"A REG_BANK_0 size 0 flags 4",	/*Register banks are overlayable*/
-		"A REG_BANK_1 size 0 flags 4",
-		"A REG_BANK_2 size 0 flags 4",
-		"A REG_BANK_3 size 0 flags 4",
-		"A BSEG size 0 flags 80",		/*BSEG must be just before BITS*/
-		"A BSEG_BYTES size 0 flags 0",	/*Size will be obtained from BSEG in lnkarea()*/
-		""
-	};
-
-	char * rel2[] = {
-		"XH",
-		"H C areas 0 global symbols",
-		"A _CODE size 0 flags 0",		/*Each .rel has one, so...*/
-		"A REG_BANK_0 size 0 flags 4",	/*Register banks are overlayable*/
-		"A REG_BANK_1 size 0 flags 4",
-		"A REG_BANK_2 size 0 flags 4",
-		"A REG_BANK_3 size 0 flags 4",
-		"A BSEG size 0 flags 80",		/*BSEG must be just before BITS*/
-		"A BSEG_BYTES size 0 flags 0",	/*Size will be obtained from BSEG in lnkarea()*/
-		"A BIT_BANK size 0 flags 4",	/*Bit register bank is overlayable*/
-		"A DSEG size 0 flags 0",
-		"A OSEG size 0 flags 4",
-		"A ISEG size 0 flags 0",
-		"A SSEG size 0 flags 4",
-		""
-	};
-	int j;
-	struct sym * sp;
-
-	if (packflag) {
-		for (j = 0; rel2[j][0] != 0; j++) {
-			ip = rel2[j];
-			link_main();
-		}
-	}
-	else {
-		for (j = 0; rel[j][0] != 0; j++) {
-			ip = rel[j];
-			link_main();
-		}
-	}
-
-	/*Set the start address of the default areas:*/
-	for (ap = areap; ap; ap = ap->a_ap) {
-		/**/ if (!strcmp(ap->a_id, "REG_BANK_0")) { ap->a_addr = 0x00; ap->a_type = 1; }
-		else if (!strcmp(ap->a_id, "REG_BANK_1")) { ap->a_addr = 0x08; ap->a_type = 1; }
-		else if (!strcmp(ap->a_id, "REG_BANK_2")) { ap->a_addr = 0x10; ap->a_type = 1; }
-		else if (!strcmp(ap->a_id, "REG_BANK_3")) { ap->a_addr = 0x18; ap->a_type = 1; }
-		else if (!strcmp(ap->a_id, "BSEG_BYTES")) { ap->a_addr = 0x20; ap->a_type = 1; }
-		else if (TARGET_IS_8051 && !strcmp(ap->a_id, "SSEG")) {
-			if (stacksize) ap->a_axp->a_size = stacksize;
-		}
-	}
-
-	if (TARGET_IS_8051) {
-		sp = lkpsym("l_IRAM", 1);
-		sp->s_addr = ((iram_size>0) && (iram_size<=0x100)) ? iram_size : 0x0100;
-		sp->s_axp = NULL;
-		sp->s_type |= S_DEF;
-	}
-}
-/* end sdld 8051 & 6808 specific */
-
-/* sdld gb specific */
-char *default_basep[] = {
-  "_CODE=0x0200",
-  "_DATA=0xC0A0",
-  NULL
-};
-
-char *default_globlp[] = {
-  /* DMA transfer must start at multiples of 0x100 */
-  ".OAM=0xC000",
-  ".STACK=0xE000",
-  ".refresh_OAM=0xFF80",
-
-  ".init=0x0000",
-
-  NULL
-};
-
-int nb_rom_banks;
-int nb_ram_banks;
-int mbc_type;
-char cart_name[16] = "";
-
-patch* patches = NULL;
-
-void
-gb_init()
-{
-	int i;
-
-	nb_rom_banks = 2;
-	nb_ram_banks = 0;
-	mbc_type = 0;
-	symflag = 0;
-
-	for(i = 0; default_basep[i] != NULL; i++) {
-		if(basep == NULL) {
-			basep = (struct base *)new(sizeof(struct base));
-			bsp = basep;
-		} else {
-			bsp->b_base = (struct base *)new(sizeof(struct base));
-			bsp = bsp->b_base;
-		}
-		bsp->b_strp = default_basep[i];
-	}
-	for(i = 0; default_globlp[i] != NULL; i++) {
-		if(globlp == NULL) {
-			globlp = (struct globl *)new(sizeof(struct globl));
-			gsp = globlp;
-		} else {
-			gsp->g_globl = (struct globl *)new(sizeof(struct globl));
-			gsp = gsp->g_globl;
-		}
-		gsp->g_strp = default_globlp[i];
-	}
-}
-
-void gb_init_banks()
-{
-	int i;
-
-	for(i = 1; i < nb_rom_banks; i++) {
-		bsp->b_base = (struct base *)new(sizeof(struct base));
-		bsp = bsp->b_base;
-		bsp->b_strp = (char *)malloc(18);
-		sprintf(bsp->b_strp, "_CODE_%d=0x4000", i);
-	}
-	for(i = 0; i < nb_ram_banks; i++) {
-		bsp->b_base = (struct base *)new(sizeof(struct base));
-		bsp = bsp->b_base;
-		bsp->b_strp = (char *)malloc(18);
-		sprintf(bsp->b_strp, "_DATA_%d=0xA000", i);
-	}
-}
-/* end sdld gb specific */
-
-/*)Function	VOID	main(argc,argv)
+/*)Function	int	main(argc,argv)
  *
  *		int	argc		number of command line arguments + 1
  *		char *	argv[]		array of pointers to the command line
@@ -211,7 +62,7 @@ void gb_init_banks()
  *
  *	The function main() evaluates the command line arguments to
  *	determine if the linker parameters are to input through 'stdin'
- *	or read from a command file.  The functions lk_getline() and parse()
+ *	or read from a command file.  The functiond as_getline() and parse()
  *	are to input and evaluate the linker parameters.  The linking process
  *	proceeds by making the first pass through each .rel file in the order
  *	presented to the linker.  At the end of the first pass the setbase(),
@@ -220,63 +71,66 @@ void gb_init_banks()
  *	and look for undefined symbols.  Following these routines a linker
  *	map file may be produced and the linker output files may be opened.
  *	The second pass through the .rel files will output the linked data
- *	in one of the four supported formats.
+ *	in one of the supported formats.
  *
  *	local variables:
- *		char *	p		pointer to an argument string
  *		int	c		character from argument string
  *		int	i		loop counter
+ *		int	j		loop counter
+ *		int	k		loop counter
  *
  *	global variables:
- *					text line in ib[]
+ *				 	text line in ib[]
  *		lfile	*cfp		The pointer *cfp points to the
- *					current lfile structure
+ *				 	current lfile structure
  *		char	ctype[]		array of character types, one per
- *					ASCII character
- *		lfile	*filep		The pointer *filep points to the
- *					beginning of a linked list of
- *					lfile structures.
+ *				 	ASCII character
+ *		lfile	*filep	 	The pointer *filep points to the
+ *				 	beginning of a linked list of
+ *				 	lfile structures.
  *		head	*hp		Pointer to the current
- *					head structure
+ *				 	head structure
  *		char	ib[NINPUT]	.rel file text line
  *		char	*ip		pointer into the .rel file
  *		lfile	*linkp		pointer to first lfile structure
- *					containing an input .rel file
- *					specification
+ *				 	containing an input .rel file
+ *				 	specification
  *		int	lkerr		error flag
  *		int	mflag		Map output flag
  *		int	oflag		Output file type flag
  *		FILE	*ofp		Output file handle
- *					for word formats
+ *				 	for word formats
  *		FILE	*ofph		Output file handle
- *					for high byte format
+ *				 	for high byte format
  *		FILE	*ofpl		Output file handle
- *					for low byte format
+ *				 	for low byte format
  *		int	pass		linker pass number
  *		int	pflag		print linker command file flag
  *		int	radix		current number conversion radix
  *		FILE	*sfp		The file handle sfp points to the
- *					currently open file
- *		lfile	*startp		asmlnk startup file structure
- *		FILE *	stdin		c_library
+ *				 	currently open file
+ *		lfile	*startp		aslink startup file structure
  *		FILE *	stdout		c_library
  *
  *	functions called:
- *		FILE *	afile()		lkmain.c
+ *		VOID	chkbank()	lkbank.c
  *		int	fclose()	c_library
  *		int	fprintf()	c_library
- *		int	lk_getline()	lklex.c
+ *		int	as_getline()	lklex.c
  *		VOID	library()	lklibr.c
- *		VOID	link_main()	lkmain.c
+ *		VOID	link()		lkmain.c
  *		VOID	lkexit()	lkmain.c
+ *		VOID	lkfopen()	lkbank.c
  *		VOID	lnkarea()	lkarea.c
  *		VOID	map()		lkmain.c
  *		VOID	new()		lksym.c
  *		int	parse()		lkmain.c
  *		VOID	reloc()		lkreloc.c
  *		VOID	search()	lklibr.c
- *		VOID	setbas()	lkmain.c
+ *		VOID	setarea()	lkarea.c
+ *		VOID	setbank()	lkbank.c
  *		VOID	setgbl()	lkmain.c
+ *		char *	sprintf()	c_library
  *		VOID	symdef()	lksym.c
  *		VOID	usage()		lkmain.c
  *
@@ -292,38 +146,54 @@ main(argc, argv)
 int argc;
 char *argv[];
 {
-	register char *p;
-	register int c, i;
+	int c, i, j, k;
 
-	/* sdas specific */
-	/* sdas initialization */
-	sdld_init(argv[0]);
-	/* end sdas specific */
+	if (intsiz() < 4) {
+		fprintf(stderr, "?ASlink-Error-Size of INT32 is not 32 bits or larger.\n\n");
+		exit(ER_FATAL);
+	}
 
-	if (TARGET_IS_GB)
-		gb_init();
-	if (!is_sdld())
-		fprintf(stdout, "\n");
+	fprintf(stdout, "\n");
 
 	startp = (struct lfile *) new (sizeof (struct lfile));
+	startp->f_idp = "";
 
 	pflag = 1;
-	for (i=1; i<argc; ++i) {
-		p = argv[i];
-		if (*p == '-') {
-			while (ctype[c = *(++p)] & LETTER) {
+
+	for(i=1; i<argc; i++) {
+		ip = ib;
+		if(argv[i][0] == '-') {
+			j = i;
+			k = 1;
+			while((c = argv[j][k]) != '\0') {
+				ip = ib;
+				sprintf(ip, "-%c", c);
 				switch(c) {
 
-				case 'c':
-				case 'C':
-					startp->f_type = F_STD;
-					break;
+				/*
+				 * Options with arguments
+				 */
+				case 'b':
+				case 'B':
+
+				case 'g':
+				case 'G':
+
+				case 'k':
+				case 'K':
+
+				case 'l':
+				case 'L':
 
 				case 'f':
 				case 'F':
-					startp->f_type = F_LNK;
+					strcat(ip, " ");
+					strcat(ip, argv[++i]);
 					break;
 
+				/*
+				 * Preprocess these commands
+				 */
 				case 'n':
 				case 'N':
 					pflag = 0;
@@ -334,41 +204,27 @@ char *argv[];
 					pflag = 1;
 					break;
 
+				/*
+				 * Options without arguments
+				 */
 				default:
-					usage();
+					break;
 				}
+				if(pflag)
+					fprintf(stdout, "ASlink >> %s\n", ip);
+				parse();
+				k++;
 			}
 		} else {
-			if (startp->f_type == F_LNK) {
-				startp->f_idp = p;
-			}
+			strcpy(ip, argv[i]);
+			if(pflag)
+				fprintf(stdout, "ASlink >> %s\n", ip);
+			parse();
 		}
-	}
-	if (startp->f_type == 0)
-		usage();
-	if (startp->f_type == F_LNK && startp->f_idp == NULL)
-		usage();
-
-	cfp = NULL;
-	sfp = NULL;
-	filep = startp;
-	while (1) {
-		ip = ib;
-		if (lk_getline() == 0)
-			break;
-		if (pflag && sfp != stdin)
-			fprintf(stdout, "%s\n", ip);
-		if (*ip == '\0' || parse())
-			break;
-	}
-
-	if (sfp) {
-		fclose(sfp);
-		sfp = NULL;
 	}
 
 	if (linkp == NULL)
-		usage();
+		usage(ER_FATAL);
 
 	/*
 	 * If no input file is specified
@@ -379,22 +235,19 @@ char *argv[];
 		lfp->f_flp = (struct lfile *) new (sizeof (struct lfile));
 		lfp = lfp->f_flp;
 		lfp->f_idp = strsto(linkp->f_idp);
+		lfp->f_idx = fndidx(linkp->f_idp);
+		lfp->f_obj = objflg;
 		lfp->f_type = F_REL;
 	}
 
-	if (TARGET_IS_GB)
-		gb_init_banks();
 	syminit();
 
-	/* sdld specific */
-	if (dflag){
-		//dfp = afile("temp", "cdb", 1);
-		SaveLinkedFilePath(linkp->f_idp);	//Must be the first one...
-		dfp = afile(linkp->f_idp, "cdb" ,1);	//JCF: Nov 30, 2002
-		if (dfp == NULL)
-			lkexit(1);
-	}
-	/* end sdld specific */
+#if SDCDB
+	/*
+	 * Open SDCC Debug output file
+	 */
+	SDCDBfopen();
+#endif
 
 	for (pass=0; pass<2; ++pass) {
 		cfp = NULL;
@@ -403,22 +256,9 @@ char *argv[];
 		hp = NULL;
 		radix = 10;
 
-		/* sdld specific */
-		if (TARGET_IS_8051 || TARGET_IS_6808)
-			Areas51(); /*JCF: Create the default 8051 areas in the right order*/
-		/* end sdld specific */
-
-		while (lk_getline()) {
+		while (as_getline()) {
 			ip = ib;
-
-			/* sdld specific */
-			/* pass any "magic comments" to NoICE output */
-			if ((ip[0] == ';') && (ip[1] == '!') && jfp) {
-				fprintf( jfp, "%s\n", &ip[2] );
-			}
-			/* end sdld specific */
-
-			link_main();
+			link();
 		}
 		if (pass == 0) {
 			/*
@@ -428,17 +268,19 @@ char *argv[];
 			/*
 			 * Set area base addresses.
 			 */
-			setbas();
+			setarea();
+			/*
+			 * Set bank base addresses.
+			 */
+			setbank();
 			/*
 			 * Link all area addresses.
 			 */
-			if (!packflag)
-				lnkarea();
-			else {
-				/* sdld 8051 specific */
-				lnkarea2();
-				/* end sdld 8051 specific */
-			}
+			lnkarea();
+			/*
+			 * Check bank size limits.
+			 */
+			chkbank(stderr);
 			/*
 			 * Process global definitions.
 			 */
@@ -447,99 +289,56 @@ char *argv[];
 			 * Check for undefined globals.
 			 */
 			symdef(stderr);
-
-			/* sdld specific */
-			/* Open NoICE output file if requested */
-			if (jflag) {
-				jfp = afile(linkp->f_idp, "noi", 1);
-				if (jfp == NULL) {
-					lkexit(1);
-				}
-			}
-			/* end sdld specific */
-
+#if NOICE
 			/*
-			 * Output Link Map if requested,
-			 * or if NoICE output requested (since NoICE
-			 * file is generated in part by map() processing)
+			 * Open NoICE output file
 			 */
-			if (mflag || jflag)
-				map();
-
-			/* sdld specific */
-			if (sflag) {	/*JCF: memory usage summary output*/
-				if (!packflag) {
-					if (summary(areap)) lkexit(1);
-				}
-				else {
-					/* sdld 8051 specific */
-					if (summary2(areap)) lkexit(1);
-					/* end sdld 8051 specific */
-				}
-			}
-
-			if ((iram_size) && (!packflag))
-				iramcheck();
-			/* end sdld specific */
-
+			NoICEfopen();
+#endif
 			/*
-			 * Open output file
+			 * Output Link Map.
 			 */
-			if (oflag == 1) {
-				ofp = afile(linkp->f_idp, "ihx", 1);
-				if (ofp == NULL) {
-					lkexit(1);
-				}
-				/* sdld specific */
-				/* include NoICE command to load hex file */
-				if (jfp) fprintf( jfp, "LOAD %s.ihx\n", linkp->f_idp );
-				/* end sdld specific */
-			} else
-			if (oflag == 2) {
-				ofp = afile(linkp->f_idp, "s19", 1);
-				if (ofp == NULL) {
-					lkexit(1);
-				}
-				/* sdld specific */
-				/* include NoICE command to load hex file */
-				if (jfp) fprintf( jfp, "LOAD %s.s19\n", linkp->f_idp );
-				/* end sdld specific */
-			} else
-			if (oflag == 3) {
-				/* sdld 6808 specific */
-				if (TARGET_IS_6808) {
-					ofp = afile(linkp->f_idp, "elf", 2);
-					if (ofp == NULL) {
-						lkexit(1);
-					}
-				}
-				/* end sdld 6808 specific */
-				/* sdld gb specific */
-				else if (TARGET_IS_GB) {
-					ofp = afile(linkp->f_idp, "", 2);
-					if (ofp == NULL) {
-						lkexit(1);
-					}
-				}
-				/* end sdld gb specific */
-			}
+			map();
+			/*
+			 * Open output file(s)
+			 */
+			lkfopen();
 		} else {
 			/*
 			 * Link in library files
 			 */
 			library();
+			/*
+			 * Complete Processing
+			 */
 			reloc('E');
 		}
 	}
-	if (TARGET_IS_8051 || TARGET_IS_6808) {
-		//JCF:
-		CreateAOMF51();
-	}
+	lkexit(lkerr ? ER_ERROR : ER_NONE);
+	return(0);
+}
 
-	lkexit(lkerr);
+/*)Function	int	intsiz()
+ *
+ *	The function intsiz() returns the size of INT32
+ *
+ *	local variables:
+ *		none
+ *
+ *	global variables:
+ *		none
+ *
+ *	functions called:
+ *		none
+ *
+ *	side effects:
+ *		none
+ */
 
-	/* Never get here. */
-	return 0;
+int
+intsiz()
+{
+	return(sizeof(a_uint));
 }
 
 /*)Function	VOID	lkexit(i)
@@ -553,8 +352,8 @@ char *argv[];
  *		none
  *
  *	global variables:
+ *		FILE *	jfp		file handle for .noi
  *		FILE *	mfp		file handle for .map
- *		FILE *	ofp		file handle for .ihx/.s19
  *		FILE *	rfp		file hanlde for .rst
  *		FILE *	sfp		file handle for .rel
  *		FILE *	tfp		file handle for .lst
@@ -562,6 +361,7 @@ char *argv[];
  *	functions called:
  *		int	fclose()	c_library
  *		VOID	exit()		c_library
+ *		VOID	lkfclose()	lkbank.c
  *
  *	side effects:
  *		All files closed. Program terminates.
@@ -571,42 +371,49 @@ VOID
 lkexit(i)
 int i;
 {
-	/* sdld 8051 specific */
+	lkfclose();
+#if NOICE
 	if (jfp != NULL) fclose(jfp);
-	if (dfp != NULL) fclose(dfp);
-	/* end sdld 8051 specific */
+#endif
 	if (mfp != NULL) fclose(mfp);
-	if (ofp != NULL) fclose(ofp);
 	if (rfp != NULL) fclose(rfp);
-	if (sfp != NULL) fclose(sfp);
+	if (sfp != NULL) { if (sfp != stdin) fclose(sfp); }
 	if (tfp != NULL) fclose(tfp);
+#if SDCDB
+	if (yfp != NULL) fclose(yfp);
+#endif
 	exit(i);
 }
 
-/*)Function	link_main()
+/*)Function	link()
  *
- *	The function link_main() evaluates the directives for each line of
+ *	The function link() evaluates the directives for each line of
  *	text read from the .rel file(s).  The valid directives processed
  *	are:
- *		X, D, Q, H, M, A, S, T, R, and P.
+ *		X, D, Q, H, G, B, M, A, S, T, R, and P.
  *
  *	local variables:
  *		int	c		first non blank character of a line
  *
  *	global variables:
  *		head	*headp		The pointer to the first
- *					head structure of a linked list
+ *				 	head structure of a linked list
  *		head	*hp		Pointer to the current
- *					head structure
+ *				 	head structure
+ *		sdp	sdp		Base Paged structure
+ *		int	a_bytes		T Line address bytes
+ *		int	hilo		Byte ordering
  *		int	pass		linker pass number
  *		int	radix		current number conversion radix
  *
  *	functions called:
- *		char	endline()	lklex.c
+ *		int	get()		lklex.c
  *		VOID	module()	lkhead.c
  *		VOID	newarea()	lkarea.c
  *		VOID	newhead()	lkhead.c
+ *		VOID	newmode()	lkhead.c
  *		sym *	newsym()	lksym.c
+ *		VOID	NoICEmagic()	lknoice.c
  *		VOID	reloc()		lkreloc.c
  *
  *	side effects:
@@ -615,44 +422,92 @@ int i;
  */
 
 VOID
-link_main()
+link()
 {
-	register char c;
+	int c;
 
-	if ((c=endline()) == 0) { return; }
+	c = getnb();
 	switch (c) {
 
-	/* sdld specific */
-	case 'O': /*For some important sdcc options*/
-		if (is_sdld() && pass == 0) {
-			if (strlen(sdccopt) == 0) {
-				strcpy(sdccopt, &ip[1]);
-				strcpy(sdccopt_module, curr_module);
-			}
-			else {
-				if(strcmp(sdccopt, &ip[1])!=0) {
-					fprintf(stderr,
-					"?ASlink-Warning-Conflicting sdcc options:\n"
-					"   \"%s\" in module \"%s\" and\n"
-					"   \"%s\" in module \"%s\".\n",
-					sdccopt, sdccopt_module, &ip[1], curr_module);
-					lkerr++;
-				}
+	case 'X':
+	case 'D':
+	case 'Q':
+		ASxxxx_VERSION = 3;
+		if (c == 'X') { radix = 16; } else
+		if (c == 'D') { radix = 10; } else
+		if (c == 'Q') { radix = 8;  }
+
+		while ((c = get()) != 0) {
+			switch(c) {
+			case 'H':
+				hilo = 1;
+				break;
+
+			case 'L':
+				hilo = 0;
+				break;
+
+			case '2':
+				a_bytes = 2;
+				break;
+
+			case '3':
+				a_bytes = 3;
+				break;
+
+			case '4':
+				a_bytes = 4;
+				break;
+
+			default:
+				break;
 			}
 		}
-		break;
-	/* end sdld specific */
+#ifdef	LONGINT
+		switch(a_bytes) {
+		default:
+			a_bytes = 2;
+		case 2:
+			a_mask = 0x0000FFFFl;
+			s_mask = 0x00008000l;
+			v_mask = 0x00007FFFl;
+			break;
 
-	case 'X':
-		radix = 16;
-		break;
+		case 3:
+			a_mask = 0x00FFFFFFl;
+			s_mask = 0x00800000l;
+			v_mask = 0x007FFFFFl;
+			break;
 
-	case 'D':
-		radix = 10;
-		break;
+		case 4:
+			a_mask = 0xFFFFFFFFl;
+			s_mask = 0x80000000l;
+			v_mask = 0x7FFFFFFFl;
+			break;
+		}
+#else
+		switch(a_bytes) {
+		default:
+			a_bytes = 2;
+		case 2:
+			a_mask = 0x0000FFFF;
+			s_mask = 0x00008000;
+			v_mask = 0x00007FFF;
+			break;
 
-	case 'Q':
-		radix = 8;
+		case 3:
+			a_mask = 0x00FFFFFF;
+			s_mask = 0x00800000;
+			v_mask = 0x007FFFFF;
+			break;
+
+		case 4:
+			a_mask = 0xFFFFFFFF;
+			s_mask = 0x80000000;
+			v_mask = 0x7FFFFFFF;
+			break;
+		}
+#endif
 		break;
 
 	case 'H':
@@ -670,13 +525,21 @@ link_main()
 		sdp.s_addr = 0;
 		break;
 
+	case 'G':
+		ASxxxx_VERSION = 4;
+		if (pass == 0)
+			newmode();
+		break;
+
+	case 'B':
+		ASxxxx_VERSION = 4;
+		if (pass == 0)
+			newbank();
+		break;
+
 	case 'M':
-		if (pass == 0) {
-			/* sdld specific */
-			strcpy(curr_module, &ip[1]);
-			/* sdld specific */
+		if (pass == 0)
 			module();
-		}
 		break;
 
 	case 'A':
@@ -702,16 +565,15 @@ link_main()
 		reloc(c);
 		break;
 
+#if NOICE
+	case ';':
+		unget(c);
+		NoICEmagic();
+		break;
+#endif
+
 	default:
 		break;
-	}
-	if (c == 'X' || c == 'D' || c == 'Q') {
-		if ((c = get()) == 'H') {
-			hilo = 1;
-		} else
-		if (c == 'L') {
-			hilo = 0;
-		}
 	}
 }
 
@@ -727,34 +589,35 @@ link_main()
  *	(6) list any undefined variables.
  *
  *	local variables:
- *		int	i		counter
+ *		int 	i		counter
  *		head *	hdp		pointer to head structure
  *		lbfile *lbfh		pointer to library file structure
  *
  *	global variables:
  *		area	*ap		Pointer to the current
- *					area structure
+ *				 	area structure
  *		area	*areap		The pointer to the first
- *					area structure of a linked list
+ *				 	area structure of a linked list
  *		base	*basep		The pointer to the first
- *					base structure
+ *				 	base structure
  *		base	*bsp		Pointer to the current
- *					base structure
- *		lfile	*filep		The pointer *filep points to the
- *					beginning of a linked list of
- *					lfile structures.
+ *				 	base structure
+ *		lfile	*filep	 	The pointer *filep points to the
+ *				 	beginning of a linked list of
+ *				 	lfile structures.
  *		globl	*globlp		The pointer to the first
- *					globl structure
+ *				 	globl structure
  *		globl	*gsp		Pointer to the current
- *					globl structure
+ *				 	globl structure
  *		head	*headp		The pointer to the first
- *					head structure of a linked list
+ *				 	head structure of a linked list
  *		lbfile	*lbfhead	The pointer to the first
  *					lbfile structure of a linked list
  *		lfile	*linkp		pointer to first lfile structure
- *					containing an input REL file
- *					specification
+ *				 	containing an input REL file
+ *				 	specification
  *		int	lop		current line number on page
+ *		int	mflag		Map output flag
  *		FILE	*mfp		Map output file handle
  *		int	page		current page number
  *
@@ -773,28 +636,31 @@ link_main()
 VOID
 map()
 {
-	register int i;
-	register struct head *hdp;
-	register struct lbfile *lbfh;
+	int i;
+	struct head *hdp;
+	struct lbfile *lbfh;
+
+	if (mflag == 0) return;
 
 	/*
 	 * Open Map File
 	 */
 	mfp = afile(linkp->f_idp, "map", 1);
 	if (mfp == NULL) {
-		lkexit(1);
+		lkexit(ER_FATAL);
 	}
 
 	/*
-	 * Output Map Area Lists
+	 * Output Map Bank/Area Lists
 	 */
 	page = 0;
-	lop  = NLPP;
-	ap = areap;
-	while (ap) {
-		lstarea(ap);
-		ap = ap->a_ap;
+	for (bp = bankp; bp != NULL; bp = bp->b_bp) {
+		for (ap = areap; ap != NULL; ap = ap->a_ap) {
+			if (ap->a_bp == bp)
+				lstarea(ap, bp);
+		}
 	}
+
 	/*
 	 * List Linked Files
 	 */
@@ -856,6 +722,7 @@ map()
 		}
 	}
 	fprintf(mfp, "\n\f");
+	chkbank(mfp);
 	symdef(mfp);
 }
 
@@ -866,18 +733,22 @@ map()
  *
  *	local variables:
  *		int	c		character value
+ *		int	idx		string index
+ *		int	sv_type		save type of processing
+ *		char	*p;		string pointer
  *		char	fid[]		file id string
  *
  *	global variables:
  *		char	ctype[]		array of character types, one per
- *					ASCII character
+ *				 	ASCII character
  *		lfile	*lfp		pointer to current lfile structure
- *					being processed by parse()
+ *				 	being processed by parse()
  *		lfile	*linkp		pointer to first lfile structure
- *					containing an input REL file
- *					specification
+ *				 	containing an input REL file
+ *				 	specification
  *		int	mflag		Map output flag
  *		int	oflag		Output file type flag
+ *		int	objflg		Linked file/library output object flag
  *		int	pflag		print linker command file flag
  *		FILE *	stderr		c_library
  *		int	uflag		Relocated listing flag
@@ -889,10 +760,12 @@ map()
  *		VOID	addlib()	lklibr.c
  *		VOID	addpath()	lklibr.c
  *		VOID	bassav()	lkmain.c
+ *		VOID	doparse()	lkmain.c
  *		int	fprintf()	c_library
  *		VOID	gblsav()	lkmain.c
  *		VOID	getfid()	lklex.c
- *		char	getnb()		lklex.c
+ *		int	get()		lklex.c
+ *		int	getnb()		lklex.c
  *		VOID	lkexit()	lkmain.c
  *		char *	strsto()	lksym.c
  *		int	strlen()	c_library
@@ -905,22 +778,43 @@ map()
 int
 parse()
 {
-	register int c;
-	char fid[NINPUT];
-
-	/* sdld specific */
-	wflag = 1;
-	zflag = 1;
-	/* end sdld specific */
+	int c, idx;
+	char *p;
+	int sv_type;
+	char fid[FILSPC+FILSPC];
 
 	while ((c = getnb()) != 0) {
-		/* sdld specific */
-		if ( c == ';')
-			return(0);
-		/* end sdld specific */
 		if ( c == '-') {
 			while (ctype[c=get()] & LETTER) {
 				switch(c) {
+
+				case 'c':
+				case 'C':
+					if (startp->f_type != 0)
+						break;
+					startp->f_type = F_STD;
+					doparse();
+					return(0);
+
+				case 'f':
+				case 'F':
+					if (startp->f_type == F_LNK)
+						return(0);
+					unget(getnb());
+					if (*ip == 0)
+						usage(ER_FATAL);
+					sv_type = startp->f_type;
+					startp->f_idp = strsto(ip);
+					startp->f_idx = fndidx(ip);
+					startp->f_type = F_LNK;
+					doparse();
+					if (sv_type == F_STD) {
+						cfp = NULL;
+						sfp = NULL;
+						startp->f_type = F_STD;
+						filep = startp;
+					}
+					return(0);
 
 				case 'i':
 				case 'I':
@@ -934,155 +828,30 @@ parse()
 
 				case 't':
 				case 'T':
-					if (TARGET_IS_6808)
-						oflag = 3;
-					else
-						goto err;
+					oflag = 3;
 					break;
 
-				case 'm':
-				case 'M':
-					++mflag;
-					break;
-
-				case 'y': /*JCF: memory usage summary output*/
-					if (is_sdld()) {
-						if (TARGET_IS_GB) {
-							c = get();
-							if(c == 'O' || c == 'o')
-								nb_rom_banks = expr(0);
-							else if(c == 'A' || c == 'a')
-								nb_ram_banks = expr(0);
-							else if(c == 'T' || c == 't')
-								mbc_type = expr(0);
-							else if(c == 'N' || c == 'n') {
-								int i = 0;
-								if(getnb() != '=' || getnb() != '"') {
-									fprintf(stderr, "Syntax error in -yn=\"name\" flag\n");
-									lkexit(1);
-								}
-								while((c = get()) != '"' && i < 16) {
-									cart_name[i++] = c;
-								}
-								if(i < 16)
-									cart_name[i] = 0;
-								else
-									while(get() != '"')
-										;
-							} else if(c == 'P' || c == 'p') {
-								patch *p = patches;
-
-								patches = (patch *)malloc(sizeof(patch));
-								patches->next = p;
-								patches->addr = expr(0);
-								if(getnb() != '=') {
-									fprintf(stderr, "Syntax error in -YHaddr=val flag\n");
-									lkexit(1);
-								}
-								patches->value = expr(0);
-							} else {
-								fprintf(stderr, "Invalid option\n");
-								lkexit(1);
-							}
-						}
-						else
-							++sflag;
-					}
-					else
-						goto err;
-					break;
-
-				case 'Y':
-					if (TARGET_IS_8051) {
-						unget(getnb());
-						packflag=1;
-					}
-					else if (TARGET_IS_6808) {
-						++sflag;
-					}
-					else
-						goto err;
-					break;
-
-				case 'A':
-					if (TARGET_IS_8051) {
-						unget(getnb());
-						if (ip && *ip)
-						{
-							stacksize=expr(0);
-							if(stacksize>256) stacksize=256;
-							else if(stacksize<0) stacksize=0;
-						}
-						return(0);
-					}
-					else
-						goto err;
-					break;
-
-				case 'a':
-					if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_GB)) {
-						iramsav();
-						return(0);
-					}
-					else
-						goto err;
+				case 'o':
+				case 'O':
+					objflg = 0;
 					break;
 
 				case 'v':
 				case 'V':
-					if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_GB)) {
-						xramsav();
-						return(0);
-					}
-					else
-						goto err;
+					objflg = 1;
 					break;
 
-				case 'w':
-				case 'W':
-					if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_GB)) {
-						codesav();
-						return(0);
-					}
-					else
-						++wflag;
+				case 'm':
+				case 'M':
+					mflag = 1;
 					break;
 
-				case 'Z':
-					if (TARGET_IS_Z80 || TARGET_IS_GB) {
-						oflag = 3;
-						break;
-					}
-					/* fall through */
-				case 'z':
-					if (is_sdld()) {
-						dflag = 1;
-						return(0);
-					}
-					else
-						++zflag;
-					break;
-
+#if NOICE
 				case 'j':
 				case 'J':
-					if (is_sdld()) {
-						if (TARGET_IS_Z80 || TARGET_IS_GB) {
-							++symflag;
-						}
-						else
-							jflag = 1;
-					}
-					else
-						goto err;
+					jflag = 1;
 					break;
-
-				case 'r':
-				case 'R':
-					if (is_sdld() && !(TARGET_IS_Z80 || TARGET_IS_GB))
-						rflag = 1;
-					else
-						goto err;
-					break;
+#endif
 
 				case 'u':
 				case 'U':
@@ -1138,25 +907,34 @@ parse()
 					addlib();
 					return(0);
 
+				case 'w':
+				case 'W':
+					wflag = 1;
+					break;
+
+#if SDCDB
+				case 'y':
+				case 'Y':
+					yflag = 1;
+					break;
+#endif
+
+				case 'z':
+				case 'Z':
+					zflag = 1;
+					break;
+
 				default:
-				err:
 					fprintf(stderr,
 					    "Unkown option -%c ignored\n", c);
 					break;
 				}
 			}
-			/* sdld specific */
-			if ( c == ';')
-				return(0);
-			/* end sdld specific */
 		} else
-		if (ctype[c] & ILL) {
-			fprintf(stderr, "Invalid input\n");
-			lkexit(1);
-		} else {
+		if (ctype[c] != ILL) {
 			if (linkp == NULL) {
 				linkp = (struct lfile *)
-					new (sizeof (struct lfile));
+						new (sizeof (struct lfile));
 				lfp = linkp;
 				lfp->f_type = F_OUT;
 			} else {
@@ -1165,11 +943,98 @@ parse()
 				lfp = lfp->f_flp;
 				lfp->f_type = F_REL;
 			}
-			getfid(fid, c);
-			lfp->f_idp = strsto(fid);
+			/*
+			 * Copy Path from .LNK file
+			 */
+			idx = startp->f_idx;
+			strncpy(fid, startp->f_idp, idx);
+			/*
+			 * Concatenate the file spec
+			 */
+			getfid(fid + idx, c);
+			/*
+			 * If file spec has a path
+			 * 	use it
+			 * else
+			 *	use path of .LNK file
+			 */
+			if (fndidx(fid + idx) != 0) {
+				p = fid + idx;
+			} else {
+				p = fid;
+			}
+			/*
+			 * Save file specification
+			 */
+			lfp->f_idp = strsto(p);
+			lfp->f_idx = fndidx(p);
+			lfp->f_obj = objflg;
+		} else {
+			fprintf(stderr, "Invalid input");
+			lkexit(ER_FATAL);
 		}
 	}
 	return(0);
+}
+
+/*)Function	VOID	doparse()
+ *
+ *	The function doparse() evaluates all interactive
+ *	command line or file input linker directives and
+ *	updates the appropriate variables.
+ *
+ *	local variables:
+ *		none
+ *
+ *	global variables:
+ *		FILE *	stdin		standard input
+ *		FILE *	stdout		standard output
+ *		lfile	*cfp		The pointer *cfp points to the
+ *				 	current lfile structure
+ *		FILE	*sfp		The file handle sfp points to the
+ *				 	currently open file
+ *		char	ib[NINPUT]	.rel file text line
+ *		char	*ip		pointer into the .rel file
+ *		lfile	*filep	 	The pointer *filep points to the
+ *				 	beginning of a linked list of
+ *				 	lfile structures.
+ *		lfile	*startp		asmlnk startup file structure
+ *		int	pflag		print linker command file flag
+ *
+ *	Functions called:
+ *		int	fclose()	c_library
+ *		int	fprintf()	c_library
+ *		VOID	getfid()	lklex.c
+ *		int	as_getline()	lklex.c
+ *		int	parse()		lkmain.c
+ *
+ *	side effects:
+ *		Various linker flags are updated and the linked
+ *		structure lfile may be updated.
+ */
+
+VOID
+doparse()
+{
+	cfp = NULL;
+	sfp = NULL;
+	filep = startp;
+	while (1) {
+		ip = ib;
+		if (as_getline() == 0)
+			break;
+		if (pflag && cfp->f_type != F_STD)
+			fprintf(stdout, "ASlink >> %s\n", ip);
+		if (*ip == 0 || parse())
+			break;
+	}
+	if((sfp != NULL) && (sfp != stdin)) {
+		fclose(sfp);
+	}
+	sfp = NULL;
+	startp->f_idp = "";
+	startp->f_idx = 0;
+	startp->f_type = 0;
 }
 
 /*)Function	VOID	bassav()
@@ -1182,14 +1047,14 @@ parse()
  *
  *	global variables:
  *		base	*basep		The pointer to the first
- *					base structure
+ *				 	base structure
  *		base	*bsp		Pointer to the current
- *					base structure
+ *				 	base structure
  *		char	*ip		pointer into the REL file
- *					text line in ib[]
+ *				 	text line in ib[]
  *
  *	 functions called:
- *		char	getnb()		lklex.c
+ *		int	getnb()		lklex.c
  *		VOID *	new()		lksym.c
  *		int	strlen()	c_library
  *		char *	strcpy()	c_library
@@ -1216,73 +1081,6 @@ bassav()
 	strcpy(bsp->b_strp, ip);
 }
 
-/*)Function	VOID	setbas()
- *
- *	The function setbas() scans the base address lines in the
- *	basep structure, evaluates the arguments, and sets beginning
- *	address of the specified areas.
- *
- *	local variables:
- *		int	v		expression value
- *		char	id[]		base id string
- *
- *	global variables:
- *		area	*ap		Pointer to the current
- *					area structure
- *		area	*areap		The pointer to the first
- *					area structure of a linked list
- *		base	*basep		The pointer to the first
- *					base structure
- *		base	*bsp		Pointer to the current
- *					base structure
- *		char	*ip		pointer into the REL file
- *					text line in ib[]
- *		int	lkerr		error flag
- *
- *	 functions called:
- *		a_uint	expr()		lkeval.c
- *		int	fprintf()	c_library
- *		VOID	getid()		lklex.c
- *		char	getnb()		lklex.c
- *		int	symeq()		lksym.c
- *
- *	side effects:
- *		The base address of an area is set.
- */
-
-VOID
-setbas()
-{
-	register int v;
-	char id[NCPS];
-
-	bsp = basep;
-	while (bsp) {
-		ip = bsp->b_strp;
-		getid(id, -1);
-		if (getnb() == '=') {
-			v = expr(0);
-			for (ap = areap; ap != NULL; ap = ap->a_ap) {
-				if (symeq(id, ap->a_id, 0))
-					break;
-			}
-			if (ap == NULL) {
-				fprintf(stderr,
-				"ASlink-Warning-No definition of area %s\n", id);
-				lkerr++;
-			} else {
-				ap->a_addr = v;
-				/* sdld specific */
-				ap->a_type = 1; /* JLH: value set */
-				/* end sdld specific */
-			}
-		} else {
-			fprintf(stderr, "ASlink-Warning-No '=' in base expression");
-			lkerr++;
-		}
-		bsp = bsp->b_base;
-	}
-}
 
 /*)Function	VOID	gblsav()
  *
@@ -1294,15 +1092,15 @@ setbas()
  *
  *	global variables:
  *		globl	*globlp		The pointer to the first
- *					globl structure
+ *				 	globl structure
  *		globl	*gsp		Pointer to the current
- *					globl structure
+ *				 	globl structure
  *		char	*ip		pointer into the REL file
- *					text line in ib[]
+ *				 	text line in ib[]
  *		int	lkerr		error flag
  *
  *	functions called:
- *		char	getnb()		lklex.c
+ *		int	getnb()		lklex.c
  *		VOID *	new()		lksym.c
  *		int	strlen()	c_library
  *		char *	strcpy()	c_library
@@ -1329,6 +1127,7 @@ gblsav()
 	strcpy(gsp->g_strp, ip);
 }
 
+
 /*)Function	VOID	setgbl()
  *
  *	The function setgbl() scans the global variable lines in the
@@ -1342,11 +1141,11 @@ gblsav()
  *
  *	global variables:
  *		char	*ip		pointer into the REL file
- *					text line in ib[]
+ *				 	text line in ib[]
  *		globl	*globlp		The pointer to the first
- *					globl structure
+ *				 	globl structure
  *		globl	*gsp		Pointer to the current
- *					globl structure
+ *				 	globl structure
  *		FILE *	stderr		c_library
  *		int	lkerr		error flag
  *
@@ -1354,7 +1153,7 @@ gblsav()
  *		a_uint	expr()		lkeval.c
  *		int	fprintf()	c_library
  *		VOID	getid()		lklex.c
- *		char	getnb()		lklex.c
+ *		int	getnb()		lklex.c
  *		sym *	lkpsym()	lksym.c
  *
  *	side effects:
@@ -1364,8 +1163,8 @@ gblsav()
 VOID
 setgbl()
 {
-	register int v;
-	register struct sym *sp;
+	int v;
+	struct sym *sp;
 	char id[NCPS];
 
 	gsp = globlp;
@@ -1373,14 +1172,13 @@ setgbl()
 		ip = gsp->g_strp;
 		getid(id, -1);
 		if (getnb() == '=') {
-			v = expr(0);
+			v = (int) expr(0);
 			sp = lkpsym(id, 0);
 			if (sp == NULL) {
 				fprintf(stderr,
 				"No definition of symbol %s\n", id);
 				lkerr++;
 			} else {
-
 				if (sp->s_type & S_DEF) {
 					fprintf(stderr,
 					"Redefinition of symbol %s\n", id);
@@ -1474,7 +1272,7 @@ int wf;
 	 p2 = ft;
 	 if (*p2 == 0) {
 		if (p1 == NULL) {
-			p2 = LKOBJEXT;
+			p2 = "rel";
 		} else {
 			p2 = strrchr(&fn[c], FSEPX) + 1;
 		}
@@ -1502,7 +1300,7 @@ int wf;
 	case 2:	frmt = "wb";	break;
 #endif
 	}
-	if ((fp = fopen(afspec, frmt)) == NULL && strcmp(ft,"adb") != 0) { /* Do not complaint for optional adb files */
+	if ((fp = fopen(afspec, frmt)) == NULL) {
 		fprintf(stderr, "?ASlink-Error-<cannot %s> : \"%s\"\n", wf?"create":"open", afspec);
 		lkerr++;
 	}
@@ -1589,300 +1387,58 @@ char * str;
 	return((int) (p1 - str));
 }
 
-/* sdld specific */
-/*)Function	VOID	iramsav()
- *
- *	The function iramsav() stores the size of the chip's internal RAM.
- *	This is used after linking to check that variable assignment to this
- *	dataspace didn't overflow into adjoining segments.	Variables in the
- *	DSEG, OSEG, and ISEG are assigned to this dataspace.
- *
- *	local variables:
- *		none
- *
- *	global variables:
- *		char	*ip		pointer into the REL file
- *					text line in ib[]
- *		unsigned int		size of chip's internal
- *		iram_size		RAM segment
- *
- *	 functions called:
- *		char	getnb()		lklex.c
- *		VOID	unget()		lklex.c
- *		a_uint	expr()		lkeval.c
- *
- *	side effects:
- *		The iram_size may be modified.
- */
-
-VOID
-iramsav()
-{
-  unget(getnb());
-  if (ip && *ip)
-	iram_size = expr(0);	/* evaluate size expression */
-  else
-	iram_size = 128;		/* Default is 128 (0x80) bytes */
-  if ((iram_size<=0) || (iram_size>256))
-	iram_size = 128;		/* Default is 128 (0x80) bytes */
-}
-
-/*Similar to iramsav but for xram memory*/
-VOID
-xramsav()
-{
-  unget(getnb());
-  if (ip && *ip)
-	xram_size = expr(0);	/* evaluate size expression */
-  else
-	xram_size = rflag?0x1000000:0x10000;
-}
-
-/*Similar to iramsav but for code memory*/
-VOID
-codesav()
-{
-  unget(getnb());
-  if (ip && *ip)
-	code_size = expr(0);	/* evaluate size expression */
-  else
-	code_size = rflag?0x1000000:0x10000;
-}
-
-
-/*)Function	VOID	iramcheck()
- *
- *	The function iramcheck() is used at the end of linking to check that
- *	the internal RAM area wasn't overflowed by too many variable
- *	assignments.  Variables in the DSEG, ISEG, and OSEG are assigned to
- *	the chip's internal RAM.
- *
- *	local variables:
- *		none
- *
- *	global variables:
- *		unsigned int		size of chip's internal
- *		iram_size		RAM segment
- *		struct area		linked list of memory
- *		*areap			areas
- *
- *	 functions called:
- *
- *	side effects:
- */
-
-VOID
-iramcheck()
-{
-  register unsigned int last_addr;
-  register struct area *ap;
-
-  for (ap = areap; ap; ap=ap->a_ap) {
-	if ((ap->a_size != 0) &&
-		(!strcmp(ap->a_id, "DSEG") ||
-		 !strcmp(ap->a_id, "OSEG") ||
-		 !strcmp(ap->a_id, "ISEG")
-		)
-	   )
-	{
-	  last_addr = ap->a_addr + ap->a_size - 1;
-	  if (last_addr >= iram_size)
-		fprintf(stderr,
-		  "\nWARNING! Segment %s extends past the end\n"
-		  "         of internal RAM.  Check map file.\n",
-		  ap->a_id);
-	}
-  }
-}
-/* end sdld specific */
 
 char *usetxt[] = {
 	"Usage: [-Options] [-Option with arg] file",
 	"Usage: [-Options] [-Option with arg] outfile file1 [file2 ...]",
-	"Startup:",
-	"  -c                           Command line input",
-	"  -f   file[lnk]               File input",
-	"  -p   Prompt and echo of file[lnk] to stdout (default)",
-	"  -n   No echo of file[lnk] to stdout",
-	"Usage: [-Options] file [file ...]",
-	"Libraries:",
-	"  -k	Library path specification, one per -k",
-	"  -l	Library file specification, one per -l",
-	"Relocation:",
-	"  -b   area base address = expression",
-	"  -g   global symbol = expression",
-	"Map format:",
-	"  -m   Map output generated as file[map]",
-	"  -x   Hexidecimal (default)",
-	"  -d   Decimal",
-	"  -q   Octal",
-	"Output:",
-	"  -i   Intel Hex as file[ihx]",
-	"  -s   Motorola S19 as file[s19]",
-	"List:",
-	"  -u	Update listing file(s) with link data as file(s)[.rst]",
-	"End:",
-	"  -e   or null line terminates input",
-	"",
-	0
-};
-
-char *usetxt_8051[] = {
-	"Usage: [-Options] [-Option with arg] file",
-	"Usage: [-Options] [-Option with arg] outfile file1 [file2 ...]",
-	"Startup:",
-	"  -c                           Command line input",
-	"  -f   file[lnk]               File input",
-	"  -p   Prompt and echo of file[lnk] to stdout (default)",
-	"  -n   No echo of file[LNK] to stdout",
-	"Libraries:",
+	"  -p   Echo commands to stdout (default)",
+	"  -n   No echo of commands to stdout",
+	"Alternates to Command Line Input:",
+	"  -c                   ASlink >> prompt input",
+	"  -f   file[.lnk]      Command File input",
+	"Librarys:",
 	"  -k   Library path specification, one per -k",
 	"  -l   Library file specification, one per -l",
 	"Relocation:",
-	"  -b   area base address = expression",
-	"  -g   global symbol = expression",
+	"  -b   area base address=expression",
+	"  -g   global symbol=expression",
 	"Map format:",
-	"  -m   Map output generated as file[map]",
-	"  -w	Wide listing format for map file",
+	"  -m   Map output generated as (out)file[.map]",
+	"  -w   Wide listing format for map file",
 	"  -x   Hexidecimal (default)",
 	"  -d   Decimal",
 	"  -q   Octal",
 	"Output:",
-	"  -i   Intel Hex as file[ihx]",
-	"  -s   Motorola S19 as file[s19]",
-	"  -j   Produce NoICE debug as file[noi]",
-	"  -z   Produce SDCdb debug as file[cdb]",
-/*	"List:", */
+	"  -i   Intel Hex as (out)file[.i--]",
+	"  -s   Motorola S Record as (out)file[.s--]",
+	"  -t   Tandy CoCo Disk BASIC binary as (out)file[.bi-]",
+#if NOICE
+	"  -j   NoICE Debug output as (out)file[.noi]",
+#endif
+#if SDCDB
+	"  -y   SDCDB Debug output as (out)file[.cdb]",
+#endif
+	"  -o   Linked file/library object output enable (default)",
+	"  -v   Linked file/library object output disable",
+	"List:",
 	"  -u   Update listing file(s) with link data as file(s)[.rst]",
-	"Miscellaneous:\n"
-	"  -a   [iram-size] Check for internal RAM overflow",
-	"  -v   [xram-size] Check for external RAM overflow",
-	"  -w   [code-size] Check for code overflow",
-	"  -y   Generate memory usage summary file[mem]",
-	"  -Y   Pack internal ram",
-	"  -A   [stack-size] Allocate space for stack",
 	"Case Sensitivity:",
-	"  -z	Enable Case Sensitivity for Symbols",
+	"  -z   Disable Case Sensitivity for Symbols",
 	"End:",
 	"  -e   or null line terminates input",
 	"",
 	0
 };
 
-char *usetxt_6808[] = {
-	"Usage: [-Options] [-Option with arg] file",
-	"Usage: [-Options] [-Option with arg] outfile file1 [file2 ...]",
-	"Startup:",
-	"  -c                           Command line input",
-	"  -f   file[lnk]               File input",
-	"  -p   Prompt and echo of file[lnk] to stdout (default)",
-	"  -n   No echo of file[lnk] to stdout",
-	"Libraries:",
-	"  -k   Library path specification, one per -k",
-	"  -l   Library file specification, one per -l",
-	"Relocation:",
-	"  -b   area base address = expression",
-	"  -g   global symbol = expression",
-	"Map format:",
-	"  -m   Map output generated as file[map]",
-	"  -x   Hexidecimal (default)",
-	"  -d   Decimal",
-	"  -q   Octal",
-	"Output:",
-	"  -i   Intel Hex as file[ihx]",
-	"  -s   Motorola S19 as file[s19]",
-	"  -t   ELF executable as file[elf]",
-	"  -j   Produce NoICE debug as file[noi]",
-	"  -z   Produce SDCdb debug as file[cdb]",
-/*	"List:", */
-	"  -u   Update listing file(s) with link data as file(s)[.rst]",
-	"Miscellaneous:\n"
-	"  -a   [iram-size] Check for internal RAM overflow",
-	"  -v   [xram-size] Check for external RAM overflow",
-	"  -w   [code-size] Check for code overflow",
-	"  -y   Generate memory usage summary file[mem]",
-	"End:",
-	"  -e   or null line terminates input",
-	"",
-	0
-};
-
-char *usetxt_z80[] = {
-	"Usage: [-Options] [-Option with arg] file",
-	"Usage: [-Options] [-Option with arg] outfile file1 [file2 ...]",
-	"Startup:",
-	"  -c                           Command line input",
-	"  -f   file[lnk]               File input",
-	"  -p   Prompt and echo of file[lnk] to stdout (default)",
-	"  -n   No echo of file[lnk] to stdout",
-	"Libraries:",
-	"  -k   Library path specification, one per -k",
-	"  -l   Library file specification, one per -l",
-	"Relocation:",
-	"  -b   area base address = expression",
-	"  -g   global symbol = expression",
-	"Map format:",
-	"  -m   Map output generated as file[map]",
-	"  -j   no$gmb symbol file generated as file[sym]",
-	"  -x   Hexidecimal (default)",
-	"  -d   Decimal",
-	"  -q   Octal",
-	"Output:",
-	"  -i   Intel Hex as file[ihx]",
-	"  -s   Motorola S19 as file[s19]",
-	"  -z   Produce SDCdb debug as file[cdb]",
-	"List:",
-	"  -u   Update listing file(s) with link data as file(s)[.rst]",
-	"End:",
-	"  -e   or null line terminates input",
-	"",
-	0
-};
-
-char *usetxt_gb[] = {
-	"Usage: [-Options] [-Option with arg] file",
-	"Usage: [-Options] [-Option with arg] outfile file1 [file2 ...]",
-	"Startup:",
-	"  -c                           Command line input",
-	"  -f   file[lnk]               File input",
-	"  -p   Prompt and echo of file[lnk] to stdout (default)",
-	"  -n   No echo of file[lnk] to stdout",
-	"Libraries:",
-	"  -k   Library path specification, one per -k",
-	"  -l   Library file specification, one per -l",
-	"Relocation:",
-	"  -b   area base address = expression",
-	"  -g   global symbol = expression",
-	"  -yo  Number of rom banks (default: 2)",
-	"  -ya  Number of ram banks (default: 0)",
-	"  -yt  MBC type (default: no MBC)",
-	"  -yn  Name of program (default: name of output file)",
-	"  -yp# Patch one byte in the output GB file (# is: addr=byte)",
-	"Map format:",
-	"  -m   Map output generated as file[map]",
-	"  -j   no$gmb symbol file generated as file[sym]",
-	"  -x   Hexidecimal (default)",
-	"  -d   Decimal",
-	"  -q   Octal",
-	"Output:",
-	"  -i   Intel Hex as file[ihx]",
-	"  -s   Motorola S19 as file[s19]",
-	"  -Z   Gameboy image as file[gb]",
-	"List:",
-	"  -u   Update listing file(s) with link data as file(s)[.rst]",
-	"End:",
-	"  -e   or null line terminates input",
-	"",
-	0
-};
-
-/*)Function	VOID	usage()
+/*)Function	VOID	usage(n)
+ *
+ *		int	n		exit code
  *
  *	The function usage() outputs to the stderr device the
  *	linker name and version and a list of valid linker options.
  *
  *	local variables:
- *		char ** dp		pointer to an array of
+ *		char **	dp		pointer to an array of
  *					text string pointers.
  *
  *	global variables:
@@ -1896,42 +1452,15 @@ char *usetxt_gb[] = {
  */
 
 VOID
-usage()
+usage(n)
+int n;
 {
-	register char	**dp;
-	/* sdld specific */
-	enum sdld_target_e target = get_sdld_target();
+	char	**dp;
 
-	fprintf(stderr, "\n%s Linker %s\n\n", is_sdld() ? "sdld" : "ASxxxx", VERSION);
-	for (dp = (target == TARGET_IS_8051) ? usetxt_8051 : ((target == TARGET_IS_6808) ? usetxt_6808 : ((target == TARGET_IS_Z80) ? usetxt_z80 : ((target == TARGET_IS_GB) ? usetxt_gb : usetxt))); *dp; dp++)
+	fprintf(stderr, "\nASxxxx Linker %s", VERSION);
+	fprintf(stderr, "\nCopyright (C) 2009  Alan R. Baldwin");
+	fprintf(stderr, "\nThis program comes with ABSOLUTELY NO WARRANTY.\n\n");
+	for (dp = usetxt; *dp; dp++)
 		fprintf(stderr, "%s\n", *dp);
-	/* end sdld specific */
-	lkexit(1);
-}
-
-/*)Function	VOID	copyfile()
- *
- *		FILE	*dest		destination file
- *		FILE	*src		source file
- *
- *		function will copy source file to destination file
- *
- *
- *	functions called:
- *		int	fgetc()			c_library
- *		int	fputc()			c_library
- *
- *	side effects:
- *		none
- */
-VOID
-copyfile (dest, src)
-FILE *dest;
-FILE *src;
-{
-	int ch;
-
-	while ((ch = fgetc(src)) != EOF) {
-		fputc(ch,dest);
-	}
+	lkexit(n);
 }
