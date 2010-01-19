@@ -1,31 +1,38 @@
-/* asdata.c
-
-   Copyright (C) 1989-1995 Alan R. Baldwin
-   721 Berkeley St., Kent, Ohio 44240
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 3, or (at your option) any
-later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+/* asdata.c */
 
 /*
- * 28-Oct-97 JLH:
- *	     - change s_id from [NCPS] to pointer (comment)
- *  2-Nov-97 JLH:
- *	     - add jflag for debug control
+ *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Alan R. Baldwin
+ * 721 Berkeley St.
+ * Kent, Ohio  44240
+ *
+ *   With enhancements from
+ *
+ *	John L. Hartman	(JLH)
+ *	jhartman@compuserve.com
+ *
+ *	Bill McKinnon (BM)
+ *	w_mckinnon@conknet.com
+ *
+ *	Mike McCarty
+ *	mike dot mccarty at sbcglobal dot net
  */
 
-#include <stdio.h>
-#include <setjmp.h>
-#include <string.h>
 #include "asxxxx.h"
 
 /*)Module	asdata.c
@@ -36,22 +43,146 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 int	aserr;		/*	ASxxxx error counter
 			 */
-jmp_buf jump_env;	/*	compiler dependent structure
+jmp_buf	jump_env;	/*	compiler dependent structure
 			 *	used by setjmp() and longjmp()
 			 */
-int	inpfil;		/*	count of assembler
-			 *	input files specified
+
+/*
+ *	The asmf structure contains the information
+ *	pertaining to an assembler source file/macro.
+ *
+ * The Parameters:
+ *	next	is a pointer to the next object in the linked list
+ *	objtyp	specifies the object type - T_ASM, T_INCL, T_MACRO
+ *	line	is the saved line number of the parent object
+ *	fp	is the source FILE handle
+ *	afp	is the file path length (excludes the files name.ext)
+ *	afn[]	is the assembler/include file path/name.ext
+ *
+ *	struct	asmf
+ *	{
+ *		struct	asmf *next;	Link to Next Object
+ *		int	objtyp;		Object Type
+ *		int	line;		Saved Line Counter
+ *		int	flevel;		saved flevel
+ *		int	tlevel;		saved tlevel
+ *		int	lnlist;		saved lnlist
+ *		FILE *	fp;		FILE Handle
+ *		int	afp;		File Path Length
+ *		char	afn[FILSPC];	File Name
+ *	};
+ */
+struct	asmf	*asmp;	/*	The pointer to the first assembler
+			 *	source file structure of a linked list
 			 */
-int	incfil;		/*	current file handle index
-			 *	for include files
+struct	asmf	*asmc;	/*	Pointer to the current
+			 *	source input structure
 			 */
-int	cfile;		/*	current file handle index
-			 *	of input assembly files
+struct	asmf	*asmi;	/*	Queued pointer to an include file
+			 *	source input structure
 			 */
-int	flevel;		/*	IF-ELSE-ENDIF flag will be non
-			 *	zero for false conditional case
+struct	asmf	*asmq;	/*	Queued pointer to a macro
+			 *	source input structure
+			 */
+
+/*
+ *	The mcrdef structure contains the
+ *	information about a macro definition.
+ *
+ *	When the macro is defined the definition
+ *	arguments are packed into a linked list of
+ *	strings beginning with bgnarg and ending with
+ *	endarg. The number of args is placed in narg.
+ *
+ *	When the macro is invoked the expansion
+ *	argument strings are placed into a linked
+ *	list of strings beginning with bgnxrg and
+ *	ending with endxrg. The number of expansion
+ *	arguments is placed in xarg.
+ *
+ * The Parameters:
+ *	next	is a pointer to the next macro definition structure
+ *	name	is a pointer to the macro name string
+ *	bgnlst	is a pointer to the first text line of the macro
+ *	endlst	is a pointer to the last  text line of the macro
+ *	type	is the macro type - .macro, .irp, .irpc, or .rept
+ *	rptcnt	is the repeat count for the macro
+ *	nest	is the macro nesting counter
+ *	narg	is the number of macro definition arguments
+ *	bgnarg	is a pointer to the first definition argument string
+ *	endarg	is a pointer to the last  definition argument string
+ *	xarg	is the number of expansion arguments at macro invocation
+ *	bgnxrg	is a pointer to the first expansion argument string
+ *	endxrg	is a pointer to the last  expansion argument string
+ *
+ *	struct	mcrdef {
+ *		struct mcrdef *	next;		link to next macro definition
+ *		char *		name;		pointer to the macro name
+ *		struct strlst *	bgnlst;		link to first text line of macro
+ *		struct strlst *	endlst;		link to last text line of macro
+ *		int		type;		macro type
+ *		int		rptcnt;		repeat counter
+ *		int		nest;		macro nesting counter
+ *		int		narg;		number of macro defintion arguments
+ *		struct strlst * bgnarg;		link to first macro defintion argument
+ *		struct strlst * endarg;		link to last macro definition argument
+ *		int		xarg;		number of macro expansion arguments
+ *		struct strlst * bgnxrg;		link to first macro expansion argument
+ *		struct strlst * endxrg;		link to last macro xpansion argument
+ *	};
+ */
+struct mcrdef *	mcrlst;	/*	link to list of defined macros
+			 */
+struct mcrdef *	mcrp;	/*	link to list of defined macros
+			 */
+
+/*
+ *	The memlnk structure is a linked list
+ *	of memory allocations.
+ *
+ *	The function new() uses the memlnk structure
+ *	to create a linked list of allocated memory
+ *	that can be traversed by asfree() to release
+ *	the allocated memory.
+ *
+ *	The function mhunk() uses the memlnk structure
+ *	to create a linked list of allocated memory
+ *	that can be reused.
+ *
+ * The Parameters:
+ *	next	is a pointer to the next memlnk structure.
+ *	ptr	is a pointer to the allocated memory.
+ *
+ *	struct	memlnk {
+ *		struct memlnk *	next;		link to next memlnk
+ *		VOID *		ptr;		pointer to allocated memory
+ *	};
+ */
+struct memlnk * asxmem;	/*	Assembler Memory Allocation Structure
+			 */
+struct memlnk * pmcrmem;/*	First Macro Memory Allocation Structure
+			 */
+struct memlnk * mcrmem;	/*	Macro Memory Allocation Structure
+			 */
+int	asmblk;		/*	new data blocks allocated
+			 */
+int	mcrblk;		/*	new data blocks allocated
+			 */
+int	incfil;		/*	include file nesting counter
+			 */
+int	maxinc;		/*	maximum include file nesting encountered
+			 */
+int	mcrfil;		/*	macro nesting counter
+			 */
+int	maxmcr;		/*	maximum macro nesting encountered
+			 */
+int	flevel;		/*	IF-ELSE-ENDIF flag (false != 0)
+			 */
+int	ftflevel;	/*	IIFF-IIFT-IIFTF FLAG
 			 */
 int	tlevel;		/*	current conditional level
+			 */
+int	lnlist;		/*	LIST-NLIST options
 			 */
 int	ifcnd[MAXIF+1];	/*	array of IF statement condition
 			 *	values (0 = FALSE) indexed by tlevel
@@ -59,18 +190,22 @@ int	ifcnd[MAXIF+1];	/*	array of IF statement condition
 int	iflvl[MAXIF+1];	/*	array of IF-ELSE-ENDIF flevel
 			 *	values indexed by tlevel
 			 */
-
-char	afn[FILSPC];		/*	afile temporary file name
-				 */
-char	srcfn[MAXFIL][FILSPC];	/*	array of source file names
-				 */
-int	srcline[MAXFIL];	/*	source line number
-				 */
-char	incfn[MAXINC][FILSPC];	/*	array of include file names
-				 */
-int	incline[MAXINC];	/*	include line number
-				 */
-
+char	afn[FILSPC];	/*	current input file specification
+			 */
+int	afp;		/*	current input file path length
+			 */
+char	afntmp[FILSPC];	/*	temporary input file specification
+			 */
+int	afptmp;		/*	temporary input file path length
+			 */
+int	srcline;	/*	current source line number
+			 */
+int	asmline;	/*	current assembler file line number
+			 */
+int	incline;	/*	current include file line number
+			 */
+int	mcrline;	/*	current macro line number
+			 */
 int	radix;		/*	current number conversion radix:
 			 *	2 (binary), 8 (octal), 10 (decimal),
 			 *	16 (hexadecimal)
@@ -84,25 +219,51 @@ int	lop;		/*	current line number on page
 			 */
 int	pass;		/*	assembler pass number
 			 */
-int	lflag;		/*	-l, generate listing flag
+int	aflag;		/*	-a, make all symbols global flag
+			 */
+int	bflag;		/*	-b(b), listing modes flag
+			 */
+int	cflag;		/*	-c, disable cycle counts in listing flag
+			 */
+int	fflag;		/*	-f(f), relocations flagged flag
 			 */
 int	gflag;		/*	-g, make undefined symbols global flag
 			 */
-int	aflag;		/*	-a, make all symbols global flag
+int	hflag;		/*	-h, diagnostic help printout flag
+			 */
+int	jflag;		/*	-j, enable NoICE Debug Symbols
+			 */
+int	lflag;		/*	-l, generate listing flag
 			 */
 int	oflag;		/*	-o, generate relocatable output flag
 			 */
+int	pflag;		/*	-p, disable listing pagination
+			 */
 int	sflag;		/*	-s, generate symbol table flag
 			 */
-int	pflag;		/*	-p, enable listing pagination
+int	uflag;		/*	-u, disable .list/.nlist processing flag
 			 */
 int	wflag;		/*	-w, enable wide listing format
 			 */
-int	zflag;		/*	-z, enable symbol case sensitivity
-			 */
 int	xflag;		/*	-x, listing radix flag
 			 */
-int	fflag;		/*	-f(f), relocations flagged flag
+int	yflag;		/*	-y, enable SDCC Debug Symbols
+			 */
+int	zflag;		/*	-z, disable symbol case sensitivity
+			 */
+int	a_bytes;	/*	REL file T Line address length
+			 */
+a_uint	a_mask;		/*	Address Mask
+			 */
+a_uint	s_mask;		/*	Sign Mask
+			 */
+a_uint	v_mask;		/*	Value Mask
+			 */
+int	as_msb;		/*	current MSB byte select
+			 *	0 == low byte
+			 *	1 == high byte
+			 *	2 == third byte
+			 *	3 == fourth byte
 			 */
 a_uint	laddr;		/*	address of current assembler line
 			 *	or value of .if argument
@@ -118,10 +279,15 @@ char	*ep;		/*	pointer into error list
 			 */
 char	eb[NERR];	/*	array of generated error codes
 			 */
-const char *ip;		/*	pointer into the assembler-source
+char	*ip;		/*	pointer into the assembler-source
 			 *	text line in ib[]
 			 */
-const char *ib;		/*	assembler-source text line
+char	ib[NINPUT*2];	/*	assembler-source text line for processing
+			 */
+char	ic[NINPUT*2];	/*	assembler-source text line for listing
+			 */
+char	*il;		/*	pointer to the assembler-source
+			 *	text line to be listed
 			 */
 char	*cp;		/*	pointer to assembler output
 			 *	array cb[]
@@ -134,29 +300,20 @@ int	*cpt;		/*	pointer to assembler relocation type
 int	cbt[NCODE];	/*	array of assembler relocation types
 			 *	describing the data in cb[]
 			 */
+int	opcycles;	/*	opcode execution cycles
+			 */
 char	tb[NTITL];	/*	Title string buffer
 			 */
 char	stb[NSBTL];	/*	Subtitle string buffer
+			 */
+char	erb[NINPUT+4];	/*	Error string buffer
 			 */
 
 char	symtbl[] = { "Symbol Table" };
 char	aretbl[] = { "Area Table" };
 
-char	module[NCPS];	/*	module name string
+char	module[NCPS+2];	/*	module name string
 			 */
-/* sdas specific */
-int	org_cnt;	/*	.org directive counter
-			 */
-int	cflag;		/*	-c, generate sdcdb debug info
-			 */
-int	jflag;		/*	-j, generate debug information flag
-			 */
-char	optsdcc[NINPUT];	/*	sdcc compile options
-			 */
-int	flat24Mode;	/*	non-zero if we are using DS390 24 bit
-			 *	flat mode (via .flat24 directive).
-			 */
-/* end sdas specific */
 
 /*
  *	The mne structure is a linked list of the assembler
@@ -184,7 +341,7 @@ struct	mne	*mnehash[NHASH];
 
 /*
  *	The sym structure is a linked list of symbols defined
- *	in the assembler source files.	The first symbol is "."
+ *	in the assembler source files.  The first symbol is "."
  *	defined here.  The entry 'struct tsym *s_tsym'
  *	links any temporary symbols following this symbol and
  *	preceeding the next normal symbol.  The structure also
@@ -205,14 +362,14 @@ struct	mne	*mnehash[NHASH];
  *		struct	area *s_area;	Area line, 0 if absolute
  *		int	s_ref;		Ref. number
  *		a_uint	s_addr;		Address
- * sdas specific
- *		a_uint	s_org;		Start Address if absolute
- * end sdas specific
  *	};
  */
 struct	sym	sym[] = {
-    {NULL,	NULL,	".",		S_USER, 0,			NULL,	0,	0,	0},
-    {NULL,	NULL,	".__.ABS.",	S_USER, S_ASG|S_GBL|S_END,	NULL,	0,	0,	0}
+    {	NULL,	NULL,	".",	    S_USER, 0,			NULL,0,0 },
+    {	NULL,	NULL,	".__.ABS.", S_USER, S_ASG|S_GBL,	NULL,0,0 },
+    {	NULL,	NULL,	".__.CPU.", S_USER, S_ASG|S_LCL,	NULL,0,0 },
+    {	NULL,	NULL,	".__.H$L.", S_USER, S_ASG|S_LCL,	NULL,0,0 },
+    {	NULL,	NULL,	".__.$$$.", S_USER, S_ASG|S_LCL|S_EOL,	NULL,0,0 }
 };
 
 struct	sym	*symp;		/*	pointer to a symbol structure
@@ -225,32 +382,88 @@ struct	sym *symhash[NHASH];	/*	array of pointers to NHASH
  *	The area structure contains the parameter values for a
  *	specific program or data section.  The area structure
  *	is a linked list of areas.  The initial default area
- *	is "_CODE" defined here, the next area structure
+ *	is "_CODE" defined in ___pst.c, the next area structure
  *	will be linked to this structure through the structure
- *	element 'struct area *a_ep'.  The structure contains the
+ *	element 'struct area *a_ap'.  The structure contains a
+ *	a pointer to an optional bank specification, the
  *	area name, area reference number ("_CODE" is 0) determined
  *	by the order of .area directives, area size determined
  *	from the total code and/or data in an area, area fuzz is
- *	an variable used to track pass to pass changes in the
+ *	a variable used to track pass to pass changes in the
  *	area size caused by variable length instruction formats,
  *	and area flags which specify the area's relocation type.
  *
  *	struct	area
  *	{
  *		struct	area *a_ap;	Area link
+ *		struct	bank *b_bp;	Bank link
  *		char *	a_id;		Area Name
  *		int	a_ref;		Reference number
  *		a_uint	a_size;		Area size
  *		a_uint	a_fuzz;		Area fuzz
  *		int	a_flag;		Area flags
  *	};
+ *
+ *
+ * Pointer to an area structure
  */
-struct	area	area[] = {
-    {NULL,	"_CODE",	0,	0,	0,	A_CON|A_REL}
-};
+struct	area	*areap = &area[1];
 
-struct	area	*areap;	/*	pointer to an area structure
-			 */
+/*
+ *	The bank structure contains the parameter values for a
+ *	specific collection of areas.  The bank structure
+ *	is a linked list of banks.  The initial default bank
+ *	is "_CODE" defined in ___pst.c, the next bank structure
+ *	will be linked to this structure through the structure
+ *	element 'struct bank *b_bp'.  The structure contains the
+ *	bank name, bank reference number ("_CODE" is 0) determined
+ *	by the order of .bank directives, the bank base address
+ *	(default = 0), bank size (default = 0, whole addressing space),
+ *	and output data file suffix (appended as a suffix to the
+ *	output file name) are optional parameters of the .bank
+ *	assembler directive which are passed to the linker as the
+ *	default link parameters, and the bank flags which specify
+ *	what options have been specified.
+ *
+ *	struct	bank
+ *	{
+ *		struct	bank *b_bp;	Bank link
+ *		char *	b_id;		Bank Name
+ *		char *	b_fsfx;		Bank File Suffix
+ *		int	b_ref;		Ref. number
+ *		a_uint	b_base;		Bank base address
+ *		a_uint	b_size;		Bank length
+ *		a_uint	b_map;		Bank mapping
+ *		int	b_flag;		Bank flags
+ *	};
+ *
+ *	Pointer to a bank structure
+ */
+struct	bank	*bankp = &bank[1];
+
+/*
+ *	The def structure is used by the .define assembler
+ *	directive to define a substitution string for a
+ *	single word.  The def structure contains the
+ *	string being defined, the string to substitute
+ *	for the defined string, and a link to the next
+ *	def structure.  The defined string is a sequence
+ *	of characters not containing any white space
+ *	(i.e. NO SPACEs or TABs).  The substitution string
+ *	may contain SPACES and/or TABs.
+ *
+ *	struct def
+ *	{
+ *		struct def	*d_dp;		link to next define
+ *		char		*d_id;		defined string
+ *		char		*d_define;	string to substitute for defined string
+ *		int		d_dflag;	(1) .defined / (0) .undefined
+ *	};
+ *
+ *	Pointer to a def structure
+ */
+struct	def	*defp = NULL;
+
 
 FILE	*lfp;		/*	list output file handle
 			 */
@@ -258,32 +471,36 @@ FILE	*ofp;		/*	relocation output file handle
 			 */
 FILE	*tfp;		/*	symbol table output file handle
 			 */
-FILE	*sfp[MAXFIL];	/*	array of assembler-source file handles
+char	txt[NTXT];	/*	T Line Values
 			 */
-FILE	*ifp[MAXINC];	/*	array of include-file file handles
+char	rel[NREL];	/*	R Line Values
+			 */
+char	*txtp = &txt[0];/*	Pointer to T Line Values
+			 */
+char	*relp = &rel[0];/*	Pointer to R Line Values
 			 */
 
 /*
- *	array of character types, one per
- *	ASCII character
+ *	an array of character types,
+ *	one per ASCII character
  */
-unsigned char	ctype[128] = {
-/*NUL*/ ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,
+char	ctype[128] = {
+/*NUL*/	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,
 /*BS*/	ILL,	SPACE,	ILL,	ILL,	SPACE,	ILL,	ILL,	ILL,
-/*DLE*/ ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,
-/*CAN*/ ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,
-/*SPC*/ SPACE,	ETC,	ETC,	ETC,	LETTER, BINOP,	BINOP,	ETC,
-/*(*/	ETC,	ETC,	BINOP,	BINOP,	ETC,	BINOP,	LETTER, BINOP,
+/*DLE*/	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,
+/*CAN*/	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,	ILL,
+/*SPC*/	SPACE,	ETC,	ETC,	ETC,	LETTER,	BINOP,	BINOP,	ETC,
+/*(*/	ETC,	ETC,	BINOP,	BINOP,	ETC,	BINOP,	LETTER,	BINOP,
 /*0*/	DGT2,	DGT2,	DGT8,	DGT8,	DGT8,	DGT8,	DGT8,	DGT8,
 /*8*/	DGT10,	DGT10,	ETC,	ETC,	BINOP,	ETC,	BINOP,	ETC,
 /*@*/	ETC,	LTR16,	LTR16,	LTR16,	LTR16,	LTR16,	LTR16,	LETTER,
-/*H*/	LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER,
-/*P*/	LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER,
-/*X*/	LETTER, LETTER, LETTER, BINOP,	ETC,	ETC,	BINOP,	LETTER,
+/*H*/	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,
+/*P*/	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,
+/*X*/	LETTER,	LETTER,	LETTER,	ETC,	ETC,	ETC,	BINOP,	LETTER,
 /*`*/	ETC,	LTR16,	LTR16,	LTR16,	LTR16,	LTR16,	LTR16,	LETTER,
-/*h*/	LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER,
-/*p*/	LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER, LETTER,
-/*x*/	LETTER, LETTER, LETTER, ETC,	BINOP,	ETC,	ETC,	ETC
+/*h*/	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,
+/*p*/	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,	LETTER,
+/*x*/	LETTER,	LETTER,	LETTER,	ETC,	BINOP,	ETC,	ETC,	ETC
 };
 
 /*
@@ -308,3 +525,4 @@ char	ccase[128] = {
 /*p*/	'\160',	'\161',	'\162',	'\163',	'\164',	'\165',	'\166',	'\167',
 /*x*/	'\170',	'\171',	'\172',	'\173',	'\174',	'\175',	'\176',	'\177'
 };
+

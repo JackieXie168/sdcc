@@ -1,33 +1,28 @@
-/* lklist.c
-
-   Copyright (C) 1989-1998 Alan R. Baldwin
-   721 Berkeley St., Kent, Ohio 44240
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 3, or (at your option) any
-later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+/* lklist.c */
 
 /*
- * 28-Oct-97 JLH:
- *	     - lstarea: show s_id as string rather than array [NCPS]
- *	     - lstarea: show a_id as string rather than array [NCPS]
- * 31-Oct-97 JLH: add NoICE output file genration in lstarea
- * 02-Apr-98 JLH: add XDATA, DATA, BIT flags to area output
+ *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Alan R. Baldwin
+ * 721 Berkeley St.
+ * Kent, Ohio  44240
+ *
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "sdld.h"
 #include "aslink.h"
 
 /*)Module	lklist.c
@@ -38,166 +33,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  *
  *	lklist.c contains the following functions:
  *		int	dgt()
+ *		VOID	newpag()
+ *		VOID	slew()
  *		VOID	lstarea()
  *		VOID	lkulist()
  *		VOID	lkalist()
  *		VOID	lkglist()
- *		VOID	newpag()
- *		VOID	slew()
  *
  *	lklist.c contains no local variables.
  */
-
-/*)Function	VOID	slew(xp)
- *
- *		area *	xp		pointer to an area structure
- *
- *	The function slew() increments the page line counter.
- *	If the number of lines exceeds the maximum number of
- *	lines per page then a page skip and a page header are
- *	output.
- *
- *	local variables:
- *		a_uint	ai		temporary
- *		a_uint	aj		temporary
- *		int	i		loop counter
- *		char *	ptr		pointer to an id string
- *
- *	global variables:
- *		int	lop		current line number on page
- *		FILE	*mfp		Map output file handle
- *		int	wflag		Wide format listing
- *		int	xflag		Map file radix type flag
- *
- *	functions called:
- *		int	fprintf()	c_library
- *		VOID	newpag()	lklist.c
- *		char	putc()		c_library
- *
- *	side effects:
- *		The page line and the page count may be updated.
- */
-
-VOID
-slew(xp)
-register struct area *xp;
-{
-	register int i;
-	register char *ptr;
-	a_uint	ai, aj;
-
-	if (lop++ >= NLPP) {
-		newpag(mfp);
-		if (xflag == 0) {
-			fprintf(mfp, "Hexadecimal\n\n");
-		} else
-		if (xflag == 1) {
-			fprintf(mfp, "Octal\n\n");
-		} else
-		if (xflag == 2) {
-			fprintf(mfp, "Decimal\n\n");
-		}
-		if (is_sdld() || wflag) {
-			fprintf(mfp,
-				"Area                               ");
-			fprintf(mfp,
-				"Addr   Size   Decimal Bytes (Attributes)\n");
-			fprintf(mfp,
-				"--------------------------------   ");
-			fprintf(mfp,
-				"----   ----   ------- ----- ------------\n");
-		} else {
-			fprintf(mfp,
-				"Area       Addr   Size");
-			fprintf(mfp,
-				"   Decimal Bytes (Attributes)\n");
-			fprintf(mfp,
-				"----       ----   ----");
-			fprintf(mfp,
-				"   ------- ----- ------------\n");
-		}
-		/*
-		 * Output Area Header
-		 */
-		ptr = &xp->a_id[0];
-		if (is_sdld() || wflag) {
-			fprintf(mfp, "%-32.32s", ptr);
-		} else {
-			fprintf(mfp, "%-8.8s", ptr);
-		}
-		ai = xp->a_addr;
-		aj = xp->a_size;
-		if (xflag == 0) {
-			fprintf(mfp, "   %04X   %04X", ai, aj);
-		} else
-		if (xflag == 1) {
-			fprintf(mfp, " %06o %06o", ai, aj);
-		} else
-		if (xflag == 2) {
-			fprintf(mfp, "  %05u  %05u", ai, aj);
-		}
-		fprintf(mfp, " = %6u. bytes ", aj);
-		if (xp->a_flag & A_ABS) {
-			fprintf(mfp, "(ABS");
-		} else {
-			fprintf(mfp, "(REL");
-		}
-		if (xp->a_flag & A_OVR) {
-			fprintf(mfp, ",OVR");
-		} else {
-			fprintf(mfp, ",CON");
-		}
-		if (xp->a_flag & A_PAG) {
-			fprintf(mfp, ",PAG");
-		}
-
-		/* sdld specific */
-		if (xp->a_flag & A_CODE) {
-			fprintf(mfp, ",CODE");
-		}
-		if (xp->a_flag & A_XDATA) {
-			fprintf(mfp, ",XDATA");
-		}
-		if (xp->a_flag & A_BIT) {
-			fprintf(mfp, ",BIT");
-		}
-		/* end sdld specific */
-
-		fprintf(mfp, ")\n");
-
-		if (xp->a_flag & A_PAG) {
-			ai = (ai & 0xFF);
-			aj = (aj > 256);
-			if (ai || aj) { fprintf(mfp, "  "); lop += 1; }
-			if (ai)      { fprintf(mfp, " Boundary"); }
-			if (ai & aj)  { fprintf(mfp, " /"); }
-			if (aj)      { fprintf(mfp, " Length"); }
-			if (ai || aj) { fprintf(mfp, " Error\n"); }
-		}
-
-		if (is_sdld() || wflag) {
-			putc('\n', mfp);
-			fprintf(mfp,
-			"      Value  Global                           ");
-			fprintf(mfp,
-			"   Global Defined In Module\n");
-			fprintf(mfp,
-			"      -----  ---------------------------------");
-			fprintf(mfp,
-			"   ------------------------\n");
-		} else {
-			putc('\n', mfp);
-			for(i=0;i<4;++i)
-				fprintf(mfp, "      Value  Global");
-			putc('\n', mfp);
-			for(i=0;i<4;++i)
-				fprintf(mfp, "      -----  ------");
-			putc('\n', mfp);
-		}
-
-		lop += 9;
-	}
-}
 
 /*)Function	VOID	newpag()
  *
@@ -227,27 +71,246 @@ FILE *fp;
 	lop = 1;
 }
 
-/* sdld specific */
-/* Used for qsort call in lstsym */
-static int _cmpSymByAddr(const void *p1, const void *p2)
+/*)Function	int	dgt(rdx,str,n)
+ *
+ *		int	rdx		radix bit code
+ *		char	*str		pointer to the test string
+ *		int	n		number of characters to check
+ *
+ *	The function dgt() verifies that the string under test
+ *	is of the specified radix.
+ *
+ *	local variables:
+ *		int	i		loop counter
+ *
+ *	global variables:
+ *		ctype[]			array of character types
+ *
+ *	functions called:
+ *		none
+ *
+ *	side effects:
+ *		none
+ */
+
+int
+dgt(rdx, str, n)
+int rdx, n;
+char *str;
 {
-    struct sym **s1 = (struct sym **)(p1);
-    struct sym **s2 = (struct sym **)(p2);
-    int delta = ((*s1)->s_addr + (*s1)->s_axp->a_addr) -
-		((*s2)->s_addr + (*s2)->s_axp->a_addr);
+	int i;
 
-    /* Sort first by address, then by name. */
-    if (delta)
-    {
-	return delta;
-    }
-    return strcmp((*s1)->s_id,(*s2)->s_id);
+	for (i=0; i<n; i++) {
+		if ((ctype[*str++ & 0x007F] & rdx) == 0)
+			return(0);
+	}
+	return(1);
 }
-/* end sdld specific */
 
-/*)Function	VOID	lstarea(xp)
+/*)Function	VOID	slew(xp, yp)
  *
  *		area *	xp		pointer to an area structure
+ *		bank *	yp		pointer to a  bank structure
+ *
+ *	The function slew() increments the page line counter.
+ *	If the number of lines exceeds the maximum number of
+ *	lines per page then a page skip and a page header are
+ *	output.
+ *
+ *	local variables:
+ *		a_uint	ai		temporary
+ *		a_uint	aj		temporary
+ *		int	i		loop counter
+ *		int	n		repeat counter
+ *		char *	frmta		temporary format specifier
+ *		char *	frmtb		temporary format specifier
+ *		char *	ptr		pointer to an id string
+ *
+ *	global variables:
+ *		int	a_bytes		T line address bytes
+ *		int	a_mask		addressing mask
+ *		int	lop		current line number on page
+ *		FILE	*mfp		Map output file handle
+ *		int	wflag		Wide format listing
+ *		int	xflag		Map file radix type flag
+ *
+ *	functions called:
+ *		int	fprintf()	c_library
+ *		VOID	newpag()	lklist.c
+ *		char	putc()		c_library
+ *
+ *	side effects:
+ *		The page line and the page count may be updated.
+ */
+
+VOID
+slew(xp,yp)
+struct area *xp;
+struct bank *yp;
+{
+	int i, n;
+	char *frmta, *frmtb, *ptr;
+ 	a_uint	ai, aj;
+
+       	if (lop++ >= NLPP) {
+		newpag(mfp);
+		switch(xflag) {
+		default:
+		case 0: frmta = "Hexidecimal"; break;
+		case 1: frmta = "Octal"; break;
+		case 2: frmta = "Decimal"; break;
+		}
+		fprintf(mfp, "%s  [%d-Bits]\n", frmta, a_bytes*8);
+		if (*yp->b_id) {
+			fprintf(mfp, "[ Bank == %s ]\n", yp->b_id);
+			lop += 1;
+		}
+		fprintf(mfp, "\n");
+		fprintf(mfp,
+			"Area                       Addr   ");
+		fprintf(mfp,
+			"     Size        Decimal Bytes (Attributes)\n");
+		fprintf(mfp,
+			"--------------------       ----   ");
+		fprintf(mfp,
+			"     ----        ------- ----- ------------\n");
+
+		ai = xp->a_addr & a_mask;
+		aj = ((1 + (A4_WLMSK & xp->a_flag)) * xp->a_size) & a_mask;
+
+		/*
+		 * Output Area Header
+		 */
+		ptr = &xp->a_id[0];
+		fprintf(mfp, "%-19.19s", ptr);
+#ifdef	LONGINT
+		switch(a_bytes) {
+		default:
+		case 2:
+			switch(xflag) {
+			default:
+			case 0: frmta = "        %04lX        %04lX"; break;
+			case 1: frmta = "      %06lo      %06lo"; break;
+			case 2: frmta = "       %05lu       %05lu"; break;
+			}
+			frmtb = " =      %6lu. bytes "; break;
+		case 3:
+			switch(xflag) {
+			default:
+			case 0: frmta = "      %06lX      %06lX"; break;
+			case 1: frmta = "    %08lo    %08lo"; break;
+			case 2: frmta = "    %08lu    %08lu"; break;
+			}
+			frmtb = " =    %8lu. bytes "; break;
+		case 4:
+			switch(xflag) {
+			default:
+			case 0: frmta = "    %08lX    %08lX"; break;
+			case 1: frmta = " %011lo %011lo"; break;
+			case 2: frmta = "  %010lu  %010lu"; break;
+			}
+			frmtb = " =  %10lu. bytes "; break;
+		}
+#else
+		switch(a_bytes) {
+		default:
+		case 2:
+			switch(xflag) {
+			default:
+			case 0: frmta = "        %04X        %04X"; break;
+			case 1: frmta = "      %06o      %06o"; break;
+			case 2: frmta = "       %05u       %05u"; break;
+			}
+			frmtb = " =      %6u. bytes "; break;
+		case 3:
+			switch(xflag) {
+			default:
+			case 0: frmta = "      %06X      %06X"; break;
+			case 1: frmta = "    %08o    %08o"; break;
+			case 2: frmta = "    %08u    %08u"; break;
+			}
+			frmtb = " =    %8u. bytes "; break;
+		case 4:
+			switch(xflag) {
+			default:
+			case 0: frmta = "    %08X    %08X"; break;
+			case 1: frmta = " %011o %011o"; break;
+			case 2: frmta = "  %010u  %010u"; break;
+			}
+			frmtb = " =  %10u. bytes "; break;
+		}
+#endif
+		fprintf(mfp, frmta, ai, aj);
+		fprintf(mfp, frmtb, aj);
+
+		if ((xp->a_flag & A4_ABS) == A4_ABS) {
+			fprintf(mfp, "(ABS");
+		} else {
+			fprintf(mfp, "(REL");
+		}
+		if ((xp->a_flag & A4_OVR) == A4_OVR) {
+			fprintf(mfp, ",OVR");
+		} else {
+			fprintf(mfp, ",CON");
+		}
+		if ((xp->a_flag & A4_PAG) == A4_PAG) {
+			fprintf(mfp, ",PAG");
+		}
+		if ((xp->a_flag & A4_DSEG) == A4_DSEG) {
+			fprintf(mfp, ",DSEG");
+		} else {
+			fprintf(mfp, ",CSEG");
+		}
+		fprintf(mfp, ")\n");
+
+		if ((xp->a_flag & A4_PAG) == A4_PAG) {
+			ai = (ai & 0xFF);
+			aj = (aj > 256);
+			if (ai || aj) { fprintf(mfp, "  "); lop += 1; }
+			if (ai)       { fprintf(mfp, " Boundary"); }
+			if (ai & aj)  { fprintf(mfp, " /"); }
+			if (aj)       { fprintf(mfp, " Length"); }
+			if (ai || aj) { fprintf(mfp, " Error\n"); }
+		}
+
+		if (wflag) {
+			putc('\n', mfp);
+			fprintf(mfp,
+			"         Value  Global                          ");
+			fprintf(mfp,
+			"   Global Defined In Module\n");
+			fprintf(mfp,
+			"         -----  --------------------------------");
+			fprintf(mfp,
+			"   ------------------------\n");
+		} else {
+			switch(a_bytes) {
+			default:
+			case 2:	frmta = "   Value  Global   ";
+				frmtb = "   -----  ------   ";
+				n = 4; break;
+			case 3:
+			case 4:	frmta = "        Value  Global    ";
+				frmtb = "        -----  ------    ";
+				n = 3; break;
+			}
+			putc('\n', mfp);
+			for(i=0;i<n;++i)
+				fprintf(mfp, frmta);
+			putc('\n', mfp);
+			for(i=0;i<n;++i)
+				fprintf(mfp, frmtb);
+			putc('\n', mfp);
+		}
+
+		lop += 9;
+	}
+}
+
+/*)Function	VOID	lstarea(xp, yp)
+ *
+ *		area *	xp		pointer to an area structure
+ *		bank *	yp		pointer to a  bank structure
  *
  *	The function lstarea() creates the linker map output for
  *	the area specified by pointer xp.  The generated output
@@ -258,11 +321,14 @@ static int _cmpSymByAddr(const void *p1, const void *p2)
  *	in the selected radix (one per line in wide format).
  *
  *	local variables:
- *		areax * oxp		pointer to an area extension structure
- *		int	c		character value
+ *		areax *	oxp		pointer to an area extension structure
  *		int	i		loop counter
+ *		int	j		bubble sort update status
+ *		int	n		repeat counter
+ *		char *	frmt		temporary format specifier
  *		char *	ptr		pointer to an id string
  *		int	nmsym		number of symbols in area
+ *		a_uint	a0		temporary
  *		a_uint	ai		temporary
  *		a_uint	aj		temporary
  *		sym *	sp		pointer to a symbol structure
@@ -271,8 +337,8 @@ static int _cmpSymByAddr(const void *p1, const void *p2)
  *
  *	global variables:
  *		FILE	*mfp		Map output file handle
- *		sym *symhash[NHASH]	array of pointers to NHASH
- *					linked symbol lists
+ *		sym *symhash[NHASH] 	array of pointers to NHASH
+ *				      	linked symbol lists
  *		int	wflag		Wide format listing
  *		int	xflag		Map file radix type flag
  *
@@ -288,22 +354,17 @@ static int _cmpSymByAddr(const void *p1, const void *p2)
  */
 
 VOID
-lstarea(xp)
+lstarea(xp, yp)
 struct area *xp;
+struct bank *yp;
 {
-	register struct areax *oxp;
-	register int i;
-	register char *ptr;
+	struct areax *oxp;
+	int i, j, n;
+	char *frmt, *ptr;
 	int nmsym;
-	a_uint aj;
+	a_uint a0, ai, aj;
 	struct sym *sp;
 	struct sym **p;
-	/* sdld spcific */
-	int memPage;
-	/* end sdld spcific */
-
-	lop = NLPP;
-	slew(xp);
 
 	/*
 	 * Find number of symbols in area
@@ -321,6 +382,14 @@ struct area *xp;
 		}
 		oxp = oxp->a_axp;
 	}
+
+	if ((nmsym == 0) && (xp->a_size == 0)) {
+		return;
+	}
+
+	lop = NLPP;
+	slew(xp, yp);
+
 	if (nmsym == 0) {
 		return;
 	}
@@ -329,8 +398,7 @@ struct area *xp;
 	 * Allocate space for an array of pointers to symbols
 	 * and load array.
 	 */
-	if ( (p = (struct sym **) malloc(nmsym*sizeof(struct sym *)))
-		== NULL) {
+	if ( (p = (struct sym **) malloc (nmsym*sizeof(struct sym *))) == NULL) {
 		fprintf(mfp, "Insufficient space to build Map Segment.\n");
 		return;
 	}
@@ -349,163 +417,167 @@ struct area *xp;
 		oxp = oxp->a_axp;
 	}
 
-	/* sdld specific */
-	/* asxxxx use bubble sort */
-	qsort(p, nmsym, sizeof(struct sym *), _cmpSymByAddr);
-	/* end sdld specific */
+	/*
+	 * Bubble Sort of Addresses in Symbol Table Array
+	 */
+	j = 1;
+	while (j) {
+		j = 0;
+		sp = p[0];
+		a0 = sp->s_addr + sp->s_axp->a_addr;
+		for (i=1; i<nmsym; ++i) {
+			sp = p[i];
+			ai = sp->s_addr + sp->s_axp->a_addr;
+			if (a0 > ai) {
+				j = 1;
+				p[i] = p[i-1];
+				p[i-1] = sp;
+			}
+			a0 = ai;
+		}
+	}
+
+	/*
+	 * Repeat Counter
+	 */
+	switch(a_bytes) {
+	default:
+	case 2: n = 4; break;
+	case 3:
+	case 4: n = 3; break;
+	}
 
 	/*
 	 * Symbol Table Output
 	 */
-	/* sdld spcific */
-	memPage = (xp->a_flag & A_CODE) ? 0x0C : ((xp->a_flag & A_XDATA) ? 0x0D : ((xp->a_flag & A_BIT) ? 0x0B : 0x00));
-	/* end sdld spcific */
 	i = 0;
 	while (i < nmsym) {
-		if (is_sdld() || wflag || (i % 4 == 0)) {
-			slew(xp);
-			fprintf(mfp, "     ");
+		if (wflag) {
+			slew(xp, yp);
+			switch(a_bytes) {
+			default:
+			case 2: frmt = "        "; break;
+			case 3:
+			case 4: frmt = "   "; break;
+			}
+			fprintf(mfp, frmt);
+		} else
+		if ((i % n) == 0) {
+			slew(xp, yp);
+			switch(a_bytes) {
+			default:
+			case 2: frmt = "  "; break;
+			case 3:
+			case 4: frmt = "  "; break;
+			}
+			fprintf(mfp, frmt);
 		}
-		if (is_sdld()) {
-			int memPage = (xp->a_flag & A_CODE) ? 0x0C : ((xp->a_flag & A_XDATA) ? 0x0D : ((xp->a_flag & A_BIT) ? 0x0B : 0x00));
-			if (memPage != 0)
-				fprintf(mfp, "  %02X:", memPage);
-			else
-				fprintf(mfp, "     ");
-		}
+
 		sp = p[i];
-		aj = sp->s_addr + sp->s_axp->a_addr;
-		if (xflag == 0) {
-			fprintf(mfp, "  %04X  ", aj);
-		} else
-		if (xflag == 1) {
-			fprintf(mfp, "%06o  ", aj);
-		} else
-		if (xflag == 2) {
-			fprintf(mfp, " %05u  ", aj);
+		aj = (sp->s_addr + sp->s_axp->a_addr) & a_mask;
+#ifdef	LONGINT
+		switch(a_bytes) {
+		default:
+		case 2:
+			switch(xflag) {
+			default:
+			case 0: frmt = "  %04lX  "; break;
+			case 1: frmt = "%06lo  "; break;
+			case 2: frmt = " %05lu  "; break;
+			}
+			break;
+		case 3:
+			switch(xflag) {
+			default:
+			case 0: frmt = "     %06lX  "; break;
+			case 1: frmt = "   %08lo  "; break;
+			case 2: frmt = "   %08lu  "; break;
+			}
+			break;
+		case 4:
+			switch(xflag) {
+			default:
+			case 0: frmt = "   %08lX  "; break;
+			case 1: frmt = "%011lo  "; break;
+			case 2: frmt = " %010lu  "; break;
+			}
+			break;
 		}
+#else
+		switch(a_bytes) {
+		default:
+		case 2:
+			switch(xflag) {
+			default:
+			case 0: frmt = "  %04X  "; break;
+			case 1: frmt = "%06o  "; break;
+			case 2: frmt = " %05u  "; break;
+			}
+			break;
+		case 3:
+			switch(xflag) {
+			default:
+			case 0: frmt = "     %06X  "; break;
+			case 1: frmt = "   %08o  "; break;
+			case 2: frmt = "   %08u  "; break;
+			}
+			break;
+		case 4:
+			switch(xflag) {
+			default:
+			case 0: frmt = "   %08X  "; break;
+			case 1: frmt = "%011o  "; break;
+			case 2: frmt = " %010u  "; break;
+			}
+			break;
+		}
+#endif
+		fprintf(mfp, frmt, aj);
+
 		ptr = &sp->s_id[0];
-		if (is_sdld() || wflag) {
-			fprintf(mfp, "%-33.33s", ptr);
+
+#if NOICE
+		/*
+		 * NoICE output of symbol
+		 */
+		if (jflag) DefineNoICE(ptr, aj, yp);
+#endif
+
+#if SDCDB
+		/*
+		 * SDCDB output of symbol
+		 */
+		if (yflag) DefineSDCDB(ptr, aj);
+#endif
+
+		if (wflag) {
+			fprintf(mfp, "%-32.32s", ptr);
 			i++;
 			ptr = &sp->m_id[0];
 			if(ptr) {
 				fprintf(mfp, "   %-.28s", ptr);
 			}
 		} else {
-			fprintf(mfp, "%-8.8s", ptr);
+			switch(a_bytes) {
+			default:
+			case 2: frmt = "%-8.8s"; break;
+			case 3:
+			case 4: frmt = "%-9.9s"; break;
+			}
+			fprintf(mfp, frmt, ptr);
 			if (++i < nmsym)
-				if (i % 4 != 0)
+				if (i % n != 0)
 					fprintf(mfp, " | ");
 		}
-		if (is_sdld() || wflag || (i % 4 == 0)) {
+		if (wflag || (i % n == 0)) {
 			putc('\n', mfp);
 		}
-
-		/* sdld specific */
-		ptr = &sp->s_id[0];
-		/* if cdb flag set the output cdb Information
-		   and the symbol has a '$' sign in it then */
-		if (dflag && strchr(ptr,'$'))
-			fprintf(dfp,"L:%s:%X\n",ptr,aj);
-
-		/* NoICE output of symbol */
-		if (jflag) DefineNoICE( ptr, aj, memPage );
-		/* end sdld specific */
 	}
-	if (i % 4 != 0) {
+	if (i % n != 0) {
 		putc('\n', mfp);
 	}
 	free(p);
 }
-
-/* sdld specific */
-/* TODO: do we need this? */
-#ifdef SDK
-VOID lstareatosym(struct area *xp)
-{
-	/* Output the current area symbols to a NO$GMB .sym file */
-	register struct areax *oxp;
-	register int i;
-	int nmsym;
-	a_uint a0;
-	struct sym *sp;
-	struct sym **p;
-
-	/*
-	 * Find number of symbols in area
-	 */
-	nmsym = 0;
-	oxp = xp->a_axp;
-	while (oxp) {
-		for (i=0; i<NHASH; i++) {
-			sp = symhash[i];
-			while (sp != NULL) {
-				if (oxp == sp->s_axp)
-					++nmsym;
-				sp = sp->s_sp;
-			}
-		}
-		oxp = oxp->a_axp;
-	}
-
-	/*
-	 * Symbol Table Output
-	 */
-	if (!((xp->a_size==0)&&(xp->a_addr==0)&&(nmsym==0))) {
-		/* Dont worry about any area information */
-		fprintf(mfp, "; Area: %s\n", xp->a_id );
-		if (nmsym>0) {
-			/*
-			 * Allocate space for an array of pointers to symbols
-			 * and load array.
-			 */
-			if ( (p = (struct sym **) malloc(nmsym*sizeof(struct sym *)))
-			    == NULL) {
-				fprintf(mfp, "\nInsufficient space to build Map Segment.\n");
-				return;
-			}
-			nmsym = 0;
-			oxp = xp->a_axp;
-			while (oxp) {
-				for (i=0; i<NHASH; i++) {
-					sp = symhash[i];
-					while (sp != NULL) {
-						if (oxp == sp->s_axp) {
-							p[nmsym++] = sp;
-						}
-						sp = sp->s_sp;
-					}
-				}
-				oxp = oxp->a_axp;
-			}
-
-			qsort(p, nmsym, sizeof(struct sym *), _cmpSymByAddr);
-
-			i = 0;
-			while (i < nmsym) {
-				/* no$gmb requires the symbol names to be less than 32 chars long.  Truncate. */
-				char name[32];
-				strncpy(name, p[i]->s_id, 31);
-				name[31] = '\0';
-				if ((strncmp("l__", name, 3)!=0)&&(strchr(name,' ')==NULL)) {
-					a0=p[i]->s_addr + p[i]->s_axp->a_addr;
-					if (a0>0x7FFFU) {
-						/* Not inside the ROM, so treat as being in bank zero */
-						fprintf(mfp, "00:%04X %s\n", a0, name);
-					}
-					else {
-						fprintf(mfp, "%02X:%04X %s\n", a0/16384, a0, name);
-					}
-				}
-				i++;
-			}
-			free(p);
-		}
-	}
-}
-#endif
-/* end sdld specific */
 
 /*)Function	VOID	lkulist(i)
  *
@@ -515,18 +587,21 @@ VOID lstareatosym(struct area *xp)
  *
  *	The function lkulist() creates a relocated listing (.rst)
  *	output file from the ASxxxx assembler listing (.lst)
- *	files.	The .lst file's program address and code bytes
+ *	files.  The .lst file's program address and code bytes
  *	are changed to reflect the changes made by ASlink as
  *	the .rel files are combined into a single relocated
  *	output file.
  *
  *	local variables:
- *		a_uint	pc		current program counter address
+ *		a_uint	cpc		current program counter address in PC increments
+ *		int	cbytes		bytes so far in T line
  *
  *	global variables:
+ *		int	a_bytes		T Line Address Bytes
  *		int	hilo		byte order
  *		int	gline		get a line from the LST file
  *					to translate for the RST file
+ *		a_uint	pc		current program counter address in bytes
  *		char	rb[]		read listing file text line
  *		FILE	*rfp		The file handle to the current
  *					output RST file
@@ -537,6 +612,7 @@ VOID lstareatosym(struct area *xp)
  *					LST file being scanned
  *
  *	functions called:
+ *		a_uint	adb_xb()	lkrloc.c
  *		int	fclose()	c_library
  *		int	fgets()		c_library
  *		int	fprintf()	c_library
@@ -552,7 +628,8 @@ VOID
 lkulist(i)
 int i;
 {
-	a_uint pc;
+	a_uint cpc;
+	int cbytes;
 
 	/*
 	 * Exit if listing file is not open
@@ -565,27 +642,22 @@ int i;
 	 */
 	if (i) {
 		/*
-		 * Evaluate current code address
-		 */
-		if (hilo == 0) {
-			pc = ((rtval[1] & 0xFF) << 8) + (rtval[0] & 0xFF);
-		} else {
-			pc = ((rtval[0] & 0xFF) << 8) + (rtval[1] & 0xFF);
-		}
-
-		/*
 		 * Line with only address
-		 */
-		if (rtcnt == 2) {
+		 */	
+		if (rtcnt == a_bytes) {
 			lkalist(pc);
 
 		/*
 		 * Line with address and code
 		 */
 		} else {
-			for (i=2; i < rtcnt; i++) {
+			cpc = pc;
+			cbytes = 0;
+			for (i=a_bytes; i < rtcnt; i++) {
 				if (rtflg[i]) {
-					lkglist(pc++, rtval[i] & 0xFF);
+					lkglist(cpc, (int) (rtval[i] & 0xFF), rterr[i]);
+					cbytes += 1;
+					cpc += (cbytes % pcb) ? 0 : 1;
 				}
 			}
 		}
@@ -596,7 +668,7 @@ int i;
 		if (gline == 0)
 			fprintf(rfp, "%s", rb);
 
-		while (fgets(rb, sizeof(rb), tfp) != 0) {
+		while (fgets(rb, sizeof(rb)-2, tfp) != 0) {
 			fprintf(rfp, "%s", rb);
 		}
 		fclose(tfp);
@@ -606,9 +678,9 @@ int i;
 	}
 }
 
-/*)Function	VOID	lkalist(pc)
+/*)Function	VOID	lkalist(cpc)
  *
- *		int	pc		current program counter value
+ *		int	cpc		current program counter value
  *
  *	The function lkalist() performs the following functions:
  *
@@ -623,6 +695,10 @@ int i;
  *
  *	local variables:
  *		int	i		loop counter
+ *		int	m		character count
+ *		int	n		character index
+ *		int	r		character radix
+ *		char *	frmt		temporary format specifier
  *		char	str[]		temporary string
  *
  *	global variables:
@@ -650,12 +726,88 @@ int i;
  *		updated to reflect the program relocation.
  */
 
+/* The Output Formats,  No Cycle Count
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+   |    |               |     | |
+ee XXXX xx xx xx xx xx xx LLLLL *************	HEX(16)
+ee 000000 ooo ooo ooo ooo LLLLL *************	OCTAL(16)
+ee  DDDDD ddd ddd ddd ddd LLLLL *************	DECIMAL(16)
+                     XXXX
+		   OOOOOO
+		    DDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+     |       |                  |     | |
+ee    XXXXXX xx xx xx xx xx xx xx LLLLL *********	HEX(24)
+ee   OO000000 ooo ooo ooo ooo ooo LLLLL *********	OCTAL(24)
+ee   DDDDDDDD ddd ddd ddd ddd ddd LLLLL *********	DECIMAL(24)
+                           XXXXXX
+			 OOOOOOOO
+			 DDDDDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+  |          |                  |     | |
+ee  XXXXXXXX xx xx xx xx xx xx xx LLLLL *********	HEX(32)
+eeOOOOO000000 ooo ooo ooo ooo ooo LLLLL *********	OCTAL(32)
+ee DDDDDDDDDD ddd ddd ddd ddd ddd LLLLL *********	DECIMAL(32)
+                         XXXXXXXX
+		      OOOOOOOOOOO
+		       DDDDDDDDDD
+*/
+
+/* The Output Formats,  With Cycle Count [nn]
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+   |    |               |     | |
+ee XXXX xx xx xx xx xx[nn]LLLLL *************	HEX(16)
+ee 000000 ooo ooo ooo [nn]LLLLL *************	OCTAL(16)
+ee  DDDDD ddd ddd ddd [nn]LLLLL *************	DECIMAL(16)
+                     XXXX
+		   OOOOOO
+		    DDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+     |       |                  |     | |
+ee    XXXXXX xx xx xx xx xx xx[nn]LLLLL *********	HEX(24)
+ee   OO000000 ooo ooo ooo ooo [nn]LLLLL *********	OCTAL(24)
+ee   DDDDDDDD ddd ddd ddd ddd [nn]LLLLL *********	DECIMAL(24)
+                           XXXXXX
+			 OOOOOOOO
+			 DDDDDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+  |          |                  |     | |
+ee  XXXXXXXX xx xx xx xx xx xx[nn]LLLLL *********	HEX(32)
+eeOOOOO000000 ooo ooo ooo ooo [nn]LLLLL *********	OCTAL(32)
+ee DDDDDDDDDD ddd ddd ddd ddd [nn]LLLLL *********	DECIMAL(32)
+                         XXXXXXXX
+		      OOOOOOOOOOO
+		       DDDDDDDDDD
+*/
+
 VOID
-lkalist(pc)
-a_uint pc;
+lkalist(cpc)
+a_uint cpc;
 {
-	char str[8];
-	int i;
+	char str[16];
+	char *frmt;
+	int i, m, n, r;
+
+	/*
+	 * Truncate (int) to N-Bytes
+	 */
+	cpc &= a_mask;
 
 	/*
 	 * Exit if listing file is not open
@@ -681,7 +833,7 @@ loop:	if (tfp == NULL)
 	/*
 	 * Get next LST text line
 	 */
-	if (fgets(rb, sizeof(rb), tfp) == NULL) {
+	if (fgets(rb, sizeof(rb)-2, tfp) == NULL) {
 		fclose(tfp);
 		tfp = NULL;
 		fclose(rfp);
@@ -692,7 +844,13 @@ loop:	if (tfp == NULL)
 	/*
 	 * Must have an ASxxxx Listing line number
 	 */
-	if (!dgt(RAD10, &rb[30], 1)) {
+	 switch(a_bytes) {
+	 default:
+	 case 2: n = 30; break;
+	 case 3:
+	 case 4: n = 38; break;
+	 }
+	 if (!dgt(RAD10, &rb[n], 1)) {
 		fprintf(rfp, "%s", rb);
 		goto loop;
 	}
@@ -700,30 +858,75 @@ loop:	if (tfp == NULL)
 	/*
 	 * Must have an address in the expected radix
 	 */
-	if (radix == 16) {
-		if (!dgt(RAD16, &rb[3], 4)) {
-			fprintf(rfp, "%s", rb);
-			goto loop;
+#ifdef	LONGINT
+	switch(radix) {
+	default:
+	case 16:
+		r = RAD16;
+		switch(a_bytes) {
+		default:
+		case 2: n = 3; m = 4; frmt = "%04lX"; break;
+		case 3: n = 6; m = 6; frmt = "%06lX"; break;
+		case 4: n = 4; m = 8; frmt = "%08lX"; break;
 		}
-		sprintf(str, "%04X", pc);
-		strncpy(&rb[3], str, 4);
-	} else
-	if (radix == 10) {
-		if (!dgt(RAD10, &rb[3], 5)) {
-			fprintf(rfp, "%s", rb);
-			goto loop;
+		break;
+	case 10:
+		r = RAD10;
+		switch(a_bytes) {
+		default:
+		case 2: n = 4; m = 5; frmt = "%05lu"; break;
+		case 3: n = 5; m = 8; frmt = "%08lu"; break;
+		case 4: n = 3; m = 10; frmt = "%010lu"; break;
 		}
-		sprintf(str, "%05d", pc);
-		strncpy(&rb[3], str, 5);
-	} else
-	if (radix == 8) {
-		if (!dgt(RAD8, &rb[3], 6)) {
-			fprintf(rfp, "%s", rb);
-			goto loop;
+		break;
+	case 8:
+		r = RAD8;
+		switch(a_bytes) {
+		default:
+		case 2: n = 3; m = 6; frmt = "%06lo"; break;
+		case 3: n = 5; m = 8; frmt = "%08lo"; break;
+		case 4: n = 2; m = 11; frmt = "%011lo"; break;
 		}
-		sprintf(str, "%06o", pc);
-		strncpy(&rb[3], str, 6);
+		break;
 	}
+#else
+	switch(radix) {
+	default:
+	case 16:
+		r = RAD16;
+		switch(a_bytes) {
+		default:
+		case 2: n = 3; m = 4; frmt = "%04X"; break;
+		case 3: n = 6; m = 6; frmt = "%06X"; break;
+		case 4: n = 4; m = 8; frmt = "%08X"; break;
+		}
+		break;
+	case 10:
+		r = RAD10;
+		switch(a_bytes) {
+		default:
+		case 2: n = 4; m = 5; frmt = "%05u"; break;
+		case 3: n = 5; m = 8; frmt = "%08u"; break;
+		case 4: n = 3; m = 10; frmt = "%010u"; break;
+		}
+		break;
+	case 8:
+		r = RAD8;
+		switch(a_bytes) {
+		default:
+		case 2: n = 3; m = 6; frmt = "%06o"; break;
+		case 3: n = 5; m = 8; frmt = "%08o"; break;
+		case 4: n = 2; m = 11; frmt = "%011o"; break;
+		}
+		break;
+	}
+#endif
+	if (!dgt(r, &rb[n], m)) {
+		fprintf(rfp, "%s", rb);
+		goto loop;
+	}
+	sprintf(str, frmt, cpc);
+	strncpy(&rb[n], str, m);
 
 	/*
 	 * Copy updated LST text line to RST
@@ -732,10 +935,11 @@ loop:	if (tfp == NULL)
 	gcntr = 0;
 }
 
-/*)Function	VOID	lkglist(pc,v)
+/*)Function	VOID	lkglist(cpc,v,err)
  *
- *		int	pc		current program counter value
- *		int	v		value of byte at this address
+ *		int	cpc		current program counter value
+ *		int 	v		value of byte at this address
+ *		int	err		error flag for this value
  *
  *	The function lkglist() performs the following functions:
  *
@@ -749,10 +953,20 @@ loop:	if (tfp == NULL)
  *		substituted and the line may be written to the RST file.
  *
  *	local variables:
+ *		int	a		string index for first byte
  *		int	i		loop counter
+ *		int	m		character count
+ *		int	n		character index
+ *		int	r		character radix
+ *		int	s		spacing
+ *		int	u		repeat counter
+ *		char *	afrmt		temporary format specifier
+ *		char *	frmt		temporary format specifier
  *		char	str[]		temporary string
  *
  *	global variables:
+ *		int	a_bytes		T Line Address Bytes
+ *		a_uint	a_mask		address masking parameter
  *		int	gcntr		data byte counter
  *					set to -1 for a continuation line
  *		int	gline		get a line from the LST file
@@ -777,15 +991,92 @@ loop:	if (tfp == NULL)
  *		with updated data values and code addresses.
  */
 
+/* The Output Formats, No Cycle Count
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+   |    |               |     | |
+ee XXXX xx xx xx xx xx xx LLLLL *************	HEX(16)
+ee 000000 ooo ooo ooo ooo LLLLL *************	OCTAL(16)
+ee  DDDDD ddd ddd ddd ddd LLLLL *************	DECIMAL(16)
+                     XXXX
+		   OOOOOO
+		    DDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+     |       |                  |     | |
+ee    XXXXXX xx xx xx xx xx xx xx LLLLL *********	HEX(24)
+ee   OO000000 ooo ooo ooo ooo ooo LLLLL *********	OCTAL(24)
+ee   DDDDDDDD ddd ddd ddd ddd ddd LLLLL *********	DECIMAL(24)
+                           XXXXXX
+			 OOOOOOOO
+			 DDDDDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+  |          |                  |     | |
+ee  XXXXXXXX xx xx xx xx xx xx xx LLLLL *********	HEX(32)
+eeOOOOO000000 ooo ooo ooo ooo ooo LLLLL *********	OCTAL(32)
+ee DDDDDDDDDD ddd ddd ddd ddd ddd LLLLL *********	DECIMAL(32)
+                         XXXXXXXX
+		      OOOOOOOOOOO
+		       DDDDDDDDDD
+*/
+
+/* The Output Formats,  With Cycle Count [nn]
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+   |    |               |     | |
+ee XXXX xx xx xx xx xx[nn]LLLLL *************	HEX(16)
+ee 000000 ooo ooo ooo [nn]LLLLL *************	OCTAL(16)
+ee  DDDDD ddd ddd ddd [nn]LLLLL *************	DECIMAL(16)
+                     XXXX
+		   OOOOOO
+		    DDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+     |       |                  |     | |
+ee    XXXXXX xx xx xx xx xx xx[nn]LLLLL *********	HEX(24)
+ee   OO000000 ooo ooo ooo ooo [nn]LLLLL *********	OCTAL(24)
+ee   DDDDDDDD ddd ddd ddd ddd [nn]LLLLL *********	DECIMAL(24)
+                           XXXXXX
+			 OOOOOOOO
+			 DDDDDDDD
+
+| Tabs- |       |       |       |       |       |
+          11111111112222222222333333333344444-----
+012345678901234567890123456789012345678901234-----
+  |          |                  |     | |
+ee  XXXXXXXX xx xx xx xx xx xx[nn]LLLLL *********	HEX(32)
+eeOOOOO000000 ooo ooo ooo ooo [nn]LLLLL *********	OCTAL(32)
+ee DDDDDDDDDD ddd ddd ddd ddd [nn]LLLLL *********	DECIMAL(32)
+                         XXXXXXXX
+		      OOOOOOOOOOO
+		       DDDDDDDDDD
+*/
+
 VOID
-lkglist(pc, v)
-a_uint pc;
+lkglist(cpc,v,err)
+a_uint cpc;
 int v;
+int err;
 {
-	char str[8];
-	int i;
+	char str[16];
+	char *afrmt, *frmt;
+	int a, i, n, m, r, s, u;
 
 	/*
+	 * Truncate (int) to N-Bytes
+	 */
+	 cpc &= a_mask;
+
+ 	/*
 	 * Exit if listing file is not open
 	 */
 loop:	if (tfp == NULL)
@@ -805,7 +1096,7 @@ loop:	if (tfp == NULL)
 		/*
 		 * Get next LST text line
 		 */
-		if (fgets(rb, sizeof(rb), tfp) == NULL) {
+		if (fgets(rb, sizeof(rb)-2, tfp) == NULL) {
 			fclose(tfp);
 			tfp = NULL;
 			fclose(rfp);
@@ -817,7 +1108,13 @@ loop:	if (tfp == NULL)
 		 * Check for a listing line number if required
 		 */
 		if (gcntr != -1) {
-			if (!dgt(RAD10, &rb[30], 1)) {
+			 switch(a_bytes) {
+			 default:
+			 case 2: n = 30; break;
+			 case 3:
+			 case 4: n = 38; break;
+			 }
+			if (!dgt(RAD10, &rb[n], 1)) {
 				fprintf(rfp, "%s", rb);
 				goto loop;
 			}
@@ -829,176 +1126,133 @@ loop:	if (tfp == NULL)
 	/*
 	 * Hex Listing
 	 */
-	if (radix == 16) {
-		/*
-		 * Data Byte Pointer
-		 */
-		if (gcntr == -1) {
-			rp = &rb[8];
-		} else {
-			rp = &rb[8 + (3 * gcntr)];
+#ifdef	LONGINT
+	 switch(radix) {
+	 default:
+	 case 16:
+		r = RAD16;
+		switch(a_bytes) {
+		default:
+		case 2:	a = 8; s = 3; n = 3; m = 4; u = 6; afrmt = "%04lX"; break;
+		case 3: a = 13; s = 3; n = 6; m = 6; u = 7; afrmt = "%06lX"; break;
+		case 4: a = 13; s = 3; n = 4; m = 8; u = 7; afrmt = "%08lX"; break;
 		}
-		/*
-		 * Number must be of proper radix
-		 */
-		if (!dgt(RAD16, rp, 2)) {
-			fprintf(rfp, "%s", rb);
-			gline = 1;
-			goto loop;
+		frmt = " %02X"; break;
+	case 10:
+		r = RAD10;
+		switch(a_bytes) {
+		default:
+		case 2:	a = 10; s = 4; n = 4; m = 5; u = 4; afrmt = "%05lu"; break;
+		case 3: a = 14; s = 4; n = 5; m = 8; u = 5; afrmt = "%08lu"; break;
+		case 4: a = 14; s = 4; n = 3; m = 10; u = 5; afrmt = "%010lu"; break;
 		}
-		/*
-		 * Output new data value, overwrite relocation codes
-		 */
-		sprintf(str, " %02X", v);
-		strncpy(rp-1, str, 3);
-		if (gcntr == -1) {
-			gcntr = 0;
+		frmt = " %03u"; break;
+	case 8:
+		r = RAD8;
+		switch(a_bytes) {
+		default:
+		case 2:	a = 10; s = 4; n = 3; m = 6; u = 4; afrmt = "%06lo"; break;
+		case 3: a = 14; s = 4; n = 5; m = 8; u = 5; afrmt = "%08lo"; break;
+		case 4: a = 14; s = 4; n = 2; m = 11; u = 5; afrmt = "%011lo"; break;
 		}
-		/*
-		 * Output relocated code address
-		 */
-		if (gcntr == 0) {
-			if (dgt(RAD16, &rb[3], 4)) {
-				sprintf(str, "%04X", pc);
-				strncpy(&rb[3], str, 4);
-			}
+		frmt = " %03o"; break;
+	}
+#else
+	 switch(radix) {
+	 default:
+	 case 16:
+		r = RAD16;
+		switch(a_bytes) {
+		default:
+		case 2:	a = 8; s = 3; n = 3; m = 4; u = 6; afrmt = "%04X"; break;
+		case 3: a = 13; s = 3; n = 6; m = 6; u = 7; afrmt = "%06X"; break;
+		case 4: a = 13; s = 3; n = 4; m = 8; u = 7; afrmt = "%08X"; break;
 		}
-		/*
-		 * Output text line when updates finished
-		 */
-		if (++gcntr == 6) {
-			fprintf(rfp, "%s", rb);
-			gline = 1;
-			gcntr = -1;
+		frmt = " %02X"; break;
+	case 10:
+		r = RAD10;
+		switch(a_bytes) {
+		default:
+		case 2:	a = 10; s = 4; n = 4; m = 5; u = 4; afrmt = "%05u"; break;
+		case 3: a = 14; s = 4; n = 5; m = 8; u = 5; afrmt = "%08u"; break;
+		case 4: a = 14; s = 4; n = 3; m = 10; u = 5; afrmt = "%010u"; break;
 		}
-	} else
+		frmt = " %03u"; break;
+	case 8:
+		r = RAD8;
+		switch(a_bytes) {
+		default:
+		case 2:	a = 10; s = 4; n = 3; m = 6; u = 4; afrmt = "%06o"; break;
+		case 3: a = 14; s = 4; n = 5; m = 8; u = 5; afrmt = "%08o"; break;
+		case 4: a = 14; s = 4; n = 2; m = 11; u = 5; afrmt = "%011o"; break;
+		}
+		frmt = " %03o"; break;
+	}
+#endif
 	/*
-	 * Decimal Listing
+	 * Data Byte Pointer
 	 */
-	if (radix == 10) {
-		/*
-		 * Data Byte Pointer
-		 */
-		if (gcntr == -1) {
-			rp = &rb[9];
-		} else {
-			rp = &rb[9 + (3 * gcntr)];
-		}
-		/*
-		 * Number must be of proper radix
-		 */
-		if (!dgt(RAD10, rp, 3)) {
-			fprintf(rfp, "%s", rb);
-			gline = 1;
-			goto loop;
-		}
-		/*
-		 * Output new data value, overwrite relocation codes
-		 */
-		sprintf(str, " %03d", v);
-		strncpy(rp-1, str, 4);
-		if (gcntr == -1) {
-			gcntr = 0;
-		}
-		/*
-		 * Output relocated code address
-		 */
-		if (gcntr == 0) {
-			if (dgt(RAD10, &rb[3], 5)) {
-				sprintf(str, "%05d", pc);
-				strncpy(&rb[3], str, 5);
-			}
-		}
-		/*
-		 * Output text line when updates finished
-		 */
-		if (++gcntr == 4) {
-			fprintf(rfp, "%s", rb);
-			gline = 1;
-			gcntr = -1;
-		}
-	} else
+	if (gcntr == -1) {
+		rp = &rb[a];
+	} else {
+		rp = &rb[a + (s * gcntr)];
+	}
 	/*
-	 * Octal Listing
+	 * Number must be of proper radix
 	 */
-	if (radix == 8) {
-		/*
-		 * Data Byte Pointer
-		 */
-		if (gcntr == -1) {
-			rp = &rb[10];
-		} else {
-			rp = &rb[10 + (3 * gcntr)];
+	if (!dgt(r, rp, s-1)) {
+		fprintf(rfp, "%s", rb);
+		gline = 1;
+		goto loop;
+	}
+	/*
+	 * Output new data value, overwrite relocation codes
+	 */
+	sprintf(str, frmt, v);
+	strncpy(rp-1, str, s);
+	if (gcntr == -1) {
+		gcntr = 0;
+	}
+	/*
+	 * Output relocated code address
+	 */
+	if (gcntr == 0) {
+		if (dgt(r, &rb[n], m)) {
+			sprintf(str, afrmt, cpc);
+			strncpy(&rb[n], str, m);
 		}
-		/*
-		 * Number must be of proper radix
-		 */
-		if (!dgt(RAD8, rp, 3)) {
-			fprintf(rfp, "%s", rb);
-			gline = 1;
-			goto loop;
+	}
+	/*
+	 * Output an error line if required
+	 */
+	if (err) {
+		switch(ASxxxx_VERSION) {
+		case 3:
+			fprintf(rfp, "?ASlink-Warning-%s\n", errmsg3[err]);
+			break;
+
+		case 4:
+			fprintf(rfp, "?ASlink-Warning-%s\n", errmsg4[err]);
+			break;
+
+		default:
+			break;
 		}
-		/*
-		 * Output new data value, overwrite relocation codes
-		 */
-		sprintf(str, " %03o", v);
-		strncpy(rp-1, str, 4);
-		if (gcntr == -1) {
-			gcntr = 0;
-		}
-		/*
-		 * Output relocated code address
-		 */
-		if (gcntr == 0) {
-			if (dgt(RAD8, &rb[3], 6)) {
-				sprintf(str, "%06o", pc);
-				strncpy(&rb[3], str, 6);
-			}
-		}
-		/*
-		 * Output text line when updates finished
-		 */
-		if (++gcntr == 4) {
-			fprintf(rfp, "%s", rb);
-			gline = 1;
-			gcntr = -1;
-		}
+	}
+	/*
+	 * Fix 'u' if [nn], cycles, is specified
+	 */
+	 if (rb[a + (s*u) - 1] == CYCNT_END) {
+	 	u -= 1;
+	}
+	/*
+	 * Output text line when updates finished
+	 */
+	if (++gcntr == u) {
+		fprintf(rfp, "%s", rb);
+		gline = 1;
+		gcntr = -1;
 	}
 }
 
-/*)Function	int	dgt(rdx,str,n)
- *
- *		int	rdx		radix bit code
- *		char	*str		pointer to the test string
- *		int	n		number of characters to check
- *
- *	The function dgt() verifies that the string under test
- *	is of the specified radix.
- *
- *	local variables:
- *		int	i		loop counter
- *
- *	global variables:
- *		ctype[]			array of character types
- *
- *	functions called:
- *		none
- *
- *	side effects:
- *		none
- */
 
-int
-dgt(rdx, str, n)
-int rdx;
-char *str;
-int n;
-{
-	int i;
-
-	for (i=0; i<n; i++) {
-		if ((ctype[(unsigned char)(*str++)] & rdx) == 0)
-			return(0);
-	}
-	return(1);
-}

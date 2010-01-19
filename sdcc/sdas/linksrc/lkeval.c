@@ -1,23 +1,27 @@
-/* lkeval.c
+/* lkeval.c */
 
-   Copyright (C) 1989-1998 Alan R. Baldwin
-   721 Berkeley St., Kent, Ohio 44240
+/*
+ *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Alan R. Baldwin
+ * 721 Berkeley St.
+ * Kent, Ohio  44240
+ */
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 3, or (at your option) any
-later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-
-#include <stdio.h>
-#include <string.h>
 #include "aslink.h"
 
 /*)Module	lkeval.c
@@ -46,6 +50,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  *	The function eval() evaluates a character string to a
  *	numerical value.
  *
+ *	Notes about the arithmetic:
+ *		The coding emulates X-Bit unsigned
+ *		arithmetic operations.  This allows
+ *		program compilation without regard to the
+ *		intrinsic integer length of the host
+ *		machine.
+ *
  *	local variables:
  *		int	c		character from input string
  *		int	v		value of character in current radix
@@ -56,8 +67,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  *
  *	functions called:
  *		int	digit()		lkeval.c
- *		char	get()		lklex.c
- *		char	getnb()		lklex.c
+ *		int	get()		lklex.c
+ *		int	getnb()		lklex.c
  *		VOID	unget()		lklex.c
  *
  *	side effects:
@@ -78,7 +89,7 @@ eval()
 		c = get();
 	}
 	unget(c);
-	return(n);
+	return((n & s_mask) ? n | ~v_mask : n & v_mask);
 }
 
 /*)Function	a_uint	expr(n)
@@ -89,6 +100,13 @@ eval()
  *
  *	The function expr() evaluates an expression and
  *	returns the value.
+ *
+ *	Notes about the arithmetic:
+ *		The coding emulates X-Bit unsigned
+ *		arithmetic operations.  This allows
+ *		program compilation without regard to the
+ *		intrinsic integer length of the host
+ *		machine.
  *
  *	local variables:
  *		int	c		current input text character
@@ -119,6 +137,7 @@ eval()
 
 a_uint
 expr (n)
+int n;
 {
 	int c, p;
 	a_uint v, ve;
@@ -133,6 +152,13 @@ expr (n)
 			return(v);
 		}
 		ve = expr(p);
+
+		/*
+		 * X-Bit Unsigned Arithmetic
+		 */
+		v  &= a_mask;
+		ve &= a_mask;
+
 		if (c == '+') {
 			v += ve;
 		} else
@@ -146,7 +172,11 @@ expr (n)
 				break;
 
 			case '/':
-				v /= ve;
+				if (ve == 0) {
+					v = 0;
+				} else {
+					v /= ve;
+				}
 				break;
 
 			case '&':
@@ -158,7 +188,11 @@ expr (n)
 				break;
 
 			case '%':
-				v %= ve;
+				if (ve == 0) {
+					v = 0;
+				} else {
+					v %= ve;
+				}
 				break;
 
 			case '^':
@@ -174,6 +208,7 @@ expr (n)
 				break;
 			}
 		}
+		v = (v & s_mask) ? v | ~v_mask : v & v_mask;
 	}
 	unget(c);
 	return(v);
@@ -184,6 +219,13 @@ expr (n)
  *	The function term() evaluates a single constant
  *	or symbol value prefaced by any unary operator
  *	( +, -, ~, ', ", >, or < ).
+ *
+ *	Notes about the arithmetic:
+ *		The coding emulates X-Bit unsigned
+ *		arithmetic operations.  This allows
+ *		program compilation without regard to the
+ *		intrinsic integer length of the host
+ *		machine.
  *
  *	local variables:
  *		int	c		current character
@@ -233,7 +275,7 @@ term()
 		return(v);
 	}
 	if (c == '-') {
-		return(-expr(100));
+		return(~expr(100)+1);
 	}
 	if (c == '~') {
 		return(~expr(100));
@@ -249,7 +291,7 @@ term()
 			v  =  getmap(-1)&0377;
 			v |= (getmap(-1)&0377)<<8;
 		}
-		return(v);
+		return((v & s_mask) ? v | ~v_mask : v & v_mask);
 	}
 	if (c == '>' || c == '<') {
 		v = expr(100);
@@ -297,7 +339,7 @@ term()
 			c = get();
 		}
 		unget(c);
-		return(v);
+		return((v & s_mask) ? v | ~v_mask : v & v_mask);
 	}
 	if (ctype[c] & LETTER) {
 		getid(id, c);
@@ -309,7 +351,8 @@ term()
 			return(symval(sp));
 		}
 	}
-	/* Shouldn't get here. */
+	fprintf(stderr, "Unknown operator %c\n", c);
+	lkerr++;
 	return(0);
 }
 
@@ -383,7 +426,7 @@ int c, r;
  *	side effects:
  *		none
  */
-
+ 
 int
 oprio(c)
 int c;
