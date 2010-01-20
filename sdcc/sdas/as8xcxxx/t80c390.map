@@ -1,0 +1,106 @@
+ASxxxx Linker V05.00,  page 1.
+Hexidecimal  [24-Bits]
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+.  .ABS.                 000000      000000 =           0. bytes (ABS,OVR,CSEG)
+
+         Value  Global                             Global Defined In Module
+         -----  --------------------------------   ------------------------
+        000000  l__DATA                         
+        000000  l__CODE                         
+        000000  s__DATA                         
+        000000  s__CODE                         
+        000000  .__.ABS.                           
+        000000  s_DATA                          
+        000000  __SFR_BITS                         
+        000001  __Unknown                          
+        000003  Alternate                          
+        000035  s_XDATA                         
+        000035  l_DATA                          
+        001000  l_CODE1                         
+        001000  l_CODE2                         
+        001FCB  l_XDATA                         
+        002000  s_CODE1                         
+        003000  s_CODE2                         
+
+ASxxxx Linker V05.00,  page 2.
+Hexidecimal  [24-Bits]
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+DATA                     000000      000035 =          53. bytes (REL,CON,CSEG)
+
+         Value  Global                             Global Defined In Module
+         -----  --------------------------------   ------------------------
+        000012  NN                                 
+        000034  MM                                 
+
+ASxxxx Linker V05.00,  page 3.
+Hexidecimal  [24-Bits]
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+XDATA                    000035      001FCB =        8139. bytes (REL,CON,CSEG)
+
+         Value  Global                             Global Defined In Module
+         -----  --------------------------------   ------------------------
+        001269  NNNN                               
+        001FFF  MMMM                               
+
+ASxxxx Linker V05.00,  page 4.
+Hexidecimal  [24-Bits]
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+CODE1                    002000      001000 =        4096. bytes (REL,CON,CSEG)
+
+         Value  Global                             Global Defined In Module
+         -----  --------------------------------   ------------------------
+        002000  bgncode1                           
+        002000  text8051.func.var                  
+        002001  text8051.func.varsilly.            
+        002002  text8051.func.varno.no             
+        002003  text8051.func.var0.0               
+        002004  text8051.func.var1.1               
+        002005  text8051.func..FN                  
+        002006  text8051.static                    
+        002006  ALLLL                              
+        00200C  ARN                                
+        00201A  ACNNNN                             
+        002085  ALLL2                              
+        002110  ALLL3                              
+        002390  ALLL4                              
+
+ASxxxx Linker V05.00,  page 5.
+Hexidecimal  [24-Bits]
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+CODE2                    003000      001000 =        4096. bytes (REL,CON,CSEG)
+
+         Value  Global                             Global Defined In Module
+         -----  --------------------------------   ------------------------
+        003000  bgncode2                           
+        003000  text8051_func_var                  
+        003001  text8051_func_varsilly_            
+        003002  text8051_func_varno_no             
+        003003  text8051_func_var0_0               
+        003004  text8051_func_var1_1               
+        003005  text8051_func__FN                  
+        003006  BLLLL                              
+        003006  text8051_static                    
+        00300E  BRN                                
+        00301C  BCNNNN                             
+        00308D  BLLL2                              
+        00311E  BLLL3                              
+        0033A3  BLLL4                              
+
+ASxxxx Linker V05.00,  page 6.
+
+Files Linked                              [ module(s) ]
+
+t80c390                                   [  ]
+
+
+

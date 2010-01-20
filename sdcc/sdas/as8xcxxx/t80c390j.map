@@ -1,0 +1,54 @@
+ASxxxx Linker V05.00,  page 1.
+Hexidecimal  [16-Bits]
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+.  .ABS.                   0000        0000 =           0. bytes (ABS,OVR,CSEG)
+
+         Value  Global                             Global Defined In Module
+         -----  --------------------------------   ------------------------
+          0000  l__DATA                         
+          0000  l__CODE                         
+          0000  s__DATA                         
+          0000  s__CODE                         
+          0000  s_test                          
+          0000  .__.ABS.                           
+          4000  l_test                          
+
+ASxxxx Linker V05.00,  page 2.
+Hexidecimal  [16-Bits]
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+test                       0000        4000 =       16384. bytes (ABS,OVR,CSEG)
+
+         Value  Global                             Global Defined In Module
+         -----  --------------------------------   ------------------------
+          0000  back1                              
+          1000  back2                              
+          2000  forward1                           
+          2FFF  forward2                           
+          4000  forward3                           
+
+ASxxxx Linker V05.00,  page 3.
+
+Files Linked                              [ module(s) ]
+
+t80c390j                                  [  ]
+
+
+
+?ASlink-Warning-PageX relocation error
+         file              module            area                   offset
+  Refby  t80c390j                            test                     07FE
+  Defin  t80c390j                            test                     0000
+
+?ASlink-Warning-PageX relocation error
+         file              module            area                   offset
+  Refby  t80c390j                            test                     17FF
+  Defin  t80c390j                            test                     1000
+
+?ASlink-Warning-PageX relocation error
+         file              module            area                   offset
+  Refby  t80c390j                            test                     37FE
+  Defin  t80c390j                            test                     4000
