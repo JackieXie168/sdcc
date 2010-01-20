@@ -1,0 +1,57 @@
+ASxxxx Assembler V05.00  (Dallas Semiconductor [User Defined]), page 1.
+Hexidecimal [16-Bits]
+
+
+
+                              1         ;; Test ACALL and AJMP range
+                              2 
+                              3         .area   test (ABS,OVR)
+   0000                       4 back1:  .ds     2046
+   07FEn01*00         [12]    5         ajmp    back1           ; Should fail at link time
+                              6 
+   1000                       7         .org    4*1024
+   1000                       8 back2:  .ds     2047
+   17FFn01*00         [12]    9         ajmp    back2           ; Should fail at link time
+                             10 
+   1800                      11         .org    6*1024
+   1800                      12         .ds     2046
+   1FFEn01*00         [12]   13         ajmp    forward1
+   2000                      14 forward1:
+                             15 
+   2000                      16 	.org	8*1024
+   2000                      17 	.ds	2046
+   27FEnE1*FF         [12]   18 	ajmp	forward2
+                             19 
+   2FFF                      20 	.org	12*1024 - 1
+   2FFF                      21 forward2:
+                             22 
+   3000                      23 	.org	12*1024
+   3000                      24 	.ds	2046
+   37FEn01*00         [12]   25 	ajmp	forward3	; Should fail at link time
+                             26 
+   4000                      27 	.org	16*1024
+   4000                      28 forward3:
+                             29 
+                             30  
+ASxxxx Assembler V05.00  (Dallas Semiconductor [User Defined]), page 2.
+Hexidecimal [16-Bits]
+
+Symbol Table
+
+    .__.$$$.       =   2710 L   |     .__.ABS.       =   0000 G
+    .__.CPU.       =   0001 L   |     .__.H$L.       =   0001 L
+  2 back1              0000 GR  |   2 back2              1000 GR
+  2 forward1           2000 GR  |   2 forward2           2FFF GR
+  2 forward3           4000 GR
+
+ASxxxx Assembler V05.00  (Dallas Semiconductor [User Defined]), page 3.
+Hexidecimal [16-Bits]
+
+Area Table
+
+[_CSEG]
+   0 _CODE            size    0   flags C080
+   2 test             size 4000   flags  D0C
+[_DSEG]
+   1 _DATA            size    0   flags C0C0
+

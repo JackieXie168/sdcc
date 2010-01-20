@@ -1,0 +1,2265 @@
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 1.
+Hexidecimal [24-Bits]
+
+
+
+                                      1 ;  T80C390.ASM - Test file for AS80C390 assembler
+                                      2 ;
+                                      3 ;  18-Jun-93 BY JOHN HARTMAN
+                                      4 ;  22-Jul-93 JLH fix AJMPs to all pages
+                                      5 ;  17-Sep-93 JLH test subroutine call and return
+                                      6 ;  22-Jul-98 ARB Direct Mode (*) Checks
+                                      7 ;		 and complete Assembler Codes added
+                                      8 ;
+                                      9 ;  Assemble:
+                                     10 ;	as8xcxxx -gloaxff t80c390
+                                     11 ;
+                                     12 
+                                     13 ;
+                                     14 ;  Alternate methods to define the processor
+                                     15 ;
+                           000003    16 Alternate = 3
+                                     17 
+                           000001    18 .if Alternate-1
+                           000000    19 .else
+                                     20 	.DS80C390
+                                     21 	.include	"ds8xcxxx.sfr"
+                                     22 .sbttl	/* DS8xCxx.SFR */
+                                     23 
+                                     24 .endif
+                                     25 
+                           000001    26 .if Alternate-2
+                           000000    27 .else
+                                     28 	.cpu	"DS80C390"
+                                     29 	.24bit
+                                     30 	.include	"ds8xcxxx.sfr"
+                                     31 .endif
+                                     32 
+                           000000    33 .if Alternate-3
+                           000001    34 .else
+                                     35 	.cpu	"Unknown"	0
+                                     36 	.24bit
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 2.
+Hexidecimal [24-Bits]
+
+
+
+                                     37 	.include	"t80c390.sfr"
+                                      1 .sbttl	/* t80c390.sfr */
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                 
+                                   1837 .list
+                                   1838 
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 3.
+Hexidecimal [24-Bits]
+
+
+
+                                     38 .endif
+                                     39 
+                                     40 
+                                     41 ;  EQUATES FOR ADDRESS MODES
+                                     42 	.area	DATA
+      000000                         43 	.ds 0x12
+      000012                         44 NN:	.ds 0x34-0x12
+      000034                         45 MM:	.ds 1
+                                     46 
+                                     47 	.area	XDATA (REL,CON)
+      000000                         48 	.ds 0x1234
+      001234                         49 NNNN:	.ds 1
+      001235                         50 	.ds 0x0D95
+      001FCA                         51 MMMM:	.ds 1
+                                     52 
+                                     53 	.area	CODE1 (REL,CON)
+                                     54 	.amode	0		; 16-Bit CALL/JMP Addressing Mode
+                                     55 ;
+      000000                         56 bgncode1::
+                                     57 ;
+      000000                         58 text8051.func.var::
+      000000 00               [ 4]   59 	nop			; 00
+      000001                         60 text8051.func.varsilly.::
+      000001 00               [ 4]   61 	nop			; 00
+      000002                         62 text8051.func.varno.no::
+      000002 00               [ 4]   63 	nop			; 00
+      000003                         64 text8051.func.var0.0::
+      000003 00               [ 4]   65 	nop			; 00
+      000004                         66 text8051.func.var1.1::
+      000004 00               [ 4]   67 	nop			; 00
+      000005                         68 text8051.func..FN::
+      000005 00               [ 4]   69 	nop			; 00
+      000006                         70 text8051.static::
+      000006 00               [ 4]   71 ALLLL:	NOP			; 00
+      000007n01*0C            [12]   72 	AJMP	ARN		;n01*0C
+      000009 02s00r06         [16]   73 	LJMP	ALLLL		; 02s00r06
+      00000C 03               [ 4]   74 ARN:	RR	A		; 03
+      00000D 04               [ 4]   75 	INC	A		; 04
+      00000E 05*12            [ 8]   76 	INC	NN		; 05*12
+      000010 06               [ 4]   77 	INC	@R0		; 06
+      000011 07               [ 4]   78 	INC	@R1		; 07
+      000012 08               [ 4]   79 	INC	R0		; 08
+      000013 09               [ 4]   80 	INC	R1		; 09
+      000014 0A               [ 4]   81 	INC	R2		; 0A
+      000015 0B               [ 4]   82 	INC	R3		; 0B
+      000016 0C               [ 4]   83 	INC	R4		; 0C
+      000017 0D               [ 4]   84 	INC	R5		; 0D
+      000018 0E               [ 4]   85 	INC	R6		; 0E
+      000019 0F               [ 4]   86 	INC	R7		; 0F
+      00001A                         87 ACNNNN:
+      00001A 10*12 E9         [12]   88 	JBC	NN,ALLLL	; 10*12 E9
+      00001Dn11*06            [12]   89 	ACALL	ALLLL + 0x000	;n11*06
+      00001F 12s00r06         [16]   90 	LCALL	ALLLL		; 12s00r06
+      000022 13               [ 4]   91 	RRC	A		; 13
+      000023 14               [ 4]   92 	DEC	A		; 14
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 4.
+Hexidecimal [24-Bits]
+
+
+
+      000024 15*12            [ 8]   93 	DEC	NN		; 15*12
+      000026 16               [ 4]   94 	DEC	@R0		; 16
+      000027 17               [ 4]   95 	DEC	@R1		; 17
+      000028 18               [ 4]   96 	DEC	R0		; 18
+      000029 19               [ 4]   97 	DEC	R1		; 19
+      00002A 1A               [ 4]   98 	DEC	R2		; 1A
+      00002B 1B               [ 4]   99 	DEC	R3		; 1B
+      00002C 1C               [ 4]  100 	DEC	R4		; 1C
+      00002D 1D               [ 4]  101 	DEC	R5		; 1D
+      00002E 1E               [ 4]  102 	DEC	R6		; 1E
+      00002F 1F               [ 4]  103 	DEC	R7		; 1F
+      000030 20*12 D3         [12]  104 	JB	NN,ALLLL	; 20*12 D3
+      000033n21*06            [12]  105 	AJMP	ALLLL + 0x100	;n21*06
+      000035 22               [16]  106 	RET			; 22
+      000036 23               [ 4]  107 	RL	A		; 23
+      000037 24r12            [ 8]  108 	ADD	A,#NN		; 24r12
+      000039 25*12            [ 8]  109 	ADD	A,NN		; 25*12
+      00003B 26               [ 4]  110 	ADD	A,@R0		; 26
+      00003C 27               [ 4]  111 	ADD	A,@R1		; 27
+      00003D 28               [ 4]  112 	ADD	A,R0		; 28
+      00003E 29               [ 4]  113 	ADD	A,R1		; 29
+      00003F 2A               [ 4]  114 	ADD	A,R2		; 2A
+      000040 2B               [ 4]  115 	ADD	A,R3		; 2B
+      000041 2C               [ 4]  116 	ADD	A,R4		; 2C
+      000042 2D               [ 4]  117 	ADD	A,R5		; 2D
+      000043 2E               [ 4]  118 	ADD	A,R6		; 2E
+      000044 2F               [ 4]  119 	ADD	A,R7		; 2F
+      000045 30*12 BE         [12]  120 	JNB	NN,ALLLL	; 30*12 BE
+      000048n31*06            [12]  121 	ACALL	ALLLL + 0x100	;n31*06
+      00004A 32               [16]  122 	RETI			; 32
+      00004B 33               [ 4]  123 	RLC	A		; 33
+      00004C 34r12            [ 8]  124 	ADDC	A,#NN		; 34r12
+      00004E 35*12            [ 8]  125 	ADDC	A,NN		; 35*12
+      000050 36               [ 4]  126 	ADDC	A,@R0		; 36
+      000051 37               [ 4]  127 	ADDC	A,@R1		; 37
+      000052 38               [ 4]  128 	ADDC	A,R0		; 38
+      000053 39               [ 4]  129 	ADDC	A,R1		; 39
+      000054 3A               [ 4]  130 	ADDC	A,R2		; 3A
+      000055 3B               [ 4]  131 	ADDC	A,R3		; 3B
+      000056 3C               [ 4]  132 	ADDC	A,R4		; 3C
+      000057 3D               [ 4]  133 	ADDC	A,R5		; 3D
+      000058 3E               [ 4]  134 	ADDC	A,R6		; 3E
+      000059 3F               [ 4]  135 	ADDC	A,R7		; 3F
+      00005A 40 AA            [12]  136 	JC	ALLLL		; 40 AA
+      00005Cn41*06            [12]  137 	AJMP	ALLLL + 0x200	;n41*06
+      00005E 42*12            [ 8]  138 	ORL	NN,A		; 42*12
+      000060 43*12r34         [12]  139 	ORL	NN,#MM		; 43*12r34
+      000063 44r12            [ 8]  140 	ORL	A,#NN		; 44r12
+      000065 45*12            [ 8]  141 	ORL	A,NN		; 45*12
+      000067 46               [ 4]  142 	ORL	A,@R0		; 46
+      000068 47               [ 4]  143 	ORL	A,@R1		; 47
+      000069 48               [ 4]  144 	ORL	A,R0		; 48
+      00006A 49               [ 4]  145 	ORL	A,R1		; 49
+      00006B 4A               [ 4]  146 	ORL	A,R2		; 4A
+      00006C 4B               [ 4]  147 	ORL	A,R3		; 4B
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 5.
+Hexidecimal [24-Bits]
+
+
+
+      00006D 4C               [ 4]  148 	ORL	A,R4		; 4C
+      00006E 4D               [ 4]  149 	ORL	A,R5		; 4D
+      00006F 4E               [ 4]  150 	ORL	A,R6		; 4E
+      000070 4F               [ 4]  151 	ORL	A,R7		; 4F
+      000071 50 12            [12]  152 	JNC	ALLL2		; 50 12
+      000073n51*06            [12]  153 	ACALL	ALLLL + 0x200	;n51*06
+      000075 52*12            [ 8]  154 	ANL	NN,A		; 52*12
+      000077 53*12r34         [12]  155 	ANL	NN,#MM		; 53*12r34
+      00007A 54r12            [ 8]  156 	ANL	A,#NN		; 54r12
+      00007C 55*12            [ 8]  157 	ANL	A,NN		; 55*12
+      00007E 56               [ 4]  158 	ANL	A,@R0		; 56
+      00007F 57               [ 4]  159 	ANL	A,@R1		; 57
+      000080 58               [ 4]  160 	ANL	A,R0		; 58
+      000081 59               [ 4]  161 	ANL	A,R1		; 59
+      000082 5A               [ 4]  162 	ANL	A,R2		; 5A
+      000083 5B               [ 4]  163 	ANL	A,R3		; 5B
+      000084 5C               [ 4]  164 	ANL	A,R4		; 5C
+      000085 5D               [ 4]  165 ALLL2:	ANL	A,R5		; 5D
+      000086 5E               [ 4]  166 	ANL	A,R6		; 5E
+      000087 5F               [ 4]  167 	ANL	A,R7		; 5F
+      000088 60 FB            [12]  168 	JZ	ALLL2		; 60 FB
+      00008An61*06            [12]  169 	AJMP	ALLLL + 0x300	;n61*06
+      00008C 62*12            [ 8]  170 	XRL	NN,A		; 62*12
+      00008E 63*12r34         [12]  171 	XRL	NN,#MM		; 63*12r34
+      000091 64r12            [ 8]  172 	XRL	A,#NN		; 64r12
+      000093 65*12            [ 8]  173 	XRL	A,NN		; 65*12
+      000095 66               [ 4]  174 	XRL	A,@R0		; 66
+      000096 67               [ 4]  175 	XRL	A,@R1		; 67
+      000097 68               [ 4]  176 	XRL	A,R0		; 68
+      000098 69               [ 4]  177 	XRL	A,R1		; 69
+      000099 6A               [ 4]  178 	XRL	A,R2		; 6A
+      00009A 6B               [ 4]  179 	XRL	A,R3		; 6B
+      00009B 6C               [ 4]  180 	XRL	A,R4		; 6C
+      00009C 6D               [ 4]  181 	XRL	A,R5		; 6D
+      00009D 6E               [ 4]  182 	XRL	A,R6		; 6E
+      00009E 6F               [ 4]  183 	XRL	A,R7		; 6F
+      00009F 70 E4            [12]  184 	JNZ	ALLL2		; 70 E4
+      0000A1n71*06            [12]  185 	ACALL	ALLLL + 0x300	;n71*06
+      0000A3 72*12            [ 8]  186 	ORL	C,NN		; 72*12
+      0000A5 73               [12]  187 	JMP	@A+DPTR		; 73
+      0000A6 74r12            [ 8]  188 	MOV	A,#NN		; 74r12
+      0000A8 75*12r34         [12]  189 	MOV	NN,#MM		; 75*12r34
+      0000AB 76r12            [ 8]  190 	MOV	@R0,#NN		; 76r12
+      0000AD 77r12            [ 8]  191 	MOV	@R1,#NN		; 77r12
+      0000AF 78r12            [ 8]  192 	MOV	R0,#NN		; 78r12
+      0000B1 79r12            [ 8]  193 	MOV	R1,#NN		; 79r12
+      0000B3 7Ar12            [ 8]  194 	MOV	R2,#NN		; 7Ar12
+      0000B5 7Br12            [ 8]  195 	MOV	R3,#NN		; 7Br12
+      0000B7 7Cr12            [ 8]  196 	MOV	R4,#NN		; 7Cr12
+      0000B9 7Dr12            [ 8]  197 	MOV	R5,#NN		; 7Dr12
+      0000BB 7Er12            [ 8]  198 	MOV	R6,#NN		; 7Er12
+      0000BD 7Fr12            [ 8]  199 	MOV	R7,#NN		; 7Fr12
+      0000BF 80 C4            [12]  200 	SJMP	ALLL2		; 80 C4
+      0000C1n81*06            [12]  201 	AJMP	ALLLL + 0x400	;n81*06
+      0000C3 82*12            [ 8]  202 	ANL	C,NN		; 82*12
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 6.
+Hexidecimal [24-Bits]
+
+
+
+      0000C5 83               [12]  203 	MOVC	A,@A+PC		; 83
+      0000C6 84               [20]  204 	DIV	AB		; 84
+      0000C7 85*34*12         [12]  205 	MOV	NN,MM		; 85*34*12
+      0000CA 86*12            [ 8]  206 	MOV	NN,@R0		; 86*12
+      0000CC 87*12            [ 8]  207 	MOV	NN,@R1		; 87*12
+      0000CE 88*12            [ 8]  208 	MOV	NN,R0		; 88*12
+      0000D0 89*12            [ 8]  209 	MOV	NN,R1		; 89*12
+      0000D2 8A*12            [ 8]  210 	MOV	NN,R2		; 8A*12
+      0000D4 8B*12            [ 8]  211 	MOV	NN,R3		; 8B*12
+      0000D6 8C*12            [ 8]  212 	MOV	NN,R4		; 8C*12
+      0000D8 8D*12            [ 8]  213 	MOV	NN,R5		; 8D*12
+      0000DA 8E*12            [ 8]  214 	MOV	NN,R6		; 8E*12
+      0000DC 8F*12            [ 8]  215 	MOV	NN,R7		; 8F*12
+      0000DE 90s12r34         [12]  216 	MOV	DPTR,#NNNN	; 90s12r34
+      0000E1n91*06            [12]  217 	ACALL	ALLLL + 0x400	;n91*06
+      0000E3 92*12            [ 8]  218 	MOV	NN,C		; 92*12
+      0000E5 93               [12]  219 	MOVC	A,@A+DPTR	; 93
+      0000E6 94r12            [ 8]  220 	SUBB	A,#NN		; 94r12
+      0000E8 95*12            [ 8]  221 	SUBB	A,NN		; 95*12
+      0000EA 96               [ 4]  222 	SUBB	A,@R0		; 96
+      0000EB 97               [ 4]  223 	SUBB	A,@R1		; 97
+      0000EC 98               [ 4]  224 	SUBB	A,R0		; 98
+      0000ED 99               [ 4]  225 	SUBB	A,R1		; 99
+      0000EE 9A               [ 4]  226 	SUBB	A,R2		; 9A
+      0000EF 9B               [ 4]  227 	SUBB	A,R3		; 9B
+      0000F0 9C               [ 4]  228 	SUBB	A,R4		; 9C
+      0000F1 9D               [ 4]  229 	SUBB	A,R5		; 9D
+      0000F2 9E               [ 4]  230 	SUBB	A,R6		; 9E
+      0000F3 9F               [ 4]  231 	SUBB	A,R7		; 9F
+      0000F4 A0*12            [ 8]  232 	ORL	C,/NN		; A0*12
+      0000F6nA1*06            [12]  233 	AJMP	ALLLL + 0x500	;nA1*06
+      0000F8 A2*12            [ 8]  234 	MOV	C,NN		; A2*12
+      0000FA A3               [12]  235 	INC	DPTR		; A3
+      0000FB A4               [20]  236 	MUL	AB		; A4
+                                    237 ;	un_OP			; A5
+      0000FC A6*12            [ 8]  238 	MOV	@R0,NN		; A6*12
+      0000FE A7*12            [ 8]  239 	MOV	@R1,NN		; A7*12
+      000100 A8*12            [ 8]  240 	MOV	R0,NN		; A8*12
+      000102 A9*12            [ 8]  241 	MOV	R1,NN		; A9*12
+      000104 AA*12            [ 8]  242 	MOV	R2,NN		; AA*12
+      000106 AB*12            [ 8]  243 	MOV	R3,NN		; AB*12
+      000108 AC*12            [ 8]  244 	MOV	R4,NN		; AC*12
+      00010A AD*12            [ 8]  245 	MOV	R5,NN		; AD*12
+      00010C AE*12            [ 8]  246 	MOV	R6,NN		; AE*12
+      00010E AF*12            [ 8]  247 	MOV	R7,NN		; AF*12
+      000110 B0*12            [ 8]  248 ALLL3:	ANL	C,/NN		; B0*12
+      000112nB1*06            [12]  249 	ACALL	ALLLL + 0x500	;nB1*06
+      000114 B2*12            [ 8]  250 	CPL	NN		; B2*12
+      000116 B3               [ 4]  251 	CPL	C		; B3
+      000117 B4r12 F6         [16]  252 	CJNE	A,#NN,ALLL3	; B4r12 F6
+      00011A B5*12 F3         [16]  253 	CJNE	A,NN,ALLL3	; B5*12 F3
+      00011D B6r12 F0         [16]  254 	CJNE	@R0,#NN,ALLL3	; B6r12 F0
+      000120 B7r12 ED         [16]  255 	CJNE	@R1,#NN,ALLL3	; B7r12 ED
+      000123 B8r12 EA         [16]  256 	CJNE	R0,#NN,ALLL3	; B8r12 EA
+      000126 B9r12 E7         [16]  257 	CJNE	R1,#NN,ALLL3	; B9r12 E7
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 7.
+Hexidecimal [24-Bits]
+
+
+
+      000129 BAr12 E4         [16]  258 	CJNE	R2,#NN,ALLL3	; BAr12 E4
+      00012C BBr12 E1         [16]  259 	CJNE	R3,#NN,ALLL3	; BBr12 E1
+      00012F BCr12 DE         [16]  260 	CJNE	R4,#NN,ALLL3	; BCr12 DE
+      000132 BDr12 DB         [16]  261 	CJNE	R5,#NN,ALLL3	; BDr12 DB
+      000135 BEr12 D8         [16]  262 	CJNE	R6,#NN,ALLL3	; BEr12 D8
+      000138 BFr12 D5         [16]  263 	CJNE	R7,#NN,ALLL3	; BFr12 D5
+      00013B C0*12            [ 8]  264 	PUSH	NN		; C0*12
+      00013DnC1*06            [12]  265 	AJMP	ALLLL + 0x600	;nC1*06
+      00013F C2*12            [ 8]  266 	CLR	NN		; C2*12
+      000141 C3               [ 4]  267 	CLR	C		; C3
+      000142 C4               [ 4]  268 	SWAP	A		; C4
+      000143 C5*12            [ 8]  269 	XCH	A,NN		; C5*12
+      000145 C6               [ 4]  270 	XCH	A,@R0		; C6
+      000146 C7               [ 4]  271 	XCH	A,@R1		; C7
+      000147 C8               [ 4]  272 	XCH	A,R0		; C8
+      000148 C9               [ 4]  273 	XCH	A,R1		; C9
+      000149 CA               [ 4]  274 	XCH	A,R2		; CA
+      00014A CB               [ 4]  275 	XCH	A,R3		; CB
+      00014B CC               [ 4]  276 	XCH	A,R4		; CC
+      00014C CD               [ 4]  277 	XCH	A,R5		; CD
+      00014D CE               [ 4]  278 	XCH	A,R6		; CE
+      00014E CF               [ 4]  279 	XCH	A,R7		; CF
+      00014F D0*12            [ 8]  280 	POP	NN		; D0*12
+      000151nD1*06            [12]  281 	ACALL	ALLLL + 0x600	;nD1*06
+      000153 D2*12            [ 8]  282 	SETB	NN		; D2*12
+      000155 D3               [ 4]  283 	SETB	C		; D3
+      000156 D4               [ 4]  284 	DA	A		; D4
+      000157 D5*12 B6         [16]  285 	DJNZ	NN,ALLL3	; D5*12 B6
+      00015A D6               [ 4]  286 	XCHD	A,@R0		; D6
+      00015B D7               [ 4]  287 	XCHD	A,@R1		; D7
+      00015C D8 B2            [12]  288 	DJNZ	R0,ALLL3	; D8 B2
+      00015E D9 B0            [12]  289 	DJNZ	R1,ALLL3	; D9 B0
+      000160 DA AE            [12]  290 	DJNZ	R2,ALLL3	; DA AE
+      000162 DB AC            [12]  291 	DJNZ	R3,ALLL3	; DB AC
+      000164 DC AA            [12]  292 	DJNZ	R4,ALLL3	; DC AA
+      000166 DD A8            [12]  293 	DJNZ	R5,ALLL3	; DD A8
+      000168 DE A6            [12]  294 	DJNZ	R6,ALLL3	; DE A6
+      00016A DF A4            [12]  295 	DJNZ	R7,ALLL3	; DF A4
+      00016C E0               [ 8]  296 	MOVX	A,@DPTR		; E0
+      00016DnE1*06            [12]  297 	AJMP	ALLLL + 0x700	;nE1*06
+      00016F E2               [ 8]  298 	MOVX	A,@R0		; E2
+      000170 E3               [ 8]  299 	MOVX	A,@R1		; E3
+      000171 E4               [ 4]  300 	CLR	A		; E4
+      000172 E5*12            [ 8]  301 	MOV	A,NN		; E5*12
+      000174 E6               [ 4]  302 	MOV	A,@R0		; E6
+      000175 E7               [ 4]  303 	MOV	A,@R1		; E7
+      000176 E8               [ 4]  304 	MOV	A,R0		; E8
+      000177 E9               [ 4]  305 	MOV	A,R1		; E9
+      000178 EA               [ 4]  306 	MOV	A,R2		; EA
+      000179 EB               [ 4]  307 	MOV	A,R3		; EB
+      00017A EC               [ 4]  308 	MOV	A,R4		; EC
+      00017B ED               [ 4]  309 	MOV	A,R5		; ED
+      00017C EE               [ 4]  310 	MOV	A,R6		; EE
+      00017D EF               [ 4]  311 	MOV	A,R7		; EF
+      00017E F0               [ 8]  312 	MOVX	@DPTR,A		; F0
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 8.
+Hexidecimal [24-Bits]
+
+
+
+      00017FnF1*06            [12]  313 	ACALL	ALLLL + 0x700	;nF1*06
+      000181 F2               [ 8]  314 	MOVX	@R0,A		; F2
+      000182 F3               [ 8]  315 	MOVX	@R1,A		; F3
+      000183 F4               [ 4]  316 	CPL	A		; F4
+      000184 F5*12            [ 8]  317 	MOV	NN,A		; F5*12
+      000186 F6               [ 4]  318 	MOV	@R0,A		; F6
+      000187 F7               [ 4]  319 	MOV	@R1,A		; F7
+      000188 F8               [ 4]  320 	MOV	R0,A		; F8
+      000189 F9               [ 4]  321 	MOV	R1,A		; F9
+      00018A FA               [ 4]  322 	MOV	R2,A		; FA
+      00018B FB               [ 4]  323 	MOV	R3,A		; FB
+      00018C FC               [ 4]  324 	MOV	R4,A		; FC
+      00018D FD               [ 4]  325 	MOV	R5,A		; FD
+      00018E FE               [ 4]  326 	MOV	R6,A		; FE
+      00018F FF               [ 4]  327 	MOV	R7,A		; FF
+                                    328 ;  Test SFR equates
+      000190 E5 80            [ 8]  329 	MOV	A,P4		; E5 80
+      000192 E5 81            [ 8]  330 	MOV	A,SP		; E5 81
+      000194 E5 82            [ 8]  331 	MOV	A,DPL 		; E5 82
+      000196 E5 83            [ 8]  332 	MOV	A,DPH 		; E5 83
+      000198 E5 84            [ 8]  333 	MOV	A,0x84		; E5 84
+      00019A E5 85            [ 8]  334 	MOV	A,0x85		; E5 85
+      00019C E5 86            [ 8]  335 	MOV	A,0x86		; E5 86
+      00019E E5 87            [ 8]  336 	MOV	A,0x87		; E5 87
+      0001A0 E5 88            [ 8]  337 	MOV	A,TCON		; E5 88
+      0001A2 E5 89            [ 8]  338 	MOV	A,TMOD		; E5 89
+      0001A4 E5 8A            [ 8]  339 	MOV	A,TL0 		; E5 8A
+      0001A6 E5 8B            [ 8]  340 	MOV	A,TL1 		; E5 8B
+      0001A8 E5 8C            [ 8]  341 	MOV	A,TH0 		; E5 8C
+      0001AA E5 8D            [ 8]  342 	MOV	A,TH1		; E5 8D
+      0001AC E5 8E            [ 8]  343 	MOV	A,0x8E		; E5 8E
+      0001AE E5 8F            [ 8]  344 	MOV	A,0x8F		; E5 8F
+      0001B0 E5 90            [ 8]  345 	MOV	A,P1		; E5 90
+      0001B2 E5 91            [ 8]  346 	MOV	A,0x91		; E5 91
+      0001B4 E5 92            [ 8]  347 	MOV	A,0x92		; E5 92
+      0001B6 E5 93            [ 8]  348 	MOV	A,0x93		; E5 93
+      0001B8 E5 94            [ 8]  349 	MOV	A,0x94		; E5 94
+      0001BA E5 95            [ 8]  350 	MOV	A,0x95		; E5 95
+      0001BC E5 96            [ 8]  351 	MOV	A,0x96		; E5 96
+      0001BE E5 97            [ 8]  352 	MOV	A,0x97		; E5 97
+      0001C0 E5 98            [ 8]  353 	MOV	A,SCON		; E5 98
+      0001C2 E5 99            [ 8]  354 	MOV	A,SBUF		; E5 99
+      0001C4 E5 9A            [ 8]  355 	MOV	A,0x9A		; E5 9A
+      0001C6 E5 9B            [ 8]  356 	MOV	A,0x9B		; E5 9B
+      0001C8 E5 9C            [ 8]  357 	MOV	A,0x9C		; E5 9C
+      0001CA E5 9D            [ 8]  358 	MOV	A,0x9D		; E5 9D
+      0001CC E5 9E            [ 8]  359 	MOV	A,0x9E		; E5 9E
+      0001CE E5 9F            [ 8]  360 	MOV	A,0x9F		; E5 9F
+      0001D0 E5 A0            [ 8]  361 	MOV	A,P2		; E5 A0
+      0001D2 E5 A1            [ 8]  362 	MOV	A,0xA1		; E5 A1
+      0001D4 E5 A2            [ 8]  363 	MOV	A,0xA2		; E5 A2
+      0001D6 E5 A3            [ 8]  364 	MOV	A,0xA3		; E5 A3
+      0001D8 E5 A4            [ 8]  365 	MOV	A,0xA4		; E5 A4
+      0001DA E5 A5            [ 8]  366 	MOV	A,0xA5		; E5 A5
+      0001DC E5 A6            [ 8]  367 	MOV	A,0xA6		; E5 A6
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 9.
+Hexidecimal [24-Bits]
+
+
+
+      0001DE E5 A7            [ 8]  368 	MOV	A,0xA7		; E5 A7
+      0001E0 E5 A8            [ 8]  369 	MOV	A,IE 	 	; E5 A8
+      0001E2 E5 A9            [ 8]  370 	MOV	A,0xA9		; E5 A9
+      0001E4 E5 AA            [ 8]  371 	MOV	A,0xAA		; E5 AA
+      0001E6 E5 AB            [ 8]  372 	MOV	A,0xAB		; E5 AB
+      0001E8 E5 AC            [ 8]  373 	MOV	A,0xAC		; E5 AC
+      0001EA E5 AD            [ 8]  374 	MOV	A,0xAD		; E5 AD
+      0001EC E5 AE            [ 8]  375 	MOV	A,0xAE		; E5 AE
+      0001EE E5 AF            [ 8]  376 	MOV	A,0xAF		; E5 AF
+      0001F0 E5 B0            [ 8]  377 	MOV	A,P3 	 	; E5 B0
+      0001F2 E5 B1            [ 8]  378 	MOV	A,0xB1		; E5 B1
+      0001F4 E5 B2            [ 8]  379 	MOV	A,0xB2		; E5 B2
+      0001F6 E5 B3            [ 8]  380 	MOV	A,0xB3		; E5 B3
+      0001F8 E5 B4            [ 8]  381 	MOV	A,0xB4		; E5 B4
+      0001FA E5 B5            [ 8]  382 	MOV	A,0xB5		; E5 B5
+      0001FC E5 B6            [ 8]  383 	MOV	A,0xB6		; E5 B6
+      0001FE E5 B7            [ 8]  384 	MOV	A,0xB7		; E5 B7
+      000200 E5 B8            [ 8]  385 	MOV	A,IP 	 	; E5 B8
+      000202 E5 B9            [ 8]  386 	MOV	A,0xB9		; E5 B9
+      000204 E5 BA            [ 8]  387 	MOV	A,0xBA		; E5 BA
+      000206 E5 BB            [ 8]  388 	MOV	A,0xBB		; E5 BB
+      000208 E5 BC            [ 8]  389 	MOV	A,0xBC		; E5 BC
+      00020A E5 BD            [ 8]  390 	MOV	A,0xBD		; E5 BD
+      00020C E5 BE            [ 8]  391 	MOV	A,0xBE		; E5 BE
+      00020E E5 BF            [ 8]  392 	MOV	A,0xBF		; E5 BF
+      000210 E5 C0            [ 8]  393 	MOV	A,0xC0		; E5 C0
+      000212 E5 C1            [ 8]  394 	MOV	A,0xC1		; E5 C1
+      000214 E5 C2            [ 8]  395 	MOV	A,0xC2		; E5 C2
+      000216 E5 C3            [ 8]  396 	MOV	A,0xC3		; E5 C3
+      000218 E5 C4            [ 8]  397 	MOV	A,0xC4		; E5 C4
+      00021A E5 C5            [ 8]  398 	MOV	A,0xC5		; E5 C5
+      00021C E5 C6            [ 8]  399 	MOV	A,0xC6		; E5 C6
+      00021E E5 C7            [ 8]  400 	MOV	A,0xC7		; E5 C7
+      000220 E5 C8            [ 8]  401 	MOV	A,T2CON		; E5 C8
+      000222 E5 C9            [ 8]  402 	MOV	A,0xC9		; E5 C9
+      000224 E5 CA            [ 8]  403 	MOV	A,RCAP2L	; E5 CA
+      000226 E5 CB            [ 8]  404 	MOV	A,RCAP2H	; E5 CB
+      000228 E5 CC            [ 8]  405 	MOV	A,TL2		; E5 CC
+      00022A E5 CD            [ 8]  406 	MOV	A,TH2 	 	; E5 CD
+      00022C E5 CE            [ 8]  407 	MOV	A,0xCE		; E5 CE
+      00022E E5 CF            [ 8]  408 	MOV	A,0xCF		; E5 CF
+      000230 E5 D0            [ 8]  409 	MOV	A,PSW		; E5 D0
+      000232 E5 D1            [ 8]  410 	MOV	A,0xD1		; E5 D1
+      000234 E5 D2            [ 8]  411 	MOV	A,0xD2		; E5 D2
+      000236 E5 D3            [ 8]  412 	MOV	A,0xD3		; E5 D3
+      000238 E5 D4            [ 8]  413 	MOV	A,0xD4		; E5 D4
+      00023A E5 D5            [ 8]  414 	MOV	A,0xD5		; E5 D5
+      00023C E5 D6            [ 8]  415 	MOV	A,0xD6		; E5 D6
+      00023E E5 D7            [ 8]  416 	MOV	A,0xD7		; E5 D7
+      000240 E5 D8            [ 8]  417 	MOV	A,0xD8		; E5 D8
+      000242 E5 D9            [ 8]  418 	MOV	A,0xD9		; E5 D9
+      000244 E5 DA            [ 8]  419 	MOV	A,0xDA		; E5 DA
+      000246 E5 DB            [ 8]  420 	MOV	A,0xDB		; E5 DB
+      000248 E5 DC            [ 8]  421 	MOV	A,0xDC		; E5 DC
+      00024A E5 DD            [ 8]  422 	MOV	A,0xDD		; E5 DD
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 10.
+Hexidecimal [24-Bits]
+
+
+
+      00024C E5 DE            [ 8]  423 	MOV	A,0xDE		; E5 DE
+      00024E E5 DF            [ 8]  424 	MOV	A,0xDF		; E5 DF
+      000250 E5 E0            [ 8]  425 	MOV	A,ACC		; E5 E0
+      000252 E5 E1            [ 8]  426 	MOV	A,0xE1		; E5 E1
+      000254 E5 E2            [ 8]  427 	MOV	A,0xE2		; E5 E2
+      000256 E5 E3            [ 8]  428 	MOV	A,0xE3		; E5 E3
+      000258 E5 E4            [ 8]  429 	MOV	A,0xE4		; E5 E4
+      00025A E5 E5            [ 8]  430 	MOV	A,0xE5		; E5 E5
+      00025C E5 E6            [ 8]  431 	MOV	A,0xE6		; E5 E6
+      00025E E5 E7            [ 8]  432 	MOV	A,0xE7		; E5 E7
+      000260 E5 E8            [ 8]  433 	MOV	A,0xE8		; E5 E8
+      000262 E5 E9            [ 8]  434 	MOV	A,0xE9		; E5 E9
+      000264 E5 EA            [ 8]  435 	MOV	A,0xEA		; E5 EA
+      000266 E5 EB            [ 8]  436 	MOV	A,0xEB		; E5 EB
+      000268 E5 EC            [ 8]  437 	MOV	A,0xEC		; E5 EC
+      00026A E5 ED            [ 8]  438 	MOV	A,0xED		; E5 ED
+      00026C E5 EE            [ 8]  439 	MOV	A,0xEE		; E5 EE
+      00026E E5 EF            [ 8]  440 	MOV	A,0xEF		; E5 EF
+                                    441 	
+      000270 E5 F0            [ 8]  442 	MOV	A,B		; E5 F0
+      000272 E5 F1            [ 8]  443 	MOV	A,0xF1		; E5 F1
+      000274 E5 F2            [ 8]  444 	MOV	A,0xF2		; E5 F2
+      000276 E5 F3            [ 8]  445 	MOV	A,0xF3		; E5 F3
+      000278 E5 F4            [ 8]  446 	MOV	A,0xF4		; E5 F4
+      00027A E5 F5            [ 8]  447 	MOV	A,0xF5		; E5 F5
+      00027C E5 F6            [ 8]  448 	MOV	A,0xF6		; E5 F6
+      00027E E5 F7            [ 8]  449 	MOV	A,0xF7		; E5 F7
+      000280 E5 F8            [ 8]  450 	MOV	A,0xF8		; E5 F8
+      000282 E5 F9            [ 8]  451 	MOV	A,0xF9		; E5 F9
+      000284 E5 FA            [ 8]  452 	MOV	A,0xFA		; E5 FA
+      000286 E5 FB            [ 8]  453 	MOV	A,0xFB		; E5 FB
+      000288 E5 FC            [ 8]  454 	MOV	A,0xFC		; E5 FC
+      00028A E5 FD            [ 8]  455 	MOV	A,0xFD		; E5 FD
+      00028C E5 FE            [ 8]  456 	MOV	A,0xFE		; E5 FE
+      00028E E5 FF            [ 8]  457 	MOV	A,0xFF		; E5 FF
+                                    458 ;	SFR bits
+      000290 A2 80            [ 8]  459 	MOV	C,P4.0		; A2 80
+      000292 A2 81            [ 8]  460 	MOV	C,P4.1		; A2 81
+      000294 A2 82            [ 8]  461 	MOV	C,P4.2 		; A2 82
+      000296 A2 83            [ 8]  462 	MOV	C,P4.3 		; A2 83
+      000298 A2 84            [ 8]  463 	MOV	C,P4.4		; A2 84
+      00029A A2 85            [ 8]  464 	MOV	C,P4.5		; A2 85
+      00029C A2 86            [ 8]  465 	MOV	C,P4.6		; A2 86
+      00029E A2 87            [ 8]  466 	MOV	C,P4.7		; A2 87
+      0002A0 A2 88            [ 8]  467 	MOV	C,IT0		; A2 88
+      0002A2 A2 89            [ 8]  468 	MOV	C,IE0		; A2 89
+      0002A4 A2 8A            [ 8]  469 	MOV	C,IT1 		; A2 8A
+      0002A6 A2 8B            [ 8]  470 	MOV	C,IE1 		; A2 8B
+      0002A8 A2 8C            [ 8]  471 	MOV	C,TR0 		; A2 8C
+      0002AA A2 8D            [ 8]  472 	MOV	C,TF0		; A2 8D
+      0002AC A2 8E            [ 8]  473 	MOV	C,TR1		; A2 8E
+      0002AE A2 8F            [ 8]  474 	MOV	C,TF1		; A2 8F
+      0002B0 A2 90            [ 8]  475 	MOV	C,P1.0		; A2 90
+      0002B2 A2 91            [ 8]  476 	MOV	C,P1.1		; A2 91
+      0002B4 A2 92            [ 8]  477 	MOV	C,P1.2		; A2 92
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 11.
+Hexidecimal [24-Bits]
+
+
+
+      0002B6 A2 93            [ 8]  478 	MOV	C,P1.3		; A2 93
+      0002B8 A2 94            [ 8]  479 	MOV	C,P1.4		; A2 94
+      0002BA A2 95            [ 8]  480 	MOV	C,P1.5		; A2 95
+      0002BC A2 96            [ 8]  481 	MOV	C,P1.6		; A2 96
+      0002BE A2 97            [ 8]  482 	MOV	C,P1.7		; A2 97
+      0002C0 A2 98            [ 8]  483 	MOV	C,RI		; A2 98
+      0002C2 A2 99            [ 8]  484 	MOV	C,TI		; A2 99
+      0002C4 A2 9A            [ 8]  485 	MOV	C,RB8		; A2 9A
+      0002C6 A2 9B            [ 8]  486 	MOV	C,TB8		; A2 9B
+      0002C8 A2 9C            [ 8]  487 	MOV	C,REN		; A2 9C
+      0002CA A2 9D            [ 8]  488 	MOV	C,SM2		; A2 9D
+      0002CC A2 9E            [ 8]  489 	MOV	C,SM1		; A2 9E
+      0002CE A2 9F            [ 8]  490 	MOV	C,SM0		; A2 9F
+      0002D0 A2 A0            [ 8]  491 	MOV	C,P2.0		; A2 A0
+      0002D2 A2 A1            [ 8]  492 	MOV	C,P2.1		; A2 A1
+      0002D4 A2 A2            [ 8]  493 	MOV	C,P2.2		; A2 A2
+      0002D6 A2 A3            [ 8]  494 	MOV	C,P2.3		; A2 A3
+      0002D8 A2 A4            [ 8]  495 	MOV	C,P2.4		; A2 A4
+      0002DA A2 A5            [ 8]  496 	MOV	C,P2.5		; A2 A5
+      0002DC A2 A6            [ 8]  497 	MOV	C,P2.6		; A2 A6
+      0002DE A2 A7            [ 8]  498 	MOV	C,P2.7		; A2 A7
+      0002E0 A2 A8            [ 8]  499 	MOV	C,EX0		; A2 A8
+      0002E2 A2 A9            [ 8]  500 	MOV	C,ET0		; A2 A9
+      0002E4 A2 AA            [ 8]  501 	MOV	C,EX1		; A2 AA
+      0002E6 A2 AB            [ 8]  502 	MOV	C,ET1		; A2 AB
+      0002E8 A2 AC            [ 8]  503 	MOV	C,ES		; A2 AC
+      0002EA A2 AD            [ 8]  504 	MOV	C,ET2		; A2 AD
+      0002EC A2 AE            [ 8]  505 	MOV	C,0xAE		; A2 AE
+      0002EE A2 AF            [ 8]  506 	MOV	C,EA		; A2 AF
+      0002F0 A2 B0            [ 8]  507 	MOV	C,P3.0		; A2 B0
+      0002F2 A2 B1            [ 8]  508 	MOV	C,P3.1		; A2 B1
+      0002F4 A2 B2            [ 8]  509 	MOV	C,P3.2		; A2 B2
+      0002F6 A2 B3            [ 8]  510 	MOV	C,P3.3		; A2 B3
+      0002F8 A2 B4            [ 8]  511 	MOV	C,P3.4		; A2 B4
+      0002FA A2 B5            [ 8]  512 	MOV	C,P3.5		; A2 B5
+      0002FC A2 B6            [ 8]  513 	MOV	C,P3.6		; A2 B6
+      0002FE A2 B7            [ 8]  514 	MOV	C,P3.7		; A2 B7
+      000300 A2 B8            [ 8]  515 	MOV	C,PX0		; A2 B8
+      000302 A2 B9            [ 8]  516 	MOV	C,PT0		; A2 B9
+      000304 A2 BA            [ 8]  517 	MOV	C,PX1		; A2 BA
+      000306 A2 BB            [ 8]  518 	MOV	C,PT1		; A2 BB
+      000308 A2 BC            [ 8]  519 	MOV	C,PS		; A2 BC
+      00030A A2 BD            [ 8]  520 	MOV	C,PT2		; A2 BD
+      00030C A2 BE            [ 8]  521 	MOV	C,0xBE		; A2 BE
+      00030E A2 BF            [ 8]  522 	MOV	C,0xBF		; A2 BF
+      000310 A2 C0            [ 8]  523 	MOV	C,0xC0		; A2 C0
+      000312 A2 C1            [ 8]  524 	MOV	C,0xC1		; A2 C1
+      000314 A2 C2            [ 8]  525 	MOV	C,0xC2		; A2 C2
+      000316 A2 C3            [ 8]  526 	MOV	C,0xC3		; A2 C3
+      000318 A2 C4            [ 8]  527 	MOV	C,0xC4		; A2 C4
+      00031A A2 C5            [ 8]  528 	MOV	C,0xC5		; A2 C5
+      00031C A2 C6            [ 8]  529 	MOV	C,0xC6		; A2 C6
+      00031E A2 C7            [ 8]  530 	MOV	C,0xC7		; A2 C7
+      000320 A2 C8            [ 8]  531 	MOV	C,CPRL2		; A2 C8
+      000322 A2 C9            [ 8]  532 	MOV	C,CT2		; A2 C9
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 12.
+Hexidecimal [24-Bits]
+
+
+
+      000324 A2 CA            [ 8]  533 	MOV	C,TR2		; A2 CA
+      000326 A2 CB            [ 8]  534 	MOV	C,EXEN2		; A2 CB
+      000328 A2 CC            [ 8]  535 	MOV	C,TCLK		; A2 CC
+      00032A A2 CD            [ 8]  536 	MOV	C,RCLK		; A2 CD
+      00032C A2 CE            [ 8]  537 	MOV	C,EXF2		; A2 CE
+      00032E A2 CF            [ 8]  538 	MOV	C,TF2		; A2 CF
+      000330 A2 D0            [ 8]  539 	MOV	C,P		; A2 D0
+      000332 A2 D1            [ 8]  540 	MOV	C,0xD1		; A2 D1
+      000334 A2 D2            [ 8]  541 	MOV	C,OV		; A2 D2
+      000336 A2 D3            [ 8]  542 	MOV	C,RS0		; A2 D3
+      000338 A2 D4            [ 8]  543 	MOV	C,RS1		; A2 D4
+      00033A A2 D5            [ 8]  544 	MOV	C,F0		; A2 D5
+      00033C A2 D6            [ 8]  545 	MOV	C,AC		; A2 D6
+      00033E A2 D7            [ 8]  546 	MOV	C,CY		; A2 D7
+      000340 A2 D8            [ 8]  547 	MOV	C,0xD8		; A2 D8
+      000342 A2 D9            [ 8]  548 	MOV	C,0xD9		; A2 D9
+      000344 A2 DA            [ 8]  549 	MOV	C,0xDA		; A2 DA
+      000346 A2 DB            [ 8]  550 	MOV	C,0xDB		; A2 DB
+      000348 A2 DC            [ 8]  551 	MOV	C,0xDC		; A2 DC
+      00034A A2 DD            [ 8]  552 	MOV	C,0xDD		; A2 DD
+      00034C A2 DE            [ 8]  553 	MOV	C,0xDE		; A2 DE
+      00034E A2 DF            [ 8]  554 	MOV	C,0xDF		; A2 DF
+      000350 A2 E0            [ 8]  555 	MOV	C,ACC.0		; A2 E0
+      000352 A2 E1            [ 8]  556 	MOV	C,ACC.1		; A2 E1
+      000354 A2 E2            [ 8]  557 	MOV	C,ACC.2		; A2 E2
+      000356 A2 E3            [ 8]  558 	MOV	C,ACC.3		; A2 E3
+      000358 A2 E4            [ 8]  559 	MOV	C,ACC.4		; A2 E4
+      00035A A2 E5            [ 8]  560 	MOV	C,ACC.5		; A2 E5
+      00035C A2 E6            [ 8]  561 	MOV	C,ACC.6		; A2 E6
+      00035E A2 E7            [ 8]  562 	MOV	C,ACC.7		; A2 E7
+      000360 A2 E8            [ 8]  563 	MOV	C,0xE8		; A2 E8
+      000362 A2 E9            [ 8]  564 	MOV	C,0xE9		; A2 E9
+      000364 A2 EA            [ 8]  565 	MOV	C,0xEA		; A2 EA
+      000366 A2 EB            [ 8]  566 	MOV	C,0xEB		; A2 EB
+      000368 A2 EC            [ 8]  567 	MOV	C,0xEC		; A2 EC
+      00036A A2 ED            [ 8]  568 	MOV	C,0xED		; A2 ED
+      00036C A2 EE            [ 8]  569 	MOV	C,0xEE		; A2 EE
+      00036E A2 EF            [ 8]  570 	MOV	C,0xEF		; A2 EF
+                                    571 	
+      000370 A2 F0            [ 8]  572 	MOV	C,B.0		; A2 F0
+      000372 A2 F1            [ 8]  573 	MOV	C,B.1		; A2 F1
+      000374 A2 F2            [ 8]  574 	MOV	C,B.2		; A2 F2
+      000376 A2 F3            [ 8]  575 	MOV	C,B.3		; A2 F3
+      000378 A2 F4            [ 8]  576 	MOV	C,B.4		; A2 F4
+      00037A A2 F5            [ 8]  577 	MOV	C,B.5		; A2 F5
+      00037C A2 F6            [ 8]  578 	MOV	C,B.6		; A2 F6
+      00037E A2 F7            [ 8]  579 	MOV	C,B.7		; A2 F7
+      000380 A2 F8            [ 8]  580 	MOV	C,0xF8		; A2 F8
+      000382 A2 F9            [ 8]  581 	MOV	C,0xF9		; A2 F9
+      000384 A2 FA            [ 8]  582 	MOV	C,0xFA		; A2 FA
+      000386 A2 FB            [ 8]  583 	MOV	C,0xFB		; A2 FB
+      000388 A2 FC            [ 8]  584 	MOV	C,0xFC		; A2 FC
+      00038A A2 FD            [ 8]  585 	MOV	C,0xFD		; A2 FD
+      00038C A2 FE            [ 8]  586 	MOV	C,0xFE		; A2 FE
+      00038E A2 FF            [ 8]  587 	MOV	C,0xFF		; A2 FF
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 13.
+Hexidecimal [24-Bits]
+
+
+
+                                    588 ;;/* Direct Mode (*) Checks */;;
+      000390 05*12            [ 8]  589 ALLL4:	INC	*NN		; 05*12
+      000392 10*12 FB         [12]  590 	JBC	*NN,ALLL4	; 10*12 FB
+      000395 15*12            [ 8]  591 	DEC	*NN		; 15*12
+      000397 20*12 F6         [12]  592 	JB	*NN,ALLL4	; 20*12 F6
+      00039A 25*12            [ 8]  593 	ADD	A,*NN		; 25*12
+      00039C 30*12 F1         [12]  594 	JNB	*NN,ALLL4	; 30*12 F1
+      00039F 35*12            [ 8]  595 	ADDC	A,*NN		; 35*12
+      0003A1 42*12            [ 8]  596 	ORL	*NN,A		; 42*12
+      0003A3 43*12r34         [12]  597 	ORL	*NN,#MM		; 43*12r34
+      0003A6 45*12            [ 8]  598 	ORL	A,*NN		; 45*12
+      0003A8 52*12            [ 8]  599 	ANL	*NN,A		; 52*12
+      0003AA 53*12r34         [12]  600 	ANL	*NN,#MM		; 53*12r34
+      0003AD 55*12            [ 8]  601 	ANL	A,*NN		; 55*12
+      0003AF 62*12            [ 8]  602 	XRL	*NN,A		; 62*12
+      0003B1 63*12r34         [12]  603 	XRL	*NN,#MM		; 63*12r34
+      0003B4 65*12            [ 8]  604 	XRL	A,*NN		; 65*12
+      0003B6 72*12            [ 8]  605 	ORL	C,*NN		; 72*12
+      0003B8 75*12r34         [12]  606 	MOV	*NN,#MM		; 75*12r34
+      0003BB 82*12            [ 8]  607 	ANL	C,*NN		; 82*12
+      0003BD 85*34*12         [12]  608 	MOV	*NN,*MM		; 85*34*12
+      0003C0 86*12            [ 8]  609 	MOV	*NN,@R0		; 86*12
+      0003C2 87*12            [ 8]  610 	MOV	*NN,@R1		; 87*12
+      0003C4 88*12            [ 8]  611 	MOV	*NN,R0		; 88*12
+      0003C6 89*12            [ 8]  612 	MOV	*NN,R1		; 89*12
+      0003C8 8A*12            [ 8]  613 	MOV	*NN,R2		; 8A*12
+      0003CA 8B*12            [ 8]  614 	MOV	*NN,R3		; 8B*12
+      0003CC 8C*12            [ 8]  615 	MOV	*NN,R4		; 8C*12
+      0003CE 8D*12            [ 8]  616 	MOV	*NN,R5		; 8D*12
+      0003D0 8E*12            [ 8]  617 	MOV	*NN,R6		; 8E*12
+      0003D2 8F*12            [ 8]  618 	MOV	*NN,R7		; 8F*12
+      0003D4 92*12            [ 8]  619 	MOV	*NN,C		; 92*12
+      0003D6 95*12            [ 8]  620 	SUBB	A,*NN		; 95*12
+      0003D8 A0*12            [ 8]  621 	ORL	C,*/NN		; A0*12
+      0003DA A2*12            [ 8]  622 	MOV	C,*NN		; A2*12
+      0003DC A6*12            [ 8]  623 	MOV	@R0,*NN		; A6*12
+      0003DE A7*12            [ 8]  624 	MOV	@R1,*NN		; A7*12
+      0003E0 A8*12            [ 8]  625 	MOV	R0,*NN		; A8*12
+      0003E2 A9*12            [ 8]  626 	MOV	R1,*NN		; A9*12
+      0003E4 AA*12            [ 8]  627 	MOV	R2,*NN		; AA*12
+      0003E6 AB*12            [ 8]  628 	MOV	R3,*NN		; AB*12
+      0003E8 AC*12            [ 8]  629 	MOV	R4,*NN		; AC*12
+      0003EA AD*12            [ 8]  630 	MOV	R5,*NN		; AD*12
+      0003EC AE*12            [ 8]  631 	MOV	R6,*NN		; AE*12
+      0003EE AF*12            [ 8]  632 	MOV	R7,*NN		; AF*12
+      0003F0 B0*12            [ 8]  633 	ANL	C,*/NN		; B0*12
+      0003F2 B2*12            [ 8]  634 	CPL	*NN		; B2*12
+      0003F4 B5*12 99         [16]  635 	CJNE	A,*NN,ALLL4	; B5*12 99
+      0003F7 C0*12            [ 8]  636 	PUSH	*NN		; C0*12
+      0003F9 C2*12            [ 8]  637 	CLR	*NN		; C2*12
+      0003FB C5*12            [ 8]  638 	XCH	A,*NN		; C5*12
+      0003FD D0*12            [ 8]  639 	POP	*NN		; D0*12
+      0003FF D2*12            [ 8]  640 	SETB	*NN		; D2*12
+      000401 D5*12 8C         [16]  641 	DJNZ	*NN,ALLL4	; D5*12 8C
+      000404 E5*12            [ 8]  642 	MOV	A,*NN		; E5*12
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 14.
+Hexidecimal [24-Bits]
+
+
+
+      000406 F5*12            [ 8]  643 	MOV	*NN,A		; F5*12
+                                    644 
+      000408                        645 	.blkb	0x1000 - (. - bgncode1)
+                                    646 
+                                    647 	.area	CODE2 (REL,CON)
+                                    648 	.amode	2		; 24-Bit CALL/JMP Addressing Mode
+                                    649 ;
+      000000                        650 bgncode2::
+                                    651 ;
+      000000                        652 text8051_func_var::
+      000000 00               [ 4]  653 	nop			; 00
+      000001                        654 text8051_func_varsilly_::
+      000001 00               [ 4]  655 	nop			; 00
+      000002                        656 text8051_func_varno_no::
+      000002 00               [ 4]  657 	nop			; 00
+      000003                        658 text8051_func_var0_0::
+      000003 00               [ 4]  659 	nop			; 00
+      000004                        660 text8051_func_var1_1::
+      000004 00               [ 4]  661 	nop			; 00
+      000005                        662 text8051_func__FN::
+      000005 00               [ 4]  663 	nop			; 00
+      000006                        664 text8051_static::
+      000006 00               [ 4]  665 BLLLL:	NOP			; 00
+      000007M01n00*0E         [12]  666 	AJMP	BRN		;M01n00*0E
+      00000A 02R00s00r06      [16]  667 	LJMP	BLLLL		; 02R00s00r06
+      00000E 03               [ 4]  668 BRN:	RR	A		; 03
+      00000F 04               [ 4]  669 	INC	A		; 04
+      000010 05*12            [ 8]  670 	INC	NN		; 05*12
+      000012 06               [ 4]  671 	INC	@R0		; 06
+      000013 07               [ 4]  672 	INC	@R1		; 07
+      000014 08               [ 4]  673 	INC	R0		; 08
+      000015 09               [ 4]  674 	INC	R1		; 09
+      000016 0A               [ 4]  675 	INC	R2		; 0A
+      000017 0B               [ 4]  676 	INC	R3		; 0B
+      000018 0C               [ 4]  677 	INC	R4		; 0C
+      000019 0D               [ 4]  678 	INC	R5		; 0D
+      00001A 0E               [ 4]  679 	INC	R6		; 0E
+      00001B 0F               [ 4]  680 	INC	R7		; 0F
+      00001C                        681 BCNNNN:
+      00001C 10*12 E7         [12]  682 	JBC	NN,BLLLL	; 10*12 E7
+      00001FM11n00*06         [12]  683 	ACALL	BLLLL + 0x000	;M11n00*06
+      000022 12R00s00r06      [16]  684 	LCALL	BLLLL		; 12R00s00r06
+      000026 13               [ 4]  685 	RRC	A		; 13
+      000027 14               [ 4]  686 	DEC	A		; 14
+      000028 15*12            [ 8]  687 	DEC	NN		; 15*12
+      00002A 16               [ 4]  688 	DEC	@R0		; 16
+      00002B 17               [ 4]  689 	DEC	@R1		; 17
+      00002C 18               [ 4]  690 	DEC	R0		; 18
+      00002D 19               [ 4]  691 	DEC	R1		; 19
+      00002E 1A               [ 4]  692 	DEC	R2		; 1A
+      00002F 1B               [ 4]  693 	DEC	R3		; 1B
+      000030 1C               [ 4]  694 	DEC	R4		; 1C
+      000031 1D               [ 4]  695 	DEC	R5		; 1D
+      000032 1E               [ 4]  696 	DEC	R6		; 1E
+      000033 1F               [ 4]  697 	DEC	R7		; 1F
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 15.
+Hexidecimal [24-Bits]
+
+
+
+      000034 20*12 CF         [12]  698 	JB	NN,BLLLL	; 20*12 CF
+      000037M01n01*06         [12]  699 	AJMP	BLLLL + 0x100	;M01n01*06
+      00003A 22               [16]  700 	RET			; 22
+      00003B 23               [ 4]  701 	RL	A		; 23
+      00003C 24r12            [ 8]  702 	ADD	A,#NN		; 24r12
+      00003E 25*12            [ 8]  703 	ADD	A,NN		; 25*12
+      000040 26               [ 4]  704 	ADD	A,@R0		; 26
+      000041 27               [ 4]  705 	ADD	A,@R1		; 27
+      000042 28               [ 4]  706 	ADD	A,R0		; 28
+      000043 29               [ 4]  707 	ADD	A,R1		; 29
+      000044 2A               [ 4]  708 	ADD	A,R2		; 2A
+      000045 2B               [ 4]  709 	ADD	A,R3		; 2B
+      000046 2C               [ 4]  710 	ADD	A,R4		; 2C
+      000047 2D               [ 4]  711 	ADD	A,R5		; 2D
+      000048 2E               [ 4]  712 	ADD	A,R6		; 2E
+      000049 2F               [ 4]  713 	ADD	A,R7		; 2F
+      00004A 30*12 B9         [12]  714 	JNB	NN,BLLLL	; 30*12 B9
+      00004DM11n01*06         [12]  715 	ACALL	BLLLL + 0x100	;M11n01*06
+      000050 32               [16]  716 	RETI			; 32
+      000051 33               [ 4]  717 	RLC	A		; 33
+      000052 34r12            [ 8]  718 	ADDC	A,#NN		; 34r12
+      000054 35*12            [ 8]  719 	ADDC	A,NN		; 35*12
+      000056 36               [ 4]  720 	ADDC	A,@R0		; 36
+      000057 37               [ 4]  721 	ADDC	A,@R1		; 37
+      000058 38               [ 4]  722 	ADDC	A,R0		; 38
+      000059 39               [ 4]  723 	ADDC	A,R1		; 39
+      00005A 3A               [ 4]  724 	ADDC	A,R2		; 3A
+      00005B 3B               [ 4]  725 	ADDC	A,R3		; 3B
+      00005C 3C               [ 4]  726 	ADDC	A,R4		; 3C
+      00005D 3D               [ 4]  727 	ADDC	A,R5		; 3D
+      00005E 3E               [ 4]  728 	ADDC	A,R6		; 3E
+      00005F 3F               [ 4]  729 	ADDC	A,R7		; 3F
+      000060 40 A4            [12]  730 	JC	BLLLL		; 40 A4
+      000062M01n02*06         [12]  731 	AJMP	BLLLL + 0x200	;M01n02*06
+      000065 42*12            [ 8]  732 	ORL	NN,A		; 42*12
+      000067 43*12r34         [12]  733 	ORL	NN,#MM		; 43*12r34
+      00006A 44r12            [ 8]  734 	ORL	A,#NN		; 44r12
+      00006C 45*12            [ 8]  735 	ORL	A,NN		; 45*12
+      00006E 46               [ 4]  736 	ORL	A,@R0		; 46
+      00006F 47               [ 4]  737 	ORL	A,@R1		; 47
+      000070 48               [ 4]  738 	ORL	A,R0		; 48
+      000071 49               [ 4]  739 	ORL	A,R1		; 49
+      000072 4A               [ 4]  740 	ORL	A,R2		; 4A
+      000073 4B               [ 4]  741 	ORL	A,R3		; 4B
+      000074 4C               [ 4]  742 	ORL	A,R4		; 4C
+      000075 4D               [ 4]  743 	ORL	A,R5		; 4D
+      000076 4E               [ 4]  744 	ORL	A,R6		; 4E
+      000077 4F               [ 4]  745 	ORL	A,R7		; 4F
+      000078 50 13            [12]  746 	JNC	BLLL2		; 50 13
+      00007AM11n02*06         [12]  747 	ACALL	BLLLL + 0x200	;M11n02*06
+      00007D 52*12            [ 8]  748 	ANL	NN,A		; 52*12
+      00007F 53*12r34         [12]  749 	ANL	NN,#MM		; 53*12r34
+      000082 54r12            [ 8]  750 	ANL	A,#NN		; 54r12
+      000084 55*12            [ 8]  751 	ANL	A,NN		; 55*12
+      000086 56               [ 4]  752 	ANL	A,@R0		; 56
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 16.
+Hexidecimal [24-Bits]
+
+
+
+      000087 57               [ 4]  753 	ANL	A,@R1		; 57
+      000088 58               [ 4]  754 	ANL	A,R0		; 58
+      000089 59               [ 4]  755 	ANL	A,R1		; 59
+      00008A 5A               [ 4]  756 	ANL	A,R2		; 5A
+      00008B 5B               [ 4]  757 	ANL	A,R3		; 5B
+      00008C 5C               [ 4]  758 	ANL	A,R4		; 5C
+      00008D 5D               [ 4]  759 BLLL2:	ANL	A,R5		; 5D
+      00008E 5E               [ 4]  760 	ANL	A,R6		; 5E
+      00008F 5F               [ 4]  761 	ANL	A,R7		; 5F
+      000090 60 FB            [12]  762 	JZ	BLLL2		; 60 FB
+      000092M01n03*06         [12]  763 	AJMP	BLLLL + 0x300	;M01n03*06
+      000095 62*12            [ 8]  764 	XRL	NN,A		; 62*12
+      000097 63*12r34         [12]  765 	XRL	NN,#MM		; 63*12r34
+      00009A 64r12            [ 8]  766 	XRL	A,#NN		; 64r12
+      00009C 65*12            [ 8]  767 	XRL	A,NN		; 65*12
+      00009E 66               [ 4]  768 	XRL	A,@R0		; 66
+      00009F 67               [ 4]  769 	XRL	A,@R1		; 67
+      0000A0 68               [ 4]  770 	XRL	A,R0		; 68
+      0000A1 69               [ 4]  771 	XRL	A,R1		; 69
+      0000A2 6A               [ 4]  772 	XRL	A,R2		; 6A
+      0000A3 6B               [ 4]  773 	XRL	A,R3		; 6B
+      0000A4 6C               [ 4]  774 	XRL	A,R4		; 6C
+      0000A5 6D               [ 4]  775 	XRL	A,R5		; 6D
+      0000A6 6E               [ 4]  776 	XRL	A,R6		; 6E
+      0000A7 6F               [ 4]  777 	XRL	A,R7		; 6F
+      0000A8 70 E3            [12]  778 	JNZ	BLLL2		; 70 E3
+      0000AAM11n03*06         [12]  779 	ACALL	BLLLL + 0x300	;M11n03*06
+      0000AD 72*12            [ 8]  780 	ORL	C,NN		; 72*12
+      0000AF 73               [12]  781 	JMP	@A+DPTR		; 73
+      0000B0 74r12            [ 8]  782 	MOV	A,#NN		; 74r12
+      0000B2 75*12r34         [12]  783 	MOV	NN,#MM		; 75*12r34
+      0000B5 76r12            [ 8]  784 	MOV	@R0,#NN		; 76r12
+      0000B7 77r12            [ 8]  785 	MOV	@R1,#NN		; 77r12
+      0000B9 78r12            [ 8]  786 	MOV	R0,#NN		; 78r12
+      0000BB 79r12            [ 8]  787 	MOV	R1,#NN		; 79r12
+      0000BD 7Ar12            [ 8]  788 	MOV	R2,#NN		; 7Ar12
+      0000BF 7Br12            [ 8]  789 	MOV	R3,#NN		; 7Br12
+      0000C1 7Cr12            [ 8]  790 	MOV	R4,#NN		; 7Cr12
+      0000C3 7Dr12            [ 8]  791 	MOV	R5,#NN		; 7Dr12
+      0000C5 7Er12            [ 8]  792 	MOV	R6,#NN		; 7Er12
+      0000C7 7Fr12            [ 8]  793 	MOV	R7,#NN		; 7Fr12
+      0000C9 80 C2            [12]  794 	SJMP	BLLL2		; 80 C2
+      0000CBM01n04*06         [12]  795 	AJMP	BLLLL + 0x400	;M01n04*06
+      0000CE 82*12            [ 8]  796 	ANL	C,NN		; 82*12
+      0000D0 83               [12]  797 	MOVC	A,@A+PC		; 83
+      0000D1 84               [20]  798 	DIV	AB		; 84
+      0000D2 85*34*12         [12]  799 	MOV	NN,MM		; 85*34*12
+      0000D5 86*12            [ 8]  800 	MOV	NN,@R0		; 86*12
+      0000D7 87*12            [ 8]  801 	MOV	NN,@R1		; 87*12
+      0000D9 88*12            [ 8]  802 	MOV	NN,R0		; 88*12
+      0000DB 89*12            [ 8]  803 	MOV	NN,R1		; 89*12
+      0000DD 8A*12            [ 8]  804 	MOV	NN,R2		; 8A*12
+      0000DF 8B*12            [ 8]  805 	MOV	NN,R3		; 8B*12
+      0000E1 8C*12            [ 8]  806 	MOV	NN,R4		; 8C*12
+      0000E3 8D*12            [ 8]  807 	MOV	NN,R5		; 8D*12
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 17.
+Hexidecimal [24-Bits]
+
+
+
+      0000E5 8E*12            [ 8]  808 	MOV	NN,R6		; 8E*12
+      0000E7 8F*12            [ 8]  809 	MOV	NN,R7		; 8F*12
+      0000E9 90R00s12r34      [12]  810 	MOV	DPTR,#NNNN	; 90R00s12r34
+      0000EDM11n04*06         [12]  811 	ACALL	BLLLL + 0x400	;M11n04*06
+      0000F0 92*12            [ 8]  812 	MOV	NN,C		; 92*12
+      0000F2 93               [12]  813 	MOVC	A,@A+DPTR	; 93
+      0000F3 94r12            [ 8]  814 	SUBB	A,#NN		; 94r12
+      0000F5 95*12            [ 8]  815 	SUBB	A,NN		; 95*12
+      0000F7 96               [ 4]  816 	SUBB	A,@R0		; 96
+      0000F8 97               [ 4]  817 	SUBB	A,@R1		; 97
+      0000F9 98               [ 4]  818 	SUBB	A,R0		; 98
+      0000FA 99               [ 4]  819 	SUBB	A,R1		; 99
+      0000FB 9A               [ 4]  820 	SUBB	A,R2		; 9A
+      0000FC 9B               [ 4]  821 	SUBB	A,R3		; 9B
+      0000FD 9C               [ 4]  822 	SUBB	A,R4		; 9C
+      0000FE 9D               [ 4]  823 	SUBB	A,R5		; 9D
+      0000FF 9E               [ 4]  824 	SUBB	A,R6		; 9E
+      000100 9F               [ 4]  825 	SUBB	A,R7		; 9F
+      000101 A0*12            [ 8]  826 	ORL	C,/NN		; A0*12
+      000103M01n05*06         [12]  827 	AJMP	BLLLL + 0x500	;M01n05*06
+      000106 A2*12            [ 8]  828 	MOV	C,NN		; A2*12
+      000108 A3               [12]  829 	INC	DPTR		; A3
+      000109 A4               [20]  830 	MUL	AB		; A4
+                                    831 ;	un_OP			; A5
+      00010A A6*12            [ 8]  832 	MOV	@R0,NN		; A6*12
+      00010C A7*12            [ 8]  833 	MOV	@R1,NN		; A7*12
+      00010E A8*12            [ 8]  834 	MOV	R0,NN		; A8*12
+      000110 A9*12            [ 8]  835 	MOV	R1,NN		; A9*12
+      000112 AA*12            [ 8]  836 	MOV	R2,NN		; AA*12
+      000114 AB*12            [ 8]  837 	MOV	R3,NN		; AB*12
+      000116 AC*12            [ 8]  838 	MOV	R4,NN		; AC*12
+      000118 AD*12            [ 8]  839 	MOV	R5,NN		; AD*12
+      00011A AE*12            [ 8]  840 	MOV	R6,NN		; AE*12
+      00011C AF*12            [ 8]  841 	MOV	R7,NN		; AF*12
+      00011E B0*12            [ 8]  842 BLLL3:	ANL	C,/NN		; B0*12
+      000120M11n05*06         [12]  843 	ACALL	BLLLL + 0x500	;M11n05*06
+      000123 B2*12            [ 8]  844 	CPL	NN		; B2*12
+      000125 B3               [ 4]  845 	CPL	C		; B3
+      000126 B4r12 F5         [16]  846 	CJNE	A,#NN,BLLL3	; B4r12 F5
+      000129 B5*12 F2         [16]  847 	CJNE	A,NN,BLLL3	; B5*12 F2
+      00012C B6r12 EF         [16]  848 	CJNE	@R0,#NN,BLLL3	; B6r12 EF
+      00012F B7r12 EC         [16]  849 	CJNE	@R1,#NN,BLLL3	; B7r12 EC
+      000132 B8r12 E9         [16]  850 	CJNE	R0,#NN,BLLL3	; B8r12 E9
+      000135 B9r12 E6         [16]  851 	CJNE	R1,#NN,BLLL3	; B9r12 E6
+      000138 BAr12 E3         [16]  852 	CJNE	R2,#NN,BLLL3	; BAr12 E3
+      00013B BBr12 E0         [16]  853 	CJNE	R3,#NN,BLLL3	; BBr12 E0
+      00013E BCr12 DD         [16]  854 	CJNE	R4,#NN,BLLL3	; BCr12 DD
+      000141 BDr12 DA         [16]  855 	CJNE	R5,#NN,BLLL3	; BDr12 DA
+      000144 BEr12 D7         [16]  856 	CJNE	R6,#NN,BLLL3	; BEr12 D7
+      000147 BFr12 D4         [16]  857 	CJNE	R7,#NN,BLLL3	; BFr12 D4
+      00014A C0*12            [ 8]  858 	PUSH	NN		; C0*12
+      00014CM01n06*06         [12]  859 	AJMP	BLLLL + 0x600	;M01n06*06
+      00014F C2*12            [ 8]  860 	CLR	NN		; C2*12
+      000151 C3               [ 4]  861 	CLR	C		; C3
+      000152 C4               [ 4]  862 	SWAP	A		; C4
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 18.
+Hexidecimal [24-Bits]
+
+
+
+      000153 C5*12            [ 8]  863 	XCH	A,NN		; C5*12
+      000155 C6               [ 4]  864 	XCH	A,@R0		; C6
+      000156 C7               [ 4]  865 	XCH	A,@R1		; C7
+      000157 C8               [ 4]  866 	XCH	A,R0		; C8
+      000158 C9               [ 4]  867 	XCH	A,R1		; C9
+      000159 CA               [ 4]  868 	XCH	A,R2		; CA
+      00015A CB               [ 4]  869 	XCH	A,R3		; CB
+      00015B CC               [ 4]  870 	XCH	A,R4		; CC
+      00015C CD               [ 4]  871 	XCH	A,R5		; CD
+      00015D CE               [ 4]  872 	XCH	A,R6		; CE
+      00015E CF               [ 4]  873 	XCH	A,R7		; CF
+      00015F D0*12            [ 8]  874 	POP	NN		; D0*12
+      000161M11n06*06         [12]  875 	ACALL	BLLLL + 0x600	;M11n06*06
+      000164 D2*12            [ 8]  876 	SETB	NN		; D2*12
+      000166 D3               [ 4]  877 	SETB	C		; D3
+      000167 D4               [ 4]  878 	DA	A		; D4
+      000168 D5*12 B3         [16]  879 	DJNZ	NN,BLLL3	; D5*12 B3
+      00016B D6               [ 4]  880 	XCHD	A,@R0		; D6
+      00016C D7               [ 4]  881 	XCHD	A,@R1		; D7
+      00016D D8 AF            [12]  882 	DJNZ	R0,BLLL3	; D8 AF
+      00016F D9 AD            [12]  883 	DJNZ	R1,BLLL3	; D9 AD
+      000171 DA AB            [12]  884 	DJNZ	R2,BLLL3	; DA AB
+      000173 DB A9            [12]  885 	DJNZ	R3,BLLL3	; DB A9
+      000175 DC A7            [12]  886 	DJNZ	R4,BLLL3	; DC A7
+      000177 DD A5            [12]  887 	DJNZ	R5,BLLL3	; DD A5
+      000179 DE A3            [12]  888 	DJNZ	R6,BLLL3	; DE A3
+      00017B DF A1            [12]  889 	DJNZ	R7,BLLL3	; DF A1
+      00017D E0               [ 8]  890 	MOVX	A,@DPTR		; E0
+      00017EM01n07*06         [12]  891 	AJMP	BLLLL + 0x700	;M01n07*06
+      000181 E2               [ 8]  892 	MOVX	A,@R0		; E2
+      000182 E3               [ 8]  893 	MOVX	A,@R1		; E3
+      000183 E4               [ 4]  894 	CLR	A		; E4
+      000184 E5*12            [ 8]  895 	MOV	A,NN		; E5*12
+      000186 E6               [ 4]  896 	MOV	A,@R0		; E6
+      000187 E7               [ 4]  897 	MOV	A,@R1		; E7
+      000188 E8               [ 4]  898 	MOV	A,R0		; E8
+      000189 E9               [ 4]  899 	MOV	A,R1		; E9
+      00018A EA               [ 4]  900 	MOV	A,R2		; EA
+      00018B EB               [ 4]  901 	MOV	A,R3		; EB
+      00018C EC               [ 4]  902 	MOV	A,R4		; EC
+      00018D ED               [ 4]  903 	MOV	A,R5		; ED
+      00018E EE               [ 4]  904 	MOV	A,R6		; EE
+      00018F EF               [ 4]  905 	MOV	A,R7		; EF
+      000190 F0               [ 8]  906 	MOVX	@DPTR,A		; F0
+      000191M11n07*06         [12]  907 	ACALL	BLLLL + 0x700	;M11n07*06
+      000194 F2               [ 8]  908 	MOVX	@R0,A		; F2
+      000195 F3               [ 8]  909 	MOVX	@R1,A		; F3
+      000196 F4               [ 4]  910 	CPL	A		; F4
+      000197 F5*12            [ 8]  911 	MOV	NN,A		; F5*12
+      000199 F6               [ 4]  912 	MOV	@R0,A		; F6
+      00019A F7               [ 4]  913 	MOV	@R1,A		; F7
+      00019B F8               [ 4]  914 	MOV	R0,A		; F8
+      00019C F9               [ 4]  915 	MOV	R1,A		; F9
+      00019D FA               [ 4]  916 	MOV	R2,A		; FA
+      00019E FB               [ 4]  917 	MOV	R3,A		; FB
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 19.
+Hexidecimal [24-Bits]
+
+
+
+      00019F FC               [ 4]  918 	MOV	R4,A		; FC
+      0001A0 FD               [ 4]  919 	MOV	R5,A		; FD
+      0001A1 FE               [ 4]  920 	MOV	R6,A		; FE
+      0001A2 FF               [ 4]  921 	MOV	R7,A		; FF
+                                    922 ;  Test SFR equates
+      0001A3 E5 80            [ 8]  923 	MOV	A,P4		; E5 80
+      0001A5 E5 81            [ 8]  924 	MOV	A,SP		; E5 81
+      0001A7 E5 82            [ 8]  925 	MOV	A,DPL 		; E5 82
+      0001A9 E5 83            [ 8]  926 	MOV	A,DPH 		; E5 83
+      0001AB E5 84            [ 8]  927 	MOV	A,0x84		; E5 84
+      0001AD E5 85            [ 8]  928 	MOV	A,0x85		; E5 85
+      0001AF E5 86            [ 8]  929 	MOV	A,0x86		; E5 86
+      0001B1 E5 87            [ 8]  930 	MOV	A,0x87		; E5 87
+      0001B3 E5 88            [ 8]  931 	MOV	A,TCON		; E5 88
+      0001B5 E5 89            [ 8]  932 	MOV	A,TMOD		; E5 89
+      0001B7 E5 8A            [ 8]  933 	MOV	A,TL0 		; E5 8A
+      0001B9 E5 8B            [ 8]  934 	MOV	A,TL1 		; E5 8B
+      0001BB E5 8C            [ 8]  935 	MOV	A,TH0 		; E5 8C
+      0001BD E5 8D            [ 8]  936 	MOV	A,TH1		; E5 8D
+      0001BF E5 8E            [ 8]  937 	MOV	A,0x8E		; E5 8E
+      0001C1 E5 8F            [ 8]  938 	MOV	A,0x8F		; E5 8F
+      0001C3 E5 90            [ 8]  939 	MOV	A,P1		; E5 90
+      0001C5 E5 91            [ 8]  940 	MOV	A,0x91		; E5 91
+      0001C7 E5 92            [ 8]  941 	MOV	A,0x92		; E5 92
+      0001C9 E5 93            [ 8]  942 	MOV	A,0x93		; E5 93
+      0001CB E5 94            [ 8]  943 	MOV	A,0x94		; E5 94
+      0001CD E5 95            [ 8]  944 	MOV	A,0x95		; E5 95
+      0001CF E5 96            [ 8]  945 	MOV	A,0x96		; E5 96
+      0001D1 E5 97            [ 8]  946 	MOV	A,0x97		; E5 97
+      0001D3 E5 98            [ 8]  947 	MOV	A,SCON		; E5 98
+      0001D5 E5 99            [ 8]  948 	MOV	A,SBUF		; E5 99
+      0001D7 E5 9A            [ 8]  949 	MOV	A,0x9A		; E5 9A
+      0001D9 E5 9B            [ 8]  950 	MOV	A,0x9B		; E5 9B
+      0001DB E5 9C            [ 8]  951 	MOV	A,0x9C		; E5 9C
+      0001DD E5 9D            [ 8]  952 	MOV	A,0x9D		; E5 9D
+      0001DF E5 9E            [ 8]  953 	MOV	A,0x9E		; E5 9E
+      0001E1 E5 9F            [ 8]  954 	MOV	A,0x9F		; E5 9F
+      0001E3 E5 A0            [ 8]  955 	MOV	A,P2		; E5 A0
+      0001E5 E5 A1            [ 8]  956 	MOV	A,0xA1		; E5 A1
+      0001E7 E5 A2            [ 8]  957 	MOV	A,0xA2		; E5 A2
+      0001E9 E5 A3            [ 8]  958 	MOV	A,0xA3		; E5 A3
+      0001EB E5 A4            [ 8]  959 	MOV	A,0xA4		; E5 A4
+      0001ED E5 A5            [ 8]  960 	MOV	A,0xA5		; E5 A5
+      0001EF E5 A6            [ 8]  961 	MOV	A,0xA6		; E5 A6
+      0001F1 E5 A7            [ 8]  962 	MOV	A,0xA7		; E5 A7
+      0001F3 E5 A8            [ 8]  963 	MOV	A,IE 	 	; E5 A8
+      0001F5 E5 A9            [ 8]  964 	MOV	A,0xA9		; E5 A9
+      0001F7 E5 AA            [ 8]  965 	MOV	A,0xAA		; E5 AA
+      0001F9 E5 AB            [ 8]  966 	MOV	A,0xAB		; E5 AB
+      0001FB E5 AC            [ 8]  967 	MOV	A,0xAC		; E5 AC
+      0001FD E5 AD            [ 8]  968 	MOV	A,0xAD		; E5 AD
+      0001FF E5 AE            [ 8]  969 	MOV	A,0xAE		; E5 AE
+      000201 E5 AF            [ 8]  970 	MOV	A,0xAF		; E5 AF
+      000203 E5 B0            [ 8]  971 	MOV	A,P3 	 	; E5 B0
+      000205 E5 B1            [ 8]  972 	MOV	A,0xB1		; E5 B1
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 20.
+Hexidecimal [24-Bits]
+
+
+
+      000207 E5 B2            [ 8]  973 	MOV	A,0xB2		; E5 B2
+      000209 E5 B3            [ 8]  974 	MOV	A,0xB3		; E5 B3
+      00020B E5 B4            [ 8]  975 	MOV	A,0xB4		; E5 B4
+      00020D E5 B5            [ 8]  976 	MOV	A,0xB5		; E5 B5
+      00020F E5 B6            [ 8]  977 	MOV	A,0xB6		; E5 B6
+      000211 E5 B7            [ 8]  978 	MOV	A,0xB7		; E5 B7
+      000213 E5 B8            [ 8]  979 	MOV	A,IP 	 	; E5 B8
+      000215 E5 B9            [ 8]  980 	MOV	A,0xB9		; E5 B9
+      000217 E5 BA            [ 8]  981 	MOV	A,0xBA		; E5 BA
+      000219 E5 BB            [ 8]  982 	MOV	A,0xBB		; E5 BB
+      00021B E5 BC            [ 8]  983 	MOV	A,0xBC		; E5 BC
+      00021D E5 BD            [ 8]  984 	MOV	A,0xBD		; E5 BD
+      00021F E5 BE            [ 8]  985 	MOV	A,0xBE		; E5 BE
+      000221 E5 BF            [ 8]  986 	MOV	A,0xBF		; E5 BF
+      000223 E5 C0            [ 8]  987 	MOV	A,0xC0		; E5 C0
+      000225 E5 C1            [ 8]  988 	MOV	A,0xC1		; E5 C1
+      000227 E5 C2            [ 8]  989 	MOV	A,0xC2		; E5 C2
+      000229 E5 C3            [ 8]  990 	MOV	A,0xC3		; E5 C3
+      00022B E5 C4            [ 8]  991 	MOV	A,0xC4		; E5 C4
+      00022D E5 C5            [ 8]  992 	MOV	A,0xC5		; E5 C5
+      00022F E5 C6            [ 8]  993 	MOV	A,0xC6		; E5 C6
+      000231 E5 C7            [ 8]  994 	MOV	A,0xC7		; E5 C7
+      000233 E5 C8            [ 8]  995 	MOV	A,T2CON		; E5 C8
+      000235 E5 C9            [ 8]  996 	MOV	A,0xC9		; E5 C9
+      000237 E5 CA            [ 8]  997 	MOV	A,RCAP2L	; E5 CA
+      000239 E5 CB            [ 8]  998 	MOV	A,RCAP2H	; E5 CB
+      00023B E5 CC            [ 8]  999 	MOV	A,TL2		; E5 CC
+      00023D E5 CD            [ 8] 1000 	MOV	A,TH2 	 	; E5 CD
+      00023F E5 CE            [ 8] 1001 	MOV	A,0xCE		; E5 CE
+      000241 E5 CF            [ 8] 1002 	MOV	A,0xCF		; E5 CF
+      000243 E5 D0            [ 8] 1003 	MOV	A,PSW		; E5 D0
+      000245 E5 D1            [ 8] 1004 	MOV	A,0xD1		; E5 D1
+      000247 E5 D2            [ 8] 1005 	MOV	A,0xD2		; E5 D2
+      000249 E5 D3            [ 8] 1006 	MOV	A,0xD3		; E5 D3
+      00024B E5 D4            [ 8] 1007 	MOV	A,0xD4		; E5 D4
+      00024D E5 D5            [ 8] 1008 	MOV	A,0xD5		; E5 D5
+      00024F E5 D6            [ 8] 1009 	MOV	A,0xD6		; E5 D6
+      000251 E5 D7            [ 8] 1010 	MOV	A,0xD7		; E5 D7
+      000253 E5 D8            [ 8] 1011 	MOV	A,0xD8		; E5 D8
+      000255 E5 D9            [ 8] 1012 	MOV	A,0xD9		; E5 D9
+      000257 E5 DA            [ 8] 1013 	MOV	A,0xDA		; E5 DA
+      000259 E5 DB            [ 8] 1014 	MOV	A,0xDB		; E5 DB
+      00025B E5 DC            [ 8] 1015 	MOV	A,0xDC		; E5 DC
+      00025D E5 DD            [ 8] 1016 	MOV	A,0xDD		; E5 DD
+      00025F E5 DE            [ 8] 1017 	MOV	A,0xDE		; E5 DE
+      000261 E5 DF            [ 8] 1018 	MOV	A,0xDF		; E5 DF
+      000263 E5 E0            [ 8] 1019 	MOV	A,ACC		; E5 E0
+      000265 E5 E1            [ 8] 1020 	MOV	A,0xE1		; E5 E1
+      000267 E5 E2            [ 8] 1021 	MOV	A,0xE2		; E5 E2
+      000269 E5 E3            [ 8] 1022 	MOV	A,0xE3		; E5 E3
+      00026B E5 E4            [ 8] 1023 	MOV	A,0xE4		; E5 E4
+      00026D E5 E5            [ 8] 1024 	MOV	A,0xE5		; E5 E5
+      00026F E5 E6            [ 8] 1025 	MOV	A,0xE6		; E5 E6
+      000271 E5 E7            [ 8] 1026 	MOV	A,0xE7		; E5 E7
+      000273 E5 E8            [ 8] 1027 	MOV	A,0xE8		; E5 E8
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 21.
+Hexidecimal [24-Bits]
+
+
+
+      000275 E5 E9            [ 8] 1028 	MOV	A,0xE9		; E5 E9
+      000277 E5 EA            [ 8] 1029 	MOV	A,0xEA		; E5 EA
+      000279 E5 EB            [ 8] 1030 	MOV	A,0xEB		; E5 EB
+      00027B E5 EC            [ 8] 1031 	MOV	A,0xEC		; E5 EC
+      00027D E5 ED            [ 8] 1032 	MOV	A,0xED		; E5 ED
+      00027F E5 EE            [ 8] 1033 	MOV	A,0xEE		; E5 EE
+      000281 E5 EF            [ 8] 1034 	MOV	A,0xEF		; E5 EF
+                                   1035 	
+      000283 E5 F0            [ 8] 1036 	MOV	A,B		; E5 F0
+      000285 E5 F1            [ 8] 1037 	MOV	A,0xF1		; E5 F1
+      000287 E5 F2            [ 8] 1038 	MOV	A,0xF2		; E5 F2
+      000289 E5 F3            [ 8] 1039 	MOV	A,0xF3		; E5 F3
+      00028B E5 F4            [ 8] 1040 	MOV	A,0xF4		; E5 F4
+      00028D E5 F5            [ 8] 1041 	MOV	A,0xF5		; E5 F5
+      00028F E5 F6            [ 8] 1042 	MOV	A,0xF6		; E5 F6
+      000291 E5 F7            [ 8] 1043 	MOV	A,0xF7		; E5 F7
+      000293 E5 F8            [ 8] 1044 	MOV	A,0xF8		; E5 F8
+      000295 E5 F9            [ 8] 1045 	MOV	A,0xF9		; E5 F9
+      000297 E5 FA            [ 8] 1046 	MOV	A,0xFA		; E5 FA
+      000299 E5 FB            [ 8] 1047 	MOV	A,0xFB		; E5 FB
+      00029B E5 FC            [ 8] 1048 	MOV	A,0xFC		; E5 FC
+      00029D E5 FD            [ 8] 1049 	MOV	A,0xFD		; E5 FD
+      00029F E5 FE            [ 8] 1050 	MOV	A,0xFE		; E5 FE
+      0002A1 E5 FF            [ 8] 1051 	MOV	A,0xFF		; E5 FF
+                                   1052 ;	SFR bits
+      0002A3 A2 80            [ 8] 1053 	MOV	C,P4.0		; A2 80
+      0002A5 A2 81            [ 8] 1054 	MOV	C,P4.1		; A2 81
+      0002A7 A2 82            [ 8] 1055 	MOV	C,P4.2 		; A2 82
+      0002A9 A2 83            [ 8] 1056 	MOV	C,P4.3 		; A2 83
+      0002AB A2 84            [ 8] 1057 	MOV	C,P4.4		; A2 84
+      0002AD A2 85            [ 8] 1058 	MOV	C,P4.5		; A2 85
+      0002AF A2 86            [ 8] 1059 	MOV	C,P4.6		; A2 86
+      0002B1 A2 87            [ 8] 1060 	MOV	C,P4.7		; A2 87
+      0002B3 A2 88            [ 8] 1061 	MOV	C,IT0		; A2 88
+      0002B5 A2 89            [ 8] 1062 	MOV	C,IE0		; A2 89
+      0002B7 A2 8A            [ 8] 1063 	MOV	C,IT1 		; A2 8A
+      0002B9 A2 8B            [ 8] 1064 	MOV	C,IE1 		; A2 8B
+      0002BB A2 8C            [ 8] 1065 	MOV	C,TR0 		; A2 8C
+      0002BD A2 8D            [ 8] 1066 	MOV	C,TF0		; A2 8D
+      0002BF A2 8E            [ 8] 1067 	MOV	C,TR1		; A2 8E
+      0002C1 A2 8F            [ 8] 1068 	MOV	C,TF1		; A2 8F
+      0002C3 A2 90            [ 8] 1069 	MOV	C,P1.0		; A2 90
+      0002C5 A2 91            [ 8] 1070 	MOV	C,P1.1		; A2 91
+      0002C7 A2 92            [ 8] 1071 	MOV	C,P1.2		; A2 92
+      0002C9 A2 93            [ 8] 1072 	MOV	C,P1.3		; A2 93
+      0002CB A2 94            [ 8] 1073 	MOV	C,P1.4		; A2 94
+      0002CD A2 95            [ 8] 1074 	MOV	C,P1.5		; A2 95
+      0002CF A2 96            [ 8] 1075 	MOV	C,P1.6		; A2 96
+      0002D1 A2 97            [ 8] 1076 	MOV	C,P1.7		; A2 97
+      0002D3 A2 98            [ 8] 1077 	MOV	C,RI		; A2 98
+      0002D5 A2 99            [ 8] 1078 	MOV	C,TI		; A2 99
+      0002D7 A2 9A            [ 8] 1079 	MOV	C,RB8		; A2 9A
+      0002D9 A2 9B            [ 8] 1080 	MOV	C,TB8		; A2 9B
+      0002DB A2 9C            [ 8] 1081 	MOV	C,REN		; A2 9C
+      0002DD A2 9D            [ 8] 1082 	MOV	C,SM2		; A2 9D
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 22.
+Hexidecimal [24-Bits]
+
+
+
+      0002DF A2 9E            [ 8] 1083 	MOV	C,SM1		; A2 9E
+      0002E1 A2 9F            [ 8] 1084 	MOV	C,SM0		; A2 9F
+      0002E3 A2 A0            [ 8] 1085 	MOV	C,P2.0		; A2 A0
+      0002E5 A2 A1            [ 8] 1086 	MOV	C,P2.1		; A2 A1
+      0002E7 A2 A2            [ 8] 1087 	MOV	C,P2.2		; A2 A2
+      0002E9 A2 A3            [ 8] 1088 	MOV	C,P2.3		; A2 A3
+      0002EB A2 A4            [ 8] 1089 	MOV	C,P2.4		; A2 A4
+      0002ED A2 A5            [ 8] 1090 	MOV	C,P2.5		; A2 A5
+      0002EF A2 A6            [ 8] 1091 	MOV	C,P2.6		; A2 A6
+      0002F1 A2 A7            [ 8] 1092 	MOV	C,P2.7		; A2 A7
+      0002F3 A2 A8            [ 8] 1093 	MOV	C,EX0		; A2 A8
+      0002F5 A2 A9            [ 8] 1094 	MOV	C,ET0		; A2 A9
+      0002F7 A2 AA            [ 8] 1095 	MOV	C,EX1		; A2 AA
+      0002F9 A2 AB            [ 8] 1096 	MOV	C,ET1		; A2 AB
+      0002FB A2 AC            [ 8] 1097 	MOV	C,ES		; A2 AC
+      0002FD A2 AD            [ 8] 1098 	MOV	C,ET2		; A2 AD
+      0002FF A2 AE            [ 8] 1099 	MOV	C,0xAE		; A2 AE
+      000301 A2 AF            [ 8] 1100 	MOV	C,EA		; A2 AF
+      000303 A2 B0            [ 8] 1101 	MOV	C,P3.0		; A2 B0
+      000305 A2 B1            [ 8] 1102 	MOV	C,P3.1		; A2 B1
+      000307 A2 B2            [ 8] 1103 	MOV	C,P3.2		; A2 B2
+      000309 A2 B3            [ 8] 1104 	MOV	C,P3.3		; A2 B3
+      00030B A2 B4            [ 8] 1105 	MOV	C,P3.4		; A2 B4
+      00030D A2 B5            [ 8] 1106 	MOV	C,P3.5		; A2 B5
+      00030F A2 B6            [ 8] 1107 	MOV	C,P3.6		; A2 B6
+      000311 A2 B7            [ 8] 1108 	MOV	C,P3.7		; A2 B7
+      000313 A2 B8            [ 8] 1109 	MOV	C,PX0		; A2 B8
+      000315 A2 B9            [ 8] 1110 	MOV	C,PT0		; A2 B9
+      000317 A2 BA            [ 8] 1111 	MOV	C,PX1		; A2 BA
+      000319 A2 BB            [ 8] 1112 	MOV	C,PT1		; A2 BB
+      00031B A2 BC            [ 8] 1113 	MOV	C,PS		; A2 BC
+      00031D A2 BD            [ 8] 1114 	MOV	C,PT2		; A2 BD
+      00031F A2 BE            [ 8] 1115 	MOV	C,0xBE		; A2 BE
+      000321 A2 BF            [ 8] 1116 	MOV	C,0xBF		; A2 BF
+      000323 A2 C0            [ 8] 1117 	MOV	C,0xC0		; A2 C0
+      000325 A2 C1            [ 8] 1118 	MOV	C,0xC1		; A2 C1
+      000327 A2 C2            [ 8] 1119 	MOV	C,0xC2		; A2 C2
+      000329 A2 C3            [ 8] 1120 	MOV	C,0xC3		; A2 C3
+      00032B A2 C4            [ 8] 1121 	MOV	C,0xC4		; A2 C4
+      00032D A2 C5            [ 8] 1122 	MOV	C,0xC5		; A2 C5
+      00032F A2 C6            [ 8] 1123 	MOV	C,0xC6		; A2 C6
+      000331 A2 C7            [ 8] 1124 	MOV	C,0xC7		; A2 C7
+      000333 A2 C8            [ 8] 1125 	MOV	C,CPRL2		; A2 C8
+      000335 A2 C9            [ 8] 1126 	MOV	C,CT2		; A2 C9
+      000337 A2 CA            [ 8] 1127 	MOV	C,TR2		; A2 CA
+      000339 A2 CB            [ 8] 1128 	MOV	C,EXEN2		; A2 CB
+      00033B A2 CC            [ 8] 1129 	MOV	C,TCLK		; A2 CC
+      00033D A2 CD            [ 8] 1130 	MOV	C,RCLK		; A2 CD
+      00033F A2 CE            [ 8] 1131 	MOV	C,EXF2		; A2 CE
+      000341 A2 CF            [ 8] 1132 	MOV	C,TF2		; A2 CF
+      000343 A2 D0            [ 8] 1133 	MOV	C,P		; A2 D0
+      000345 A2 D1            [ 8] 1134 	MOV	C,0xD1		; A2 D1
+      000347 A2 D2            [ 8] 1135 	MOV	C,OV		; A2 D2
+      000349 A2 D3            [ 8] 1136 	MOV	C,RS0		; A2 D3
+      00034B A2 D4            [ 8] 1137 	MOV	C,RS1		; A2 D4
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 23.
+Hexidecimal [24-Bits]
+
+
+
+      00034D A2 D5            [ 8] 1138 	MOV	C,F0		; A2 D5
+      00034F A2 D6            [ 8] 1139 	MOV	C,AC		; A2 D6
+      000351 A2 D7            [ 8] 1140 	MOV	C,CY		; A2 D7
+      000353 A2 D8            [ 8] 1141 	MOV	C,0xD8		; A2 D8
+      000355 A2 D9            [ 8] 1142 	MOV	C,0xD9		; A2 D9
+      000357 A2 DA            [ 8] 1143 	MOV	C,0xDA		; A2 DA
+      000359 A2 DB            [ 8] 1144 	MOV	C,0xDB		; A2 DB
+      00035B A2 DC            [ 8] 1145 	MOV	C,0xDC		; A2 DC
+      00035D A2 DD            [ 8] 1146 	MOV	C,0xDD		; A2 DD
+      00035F A2 DE            [ 8] 1147 	MOV	C,0xDE		; A2 DE
+      000361 A2 DF            [ 8] 1148 	MOV	C,0xDF		; A2 DF
+      000363 A2 E0            [ 8] 1149 	MOV	C,ACC.0		; A2 E0
+      000365 A2 E1            [ 8] 1150 	MOV	C,ACC.1		; A2 E1
+      000367 A2 E2            [ 8] 1151 	MOV	C,ACC.2		; A2 E2
+      000369 A2 E3            [ 8] 1152 	MOV	C,ACC.3		; A2 E3
+      00036B A2 E4            [ 8] 1153 	MOV	C,ACC.4		; A2 E4
+      00036D A2 E5            [ 8] 1154 	MOV	C,ACC.5		; A2 E5
+      00036F A2 E6            [ 8] 1155 	MOV	C,ACC.6		; A2 E6
+      000371 A2 E7            [ 8] 1156 	MOV	C,ACC.7		; A2 E7
+      000373 A2 E8            [ 8] 1157 	MOV	C,0xE8		; A2 E8
+      000375 A2 E9            [ 8] 1158 	MOV	C,0xE9		; A2 E9
+      000377 A2 EA            [ 8] 1159 	MOV	C,0xEA		; A2 EA
+      000379 A2 EB            [ 8] 1160 	MOV	C,0xEB		; A2 EB
+      00037B A2 EC            [ 8] 1161 	MOV	C,0xEC		; A2 EC
+      00037D A2 ED            [ 8] 1162 	MOV	C,0xED		; A2 ED
+      00037F A2 EE            [ 8] 1163 	MOV	C,0xEE		; A2 EE
+      000381 A2 EF            [ 8] 1164 	MOV	C,0xEF		; A2 EF
+                                   1165 	
+      000383 A2 F0            [ 8] 1166 	MOV	C,B.0		; A2 F0
+      000385 A2 F1            [ 8] 1167 	MOV	C,B.1		; A2 F1
+      000387 A2 F2            [ 8] 1168 	MOV	C,B.2		; A2 F2
+      000389 A2 F3            [ 8] 1169 	MOV	C,B.3		; A2 F3
+      00038B A2 F4            [ 8] 1170 	MOV	C,B.4		; A2 F4
+      00038D A2 F5            [ 8] 1171 	MOV	C,B.5		; A2 F5
+      00038F A2 F6            [ 8] 1172 	MOV	C,B.6		; A2 F6
+      000391 A2 F7            [ 8] 1173 	MOV	C,B.7		; A2 F7
+      000393 A2 F8            [ 8] 1174 	MOV	C,0xF8		; A2 F8
+      000395 A2 F9            [ 8] 1175 	MOV	C,0xF9		; A2 F9
+      000397 A2 FA            [ 8] 1176 	MOV	C,0xFA		; A2 FA
+      000399 A2 FB            [ 8] 1177 	MOV	C,0xFB		; A2 FB
+      00039B A2 FC            [ 8] 1178 	MOV	C,0xFC		; A2 FC
+      00039D A2 FD            [ 8] 1179 	MOV	C,0xFD		; A2 FD
+      00039F A2 FE            [ 8] 1180 	MOV	C,0xFE		; A2 FE
+      0003A1 A2 FF            [ 8] 1181 	MOV	C,0xFF		; A2 FF
+                                   1182 ;;/* Direct Mode (*) Checks */;;
+      0003A3 05*12            [ 8] 1183 BLLL4:	INC	*NN		; 05*12
+      0003A5 10*12 FB         [12] 1184 	JBC	*NN,BLLL4	; 10*12 FB
+      0003A8 15*12            [ 8] 1185 	DEC	*NN		; 15*12
+      0003AA 20*12 F6         [12] 1186 	JB	*NN,BLLL4	; 20*12 F6
+      0003AD 25*12            [ 8] 1187 	ADD	A,*NN		; 25*12
+      0003AF 30*12 F1         [12] 1188 	JNB	*NN,BLLL4	; 30*12 F1
+      0003B2 35*12            [ 8] 1189 	ADDC	A,*NN		; 35*12
+      0003B4 42*12            [ 8] 1190 	ORL	*NN,A		; 42*12
+      0003B6 43*12r34         [12] 1191 	ORL	*NN,#MM		; 43*12r34
+      0003B9 45*12            [ 8] 1192 	ORL	A,*NN		; 45*12
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 24.
+Hexidecimal [24-Bits]
+
+
+
+      0003BB 52*12            [ 8] 1193 	ANL	*NN,A		; 52*12
+      0003BD 53*12r34         [12] 1194 	ANL	*NN,#MM		; 53*12r34
+      0003C0 55*12            [ 8] 1195 	ANL	A,*NN		; 55*12
+      0003C2 62*12            [ 8] 1196 	XRL	*NN,A		; 62*12
+      0003C4 63*12r34         [12] 1197 	XRL	*NN,#MM		; 63*12r34
+      0003C7 65*12            [ 8] 1198 	XRL	A,*NN		; 65*12
+      0003C9 72*12            [ 8] 1199 	ORL	C,*NN		; 72*12
+      0003CB 75*12r34         [12] 1200 	MOV	*NN,#MM		; 75*12r34
+      0003CE 82*12            [ 8] 1201 	ANL	C,*NN		; 82*12
+      0003D0 85*34*12         [12] 1202 	MOV	*NN,*MM		; 85*34*12
+      0003D3 86*12            [ 8] 1203 	MOV	*NN,@R0		; 86*12
+      0003D5 87*12            [ 8] 1204 	MOV	*NN,@R1		; 87*12
+      0003D7 88*12            [ 8] 1205 	MOV	*NN,R0		; 88*12
+      0003D9 89*12            [ 8] 1206 	MOV	*NN,R1		; 89*12
+      0003DB 8A*12            [ 8] 1207 	MOV	*NN,R2		; 8A*12
+      0003DD 8B*12            [ 8] 1208 	MOV	*NN,R3		; 8B*12
+      0003DF 8C*12            [ 8] 1209 	MOV	*NN,R4		; 8C*12
+      0003E1 8D*12            [ 8] 1210 	MOV	*NN,R5		; 8D*12
+      0003E3 8E*12            [ 8] 1211 	MOV	*NN,R6		; 8E*12
+      0003E5 8F*12            [ 8] 1212 	MOV	*NN,R7		; 8F*12
+      0003E7 92*12            [ 8] 1213 	MOV	*NN,C		; 92*12
+      0003E9 95*12            [ 8] 1214 	SUBB	A,*NN		; 95*12
+      0003EB A0*12            [ 8] 1215 	ORL	C,*/NN		; A0*12
+      0003ED A2*12            [ 8] 1216 	MOV	C,*NN		; A2*12
+      0003EF A6*12            [ 8] 1217 	MOV	@R0,*NN		; A6*12
+      0003F1 A7*12            [ 8] 1218 	MOV	@R1,*NN		; A7*12
+      0003F3 A8*12            [ 8] 1219 	MOV	R0,*NN		; A8*12
+      0003F5 A9*12            [ 8] 1220 	MOV	R1,*NN		; A9*12
+      0003F7 AA*12            [ 8] 1221 	MOV	R2,*NN		; AA*12
+      0003F9 AB*12            [ 8] 1222 	MOV	R3,*NN		; AB*12
+      0003FB AC*12            [ 8] 1223 	MOV	R4,*NN		; AC*12
+      0003FD AD*12            [ 8] 1224 	MOV	R5,*NN		; AD*12
+      0003FF AE*12            [ 8] 1225 	MOV	R6,*NN		; AE*12
+      000401 AF*12            [ 8] 1226 	MOV	R7,*NN		; AF*12
+      000403 B0*12            [ 8] 1227 	ANL	C,*/NN		; B0*12
+      000405 B2*12            [ 8] 1228 	CPL	*NN		; B2*12
+      000407 B5*12 99         [16] 1229 	CJNE	A,*NN,BLLL4	; B5*12 99
+      00040A C0*12            [ 8] 1230 	PUSH	*NN		; C0*12
+      00040C C2*12            [ 8] 1231 	CLR	*NN		; C2*12
+      00040E C5*12            [ 8] 1232 	XCH	A,*NN		; C5*12
+      000410 D0*12            [ 8] 1233 	POP	*NN		; D0*12
+      000412 D2*12            [ 8] 1234 	SETB	*NN		; D2*12
+      000414 D5*12 8C         [16] 1235 	DJNZ	*NN,BLLL4	; D5*12 8C
+      000417 E5*12            [ 8] 1236 	MOV	A,*NN		; E5*12
+      000419 F5*12            [ 8] 1237 	MOV	*NN,A		; F5*12
+                                   1238 
+      00041B                       1239 	.blkb	0x1000 - (. - bgncode2)
+                                   1240 
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 25.
+Hexidecimal [24-Bits]
+
+Symbol Table
+
+    .__.$$$.       =   002710 L   |     .__.ABS.       =   000000 G
+    .__.CPU.       =   000000 L   |     .__.H$L.       =   000001 L
+    AC             =   0000D6 L   |     ACC            =   0000E0 L
+    ACC.0          =   0000E0 L   |     ACC.1          =   0000E1 L
+    ACC.2          =   0000E2 L   |     ACC.3          =   0000E3 L
+    ACC.4          =   0000E4 L   |     ACC.5          =   0000E5 L
+    ACC.6          =   0000E6 L   |     ACC.7          =   0000E7 L
+  4 ACNNNN             00001A GR  |     ACON           =   00009D L
+  4 ALLL2              000085 GR  |   4 ALLL3              000110 GR
+  4 ALLL4              000390 GR  |   4 ALLLL              000006 GR
+    AP             =   00009C L   |   4 ARN                00000C GR
+    Alternate      =   000003 G   |     B              =   0000F0 L
+    B.0            =   0000F0 L   |     B.1            =   0000F1 L
+    B.2            =   0000F2 L   |     B.3            =   0000F3 L
+    B.4            =   0000F4 L   |     B.5            =   0000F5 L
+    B.6            =   0000F6 L   |     B.7            =   0000F7 L
+  5 BCNNNN             00001C GR  |   5 BLLL2              00008D GR
+  5 BLLL3              00011E GR  |   5 BLLL4              0003A3 GR
+  5 BLLLL              000006 GR  |   5 BRN                00000E GR
+    C0C            =   0000A3 L   |     C0IE           =   0000EE L
+    C0IP           =   0000FE L   |     C0IR           =   0000A5 L
+    C0M10C         =   0000B7 L   |     C0M11C         =   0000BB L
+    C0M12C         =   0000BC L   |     C0M13C         =   0000BD L
+    C0M14C         =   0000BE L   |     C0M15C         =   0000BF L
+    C0M1C          =   0000AB L   |     C0M2C          =   0000AC L
+    C0M3C          =   0000AD L   |     C0M4C          =   0000AE L
+    C0M5C          =   0000AF L   |     C0M6C          =   0000B3 L
+    C0M7C          =   0000B4 L   |     C0M8C          =   0000B5 L
+    C0M9C          =   0000B6 L   |     C0RE           =   0000A7 L
+    C0S            =   0000A4 L   |     C0TE           =   0000A6 L
+    C1C            =   0000E3 L   |     C1IE           =   0000ED L
+    C1IP           =   0000FD L   |     C1IR           =   0000E5 L
+    C1M10C         =   0000F7 L   |     C1M11C         =   0000FB L
+    C1M12C         =   0000FC L   |     C1M13C         =   0000FD L
+    C1M14C         =   0000FE L   |     C1M15C         =   0000FF L
+    C1M1C          =   0000EB L   |     C1M2C          =   0000EC L
+    C1M3C          =   0000ED L   |     C1M4C          =   0000EE L
+    C1M5C          =   0000EF L   |     C1M6C          =   0000F3 L
+    C1M7C          =   0000F4 L   |     C1M8C          =   0000F5 L
+    C1M9C          =   0000F6 L   |     C1RE           =   0000E7 L
+    C1RMS0         =   0000D6 L   |     C1RMS1         =   0000D7 L
+    C1S            =   0000E4 L   |     C1TE           =   0000E6 L
+    C1TMA0         =   0000DE L   |     C1TMA1         =   0000DF L
+    C310           =   000000 L   |     C320           =   000000 L
+    C323           =   000000 L   |     C390           =   000001 L
+    C520           =   000000 L   |     C530           =   000000 L
+    C550           =   000000 L   |     CANBIE         =   0000EF L
+    CANBIP         =   0000FF L   |     CKCON          =   00008E L
+    COR            =   0000CE L   |     CORMS0         =   000096 L
+    CORMS1         =   000097 L   |     COTMA0         =   00009E L
+    COTMA1         =   00009F L   |     CPRL2          =   0000C8 L
+    CP_RL2         =   0000C8 L   |     CT2            =   0000C9 L
+    CXXX           =   000000 L   |     CY             =   0000D7 L
+    C_T2           =   0000C9 L   |     DPH            =   000083 L
+    DPH1           =   000085 L   |     DPL            =   000082 L
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 26.
+Hexidecimal [24-Bits]
+
+Symbol Table
+
+    DPL1           =   000084 L   |     DPS            =   000086 L
+    DPX            =   000093 L   |     DPX1           =   000095 L
+    DS80C310       =   000000 L   |     DS80C320       =   000000 L
+    DS80C323       =   000000 L   |     DS80C390       =   000001 L
+    DS83C520       =   000000 L   |     DS83C530       =   000000 L
+    DS83C550       =   000000 L   |     DS87C520       =   000000 L
+    DS87C530       =   000000 L   |     DS87C550       =   000000 L
+    DS8xCxxx       =   000000 L   |     DSCpuType      =   000001 L
+    EA             =   0000AF L   |     EIE            =   0000E8 L
+    EIE.0          =   0000E8 L   |     EIE.1          =   0000E9 L
+    EIE.2          =   0000EA L   |     EIE.3          =   0000EB L
+    EIE.4          =   0000EC L   |     EIE.5          =   0000ED L
+    EIE.6          =   0000EE L   |     EIE.7          =   0000EF L
+    EIP            =   0000F8 L   |     EIP.0          =   0000F8 L
+    EIP.1          =   0000F9 L   |     EIP.2          =   0000FA L
+    EIP.3          =   0000FB L   |     EIP.4          =   0000FC L
+    EIP.5          =   0000FD L   |     EIP.6          =   0000FE L
+    EIP.7          =   0000FF L   |     EPFI           =   0000DD L
+    ES             =   0000AC L   |     ES0            =   0000AC L
+    ES1            =   0000AE L   |     ESP            =   00009B L
+    ET             =   0000A9 L   |     ET0            =   0000A9 L
+    ET1            =   0000AB L   |     ET2            =   0000AD L
+    EWDI           =   0000EC L   |     EWT            =   0000D9 L
+    EX             =   0000A8 L   |     EX0            =   0000A8 L
+    EX1            =   0000AA L   |     EX2            =   0000E8 L
+    EX3            =   0000E9 L   |     EX4            =   0000EA L
+    EX5            =   0000EB L   |     EXEN2          =   0000CB L
+    EXF2           =   0000CE L   |     EXIF           =   000091 L
+    F0             =   0000D5 L   |     F1             =   0000D1 L
+    FE             =   00009F L   |     FE_0           =   00009F L
+    FE_1           =   0000C7 L   |     IE             =   0000A8 L
+    IE.0           =   0000A8 L   |     IE.1           =   0000A9 L
+    IE.2           =   0000AA L   |     IE.3           =   0000AB L
+    IE.4           =   0000AC L   |     IE.5           =   0000AD L
+    IE.6           =   0000AE L   |     IE.7           =   0000AF L
+    IE0            =   000089 L   |     IE1            =   00008B L
+    INT0           =   0000B2 L   |     INT1           =   0000B3 L
+    INT2           =   000094 L   |     INT3           =   000095 L
+    INT4           =   000096 L   |     INT5           =   000097 L
+    IP             =   0000B8 L   |     IP.0           =   0000B8 L
+    IP.1           =   0000B9 L   |     IP.2           =   0000BA L
+    IP.3           =   0000BB L   |     IP.4           =   0000BC L
+    IP.5           =   0000BD L   |     IP.6           =   0000BE L
+    IP.7           =   0000BF L   |     IT0            =   000088 L
+    IT1            =   00008A L   |     MA             =   0000D3 L
+    MB             =   0000D4 L   |     MC             =   0000D5 L
+    MCNT0          =   0000D1 L   |     MCNT1          =   0000D2 L
+    MCON           =   0000C6 L   |     MIXAX          =   0000EA L
+  2 MM                 000034 GR  |   3 MMMM               001FCA GR
+  2 NN                 000012 GR  |   3 NNNN               001234 GR
+    OV             =   0000D2 L   |     P              =   0000D0 L
+    P1             =   000090 L   |     P1.0           =   000090 L
+    P1.1           =   000091 L   |     P1.2           =   000092 L
+    P1.3           =   000093 L   |     P1.4           =   000094 L
+    P1.5           =   000095 L   |     P1.6           =   000096 L
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 27.
+Hexidecimal [24-Bits]
+
+Symbol Table
+
+    P1.7           =   000097 L   |     P2             =   0000A0 L
+    P2.0           =   0000A0 L   |     P2.1           =   0000A1 L
+    P2.2           =   0000A2 L   |     P2.3           =   0000A3 L
+    P2.4           =   0000A4 L   |     P2.5           =   0000A5 L
+    P2.6           =   0000A6 L   |     P2.7           =   0000A7 L
+    P3             =   0000B0 L   |     P3.0           =   0000B0 L
+    P3.1           =   0000B1 L   |     P3.2           =   0000B2 L
+    P3.3           =   0000B3 L   |     P3.4           =   0000B4 L
+    P3.5           =   0000B5 L   |     P3.6           =   0000B6 L
+    P3.7           =   0000B7 L   |     P4             =   000080 L
+    P4.0           =   000080 L   |     P4.1           =   000081 L
+    P4.2           =   000082 L   |     P4.3           =   000083 L
+    P4.4           =   000084 L   |     P4.5           =   000085 L
+    P4.6           =   000086 L   |     P4.7           =   000087 L
+    P4CNT          =   000092 L   |     P5             =   0000A1 L
+    P5CNT          =   0000A2 L   |     PCON           =   000087 L
+    PFI            =   0000DC L   |     PMR            =   0000C4 L
+    POR            =   0000DE L   |     PORT1          =   000090 L
+    PORT2          =   0000A0 L   |     PORT3          =   0000B0 L
+    PORT4          =   000080 L   |     PORT5          =   0000A1 L
+    PS             =   0000BC L   |     PS0            =   0000BC L
+    PS1            =   0000BE L   |     PSW            =   0000D0 L
+    PSW.0          =   0000D0 L   |     PSW.1          =   0000D1 L
+    PSW.2          =   0000D2 L   |     PSW.3          =   0000D3 L
+    PSW.4          =   0000D4 L   |     PSW.5          =   0000D5 L
+    PSW.6          =   0000D6 L   |     PSW.7          =   0000D7 L
+    PT             =   0000B9 L   |     PT0            =   0000B9 L
+    PT1            =   0000BB L   |     PT2            =   0000BD L
+    PWDI           =   0000FC L   |     PX             =   0000B8 L
+    PX0            =   0000B8 L   |     PX1            =   0000BA L
+    PX2            =   0000F8 L   |     PX3            =   0000F9 L
+    PX4            =   0000FA L   |     PX5            =   0000FB L
+    RB8            =   00009A L   |     RB8_0          =   00009A L
+    RB8_1          =   0000C2 L   |     RCAP2H         =   0000CB L
+    RCAP2L         =   0000CA L   |     RCLK           =   0000CD L
+    REN            =   00009C L   |     REN_0          =   00009C L
+    REN_1          =   0000C4 L   |     RI             =   000098 L
+    RI_1           =   0000C0 L   |     RI_O           =   000098 L
+    RS0            =   0000D3 L   |     RS1            =   0000D4 L
+    RWT            =   0000D8 L   |     RXD0           =   0000B0 L
+    RXD1           =   000092 L   |     SADDR0         =   0000A9 L
+    SADDR1         =   0000AA L   |     SADEN0         =   0000B9 L
+    SADEN1         =   0000BA L   |     SBUF           =   000099 L
+    SBUF0          =   000099 L   |     SBUF1          =   0000C1 L
+    SCON           =   000098 L   |     SCON.0         =   000098 L
+    SCON.1         =   000099 L   |     SCON.2         =   00009A L
+    SCON.3         =   00009B L   |     SCON.4         =   00009C L
+    SCON.5         =   00009D L   |     SCON.6         =   00009E L
+    SCON.7         =   00009F L   |     SCON0          =   000098 L
+    SCON0.0        =   000098 L   |     SCON0.1        =   000099 L
+    SCON0.2        =   00009A L   |     SCON0.3        =   00009B L
+    SCON0.4        =   00009C L   |     SCON0.5        =   00009D L
+    SCON0.6        =   00009E L   |     SCON0.7        =   00009F L
+    SCON1          =   0000C0 L   |     SCON1.0        =   0000C0 L
+    SCON1.1        =   0000C1 L   |     SCON1.2        =   0000C2 L
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 28.
+Hexidecimal [24-Bits]
+
+Symbol Table
+
+    SCON1.3        =   0000C3 L   |     SCON1.4        =   0000C4 L
+    SCON1.5        =   0000C5 L   |     SCON1.6        =   0000C6 L
+    SCON1.7        =   0000C7 L   |     SFR_BITS       =   000000 L
+    SM0            =   00009F L   |     SM0_0          =   00009F L
+    SM0_1          =   0000C7 L   |     SM1            =   00009E L
+    SM1_0          =   00009E L   |     SM1_1          =   0000C6 L
+    SM2            =   00009D L   |     SM2_0          =   00009D L
+    SM2_1          =   0000C5 L   |     SMOD_1         =   0000DF L
+    SP             =   000081 L   |     STATUS         =   0000C5 L
+    T0             =   0000B4 L   |     T1             =   0000B5 L
+    T2             =   000090 L   |     T2CON          =   0000C8 L
+    T2CON.0        =   0000C8 L   |     T2CON.1        =   0000C9 L
+    T2CON.2        =   0000CA L   |     T2CON.3        =   0000CB L
+    T2CON.4        =   0000CC L   |     T2CON.5        =   0000CD L
+    T2CON.6        =   0000CE L   |     T2CON.7        =   0000CF L
+    T2EX           =   000091 L   |     T2MOD          =   0000C9 L
+    TA             =   0000C7 L   |     TB8            =   00009B L
+    TB8_0          =   00009B L   |     TB8_1          =   0000C3 L
+    TCLK           =   0000CC L   |     TCON           =   000088 L
+    TCON.0         =   000088 L   |     TCON.1         =   000089 L
+    TCON.2         =   00008A L   |     TCON.3         =   00008B L
+    TCON.4         =   00008C L   |     TCON.5         =   00008D L
+    TCON.6         =   00008E L   |     TCON.7         =   00008F L
+    TF0            =   00008D L   |     TF1            =   00008F L
+    TF2            =   0000CF L   |     TH0            =   00008C L
+    TH1            =   00008D L   |     TH2            =   0000CD L
+    TI             =   000099 L   |     TI_1           =   0000C1 L
+    TI_O           =   000099 L   |     TL0            =   00008A L
+    TL1            =   00008B L   |     TL2            =   0000CC L
+    TMOD           =   000089 L   |     TR0            =   00008C L
+    TR1            =   00008E L   |     TR2            =   0000CA L
+    TXD0           =   0000B1 L   |     TXD1           =   000093 L
+    WDCON          =   0000D8 L   |     WDCON.0        =   0000D8 L
+    WDCON.1        =   0000D9 L   |     WDCON.2        =   0000DA L
+    WDCON.3        =   0000DB L   |     WDCON.4        =   0000DC L
+    WDCON.5        =   0000DD L   |     WDCON.6        =   0000DE L
+    WDCON.7        =   0000DF L   |     WDIF           =   0000DB L
+    WTRF           =   0000DA L   |     __SFR_BITS     =   000000 G
+    __Unknown      =   000001 G   |   4 bgncode1           000000 GR
+  5 bgncode2           000000 GR  |   4 text8051.func.     000005 GR
+  4 text8051.func.     000000 GR  |   4 text8051.func.     000003 GR
+  4 text8051.func.     000004 GR  |   4 text8051.func.     000002 GR
+  4 text8051.func.     000001 GR  |   4 text8051.stati     000006 GR
+  5 text8051_func_     000005 GR  |   5 text8051_func_     000000 GR
+  5 text8051_func_     000003 GR  |   5 text8051_func_     000004 GR
+  5 text8051_func_     000002 GR  |   5 text8051_func_     000001 GR
+  5 text8051_stati     000006 GR
+
+ASxxxx Assembler V05.00  (Dallas Semiconductor Unknown), page 29.
+Hexidecimal [24-Bits]
+
+Area Table
+
+[_CSEG]
+   0 _CODE            size      0   flags C080
+   2 DATA             size     35   flags    0
+   3 XDATA            size   1FCB   flags  C00
+   4 CODE1            size   1000   flags  D00
+   5 CODE2            size   1000   flags  D00
+[_DSEG]
+   1 _DATA            size      0   flags C0C0
+

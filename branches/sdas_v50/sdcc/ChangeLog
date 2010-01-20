@@ -1,5 +1,11 @@
 2010-01-19 Borut Razem <borut.razem AT siol.net>
 
+	* sdas/*/*ext.c: removed from svn
+	* as8xcxxx/*: added
+	* added missing *.asm, *.bat, *.sfr, ... files from ASxxxx package
+
+2010-01-19 Borut Razem <borut.razem AT siol.net>
+
 	* sdas/*: overwritten by files from ASxxxx V50
 
 2010-01-18 Borut Razem <borut.razem AT siol.net>
