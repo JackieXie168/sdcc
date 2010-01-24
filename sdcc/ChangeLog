@@ -5,6 +5,11 @@
 	  sdas/asz80/as_z80.dsp, sdas/linksrc/aslink.dsp, sdcc.dsw:
 	  asapted VS project files for sdas v50
 	* src/z80/gen.c: fixed declaration in the middle of the block
+	* sdas/as8051/i51pst.c, sdas/asz80/z80pst.c, sdas/linksrc/lkdata.c,
+	  sdas/linksrc/Makefile.in, sdas/linksrc/lkmain.c, sdas/linksrc/aslink.h,
+	  sdas/as6808/m08pst.c, sdas/asxxsrc/asxxxx.h, sdas/asxxsrc/asmain.c,
+	  sdas/asxxsrc/asout.c, sdas/asxxsrc/asdata.c, sdas/asgb/gbpst.c,
+	  sdas/as8xcxxx/ds8pst.c: added .optsdcc directive
 
 2010-01-19 Borut Razem <borut.razem AT siol.net>
 

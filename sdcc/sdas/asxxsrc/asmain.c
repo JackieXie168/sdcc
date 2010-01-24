@@ -190,12 +190,18 @@ char *argv[];
 	struct area *ap;
 	struct def *dp;
 
+	/* sdas specific */
+	/* sdas initialization */
+	sdas_init(argv[0]);
+	/* end sdas specific */
+
 	if (intsiz() < 4) {
 		fprintf(stderr, "?ASxxxx-Error-Size of INT32 is not 32 bits or larger.\n\n");
 		exit(ER_FATAL);
 	}
 
-	fprintf(stdout, "\n");
+	if (!is_sdas())
+		fprintf(stdout, "\n");
 	q = NULL;
 	asmc = NULL;
 	asmp = NULL;
@@ -1364,6 +1370,13 @@ loop:
 		}
 		lmode = SLIST;
 		break;
+
+	/* sdas specific */
+	case S_OPTSDCC:
+		optsdcc = strsto(ip);
+		lmode = SLIST;
+		return;	/* line consumed */
+	/* end sdas specific */
 
 	case S_INCL:
 		lmode = SLIST;

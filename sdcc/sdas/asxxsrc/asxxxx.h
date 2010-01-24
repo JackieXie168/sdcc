@@ -45,6 +45,8 @@
 #include <setjmp.h>
 #include <string.h>
 
+#include "sdas.h"
+
 /*
  * Local Definitions
  */
@@ -585,9 +587,12 @@ struct	sym
 #define	  O_NVAL     9		/* .nval */
 #define	  O_MDEL     10		/* .mdelete */
 #define	  O_CHECK    255	/* Building/Exiting a Macro Check */
-#define S_XXXXX		29	/* XXXXX */
+/* sdas specific */
+#define S_OPTSDCC	29	/* .optsdcc */
+/* end sdas specific */
+#define S_XXXXX		30	/* XXXXX */
 
-#define S_DIREOL	30	/* Assembler Directive End Of List */
+#define S_DIREOL	31	/* Assembler Directive End Of List */
 
 /*
  *	The tsym structure is a linked list of temporary
@@ -1116,6 +1121,11 @@ extern	char	ctype[128];	/*	array of character types, one per
 extern	char	ccase[128];	/*	an array of characters which 
 				 *	perform the case translation function
 				 */
+/*sdas specific */
+extern	char	*optsdcc;	/*	sdcc compile options
+				 */
+/*end sdas specific */
+
 /* C Library functions */
 /* for reference only
 extern	int		fclose();

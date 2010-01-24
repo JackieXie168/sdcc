@@ -553,6 +553,10 @@ struct	lbname	*lbnhead;	/*	pointer to the first
 struct	lbfile	*lbfhead;	/*	pointer to the first
 				 *	library file structure
 				 */
+/* sdld specific */
+char	*optsdcc;
+char	*optsdcc_module;
+/* end sdld specific */
 
 /*
  *	array of character types, one per

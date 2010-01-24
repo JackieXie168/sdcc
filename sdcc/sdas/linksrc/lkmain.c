@@ -148,12 +148,18 @@ char *argv[];
 {
 	int c, i, j, k;
 
+	/* sdas specific */
+	/* sdas initialization */
+	sdld_init(argv[0]);
+	/* end sdas specific */
+
 	if (intsiz() < 4) {
 		fprintf(stderr, "?ASlink-Error-Size of INT32 is not 32 bits or larger.\n\n");
 		exit(ER_FATAL);
 	}
 
-	fprintf(stdout, "\n");
+	if (!is_sdld())
+		fprintf(stdout, "\n");
 
 	startp = (struct lfile *) new (sizeof (struct lfile));
 	startp->f_idp = "";
@@ -509,6 +515,27 @@ link()
 		}
 #endif
 		break;
+
+	/* sdld specific */
+	case 'O': /* For some important sdcc options */
+		if (is_sdld() && pass == 0) {
+			if (NULL == optsdcc) {
+				optsdcc = strsto(&ip[1]);
+				optsdcc_module = hp->m_id;
+			}
+			else {
+				if (strcmp(optsdcc, &ip[1]) != 0) {
+					fprintf(stderr,
+						"?ASlink-Warning-Conflicting sdcc options:\n"
+						"   \"%s\" in module \"%s\" and\n"
+						"   \"%s\" in module \"%s\".\n",
+						optsdcc, optsdcc_module, &ip[1], hp->m_id);
+					lkerr++;
+				}
+			}
+		}
+		break;
+	/* end sdld specific */
 
 	case 'H':
 		if (pass == 0) {
