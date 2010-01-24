@@ -7649,8 +7649,8 @@ genCast (iCode * ic)
   /* casting to bool */
   if (IS_BIT(operandType(result)))
     {
-      emitDebug("; Casting to bool");
       symbol *tlbl1, *tlbl2;
+      emitDebug("; Casting to bool");
       size = AOP_SIZE(right);
 
       /* Can do without branching for small arguments */
