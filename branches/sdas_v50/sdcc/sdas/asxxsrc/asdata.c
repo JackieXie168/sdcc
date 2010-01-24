@@ -315,6 +315,11 @@ char	aretbl[] = { "Area Table" };
 char	module[NCPS+2];	/*	module name string
 			 */
 
+/* sdas specific */
+char	*optsdcc;	/*	sdcc compile options
+			 */
+/* end sdas specific */
+
 /*
  *	The mne structure is a linked list of the assembler
  *	mnemonics and directives.  The list of mnemonics and

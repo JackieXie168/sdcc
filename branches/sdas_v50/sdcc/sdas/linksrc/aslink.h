@@ -34,6 +34,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "sdld.h"
+
 /*
  * Local Definitions
  */
@@ -1023,6 +1025,10 @@ extern	struct lbname *lbnhead;	/*	pointer to the first
 extern	struct lbfile *lbfhead;	/*	pointer to the first
 				 *	library file structure
 				 */
+/* sdld specific */
+extern char *optsdcc;
+extern char *optsdcc_module;
+/* end sdld specific */
 
 /* C Library function definitions */
 /* for reference only
