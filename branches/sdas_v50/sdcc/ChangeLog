@@ -1,3 +1,11 @@
+2010-01-24 Borut Razem <borut.razem AT siol.net>
+
+	* all.dsp, sdas/as6808/as_hc08.dsp, sdas/as8051/asx8051.dsp,
+	  sdas/as8xcxxx/as8xcxxx.dsp, sdas/asgb/asgb.dsp,
+	  sdas/asz80/as_z80.dsp, sdas/linksrc/aslink.dsp, sdcc.dsw:
+	  asapted VS project files for sdas v50
+	* src/z80/gen.c: fixed declaration in the middle of the block
+
 2010-01-19 Borut Razem <borut.razem AT siol.net>
 
 	* sdas/*/*ext.c: removed from svn

@@ -88,19 +88,11 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=lk_readnl.c
-# End Source File
-# Begin Source File
-
-SOURCE=lkaomf51.c
-# End Source File
-# Begin Source File
-
-SOURCE=lkar.c
-# End Source File
-# Begin Source File
-
 SOURCE=lkarea.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\lkbank.c
 # End Source File
 # Begin Source File
 
@@ -108,15 +100,7 @@ SOURCE=lkdata.c
 # End Source File
 # Begin Source File
 
-SOURCE=lkelf.c
-# End Source File
-# Begin Source File
-
 SOURCE=lkeval.c
-# End Source File
-# Begin Source File
-
-SOURCE=lkgb.c
 # End Source File
 # Begin Source File
 
@@ -124,15 +108,7 @@ SOURCE=lkhead.c
 # End Source File
 # Begin Source File
 
-SOURCE=lkihx.c
-# End Source File
-# Begin Source File
-
 SOURCE=lklex.c
-# End Source File
-# Begin Source File
-
-SOURCE=lklib.c
 # End Source File
 # Begin Source File
 
@@ -148,27 +124,27 @@ SOURCE=lkmain.c
 # End Source File
 # Begin Source File
 
-SOURCE=lkmem.c
-# End Source File
-# Begin Source File
-
 SOURCE=lknoice.c
 # End Source File
 # Begin Source File
 
-SOURCE=lkrel.c
+SOURCE=.\lkout.c
 # End Source File
 # Begin Source File
 
-SOURCE=lkrloc.c
+SOURCE=.\lkrloc.c
 # End Source File
 # Begin Source File
 
-SOURCE=lks19.c
+SOURCE=.\lkrloc3.c
 # End Source File
 # Begin Source File
 
-SOURCE=lksdcclib.c
+SOURCE=.\lkrloc4.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\lksdcdb.c
 # End Source File
 # Begin Source File
 
@@ -177,10 +153,6 @@ SOURCE=lksym.c
 # Begin Source File
 
 SOURCE=sdld.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\asxxsrc\strcmpi.c
 # End Source File
 # End Group
 # Begin Group "Header Files"

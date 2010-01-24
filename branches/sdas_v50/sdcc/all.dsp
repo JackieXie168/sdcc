@@ -416,5 +416,34 @@ InputPath=".\bin_vc\sdldz80.exe"
 !ENDIF 
 
 # End Source File
+# Begin Source File
+
+SOURCE=".\bin_vc\sdas8xcxxx.exe"
+
+!IF  "$(CFG)" == "all - Win32 Release"
+
+# PROP Ignore_Default_Tool 1
+# Begin Custom Build
+InputPath=".\bin_vc\sdas8xcxxx.exe"
+
+"bin\sdas8xcxxx.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy bin_vc\sdas8xcxxx.exe  bin /y > nul
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "all - Win32 Debug"
+
+# PROP Ignore_Default_Tool 1
+# Begin Custom Build
+InputPath=".\bin_vc\sdas8xcxxx.exe"
+
+"bin\sdas8xcxxx.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy bin_vc\sdas8xcxxx.exe  bin /y > nul
+
+# End Custom Build
+
+!ENDIF 
+
+# End Source File
 # End Target
 # End Project

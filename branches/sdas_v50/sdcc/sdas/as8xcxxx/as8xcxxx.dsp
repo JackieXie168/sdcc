@@ -92,6 +92,10 @@ SOURCE=..\asxxsrc\asdata.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\asxxsrc\asdbg.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\asxxsrc\asexpr.c
 # End Source File
 # Begin Source File
@@ -108,7 +112,7 @@ SOURCE=..\asxxsrc\asmain.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\asxxsrc\asnoice.c
+SOURCE=..\asxxsrc\asmcro.c
 # End Source File
 # Begin Source File
 

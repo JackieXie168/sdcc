@@ -92,6 +92,10 @@ SOURCE=..\asxxsrc\asdata.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\asxxsrc\asdbg.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\asxxsrc\asexpr.c
 # End Source File
 # Begin Source File
@@ -108,7 +112,7 @@ SOURCE=..\asxxsrc\asmain.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\asxxsrc\asnoice.c
+SOURCE=..\asxxsrc\asmcro.c
 # End Source File
 # Begin Source File
 
@@ -132,19 +136,7 @@ SOURCE=..\..\support\Util\dbuf_string.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\asxxsrc\sdas.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\asxxsrc\strcmpi.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\gbadr.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\gbext.c
 # End Source File
 # Begin Source File
 
@@ -153,6 +145,14 @@ SOURCE=.\gbmch.c
 # Begin Source File
 
 SOURCE=.\gbpst.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\asxxsrc\sdas.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\asxxsrc\strcmpi.c
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -172,15 +172,15 @@ SOURCE=..\..\support\Util\dbuf_string.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\gb.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\asxxsrc\sdas.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\sdcc_vc.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\gb.h
 # End Source File
 # End Group
 # End Target
