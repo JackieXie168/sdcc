@@ -1,3 +1,10 @@
+2010-01-31 Borut Razem <borut.razem AT siol.net>
+
+	* sdas/linksrc/Makefile.in, sdas/linksrc/lklibr.c, sdas/linksrc/lkar.c,
+	  sdas/linksrc/lksdcclib.c, sdas/linksrc/lklib.c, sdas/linksrc/lkrel.c,
+	  sdas/linksrc/aslink.h: added support for sdcclib and ar libraries
+	* sdas/linksrc/README: removed
+
 2010-01-24 Borut Razem <borut.razem AT siol.net>
 
 	* all.dsp, sdas/as6808/as_hc08.dsp, sdas/as8051/asx8051.dsp,

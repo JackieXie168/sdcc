@@ -2,7 +2,7 @@
 
    Copyright (C) 1989-1995 Alan R. Baldwin
    721 Berkeley St., Kent, Ohio 44240
-   Copyright (C) 2008-2009 Borut Razem, borut dot razem at siol dot net
+   Copyright (C) 2008-2010 Borut Razem, borut dot razem at siol dot net
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -29,7 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  * Extensions: P. Felber
  */
 
-#include <string.h>
 #include <assert.h>
 
 #include "lk_readnl.h"
@@ -48,6 +47,21 @@ is_rel (FILE * libfp)
     {
       switch (getc (libfp))
         {
+	case 2:
+	case 3:
+	case 4:
+          switch (getc (libfp))
+            {
+            case '\r':
+              if (getc (libfp) == '\n')
+                ret = 1;
+              break;
+
+            case '\n':
+              ret = 1;
+            }
+          break;
+
         case '\r':
           if (getc (libfp) == '\n')
             ret = 1;
@@ -85,7 +99,7 @@ load_rel (FILE * libfp, long size)
             return 1;
 
           ip = str;
-          link_main ();
+          link ();
         }
 
       return 1;

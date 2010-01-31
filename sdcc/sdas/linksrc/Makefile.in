@@ -34,7 +34,7 @@ EXEEXT          = @EXEEXT@
 VPATH           = @srcdir@
 
 CPPFLAGS        = @CPPFLAGS@ -I.. -I$(srcdir)/..
-CFLAGS          = @CFLAGS@ -Wall -DINDEXLIB -DUNIX -I. -I$(srcdir)
+CFLAGS          = @CFLAGS@ -Wall -DUNIX -I. -I$(srcdir)
 M_OR_MM         = @M_OR_MM@
 LDFLAGS         = @LDFLAGS@
 
@@ -49,7 +49,8 @@ ASXXLIBSRC = strcmpi.c
 SRC = lkarea.c lkbank.c lkdata.c lkeval.c \
         lkhead.c lklex.c lklibr.c lklist.c lkmain.c \
         lknoice.c lkout.c lkrloc.c lkrloc3.c lkrloc4.c \
-        lksdcdb.c lksym.c sdld.c
+        lksdcdb.c lksym.c sdld.c \
+	lkrel.c lklib.c lkar.c lksdcclib.c lk_readnl.c
 
 LKSOURCES = $(SRC) $(ASXXLIBSRC:%.c=$(ASXXLIB)/%.c)
 

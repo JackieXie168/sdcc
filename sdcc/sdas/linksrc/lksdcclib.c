@@ -2,7 +2,7 @@
 
    Copyright (C) 1989-1995 Alan R. Baldwin
    721 Berkeley St., Kent, Ohio 44240
-   Copyright (C) 2008 Borut Razem, borut dot razem at siol dot net
+   Copyright (C) 2008-2010 Borut Razem, borut dot razem at siol dot net
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -28,9 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /*
  * Extensions: P. Felber
  */
-
-#include <stdlib.h>
-#include <string.h>
 
 #include "sdld.h"
 #include "lk_readnl.h"
@@ -123,7 +120,7 @@ buildlibraryindex_sdcclib (struct lbname *lbnh, FILE * libfp, pmlibraryfile This
         case 1:
           if (EQ (FLine, "<MODULE>"))
             {
-              char buff[PATH_MAX];
+              char buff[FILSPC];
               char ModName[NCPS] = "";
               long FileOffset;
 
@@ -195,9 +192,13 @@ buildlibraryindex_sdcclib (struct lbname *lbnh, FILE * libfp, pmlibraryfile This
 
 #else
 
+/* sdld specific, disabled
+   TODO: enable it */
+#if 0
 /* Load an .adb file embedded in a sdcclib file. If there is
 something between <ADB> and </ADB> returns 1, otherwise returns 0.
 This way the aomf51 will not have useless empty modules. */
+
 
 static int
 LoadAdb (FILE * libfp)
@@ -225,6 +226,7 @@ LoadAdb (FILE * libfp)
     }
   return ret;
 }
+#endif
 
 /* Check for a symbol in a SDCC library. If found, add the embedded .rel and
    .adb files from the library.  The library must be created with the SDCC
@@ -242,17 +244,15 @@ findsym_sdcclib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
 
   while (lk_readnl (FLine, sizeof (FLine), libfp))
     {
-      char filspc[PATH_MAX];
+      char filspc[FILSPC];
 
       if (lbnh->path != NULL)
         {
           strcpy (filspc, lbnh->path);
-#ifdef  OTHERSYSTEM
           if (*filspc != '\0' && (filspc[strlen (filspc) - 1] != '/') && (filspc[strlen (filspc) - 1] != LKDIRSEP))
             {
               strcat (filspc, LKDIRSEPSTR);
             }
-#endif
         }
 
       switch (state)
@@ -336,12 +336,15 @@ findsym_sdcclib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
                       fprintf (stderr, "?ASlink-Error-Bad offset in library file %s(%s)\n", lbfh->libspc, ModName);
                       lkexit (1);
                     }
-                  /* if cdb information required & .adb file present */
+                  /* sdld specific, disabled
+                     TODO: enable it
+                  // if cdb information required & .adb file present
                   if (dflag && dfp)
                     {
                       if (LoadAdb (libfp))
                         SaveLinkedFilePath (filspc);
                     }
+                   */
                   return 1;     /* Found the symbol, so success! */
                 }
             }
@@ -365,7 +368,7 @@ loadfile_sdcclib (struct lbfile *lbfh)
   int res;
 
 #ifdef __CYGWIN__
-  char posix_path[PATH_MAX];
+  char posix_path[FILSPC];
   void cygwin_conv_to_full_posix_path (char *win_path, char *posix_path);
   cygwin_conv_to_full_posix_path (lbfh->libspc, posix_path);
   fp = fopen (posix_path, "rb");
