@@ -29,6 +29,8 @@
  */
 
 #include "aslink.h"
+#include "lkrel.h"
+#include "lklibr.h"
 
 /*)Module	lklibr.c
  *
@@ -48,6 +50,17 @@
  *		VOID	loadfile()
  *
  */
+
+/* sdld specific */
+#define EQ(A,B) !strcmp((A),(B))
+#define NELEM(x) (sizeof (x) / sizeof (*x))
+
+struct aslib_target *aslib_targets[] = {
+  &aslib_target_sdcclib,
+  &aslib_target_ar,
+  &aslib_target_lib,
+};
+/* end sdld specific */
 
 /*)Function	VOID	addpath()
  *
@@ -122,19 +135,27 @@ VOID
 addlib()
 {
 	struct lbpath *lbph;
+	/* sdld specific */
+	int foundcount = 0;
+	/* end sdld specific */
 
 	unget(getnb());
 
 	if (lbphead == NULL) {
-		addfile(NULL,ip);
+		foundcount += addfile(NULL,ip);
 		return;
 	}	
 	for (lbph=lbphead; lbph; lbph=lbph->next) {
-		addfile(lbph->path,ip);
+		foundcount += addfile(lbph->path,ip);
+	}
+	if (foundcount == 0) {
+		fprintf(stderr,
+			"?ASlink-Warning-Couldn't find library '%s'\n",
+			ip);
 	}
 }
 
-/*)Function	VOID	addfile(path,libfil)
+/*)Function	int	addfile(path,libfil)
  *
  *		char	*path		library path specification
  *		char	*libfil		library file specification
@@ -169,7 +190,10 @@ addlib()
  *		An lbname structure may be created.
  */
 
-VOID
+/* VOID */
+/* sdld specific */
+int
+/* end sdld specific */
 addfile(path,libfil)
 char *path;
 char *libfil;
@@ -212,8 +236,14 @@ char *libfil;
 		strcpy(lbnh->libfil,libfil);
 		lbnh->libspc = str;
 		lbnh->f_obj = objflg;
+		/* sdld specific */	
+		return 1;
+		/* end sdld specific */
 	} else {
 		free(str);
+		/* sdld specific */
+		return 0;
+		/* sdld specific */
 	}
 }
 
@@ -285,6 +315,91 @@ search()
 		}
 	}
 }
+
+/* sdld specific */
+struct load_sym_s {
+	const char *name;
+	struct lbname *lbnh;
+	const char *relfil;
+	const char *filspc;
+	int offset;
+	int type;
+};
+
+static int load_sybmol(const char *sym, void *params)
+{
+	struct load_sym_s *ls = (struct load_sym_s *) params;
+
+	D("	  Symbol: %s\n", sym);
+
+	if (strcmp(ls->name, sym) == 0) {
+		struct lbfile *lbfh, *lbf;
+
+		D("    Symbol %s found in module %s!\n", sym, ls->relfil);
+
+		lbfh = (struct lbfile *) new(sizeof(struct lbfile));
+		lbfh->libspc = ls->lbnh->libspc;
+		lbfh->relfil = strdup(ls->relfil);
+		lbfh->filspc = strdup(ls->filspc);
+		lbfh->offset = ls->offset;
+		lbfh->type = ls->type;
+		lbfh->f_obj = ls->lbnh->f_obj;
+		obj_flag = lbfh->f_obj;
+
+		if (lbfhead == NULL)
+			lbfhead = lbfh;
+		else {
+			for (lbf = lbfhead; lbf->next != NULL;
+			     lbf = lbf->next);
+			lbf->next = lbfh;
+		}
+		(*aslib_targets[ls->type]->loadfile) (lbfh);
+
+		return 1;
+	} else
+		return 0;
+}
+
+/*)Function int is_module_loaded(filspc)
+ *
+ * If this module has been already loaded
+ */
+
+int is_module_loaded(const char *filspc)
+{
+	struct lbfile *lbf;
+
+	for (lbf = lbfhead; lbf != NULL; lbf = lbf->next) {
+		if (EQ(filspc, lbf->filspc)) {
+			D("	Module %s already loaded!\n", filspc);
+			return 1;	/* Module already loaded */
+		}
+	}
+	return 0;
+}
+
+int
+add_rel_file(const char *name, struct lbname *lbnh, const char *relfil,
+	     const char *filspc, int offset, FILE * fp, long size,
+	     int type)
+{
+	struct load_sym_s ls;
+
+	/* If this module has been loaded already don't load it again. */
+	if (is_module_loaded(filspc))
+		return 0;
+	else {
+		ls.name = name;
+		ls.lbnh = lbnh;
+		ls.relfil = relfil;
+		ls.filspc = filspc;
+		ls.offset = offset;
+		ls.type = type;
+
+		return enum_symbols(fp, size, &load_sybmol, &ls);
+	}
+}
+/* end sdld specific */
 
 /*)Function	VOID	fndsym(name)
  *
@@ -364,6 +479,7 @@ int
 fndsym(name)
 char *name;
 {
+/*
 	FILE *libfp, *fp;
 	struct lbname *lbnh;
 	struct lbfile *lbfh, *lbf;
@@ -373,17 +489,33 @@ char *name;
 	char *path,*str,*strend;
 	char c;
 	int lbscan;
+*/
+	FILE *libfp;
+	struct lbname *lbnh;
+	int i;
 
 	/*
 	 * Search through every library in the linked list "lbnhead".
 	 */
 
+	D("Searching symbol: %s\n", name);
+
 /*1*/	for (lbnh=lbnhead; lbnh; lbnh=lbnh->next) {
+		int ret = 0;
+
 		if ((libfp = fopen(lbnh->libspc, "r")) == NULL) {
+/*
 			fprintf(stderr, "Cannot open library file %s\n",
 				lbnh->libspc);
+*/
+			/* sdld specific */
+			fprintf(stderr,
+				"?ASlink-Error-Cannot open library file %s\n",
+				lbnh->libspc);
+			/* end sdld specific */
 			lkexit(ER_FATAL);
 		}
+#if 0
 		path = lbnh->path;
 
 		/*
@@ -489,6 +621,22 @@ char *name;
 /*3*/		    }
 		    free(str);
 /*2*/		}
+#endif
+
+		for (i = 0; i < NELEM(aslib_targets); ++i) {
+			if ((*aslib_targets[i]->is_lib) (libfp)) {
+				ret =
+				    (*aslib_targets[i]->fndsym) (name,
+								 lbnh,
+								 libfp, i);
+				break;
+			}
+		}
+
+		if (i >= NELEM(aslib_targets))
+			fprintf(stderr,
+				"?ASlink-Error-Unknown library file format %s\n",
+				lbnh->libspc);
 		fclose(libfp);
 /*1*/	}
 	return(0);
@@ -518,10 +666,16 @@ library()
 {
 	struct lbfile *lbfh;
 
+/*
 	for (lbfh=lbfhead; lbfh; lbfh=lbfh->next) {
 		obj_flag = lbfh->f_obj;
 		loadfile(lbfh->filspc);
 	}
+*/
+	/* sdld specific */
+	for (lbfh = lbfhead; lbfh; lbfh = lbfh->next)
+		(*aslib_targets[lbfh->type]->loadfile) (lbfh);
+	/* end sdld specific */
 }
 
 /*)Function	VOID	loadfile(filspc)

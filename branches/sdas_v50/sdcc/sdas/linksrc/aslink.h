@@ -174,6 +174,32 @@
  * relocatable binary file.
  */
 
+/* sdld specific */
+/* WIN32 */
+#ifdef	_WIN32
+#define LKDIRSEP    '\\'
+#define LKDIRSEPSTR "\\"
+#else
+#define LKDIRSEP    '/'
+#define LKDIRSEPSTR "/"
+#endif
+
+/*
+ * PATH_MAX
+ */
+#include <limits.h>
+#ifndef PATH_MAX		/* POSIX, but not required   */
+ #if defined(__BORLANDC__) || defined(_MSC_VER)
+  #include <stdlib.h>
+  #define PATH_MAX	_MAX_PATH
+ #else
+  #define PATH_MAX	255	/* define a reasonable value */
+ #endif
+#endif
+
+#define LKOBJEXT	"rel"
+/* end sdld specific */
+
 #define NCPS		80	/* characters per symbol */
 #define	NINPUT		512	/* Input buffer size */
 #define	NHASH	     (1 << 6)	/* Buckets in hash table */
@@ -183,7 +209,9 @@
 #define		IXXMAXBYTES	32	/* NMAX > (2 * IXXMAXBYTES) */
 #define		SXXMAXBYTES	32	/* NMAX > (2 * SXXMAXBYTES) */
 #define		DBXMAXBYTES	64	/* NMAX > (  DBXMAXBYTES  ) */
-#define	FILSPC		80	/* File spec length */
+/* sdld specific */
+#define	FILSPC		PATH_MAX /* File spec length */
+/* end sdld specific */
 
 /*
  * NTXT must be defined to have the same value in
@@ -784,6 +812,10 @@ struct lbfile {
 	char		*relfil;
 	char		*filspc;
 	int		f_obj;
+	/* sdld specific */
+	long		offset;
+	unsigned int	type;
+	/* end sdld specific */
 };
 
 /*
@@ -1201,7 +1233,10 @@ extern	VOID		relerr4(char *str);
 extern	VOID		relerp4(char *str);
 
 /* lklibr.c */
-extern	VOID		addfile(char *path, char *libfil);
+/* extern	VOID		addfile(char *path, char *libfil); */
+/* sdld specific */
+extern	int		addfile(char *path, char *libfil);
+/* sdld specific */
 extern	VOID		addlib(void);
 extern	VOID		addpath(void);
 extern	int		fndsym(char *name);

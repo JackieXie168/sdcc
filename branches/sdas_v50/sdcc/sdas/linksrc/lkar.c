@@ -2,7 +2,7 @@
 
    Copyright (C) 1989-1995 Alan R. Baldwin
    721 Berkeley St., Kent, Ohio 44240
-   Copyright (C) 2008-2009 Borut Razem, borut dot razem at siol dot net
+   Copyright (C) 2008-2010 Borut Razem, borut dot razem at siol dot net
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -29,9 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  * Extensions: P. Felber
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 
 #include "aslink.h"
@@ -596,17 +593,15 @@ fndsym_ar (const char *name, struct lbname *lbnh, FILE * libfp, int type)
   /* walk trough all archive members */
   while ((hdr_size = ar_get_header (&hdr, libfp, &obj_name)) != 0)
     {
-      char filspc[PATH_MAX];
+      char filspc[FILSPC];
 
       if (lbnh->path != NULL)
         {
           strcpy (filspc, lbnh->path);
-#ifdef  OTHERSYSTEM
           if (*filspc != '\0' && (filspc[strlen (filspc) - 1] != '/') && (filspc[strlen (filspc) - 1] != LKDIRSEP))
             {
               strcat (filspc, LKDIRSEPSTR);
             }
-#endif
         }
 
       if (AR_IS_SYMBOL_TABLE (obj_name))
@@ -845,7 +840,7 @@ loadfile_ar (struct lbfile *lbfh)
   FILE *fp;
 
 #ifdef __CYGWIN__
-  char posix_path[PATH_MAX];
+  char posix_path[FILSPC];
   void cygwin_conv_to_full_posix_path (char *win_path, char *posix_path);
   cygwin_conv_to_full_posix_path (lbfh->libspc, posix_path);
   fp = fopen (posix_path, "rb");

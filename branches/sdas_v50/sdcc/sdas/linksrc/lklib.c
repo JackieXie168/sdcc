@@ -2,7 +2,7 @@
 
    Copyright (C) 1989-1995 Alan R. Baldwin
    721 Berkeley St., Kent, Ohio 44240
-   Copyright (C) 2008-2009 Borut Razem, borut dot razem at siol dot net
+   Copyright (C) 2008-2010 Borut Razem, borut dot razem at siol dot net
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -29,8 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
  * Extensions: P. Felber
  */
 
-#include <string.h>
-
 #include "sdld.h"
 #include "lk_readnl.h"
 #include "aslink.h"
@@ -50,33 +48,31 @@ is_lib (FILE * libfp)
 static pmlibraryfile
 buildlibraryindex_lib (struct lbname *lbnh, FILE * libfp, pmlibraryfile This, int type)
 {
-  char relfil[NINPUT];
+  char relfil[NINPUT+2];
 
   while (lk_readnl (relfil, sizeof (relfil), libfp) != NULL)
     {
       FILE *fp;
-      char str[PATH_MAX];
+      char *str;
+
+      relfil[NINPUT+1] = '\0';
 
       if (lbnh->path != NULL)
         {
-          strcpy (str, lbnh->path);
-#ifdef  OTHERSYSTEM
-          if ((*str != '\0') && (str[strlen (str) - 1] != '/') && (str[strlen (str) - 1] != LKDIRSEP))
+          str = (char *) malloc (strlen(path)+strlen(relfil)+5);
+          strcpy(str,path);
+          strend = str + strlen(str) - 1;
+          if ((*relfil == '\\' && *strend == '\\') ||
+            (*relfil ==  '/' && *strend ==  '/'))
             {
-              strcat (str, LKDIRSEPSTR);
+              *strend = '\0';
             }
-#endif
-        }
-      else
-        str[0] = '\0';
-
-      if ((relfil[0] == '/') || (relfil[0] == LKDIRSEP))
-        {
-          strcat (str, relfil + 1);
+          strcat(str,relfil);
         }
       else
         {
-          strcat (str, relfil);
+          str = (char *) malloc (strlen(relfil) + 5);
+          strcpy(str,relfil);
         }
 
       if (strchr (relfil, FSEPX) == NULL)
@@ -123,35 +119,38 @@ buildlibraryindex_lib (struct lbname *lbnh, FILE * libfp, pmlibraryfile This, in
 static int
 fndsym_lib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
 {
-  char relfil[NINPUT];
+  char relfil[NINPUT+2];
+  char *path;
+  int lbscan;
 
   D ("Searching symbol: %s\n", name);
 
+  path = lbnh->path;
+
   while (lk_readnl (relfil, sizeof (relfil), libfp) != NULL)
     {
-      char str[PATH_MAX];
+      struct lbfile *lbf;
+      char *str, *strend;
       FILE *fp;
 
-      if (lbnh->path != NULL)
-        {
-          strcpy (str, lbnh->path);
-#ifdef  OTHERSYSTEM
-          if ((*str != '\0') && (str[strlen (str) - 1] != '/') && (str[strlen (str) - 1] != LKDIRSEP))
-            {
-              strcat (str, LKDIRSEPSTR);
-            }
-#endif
-        }
-      else
-        str[0] = '\0';
+      relfil[NINPUT+1] = '\0';
 
-      if ((relfil[0] == '/') || (relfil[0] == LKDIRSEP))
+      if (path != NULL)
         {
-          strcat (str, relfil + 1);
+          str = (char *) malloc (strlen(path)+strlen(relfil)+5);
+          strcpy(str,path);
+          strend = str + strlen(str) - 1;
+          if ((*relfil == '\\' && *strend == '\\') ||
+            (*relfil ==  '/' && *strend ==  '/'))
+            {
+              *strend = '\0';
+            }
+          strcat(str,relfil);
         }
       else
         {
-          strcat (str, relfil);
+          str = (char *) malloc (strlen(relfil) + 5);
+          strcpy(str,relfil);
         }
 
       if (strchr (relfil, FSEPX) == NULL)
@@ -159,7 +158,17 @@ fndsym_lib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
           sprintf (&str[strlen (str)], "%c%s", FSEPX, LKOBJEXT);
         }
 
-      if ((fp = fopen (str, "rb")) != NULL)
+      /*
+       * Scan only files not yet loaded
+       */
+      for (lbf=lbfhead, lbscan=1; lbf&&lbscan; lbf=lbf->next)
+        {
+          if (strcmp(lbf->filspc,str) == 0)
+            {
+              lbscan = 0;
+            }
+        }
+      if (lbscan  && (fp = fopen (str, "rb")) != NULL)
         {
           /* Opened OK - create a new libraryfile object for it */
           int ret = add_rel_file (name, lbnh, relfil, str, -1, fp, -1, type);
@@ -167,7 +176,10 @@ fndsym_lib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
           if (ret)
             {
               D ("Loaded module %s from file %s.\n", str, str);
-              /* if cdb information required & adb file present */
+              /* sdld specific, disabled
+                 TODO: enable it
+
+              // if cdb information required & adb file present
               if (dflag && dfp)
                 {
                   FILE *xfp = afile (str, "adb", 0);    //JCF: Nov 30, 2002
@@ -178,6 +190,7 @@ fndsym_lib (const char *name, struct lbname *lbnh, FILE * libfp, int type)
                       fclose (xfp);
                     }
                 }
+               */
               return 1;         /* Found the symbol, so success! */
             }
         }                       /* Closes if object file opened OK */
@@ -221,7 +234,7 @@ loadfile_lib (struct lbfile *lbfh)
 {
   FILE *fp;
 #ifdef __CYGWIN__
-  char posix_path[PATH_MAX];
+  char posix_path[FILSPC];
   void cygwin_conv_to_full_posix_path (char *win_path, char *posix_path);
   cygwin_conv_to_full_posix_path (lbfh->filspc, posix_path);
   fp = fopen (posix_path, "rb");
