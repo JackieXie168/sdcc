@@ -1077,10 +1077,12 @@ extern	char	eb[NERR];	/*	array of generated error codes
 extern	char	*ip;		/*	pointer into the assembler-source
 				 *	text line in ib[]
 				 */
-extern	char	ib[NINPUT*2];	/*	assembler-source text line for processing
+/* sdld specific */
+extern	char	*ib;		/*	assembler-source text line for processing
 				 */
-extern	char	ic[NINPUT*2];	/*	assembler-source text line for listing
+extern	char	*ic;		/*	assembler-source text line for listing
 				 */
+/* end sdld specific */
 extern	char	*il;		/*	pointer to the assembler-source
 				 *	text line to be listed
 				 */

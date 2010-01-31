@@ -278,11 +278,26 @@ is_rel (FILE * libfp)
   long pos = ftell (libfp);
   int ret = 0;
 
-  /* [XDQ][HL] */
+  /* [XDQ][HL][234] */
   if (((c = getc (libfp)) == 'X' || c == 'D' || c == 'Q') && ((c = getc (libfp)) == 'H' || c == 'L'))
     {
       switch (getc (libfp))
         {
+	case '2':
+	case '3':
+	case '4':
+          switch (getc (libfp))
+            {
+            case '\r':
+              if (getc (libfp) == '\n')
+                ret = 1;
+              break;
+
+            case '\n':
+              ret = 1;
+            }
+          break;
+
         case '\r':
           if (getc (libfp) == '\n')
             ret = 1;

@@ -164,7 +164,7 @@ _hc08_genAssemblerPreamble (FILE * of)
   mainExists->block=0;
 
   fprintf (of, "\t.area %s\n",HOME_NAME);
-  fprintf (of, "\t.area GSINIT0 (CODE)\n");
+  fprintf (of, "\t.area GSINIT0\t(CSEG)\n");
   fprintf (of, "\t.area %s\n",port->mem.static_name);
   fprintf (of, "\t.area %s\n",port->mem.post_static_name);
   fprintf (of, "\t.area %s\n",CODE_NAME);
@@ -419,23 +419,23 @@ PORT hc08_port =
   {
     "XSEG",
     "STACK",
-    "CSEG (CODE)",
+    "CSEG\t(CSEG)",
     "DSEG",
     NULL, /* "ISEG" */
     NULL, /* "PSEG" */
     "XSEG",
     "BSEG",
-    "RSEG (ABS)",
-    "GSINIT (CODE)",
-    "OSEG    (OVR)",
-    "GSFINAL (CODE)",
-    "HOME (CODE)",
-    "XISEG", // initialized xdata
-    "XINIT", // a code copy of xiseg
-    "CONST   (CODE)",     // const_name - const data (code or not)
-    "CABS    (ABS,CODE)", // cabs_name - const absolute data (code or not)
-    "XABS    (ABS)",      // xabs_name - absolute xdata
-    "IABS    (ABS)",      // iabs_name - absolute data
+    "RSEG\t(ABS)",
+    "GSINIT\t(CSEG)",
+    "OSEG\t(OVR)",
+    "GSFINAL\t(CSEG)",
+    "HOME\t(CSEG)",
+    "XISEG",            // initialized xdata
+    "XINIT",            // a code copy of xiseg
+    "CONST\t(CSEG)",    // const_name - const data (code or not)
+    "CABS\t(ABS,CSEG)",	// cabs_name - const absolute data (code or not)
+    "XABS\t(ABS)",      // xabs_name - absolute xdata
+    "IABS\t(ABS)",      // iabs_name - absolute data
     NULL,
     NULL,
     1

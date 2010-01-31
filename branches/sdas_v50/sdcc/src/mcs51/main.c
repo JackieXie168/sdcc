@@ -232,12 +232,12 @@ static void
 _mcs51_genExtraAreas(FILE *of, bool hasMain)
 {
   tfprintf (of, "\t!area\n", HOME_NAME);
-  tfprintf (of, "\t!area\n", "GSINIT0 (CODE)");
-  tfprintf (of, "\t!area\n", "GSINIT1 (CODE)");
-  tfprintf (of, "\t!area\n", "GSINIT2 (CODE)");
-  tfprintf (of, "\t!area\n", "GSINIT3 (CODE)");
-  tfprintf (of, "\t!area\n", "GSINIT4 (CODE)");
-  tfprintf (of, "\t!area\n", "GSINIT5 (CODE)");
+  tfprintf (of, "\t!area\n", "GSINIT0 (CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT1 (CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT2 (CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT3 (CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT4 (CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT5 (CSEG)");
   tfprintf (of, "\t!area\n", STATIC_NAME);
   tfprintf (of, "\t!area\n", port->mem.post_static_name);
   tfprintf (of, "\t!area\n", CODE_NAME);
@@ -768,25 +768,25 @@ PORT mcs51_port =
   /* tags for generic pointers */
   { 0x00, 0x40, 0x60, 0x80 },           /* far, near, xstack, code */
   {
-    "XSTK    (PAG,XDATA)",      // xstack_name
-    "STACK   (DATA)",           // istack_name
-    "CSEG    (CODE)",           // code_name
-    "DSEG    (DATA)",           // data_name
-    "ISEG    (DATA)",           // idata_name
-    "PSEG    (PAG,XDATA)",      // pdata_name
-    "XSEG    (XDATA)",          // xdata_name
-    "BSEG    (BIT)",            // bit_name
-    "RSEG    (ABS,DATA)",       // reg_name
-    "GSINIT  (CODE)",           // static_name
-    "OSEG    (OVR,DATA)",       // overlay_name
-    "GSFINAL (CODE)",           // post_static_name
-    "HOME    (CODE)",           // home_name
-    "XISEG   (XDATA)",          // xidata_name - initialized xdata   initialized xdata
-    "XINIT   (CODE)",           // xinit_name - a code copy of xiseg
-    "CONST   (CODE)",           // const_name - const data (code or not)
-    "CABS    (ABS,CODE)",       // cabs_name - const absolute data (code or not)
-    "XABS    (ABS,XDATA)",      // xabs_name - absolute xdata/pdata
-    "IABS    (ABS,DATA)",       // iabs_name - absolute idata/data
+    "XSTK\t(PAG,DSEG)", // xstack_name
+    "STACK\t(DSEG)",    // istack_name
+    "CSEG\t(CSEG)",     // code_name
+    "DSEG\t(DSEG)",     // data_name
+    "ISEG\t(DSEG)",     // idata_name
+    "PSEG\t(PAG,DSEG)", // pdata_name
+    "XSEG\t(DSEG)",     // xdata_name
+    "BSEG\t(BIT)",      // bit_name
+    "RSEG\t(ABS,DSEG)", // reg_name
+    "GSINIT\t(CSEG)",   // static_name
+    "OSEG\t(OVR,DSEG)", // overlay_name
+    "GSFINAL\t(CSEG)",  // post_static_name
+    "HOME\t(CSEG)",     // home_name
+    "XISEG\t(DSEG)",    // xidata_name - initialized xdata   initialized xdata
+    "XINIT\t(CSEG)",    // xinit_name - a code copy of xiseg
+    "CONST\t(CSEG)",    // const_name - const data (code or not)
+    "CABS\t(ABS,CSEG)", // cabs_name - const absolute data (code or not)
+    "XABS\t(ABS,DSEG)", // xabs_name - absolute xdata/pdata
+    "IABS\t(ABS,DSEG)", // iabs_name - absolute idata/data
     NULL,
     NULL,
     1

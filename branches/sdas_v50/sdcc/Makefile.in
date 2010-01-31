@@ -29,7 +29,7 @@ SDCC_LD         += sdcc-ld6808
 endif
 
 ifeq ($(OPT_DISABLE_MCS51), 0)
-SDCC_AS         += sdas/as8051
+SDCC_AS         += sdas/as8051 sdas/as8xcxxx
 SDCC_LD         += sdcc-ld8051
 SDCC_MISC       += debugger/mcs51
 endif

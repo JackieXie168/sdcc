@@ -773,7 +773,7 @@ PORT z80_port =
     NULL, /* pdata */
     "XSEG",
     "BSEG",
-    "RSEG (ABS)",
+    "RSEG\t(ABS)",
     "GSINIT",
     "OVERLAY",
     "GSFINAL",

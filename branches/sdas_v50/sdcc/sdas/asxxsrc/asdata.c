@@ -282,10 +282,12 @@ char	eb[NERR];	/*	array of generated error codes
 char	*ip;		/*	pointer into the assembler-source
 			 *	text line in ib[]
 			 */
-char	ib[NINPUT*2];	/*	assembler-source text line for processing
+/* sdld specific */
+char	*ib;		/*	assembler-source text line for processing
 			 */
-char	ic[NINPUT*2];	/*	assembler-source text line for listing
+char	*ic;		/*	assembler-source text line for listing
 			 */
+/* end sdld specific */
 char	*il;		/*	pointer to the assembler-source
 			 *	text line to be listed
 			 */

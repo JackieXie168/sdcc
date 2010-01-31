@@ -1559,17 +1559,32 @@ linkEdit (char **envp)
           exit (EXIT_FAILURE);
         }
 
+#if 0
+      /*
+       *  -m   Map output generated as file[map]
+       *  -x   Hexidecimal (default)
+       *Z80:
+       *  -j   no$gmb symbol file generated as file[sym]
+       *not Z80
+       *  -y   Generate memory usage summary file[mem]
+       *  -u   Update listing file(s) with link data as file(s)[.rst]
+       *8085:
+       *  -Y   Pack internal ram
+       */
+
       if (TARGET_Z80_LIKE)
         {
-//          fprintf (lnkfile, "--\n-m\n-j\n-x\n-%c %s\n", out_fmt, dstFileName);
           fprintf (lnkfile, "-mjx\n-%c %s\n", out_fmt, dstFileName);
         }
       else /*For all the other ports.  Including pics???*/
         {
           fprintf (lnkfile, "-myux\n-%c %s\n", out_fmt, dstFileName);
-          if(!options.no_pack_iram)
+          if (!options.no_pack_iram)
               fprintf (lnkfile, "-Y\n");
         }
+#else
+      fprintf (lnkfile, "-mux\n-%c %s\n", out_fmt, dstFileName);
+#endif
 
       if (!(TARGET_Z80_LIKE)) /*Not for the z80, gbz80*/
         {
@@ -1661,8 +1676,11 @@ linkEdit (char **envp)
       fputStrSet(lnkfile, linkOptionsSet);
 
       /* command line defined library paths if specified */
-      for (s = setFirstItem(libPathsSet); s != NULL; s = setNextItem(libPathsSet))
-        fprintf (lnkfile, "-k %s\n", s);
+      for (s = setFirstItem (libPathsSet); s != NULL; s = setNextItem (libPathsSet))
+        {
+          int c = s[strlen (s) - 2];
+          fprintf (lnkfile, "-k %s%s\n", s, (c == DIR_SEPARATOR_CHAR || c == '/') ? "" : DIR_SEPARATOR_STRING);
+        }
 
       /* standard library path */
       if (!options.nostdlib)
