@@ -24,6 +24,7 @@
  */
 
 #include "asxxxx.h"
+#include "dbuf_string.h"
 
 /*)Module	aslex.c
  *
@@ -637,6 +638,7 @@ int flag;
  *	Macros are recreated during each pass of the assembler.
  */
 
+#if 0
 int
 as_getline()
 {
@@ -767,7 +769,153 @@ loop:	if (asmc == NULL) return(0);
 	scanline();
 	return(1);
 }
+#endif
 
+/* sdld specific */
+int
+as_getline()
+{
+	struct asmf *asmt;
+	static struct dbuf_s dbuf;
+	static char dbufInitialized = 0;
+
+	if (!dbufInitialized) {
+		dbuf_init (&dbuf, 1024);
+		dbufInitialized = 1;
+	} else
+		dbuf_set_length (&dbuf, 0);
+
+loop:	if (asmc == NULL) return(0);
+
+	/*
+	 * Insert Include File
+	 */
+	if (asmi != NULL) {
+		asmc = asmi;
+		asmi = NULL;
+		incline = 0;
+	}
+	/*
+	 * Insert Queued Macro
+	 */
+	if (asmq != NULL) {
+		asmc = asmq;
+		asmq = NULL;
+		mcrline = 0;
+	}
+
+	switch(asmc->objtyp) {
+	case T_ASM:
+//		if (fgets(ib, NINPUT, asmc->fp) == NULL) {
+		if (dbuf_getline (&dbuf, asmc->fp) == 0) {
+			if ((asmc->flevel != flevel) || (asmc->tlevel != tlevel)) {
+				err('i');
+				fprintf(stderr, "?ASxxxx-Error-<i> at end of assembler file\n");
+				fprintf(stderr, "              %s\n", geterr('i'));
+			}
+			flevel = asmc->flevel;
+			tlevel = asmc->tlevel;
+			lnlist = asmc->lnlist;
+			asmc = asmc->next;
+			if (asmc != NULL) {
+				asmline = 0;
+			}
+			if ((lnlist & LIST_PAG) || (uflag == 1)) {
+				lop = NLPP;
+			}
+			goto loop;
+		} else {
+			if (asmline++ == 0) {
+				strcpy(afn, asmc->afn);
+				afp = asmc->afp;
+			}
+			srcline = asmline;
+		}
+		break;
+
+	case T_INCL:
+//		if (fgets(ib, NINPUT, asmc->fp) == NULL) {
+		if (dbuf_getline (&dbuf, asmc->fp) == 0) {
+			fclose(asmc->fp);
+			incfil -= 1;
+			if ((asmc->flevel != flevel) || (asmc->tlevel != tlevel)) {
+				err('i');
+				fprintf(stderr, "?ASxxxx-Error-<i> at end of include file\n");
+				fprintf(stderr, "              %s\n", geterr('i'));
+			}
+			srcline = asmc->line;
+			flevel = asmc->flevel;
+			tlevel = asmc->tlevel;
+			lnlist = asmc->lnlist;
+			asmc = asmc->next;
+			switch (asmc->objtyp) {
+			default:
+			case T_ASM:	asmline = srcline;	break;
+			case T_INCL:	incline = srcline;	break;
+			case T_MACRO:	mcrline = srcline;	break;
+			}
+			/*
+		 	 * Scan for parent file
+		 	 */
+			asmt = asmc;
+			while (asmt != NULL) {
+				if (asmt->objtyp != T_MACRO) {
+					strcpy(afn, asmt->afn);
+					afp = asmt->afp;
+					break;
+				}
+				asmt = asmt->next;
+			}
+			if ((lnlist & LIST_PAG) || (uflag == 1)) {
+				lop = NLPP;
+			}
+			goto loop;
+		} else {
+			if (incline++ == 0) {
+				strcpy(afn, asmc->afn);
+				afp = asmc->afp;
+			}
+			srcline = incline;
+		}
+		break;
+
+	case T_MACRO:
+		if (fgetm(ib, NINPUT, asmc->fp) == NULL) {
+			mcrfil -= 1;
+			srcline = asmc->line;
+			flevel = asmc->flevel;
+			tlevel = asmc->tlevel;
+			lnlist = asmc->lnlist;
+			asmc = asmc->next;
+			switch (asmc->objtyp) {
+			default:
+			case T_ASM:	asmline = srcline;	break;
+			case T_INCL:	incline = srcline;	break;
+			case T_MACRO:	mcrline = srcline;	break;
+			}
+			goto loop;
+		} else {
+			if (mcrline++ == 0) {
+				;
+			}
+			srcline = mcrline;
+		}
+		break;
+
+	default:
+		fprintf(stderr, "?ASxxxx-Internal-getline(objtyp)-Error.\n\n");
+		asexit(ER_FATAL);
+		break;
+	}
+	ib = (char *)dbuf_c_str (&dbuf);
+	chopcrlf(ib);
+	if (NULL != ic)
+		free(ic);
+	ic = strdup(ib);
+	scanline();
+	return(1);
+}
+/* end sdld specific */
 
 /*)Function	VOID	scanline()
  *

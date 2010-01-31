@@ -4,6 +4,16 @@
 	  sdas/linksrc/lksdcclib.c, sdas/linksrc/lklib.c, sdas/linksrc/lkrel.c,
 	  sdas/linksrc/aslink.h: added support for sdcclib and ar libraries
 	* sdas/linksrc/README: removed
+	* Makefile.in, src/SDCCmain.c, src/SDCCglue.c:
+	  use sdas8xcxxx assembler for ds390
+	* src/mcs51/main.c, src/z80/main.c, src/ds390/main.c, src/hc08/main.c:
+	  area directive options CODE, DATA and XDATA changed to CSEG, DSEG and DSEG
+	* sdas/asxxsrc/asxxxx.h, sdas/asxxsrc/asmain.c, sdas/asxxsrc/aslex.c
+	  sdas/asxxsrc/asdata.c, sdas/as8xcxxx/Makefile.in:
+	  support for long asm lines in aslex.c, function as_getline(),
+	  remove .rel file in case of error, so that make is not misleaded
+	* sdas/asranlib/asranlib.c: detection of .rel file
+
 
 2010-01-24 Borut Razem <borut.razem AT siol.net>
 

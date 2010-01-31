@@ -206,7 +206,7 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
           if ((SPEC_OCLS (sym->etype) == xidata) && !SPEC_ABSA (sym->etype))
             {
               sym_link *t;
-              /* create a new "XINIT (CODE)" symbol, that will be emited later
+              /* create a new "XINIT (CSEG)" symbol, that will be emited later
                  in the static seg */
               newSym = copySymbol (sym);
               SPEC_OCLS (newSym->etype) = xinit;
@@ -223,7 +223,7 @@ emitRegularMap (memmap * map, bool addPublics, bool arFlag)
               SPEC_STAT(newSym->etype) = 1;
               resolveIvalSym(newSym->ival, newSym->type);
 
-              // add it to the "XINIT (CODE)" segment
+              // add it to the "XINIT (CSEG)" segment
               addSet(&xinit->syms, newSym);
 
               if (!SPEC_ABSA (sym->etype))
@@ -1784,20 +1784,20 @@ glue (void)
           fprintf (asmFile, "; overlayable register banks\n");
           fprintf (asmFile, "%s", iComments2);
           if (RegBankUsed[0])
-            fprintf (asmFile, "\t.area REG_BANK_0\t(REL,OVR,DATA)\n\t.ds 8\n");
+            fprintf (asmFile, "\t.area REG_BANK_0\t(REL,OVR,DSEG)\n\t.ds 8\n");
           if (RegBankUsed[1] || options.parms_in_bank1)
-            fprintf (asmFile, "\t.area REG_BANK_1\t(REL,OVR,DATA)\n\t.ds 8\n");
+            fprintf (asmFile, "\t.area REG_BANK_1\t(REL,OVR,DSEG)\n\t.ds 8\n");
           if (RegBankUsed[2])
-            fprintf (asmFile, "\t.area REG_BANK_2\t(REL,OVR,DATA)\n\t.ds 8\n");
+            fprintf (asmFile, "\t.area REG_BANK_2\t(REL,OVR,DSEG)\n\t.ds 8\n");
           if (RegBankUsed[3])
-            fprintf (asmFile, "\t.area REG_BANK_3\t(REL,OVR,DATA)\n\t.ds 8\n");
+            fprintf (asmFile, "\t.area REG_BANK_3\t(REL,OVR,DSEG)\n\t.ds 8\n");
         }
       if (BitBankUsed)
         {
           fprintf (asmFile, "%s", iComments2);
           fprintf (asmFile, "; overlayable bit register bank\n");
           fprintf (asmFile, "%s", iComments2);
-          fprintf (asmFile, "\t.area BIT_BANK\t(REL,OVR,DATA)\n");
+          fprintf (asmFile, "\t.area BIT_BANK\t(REL,OVR,DSEG)\n");
           fprintf (asmFile, "bits:\n\t.ds 1\n");
           fprintf (asmFile, "\tb0 = bits[0]\n");
           fprintf (asmFile, "\tb1 = bits[1]\n");
@@ -1832,7 +1832,7 @@ glue (void)
       fprintf (asmFile, "%s", iComments2);
       fprintf (asmFile, "; Stack segment in internal ram \n");
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "\t.area\tSSEG\t(DATA)\n"
+      fprintf (asmFile, "\t.area\tSSEG\t(DSEG)\n"
                "__start__stack:\n\t.ds\t1\n\n");
     }
 
@@ -1879,7 +1879,7 @@ glue (void)
       fprintf (asmFile, "%s", iComments2);
       fprintf (asmFile, "; external stack \n");
       fprintf (asmFile, "%s", iComments2);
-      fprintf (asmFile, "\t.area XSTK (PAG,XDATA)\n"
+      fprintf (asmFile, "\t.area XSTK (PAG,DSEG)\n"
                "__start__xstack:\n\t.ds\t1\n\n");
     }
 

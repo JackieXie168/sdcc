@@ -233,32 +233,33 @@ extern char * iComments2;
 static void
 _ds390_genAssemblerPreamble (FILE * of)
 {
-      fputs (iComments2, of);
-      fputs ("; CPU specific extensions\n",of);
-      fputs (iComments2, of);
+  fputs (iComments2, of);
+  fputs ("; CPU specific extensions\n", of);
+  fputs (iComments2, of);
 
-      if (options.model == MODEL_FLAT24)
-        fputs (".flat24 on\t\t; 24 bit flat addressing\n", of);
+  if (options.model == MODEL_FLAT24)
+    fputs ("\t.24bit\t\t; 24 bit flat addressing\n", of);
 
-      fputs ("dpl1\t=\t0x84\n", of);
-      fputs ("dph1\t=\t0x85\n", of);
-      fputs ("dps\t=\t0x86\n", of);
-      fputs ("dpx\t=\t0x93\n", of);
-      fputs ("dpx1\t=\t0x95\n", of);
-      fputs ("esp\t=\t0x9B\n", of);
-      fputs ("ap\t=\t0x9C\n", of);
-      fputs ("_ap\t=\t0x9C\n", of);
-      fputs ("mcnt0\t=\t0xD1\n", of);
-      fputs ("mcnt1\t=\t0xD2\n", of);
-      fputs ("ma\t=\t0xD3\n", of);
-      fputs ("mb\t=\t0xD4\n", of);
-      fputs ("mc\t=\t0xD5\n", of);
-      fputs ("F1\t=\t0xD1\t; user flag\n", of);
-      if (options.parms_in_bank1) {
-          int i ;
-          for (i=0; i < 8 ; i++ )
-              fprintf (of,"b1_%d\t=\t0x%02X\n",i,8+i);
-      }
+  fputs ("dpl1\t=\t0x84\n", of);
+  fputs ("dph1\t=\t0x85\n", of);
+  fputs ("dps\t=\t0x86\n", of);
+  fputs ("dpx\t=\t0x93\n", of);
+  fputs ("dpx1\t=\t0x95\n", of);
+  fputs ("esp\t=\t0x9B\n", of);
+  fputs ("ap\t=\t0x9C\n", of);
+  fputs ("_ap\t=\t0x9C\n", of);
+  fputs ("mcnt0\t=\t0xD1\n", of);
+  fputs ("mcnt1\t=\t0xD2\n", of);
+  fputs ("ma\t=\t0xD3\n", of);
+  fputs ("mb\t=\t0xD4\n", of);
+  fputs ("mc\t=\t0xD5\n", of);
+  fputs ("F1\t=\t0xD1\t; user flag\n", of);
+  if (options.parms_in_bank1)
+    {
+      int i;
+      for (i=0; i < 8 ; i++)
+        fprintf (of, "b1_%d\t=\t0x%02X\n", i, 8 + i);
+    }
 }
 
 /* Generate interrupt vector table. */
@@ -887,7 +888,7 @@ static const char *_linkCmd[] =
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
 static const char *_asmCmd[] =
 {
-  "sdas8051", "$l", "$3", "\"$1.asm\"", NULL
+  "sdas8xcxxx", "$l", "$3", "\"$1.asm\"", NULL
 };
 
 /* Globals */
@@ -934,25 +935,25 @@ PORT ds390_port =
   { 0x00, 0x40, 0x60, 0x80 },           /* far, near, xstack, code */
 
   {
-    "XSEG    (XDATA)",
-    "STACK   (DATA)",
-    "CSEG    (CODE)",
-    "DSEG    (DATA)",
-    "ISEG    (DATA)",
-    "PSEG    (PAG,XDATA)",
-    "XSEG    (XDATA)",
-    "BSEG    (BIT)",
-    "RSEG    (DATA)",
-    "GSINIT  (CODE)",
-    "OSEG    (OVR,DATA)",
-    "GSFINAL (CODE)",
-    "HOME    (CODE)",
-    "XISEG   (XDATA)",          // initialized xdata
-    "XINIT   (CODE)",           // a code copy of xiseg
-    "CONST   (CODE)",           // const_name - const data (code or not)
-    "CABS    (ABS,CODE)",       // cabs_name - const absolute data (code or not)
-    "XABS    (ABS,XDATA)",      // xabs_name - absolute xdata/pdata
-    "IABS    (ABS,DATA)",       // iabs_name - absolute idata/data
+    "XSEG\t(DSEG)",
+    "STACK\t(DSEG)",
+    "CSEG\t(CSEG)",
+    "DSEG\t(DSEG)",
+    "ISEG\t(DSEG)",
+    "PSEG\t(PAG,DSEG)",
+    "XSEG\t(DSEG)",
+    "BSEG\t(BIT)",
+    "RSEG\t(DSEG)",
+    "GSINIT\t(CSEG)",
+    "OSEG\t(OVR,DSEG)",
+    "GSFINAL\t(CSEG)",
+    "HOME\t(CSEG)",
+    "XISEG\t(DSEG)",    // initialized xdata
+    "XINIT\t(CSEG)",    // a code copy of xiseg
+    "CONST\t(CSEG)",    // const_name - const data (code or not)
+    "CABS\t(ABS,CSEG)", // cabs_name - const absolute data (code or not)
+    "XABS\t(ABS,DSEG)", // xabs_name - absolute xdata/pdata
+    "IABS\t(ABS,DSEG)", // iabs_name - absolute idata/data
     NULL,
     NULL,
     1
@@ -1268,25 +1269,25 @@ PORT tininative_port =
   { 0x00, 0x40, 0x60, 0x80 },           /* far, near, xstack, code */
 
   {
-    "XSEG    (XDATA)",
-    "STACK   (DATA)",
-    "CSEG    (CODE)",
-    "DSEG    (DATA)",
-    "ISEG    (DATA)",
-    "PSEG    (PAG,XDATA)",
-    "XSEG    (XDATA)",
-    "BSEG    (BIT)",
-    "RSEG    (DATA)",
-    "GSINIT  (CODE)",
-    "OSEG    (OVR,DATA)",
-    "GSFINAL (CODE)",
-    "HOME    (CODE)",
+    "XSEG\t(DSEG)",
+    "STACK\t(DSEG)",
+    "CSEG\t(CSEG)",
+    "DSEG\t(DSEG)",
+    "ISEG\t(DSEG)",
+    "PSEG\t(PAG,DSEG)",
+    "XSEG\t(DSEG)",
+    "BSEG\t(BIT)",
+    "RSEG\t(DSEG)",
+    "GSINIT\t(CSEG)",
+    "OSEG\t(OVR,DSEG)",
+    "GSFINAL\t(CSEG)",
+    "HOME\t(CSEG)",
     NULL,
     NULL,
-    "CONST   (CODE)",           // const_name - const data (code or not)
-    "CABS    (ABS,CODE)",       // cabs_name - const absolute data (code or not)
-    "XABS    (ABS,XDATA)",      // xabs_name - absolute xdata/pdata
-    "IABS    (ABS,DATA)",       // iabs_name - absolute idata/data
+    "CONST\t(CSEG)",    // const_name - const data (code or not)
+    "CABS\t(ABS,CSEG)", // cabs_name - const absolute data (code or not)
+    "XABS\t(ABS,DSEG)", // xabs_name - absolute xdata/pdata
+    "IABS\t(ABS,DSEG)", // iabs_name - absolute idata/data
     NULL,
     NULL,
     1
@@ -1467,7 +1468,7 @@ static void _ds400_generateRomDataArea(FILE *fp, bool isMain)
         fprintf(fp, "%s", iComments2);
         fprintf(fp, "; the direct data area used by the DS80c400 ROM code.\n");
         fprintf(fp, "%s", iComments2);
-        fprintf(fp, ".area ROMSEG (ABS,CON,DATA)\n\n");
+        fprintf(fp, ".area ROMSEG (ABS,CON,DSEG)\n\n");
         fprintf(fp, ".ds 24 ; 24 bytes of directs used starting at 0x68\n\n");
     }
 }
@@ -1521,25 +1522,25 @@ PORT ds400_port =
   { 0x00, 0x40, 0x60, 0x80 },           /* far, near, xstack, code */
 
   {
-    "XSEG    (XDATA)",
-    "STACK   (DATA)",
-    "CSEG    (CODE)",
-    "DSEG    (DATA)",
-    "ISEG    (DATA)",
-    "PSEG    (PAG,XDATA)",
-    "XSEG    (XDATA)",
-    "BSEG    (BIT)",
-    "RSEG    (DATA)",
-    "GSINIT  (CODE)",
-    "OSEG    (OVR,DATA)",
-    "GSFINAL (CODE)",
-    "HOME    (CODE)",
-    "XISEG   (XDATA)", // initialized xdata
-    "XINIT   (CODE)", // a code copy of xiseg
-    "CONST   (CODE)",           // const_name - const data (code or not)
-    "CABS    (ABS,CODE)",       // cabs_name - const absolute data (code or not)
-    "XABS    (ABS,XDATA)",      // xabs_name - absolute xdata/pdata
-    "IABS    (ABS,DATA)",       // iabs_name - absolute idata/data
+    "XSEG\t(DSEG)",
+    "STACK\t(DSEG)",
+    "CSEG\t(CSEG)",
+    "DSEG\t(DSEG)",
+    "ISEG\t(DSEG)",
+    "PSEG\t(PAG,DSEG)",
+    "XSEG\t(DSEG)",
+    "BSEG\t(BIT)",
+    "RSEG\t(DSEG)",
+    "GSINIT\t(CSEG)",
+    "OSEG\t(OVR,DSEG)",
+    "GSFINAL\t(CSEG)",
+    "HOME\t(CSEG)",
+    "XISEG\t(DSEG)",    // initialized xdata
+    "XINIT\t(CSEG)",    // a code copy of xiseg
+    "CONST\t(CSEG)",    // const_name - const data (code or not)
+    "CABS\t(ABS,CSEG)", // cabs_name - const absolute data (code or not)
+    "XABS\t(ABS,DSEG)", // xabs_name - absolute xdata/pdata
+    "IABS\t(ABS,DSEG)", // iabs_name - absolute idata/data
     NULL,
     NULL,
     1

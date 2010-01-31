@@ -180,6 +180,10 @@
  *		REL, LST, and/or SYM files may be generated.
  */
 
+/* sdas specific */
+static char *relFile;
+/* end sdas specific */
+
 int
 main(argc, argv)
 int argc;
@@ -344,8 +348,12 @@ char *argv[];
 		usage(ER_WARNING);
 	if (lflag)
 		lfp = afile(q, "lst", 1);
-	if (oflag)
+	if (oflag) {
 		ofp = afile(q, "rel", 1);
+		/* sdas specific */
+		relFile = strdup(q);
+		/* end sdas specific */
+        }
 	if (sflag)
 		tfp = afile(q, "sym", 1);
 	exprmasks(2);
@@ -528,6 +536,13 @@ int i;
 		fprintf(stderr, "\n");
 	}
 
+	/* sdas specific */
+	if (i && NULL != relFile) {
+		/* remove output file */
+		printf ("removing %s\n", relFile);
+		remove(relFile);
+	}
+	/* end sdas specific */
 	exit(i);
 }
 
