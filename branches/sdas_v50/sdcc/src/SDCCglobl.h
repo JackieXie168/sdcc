@@ -94,6 +94,7 @@ typedef int bool;
 #endif
 
 /* size's in bytes  */
+#define BOOLSIZE    port->s.char_size
 #define CHARSIZE    port->s.char_size
 #define SHORTSIZE   port->s.short_size
 #define INTSIZE     port->s.int_size
@@ -197,13 +198,14 @@ struct optimize
 */
 enum
   {
+    NO_MODEL = 0,     /* no model applicable */
     MODEL_SMALL = 1,
     MODEL_COMPACT = 2,
     MODEL_MEDIUM = 4,
     MODEL_LARGE = 8,
     MODEL_FLAT24 = 16,
     MODEL_PAGE0 = 32, /* for the xa51 port */
-    MODEL_HUGE = 64 /* for banked support */
+    MODEL_HUGE = 64   /* for banked support */
   };
 
 /* overlay segment name and the functions
@@ -236,7 +238,7 @@ struct options
     int cc_only;                /* compile only flag              */
     int intlong_rent;           /* integer & long support routines reentrant */
     int float_rent;             /* floating point routines are reentrant */
-    int out_fmt;                /* 1 = motorola S19 format 0 = intel Hex format */
+    int out_fmt;                /* 0 = undefined, 'i' = intel Hex format, 's' = motorola S19 format, 't' = elf format, 'Z' = gb format */
     int cyclomatic;             /* print cyclomatic information */
     int noOverlay;              /* don't overlay local variables & parameters */
     int mainreturn;             /* issue a return after main */
@@ -370,11 +372,6 @@ struct _dumpFiles {
 };
 
 extern struct _dumpFiles dumpFiles[];
-
-/* Buffer which can be used to hold a file name; assume it will
- * be trashed by any function call within SDCC.
- */
-extern char scratchFileName[PATH_MAX];
 
 /* Define well known filenos if the system does not define them.  */
 #ifndef STDIN_FILENO

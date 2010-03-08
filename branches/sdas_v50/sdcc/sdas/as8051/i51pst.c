@@ -219,6 +219,7 @@ struct	mne	mne[] = {
 /* sdas specific */
     {	NULL,	".optsdcc",	S_OPTSDCC,	0,	0	},
 /* end sdas specific */
+/* end sdas specific */
 
 	/* Macro Processor */
 

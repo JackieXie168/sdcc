@@ -1,6 +1,72 @@
         ;; Originally from GBDK by Pascal Felber.
         .area   _CODE
 
+__divsuchar_rrx_s::
+        ld      hl,#2+1
+        add     hl,sp
+
+        ld      e,(hl)
+        dec     hl
+        ld      c,(hl)
+        ld      b,#0
+
+        call      signexte
+
+	ld	e,c
+	ld	d,b
+
+	ret
+
+__modsuchar_rrx_s::
+        ld      hl,#2+1
+        add     hl,sp
+
+        ld      e,(hl)
+        dec     hl
+        ld      c,(hl)
+        ld      b,#0
+
+        jp    signexte
+
+__divuschar_rrx_s::
+        ld      hl,#2+1
+        ld      d, h
+        add     hl,sp
+
+        ld      e,(hl)
+        dec     hl
+        ld      c,(hl)
+
+        ld      a,c             ; Sign extend
+        rlca
+        sbc     a
+        ld      b,a
+
+        call      .div16
+
+	ld	e,c
+	ld	d,b
+
+	ret
+
+__moduschar_rrx_s::
+        ld      hl,#2+1
+        ld      d, h
+        add     hl,sp
+
+        ld      e,(hl)
+        dec     hl
+        ld      c,(hl)
+
+        ld      a,c             ; Sign extend
+        rlca
+        sbc     a
+        ld      b,a
+
+        call    .div16
+
+        ret
+
 __divschar_rrx_s::
         ld      hl,#2+1
         add     hl,sp
@@ -177,6 +243,7 @@ __moduint_rrx_hds::
         rlca
         sbc     a
         ld      b,a
+signexte:
         ld      a,e             ; Sign extend
         rlca
         sbc     a
@@ -331,3 +398,4 @@ __moduint_rrx_hds::
         ld      b,h             ; B = high byte of quotient
         or      a               ; Clear carry, valid result
         ret
+

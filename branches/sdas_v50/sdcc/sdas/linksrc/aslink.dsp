@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "INDEXLIB" /FR /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "INDEXLIB" /FR /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /FR /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -67,7 +67,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "INDEXLIB" /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "." /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "INDEXLIB" /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "." /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -86,6 +86,14 @@ LINK32=link.exe
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+# Begin Source File
+
+SOURCE=.\lk_readnl.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\lkar.c
+# End Source File
 # Begin Source File
 
 SOURCE=lkarea.c
@@ -112,6 +120,10 @@ SOURCE=lklex.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\lklib.c
+# End Source File
+# Begin Source File
+
 SOURCE=lklibr.c
 # End Source File
 # Begin Source File
@@ -132,6 +144,10 @@ SOURCE=.\lkout.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\lkrel.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\lkrloc.c
 # End Source File
 # Begin Source File
@@ -141,6 +157,10 @@ SOURCE=.\lkrloc3.c
 # Begin Source File
 
 SOURCE=.\lkrloc4.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\lksdcclib.c
 # End Source File
 # Begin Source File
 

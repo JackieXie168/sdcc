@@ -97,7 +97,7 @@ extern set *libFilesSet;
 
 /* Also defined in gen.h, but the #include is commented out */
 /* for an unknowned reason. - EEP */
-void pic16_emitDebuggerSymbol (char *);
+void pic16_emitDebuggerSymbol (const char *);
 
 extern void pic16_emitConfigRegs(FILE *of);
 extern void pic16_emitIDRegs(FILE *of);
@@ -656,69 +656,73 @@ extern const char *pic16_asmCmd[];
 extern set *asmOptionsSet;
 
 /* custom function to link objects */
-static void _pic16_linkEdit(void)
+static void
+_pic16_linkEdit (void)
 {
-  hTab *linkValues=NULL;
+  hTab *linkValues = NULL;
   char lfrm[1024];
   char *lcmd;
-  char temp[1024];
-  set *tSet=NULL;
+  char temp[PATH_MAX];
+  set *tSet = NULL;
   int ret;
 
-    /*
-     * link command format:
-     * {linker} {incdirs} {lflags} -o {outfile} {spec_ofiles} {ofiles} {libs}
-     *
-     */
-    sprintf(lfrm, "{linker} {incdirs} {lflags} -w -r -o {outfile} {user_ofile} {ofiles} {spec_ofiles} {libs}");
+  /*
+   * link command format:
+   * {linker} {incdirs} {lflags} -o {outfile} {spec_ofiles} {ofiles} {libs}
+   *
+   */
+  sprintf (lfrm, "{linker} {incdirs} {lflags} -w -r -o {outfile} {user_ofile} {ofiles} {spec_ofiles} {libs}");
 
-    shash_add(&linkValues, "linker", pic16_linkCmd[0]);
+  shash_add (&linkValues, "linker", pic16_linkCmd[0]);
 
-    mergeSets(&tSet, libPathsSet);
-    mergeSets(&tSet, libDirsSet);
+  mergeSets (&tSet, libPathsSet);
+  mergeSets (&tSet, libDirsSet);
 
-    shash_add(&linkValues, "incdirs", joinStrSet( appendStrSet(tSet, "-I\"", "\"")));
-    shash_add(&linkValues, "lflags", joinStrSet(linkOptionsSet));
+  shash_add (&linkValues, "incdirs", joinStrSet (appendStrSet(tSet, "-I\"", "\"")));
+  shash_add (&linkValues, "lflags", joinStrSet (linkOptionsSet));
 
-    shash_add(&linkValues, "outfile", fullDstFileName ? fullDstFileName : dstFileName);
+  shash_add (&linkValues, "outfile", fullDstFileName ? fullDstFileName : dstFileName);
 
-    if(fullSrcFileName) {
-        sprintf(temp, "%s.o", fullDstFileName ? fullDstFileName : dstFileName);
-//      addSetHead(&relFilesSet, Safe_strdup(temp));
-                shash_add(&linkValues, "user_ofile", temp);
+  if (fullSrcFileName)
+    {
+      SNPRINTF (temp, sizeof (temp), "%s.o", fullDstFileName ? fullDstFileName : dstFileName);
+//    addSetHead (&relFilesSet, Safe_strdup(temp));
+      shash_add (&linkValues, "user_ofile", temp);
     }
 
-    if(!pic16_options.no_crt)
-          shash_add(&linkValues, "spec_ofiles", pic16_options.crt_name);
+  if (!pic16_options.no_crt)
+    shash_add (&linkValues, "spec_ofiles", pic16_options.crt_name);
 
-    shash_add(&linkValues, "ofiles", joinStrSet(relFilesSet));
+  shash_add (&linkValues, "ofiles", joinStrSet (relFilesSet));
 
-    if(!libflags.ignore) {
-      if(libflags.want_libc)
-        addSet(&libFilesSet, Safe_strdup("libc18f.lib"));
+  if (!libflags.ignore)
+    {
+      if (libflags.want_libc)
+        addSet (&libFilesSet, Safe_strdup ("libc18f.lib"));
 
-          if(libflags.want_libm)
-            addSet(&libFilesSet, Safe_strdup("libm18f.lib"));
+      if (libflags.want_libm)
+        addSet (&libFilesSet, Safe_strdup ("libm18f.lib"));
 
-          if(libflags.want_libio) {
-            sprintf(temp, "libio%s.lib", pic16->name[1]);   /* build libio18f452.lib name */
-            addSet(&libFilesSet, Safe_strdup(temp));
-          }
-
-          if(libflags.want_libdebug)
-            addSet(&libFilesSet, Safe_strdup("libdebug.lib"));
+      if (libflags.want_libio)
+        {
+          SNPRINTF (temp, sizeof (temp), "libio%s.lib", pic16->name[1]);   /* build libio18f452.lib name */
+          addSet (&libFilesSet, Safe_strdup (temp));
         }
 
-    shash_add(&linkValues, "libs", joinStrSet(libFilesSet));
+      if (libflags.want_libdebug)
+        addSet(&libFilesSet, Safe_strdup("libdebug.lib"));
+    }
 
-    lcmd = msprintf(linkValues, lfrm);
+  shash_add(&linkValues, "libs", joinStrSet(libFilesSet));
 
-    ret = my_system( lcmd );
+  lcmd = msprintf(linkValues, lfrm);
 
-    Safe_free( lcmd );
+  ret = my_system (lcmd);
 
-    if(ret)
-        exit(1);
+  Safe_free (lcmd);
+
+  if (ret)
+      exit (1);
 }
 
 
@@ -1104,8 +1108,6 @@ const char *pic16_linkCmd[] =
   "gplink", "$l", "-w", "-r", "-o \"$2\"", "\"$1\"","$3", NULL
 };
 
-
-
 /** $1 is always the basename.
     $2 is always the output file.
     $3 varies (nothing currently)
@@ -1128,8 +1130,9 @@ PORT pic16_port =
   {
     pic16glue,
     TRUE,           /* Emit glue around main */
-    MODEL_SMALL | MODEL_LARGE | MODEL_FLAT24,
-    MODEL_SMALL
+    NO_MODEL,
+    NO_MODEL,
+    NULL,           /* model == target */
   },
   {
     pic16_asmCmd,   /* assembler command and arguments */

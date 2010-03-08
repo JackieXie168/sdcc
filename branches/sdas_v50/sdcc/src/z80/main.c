@@ -39,7 +39,6 @@
 #define OPTION_ASM             "--asm="
 #define OPTION_NO_STD_CRT0     "--no-std-crt0"
 
-
 static char _z80_defaultRules[] =
 {
 #include "peeph.rul"
@@ -99,7 +98,6 @@ static char *_keywords[] =
   "sfr",
   "nonbanked",
   "banked",
-  "bit",
   "at",       //.p.t.20030714 adding support for 'sfr at ADDR' construct
   "_naked",   //.p.t.20030714 adding support for '_naked' functions
   "critical",
@@ -345,14 +343,20 @@ static void
 _gbz80_rgblink (void)
 {
   FILE *lnkfile;
+  struct dbuf_s lnkFileName;
+
+  dbuf_init (&lnkFileName, PATH_MAX);
 
   /* first we need to create the <filename>.lnk file */
-  sprintf (scratchFileName, "%s.lnk", dstFileName);
-  if (!(lnkfile = fopen (scratchFileName, "w")))
+  dbuf_append_str (&lnkFileName, dstFileName);
+  dbuf_append_str (&lnkFileName, ".lnk");
+  if (!(lnkfile = fopen (dbuf_c_str (&lnkFileName), "w")))
     {
-      werror (E_FILE_OPEN_ERR, scratchFileName);
+      werror (E_FILE_OPEN_ERR, dbuf_c_str (&lnkFileName));
+      dbuf_destroy (&lnkFileName);
       exit (1);
     }
+  dbuf_destroy (&lnkFileName);
 
   fprintf (lnkfile, "[Objects]\n");
 
@@ -567,15 +571,8 @@ _setDefaultOptions (void)
   /* Default code and data locations. */
   options.code_loc = 0x200;
 
-  if (IS_GB)
-    {
-      options.data_loc = 0xC000;
-    }
-  else
-    {
-      options.data_loc = 0x8000;
-    }
-
+  options.data_loc = IS_GB ? 0xC000 : 0x8000;
+  options.out_fmt = 'i';	/* Default output format is ihx */
   optimize.global_cse = 1;
   optimize.label1 = 1;
   optimize.label2 = 1;
@@ -715,12 +712,16 @@ static const char *_gbLinkCmd[] =
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
 static const char *_z80AsmCmd[] =
 {
-  "sdasz80", "$l", "$3", "\"$1.asm\"", NULL
+  "sdasz80", "$l", "$3", "\"$2\"", "\"$1.asm\"", NULL
 };
 static const char *_gbAsmCmd[] =
 {
-  "sdasgb", "$l", "$3", "\"$1.asm\"", NULL
+  "sdasgb", "$l", "$3", "\"$2\"", "\"$1.asm\"", NULL
 };
+
+static const char * const _crt[] = { "crt0.rel", NULL, };
+static const char * const _libs_z80[] = { "z80", NULL, };
+static const char * const _libs_gb[] = { "gbz80", NULL, };
 
 /* Globals */
 PORT z80_port =
@@ -732,8 +733,9 @@ PORT z80_port =
   {
     glue,
     FALSE,
-    MODEL_MEDIUM | MODEL_SMALL,
-    MODEL_SMALL
+    NO_MODEL,
+    NO_MODEL,
+    NULL,                       /* model == target */
   },
   {                             /* Assembler */
     _z80AsmCmd,
@@ -748,7 +750,9 @@ PORT z80_port =
     NULL,		//LINKCMD,
     NULL,
     ".rel",
-    1
+    1,
+    _crt,                       /* crt */
+    _libs_z80,                  /* libs */
   },
   {                             /* Peephole optimizer */
     _z80_defaultRules,
@@ -786,7 +790,7 @@ PORT z80_port =
     NULL, /* iabs_name */
     NULL,
     NULL,
-    1
+    1 /* CODE  is read-only */
   },
   { NULL, NULL },
   {
@@ -858,8 +862,9 @@ PORT gbz80_port =
   {
     glue,
     FALSE,
-    MODEL_MEDIUM | MODEL_SMALL,
-    MODEL_SMALL
+    NO_MODEL,
+    NO_MODEL,
+    NULL,                       /* model == target */
   },
   {                             /* Assembler */
     _gbAsmCmd,
@@ -870,12 +875,14 @@ PORT gbz80_port =
     ".asm",
     NULL                        /* no do_assemble function */
   },
-  {
+  {                             /* Linker */
     _gbLinkCmd,		//NULL,
     NULL,		//LINKCMD,
     NULL,
     ".rel",
-    1
+    1,
+    _crt,                       /* crt */
+    _libs_gb,                   /* libs */
   },
   {
     _gbz80_defaultRules
@@ -908,7 +915,7 @@ PORT gbz80_port =
     NULL, /* iabs_name */
     NULL,
     NULL,
-    1
+    1 /* CODE is read-only */
   },
   { NULL, NULL },
   {

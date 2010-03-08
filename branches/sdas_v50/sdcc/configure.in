@@ -773,7 +773,8 @@ if test $OPT_DISABLE_MCS51 = 0; then
                    sdas/as8xcxxx/Makefile])  test $OPT_DISABLE_DEVICE_LIB = 0 && AC_CONFIG_FILES([device/lib/mcs51/Makefile
                                                        device/lib/small/Makefile
                                                        device/lib/medium/Makefile
-                                                       device/lib/large/Makefile])
+                                                       device/lib/large/Makefile
+                                                       device/lib/huge/Makefile])
 fi
 
 if test $OPT_DISABLE_PIC = 0; then
@@ -806,6 +807,7 @@ support/librarian/Makefile
 support/makebin/Makefile
 support/regression/Makefile
 support/valdiag/Makefile
+support/scripts/Makefile
 Makefile
 Makefile.common:Makefile.common.in
 ])

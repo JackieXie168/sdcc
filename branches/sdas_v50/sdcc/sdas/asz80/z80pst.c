@@ -112,6 +112,7 @@ struct	mne	mne[] = {
     {	NULL,	"SIZE",		S_BTYP,		0,	B_SIZE	},
     {	NULL,	"FSFX",		S_BTYP,		0,	B_FSFX	},
     {	NULL,	"MAP",		S_BTYP,		0,	B_MAP	},
+/* end sdas specific */
 
     {	NULL,	".page",	S_PAGE,		0,	0	},
     {	NULL,	".title",	S_HEADER,	0,	O_TITLE	},

@@ -72,14 +72,14 @@ replace restart {
 } by {
 	jp	%6
 	; peephole 7 redirected jump-to-jump at %5 by jump to %6
-} if labelIsUncondJump(), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
+} if labelIsUncondJump(), notSame(%5 %6), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
 
 replace restart {
 	jp	%1,%5
 } by {
 	jp	%1,%6
 	; peephole 8 redirected jump-to-jump at %5 by jump to %6
-} if labelIsUncondJump(), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
+} if labelIsUncondJump(), notSame(%5 %6), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
 
 replace restart {
 	ld	%2,%3
@@ -734,77 +734,56 @@ replace restart {
 }
 
 // Old gbz80 rules from here onward
+// Commented out until des assembler update is complete.
+//replace {
+//	ld	(hl),a
+//	dec	hl
+//} by {
+//	ldd	(hl),a
+//}
+//replace {
+//	ld	(hl),a
+//	inc	hl
+//} by {
+//	ldi	(hl),a
+//}
+//replace {
+//	ld	a,(hl)
+//	inc	hl
+//} by {
+//	ldi	a,(hl)
+//}
+//
+//}
+//replace {
+//	ldi	(hl),a
+//	ld	(hl),d
+//	dec	hl
+//	ld	e,(hl)
+//	inc	hl
+//	ld	d,(hl)
+//	ld	a,(de)
+//} by {
+//	ldi	(hl),a
+//	ld	(hl),d
+//	ld	e,a
+//	ld	a,(de)
+//}
+//replace {
+//	ld	(hl),a
+//	ld	%1,(hl)
+//} by {
+//	ld	(hl),a
+//	ld	%1,a
+//}
+//replace {
+//	ld	(hl),a
+//	inc	de
+//	ld	a,(de)
+//	inc	hl
+//} by {
+//	ldi	(hl),a
+//	inc	de
+//	ld	a,(de)
+//}
 
-replace {
-	ld	(hl),a
-	dec	hl
-} by {
-	ld	(hl-),a
-}
-replace {
-	ld	(hl),a
-	inc	hl
-} by {
-	ld	(hl+),a
-}
-replace {
-	ld	a,(hl)
-	inc	hl
-} by {
-	ld	a,(hl+)
-}
-replace {
-	ld	a,[hl]
-	inc	hl
-} by {
-	ld	a,[hl+]
-}
-replace {
-	ld	a,[hl]
-	inc	hl
-} by {
-	ld	a,[hl+]
-}
-replace {
-	ld	[hl],a
-	inc	hl
-} by {
-	ld	[hl+],a
-}
-replace {
-	ld	[hl],a
-	dec	hl
-} by {
-	ld	[hl-],a
-}
-replace {
-	ld	(hl+),a
-	ld	(hl),d
-	dec	hl
-	ld	e,(hl)
-	inc	hl
-	ld	d,(hl)
-	ld	a,(de)
-} by {
-	ld	(hl+),a
-	ld	(hl),d
-	ld	e,a
-	ld	a,(de)
-}
-replace {
-	ld	(hl),a
-	ld	%1,(hl)
-} by {
-	ld	(hl),a
-	ld	%1,a
-}
-replace {
-	ld	(hl),a
-	inc	de
-	ld	a,(de)
-	inc	hl
-} by {
-	ld	(hl+),a
-	inc	de
-	ld	a,(de)
-}
