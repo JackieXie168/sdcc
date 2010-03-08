@@ -130,17 +130,22 @@ void SaveLinkedFilePath(char * filepath)
 
         if((dflag) && (!rflag))
         {
+                char *p;
+
                 infn=realloc(infn, sizeof(_infn)*(numin+1));
 
                 strcpy(infn[numin].PathName, filepath);
-                j=strlen(infn[numin].PathName);
 
                 /*If there is an extension remove it*/
-                if(j>=4)
+                for (p = &infn[numin].PathName[strlen(infn[numin].PathName) - 1]; p >= infn[numin].PathName; --p)
                 {
-                        if(EQ(&infn[numin].PathName[j-4], ".rel"))
+                        if (*p == '/' || *p == '\\')
+                                break;
+
+                        if (*p == '.')
                         {
-                                infn[numin].PathName[j-4]=0;
+                                *p = '\0';
+                                break;
                         }
                 }
 

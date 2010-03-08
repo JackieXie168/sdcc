@@ -100,7 +100,7 @@ _hc08_parseOptions (int *pargc, char **argv, int *i)
 {
   if (!strcmp (argv[*i], "--out-fmt-elf"))
     {
-      options.out_fmt = 2;
+      options.out_fmt = 't';
       debugFile = &dwarf2DebugFile;
       return TRUE;
     }
@@ -141,10 +141,10 @@ _hc08_setDefaultOptions (void)
   options.data_loc = 0x80;
   options.xdata_loc = 0;        /* 0 means immediately following data */
   options.stack_loc = 0x7fff;
-  options.out_fmt = 1;          /* use motorola S19 output */
+  options.out_fmt = 's';        /* use motorola S19 output */
 
-  options.omitFramePtr = 1; /* no frame pointer (we use SP */
-                            /* offsets instead)            */
+  options.omitFramePtr = 1;     /* no frame pointer (we use SP */
+                                /* offsets instead)            */
 }
 
 static const char *
@@ -239,7 +239,7 @@ _hc08_genAssemblerPreamble (FILE * of)
 static void
 _hc08_genAssemblerEnd (FILE * of)
 {
-  if (options.out_fmt == 2 && options.debug)
+  if (options.out_fmt == 't' && options.debug)
     {
       dwarf2FinalizeFile (of);
     }
@@ -374,8 +374,10 @@ static const char *_linkCmd[] =
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
 static const char *_asmCmd[] =
 {
-  "sdas6808", "$l", "$3", "\"$1.asm\"", NULL
+  "sdas6808", "$l", "$3", "\"$2\"", "\"$1.asm\"", NULL
 };
+
+static const char * const _libs[] = { "hc08", NULL, };
 
 /* Globals */
 PORT hc08_port =
@@ -388,7 +390,8 @@ PORT hc08_port =
     glue,
     FALSE,                      /* Emit glue around main */
     MODEL_SMALL | MODEL_LARGE,
-    MODEL_LARGE
+    MODEL_LARGE,
+    NULL,                       /* model == target */
   },
   {
     _asmCmd,
@@ -399,12 +402,14 @@ PORT hc08_port =
     ".asm",
     NULL                        /* no do_assemble function */
   },
-  {
+  {                             /* Linker */
     _linkCmd,
     NULL,
     NULL,
     ".rel",
-    1
+    1,
+    NULL,                       /* crt */
+    _libs,                      /* libs */
   },
   {
     _defaultRules

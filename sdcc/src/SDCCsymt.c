@@ -49,6 +49,7 @@ char *nounName(sym_link *sl) {
     }
     case V_FLOAT: return "float";
     case V_FIXED16X16: return "fixed16x16";
+    case V_BOOL: return "_Bool";
     case V_CHAR: return "char";
     case V_VOID: return "void";
     case V_STRUCT: return "struct";
@@ -554,7 +555,8 @@ void checkTypeSanity(sym_link *etype, char *name)
     fprintf (stderr, "checking sanity for %s %p\n", name, etype);
   }
 
-  if ((SPEC_NOUN(etype)==V_CHAR ||
+  if ((SPEC_NOUN(etype)==V_BOOL ||
+       SPEC_NOUN(etype)==V_CHAR ||
        SPEC_NOUN(etype)==V_FLOAT ||
        SPEC_NOUN(etype)==V_FIXED16X16 ||
        SPEC_NOUN(etype)==V_DOUBLE ||
@@ -563,7 +565,8 @@ void checkTypeSanity(sym_link *etype, char *name)
     // long or short for char float double or void
     werror (E_LONG_OR_SHORT_INVALID, noun, name);
   }
-  if ((SPEC_NOUN(etype)==V_FLOAT ||
+  if ((SPEC_NOUN(etype)==V_BOOL ||
+       SPEC_NOUN(etype)==V_FLOAT ||
        SPEC_NOUN(etype)==V_FIXED16X16 ||
        SPEC_NOUN(etype)==V_DOUBLE ||
        SPEC_NOUN(etype)==V_VOID) &&
@@ -897,6 +900,8 @@ getSize (sym_link * p)
           return FLOATSIZE;
         case V_FIXED16X16:
           return (4);
+        case V_BOOL:
+          return BOOLSIZE;
         case V_CHAR:
           return CHARSIZE;
         case V_VOID:
@@ -934,7 +939,7 @@ getSize (sym_link * p)
     case FPOINTER:
     case CPOINTER:
     case FUNCTION:
-      return (IFFUNC_BANKED (p) ? GPTRSIZE : FPTRSIZE);
+      return (IFFUNC_ISBANKEDCALL (p) ? GPTRSIZE : FPTRSIZE);
     case GPOINTER:
       return (GPTRSIZE);
 
@@ -1001,6 +1006,8 @@ bitsForType (sym_link * p)
           return FLOATSIZE * 8;
         case V_FIXED16X16:
           return (32);
+        case V_BOOL:
+          return BOOLSIZE * 8;
         case V_CHAR:
           return CHARSIZE * 8;
         case V_VOID:
@@ -1224,6 +1231,27 @@ addSymChain (symbol ** symHead)
               fprintf (stderr, "'\n");
               #endif
               continue;
+            }
+
+          if (FUNC_BANKED (csym->type) || FUNC_BANKED (sym->type))
+            {
+              if (FUNC_NONBANKED (csym->type) || FUNC_NONBANKED (sym->type))
+                {
+                  werror (W_BANKED_WITH_NONBANKED);
+                  FUNC_BANKED (sym->type) = 0;
+                  FUNC_NONBANKED (sym->type) = 1;
+                }
+              else
+                {
+                  FUNC_BANKED (sym->type) = 1;
+                }
+            }
+          else
+            {
+              if (FUNC_NONBANKED (csym->type) || FUNC_NONBANKED (sym->type))
+                {
+                  FUNC_NONBANKED (sym->type) = 1;
+                }
             }
 
           if (csym->ival && !sym->ival)
@@ -1729,14 +1757,11 @@ checkSClass (symbol * sym, int isProto)
 
   /* if parameter or local variable then change */
   /* the storage class to reflect where the var will go */
-  if (sym->level && SPEC_SCLS (sym->etype) == S_FIXED
-   && !IS_STATIC(sym->etype)
-      )
+  if (sym->level && SPEC_SCLS (sym->etype) == S_FIXED && !IS_STATIC (sym->etype))
     {
       if (options.stackAuto || (currFunc && IFFUNC_ISREENT (currFunc->type)))
         {
-          SPEC_SCLS (sym->etype) = (options.useXstack ?
-                                    S_XSTACK : S_STACK);
+          SPEC_SCLS (sym->etype) = (options.useXstack ? S_XSTACK : S_STACK);
         }
       else
         {
@@ -1746,8 +1771,7 @@ checkSClass (symbol * sym, int isProto)
            */
           bool useXdata = (TARGET_IS_DS390 || TARGET_IS_DS400) ?
                 1 : options.useXstack;
-          SPEC_SCLS (sym->etype) = (useXdata ?
-                                    S_XDATA : S_FIXED);
+          SPEC_SCLS (sym->etype) = (useXdata ? S_XDATA : S_FIXED);
         }
     }
 }
@@ -1767,8 +1791,8 @@ changePointer (sym_link * p)
       if (!IS_SPEC (p) && DCL_TYPE (p) == UPOINTER)
         DCL_TYPE (p) = port->unqualified_pointer;
       if (IS_PTR (p) && IS_FUNC (p->next))
-        if (!IFFUNC_BANKED(p->next))
-        DCL_TYPE (p) = CPOINTER;
+        if (!IFFUNC_ISBANKEDCALL (p->next))
+          DCL_TYPE (p) = CPOINTER;
     }
 }
 
@@ -1864,8 +1888,8 @@ static sym_link *
 computeTypeOr (sym_link * etype1, sym_link * etype2, sym_link * reType)
 {
   /* sanity check */
-  assert (   (IS_CHAR (etype1) || IS_BIT (etype1))
-          && (IS_CHAR (etype2) || IS_BIT (etype2)));
+  assert (   (IS_CHAR (etype1) || IS_BOOL(etype1) || IS_BIT (etype1))
+          && (IS_CHAR (etype2) || IS_BOOL(etype2) || IS_BIT (etype2)));
 
   if (SPEC_USIGN (etype1) == SPEC_USIGN (etype2))
     {
@@ -2007,7 +2031,7 @@ computeType (sym_link * type1, sym_link * type2,
           }
         break;
       case RESULT_TYPE_CHAR:
-        if (IS_BITVAR (reType))
+        if (IS_BOOL (reType) || IS_BITVAR (reType))
           {
             SPEC_NOUN (reType) = V_CHAR;
             SPEC_SCLS (reType) = 0;
@@ -2018,7 +2042,7 @@ computeType (sym_link * type1, sym_link * type2,
       case RESULT_TYPE_INT:
       case RESULT_TYPE_NONE:
       case RESULT_TYPE_OTHER:
-        if (IS_BIT (reType))
+        if (IS_BOOL (reType) || IS_BIT (reType))
           {
             SPEC_NOUN (reType) = V_CHAR;
             SPEC_SCLS (reType) = 0;
@@ -2249,9 +2273,9 @@ compareType (sym_link * dest, sym_link * src)
     {
       if (IS_DECL (src))
         {
-          /* banked function pointer */
           if (IS_GENPTR (dest) && IS_GENPTR (src))
             {
+              /* banked function pointer */
               if (IS_FUNC (src->next) && IS_VOID(dest->next))
                 return -1;
               if (IS_FUNC (dest->next) && IS_VOID(src->next))
@@ -2287,7 +2311,9 @@ compareType (sym_link * dest, sym_link * src)
               return res;
             }
           if (IS_PTR (dest) && IS_FUNC (dest->next) && IS_FUNC (src))
-            return compareType (dest->next, src);
+            {
+              return compareType (dest->next, src);
+            }
           return 0;
         }
       else if (IS_PTR (dest) && IS_INTEGRAL (src))
@@ -2330,7 +2356,8 @@ compareType (sym_link * dest, sym_link * src)
              instead of the next two lines, but the regression tests fail with
              them; I guess it's a problem with replaceCheaperOp  */
           getSize (dest) == getSize (src) &&
-          (IS_BIT (dest) == IS_BIT (src)))
+          (IS_BIT (dest) == IS_BIT (src)) &&
+          !(IS_BOOL (dest) && !IS_BOOL (src)))
         return 1;
       else if (IS_ARITHMETIC (dest) && IS_ARITHMETIC (src))
         return -1;
@@ -2629,7 +2656,7 @@ checkFunction (symbol * sym, symbol *csym)
     fprintf (stderr, "checkFunction: %s ", sym->name);
   }
 
-  if (!IS_DECL(sym->type) || DCL_TYPE(sym->type)!=FUNCTION)
+  if (!IS_FUNC (sym->type))
     {
       werror(E_SYNTAX_ERROR, sym->name);
       return 0;
@@ -2746,6 +2773,27 @@ checkFunction (symbol * sym, symbol *csym)
       FUNC_ISNAKED (sym->type) = 1;
     }
 
+  if (FUNC_BANKED (csym->type) || FUNC_BANKED (sym->type))
+    {
+      if (FUNC_NONBANKED (csym->type) || FUNC_NONBANKED (sym->type))
+        {
+          werror (W_BANKED_WITH_NONBANKED);
+          FUNC_BANKED (sym->type) = 0;
+          FUNC_NONBANKED (sym->type) = 1;
+        }
+      else
+        {
+          FUNC_BANKED (sym->type) = 1;
+        }
+    }
+  else
+    {
+      if (FUNC_NONBANKED (csym->type) || FUNC_NONBANKED (sym->type))
+        {
+          FUNC_NONBANKED (sym->type) = 1;
+        }
+    }
+
   /* Really, reentrant should match regardless of argCnt, but     */
   /* this breaks some existing code (the fp lib functions). If    */
   /* the first argument is always passed the same way, this       */
@@ -2804,12 +2852,12 @@ checkFunction (symbol * sym, symbol *csym)
         }
     }
 
-  /* if one them ended we have a problem */
+  /* if one of them ended we have a problem */
   if ((exargs && !acargs && !IS_VOID (exargs->type)) ||
       (!exargs && acargs && !IS_VOID (acargs->type)))
     werror (E_ARG_COUNT);
 
-  /* replace with this defition */
+  /* replace with this definition */
   sym->cdef = csym->cdef;
   deleteSym (SymbolTab, csym, csym->name);
   deleteFromSeg(csym);
@@ -3152,6 +3200,10 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
               dbuf_append_str (dbuf, "int");
               break;
 
+            case V_BOOL:
+              dbuf_append_str (dbuf, "_Bool");
+              break;
+
             case V_CHAR:
               dbuf_append_str (dbuf, "char");
               break;
@@ -3354,6 +3406,10 @@ printTypeChainRaw (sym_link * start, FILE * of)
               fprintf (of, "int");
               break;
 
+            case V_BOOL:
+              fprintf (of, "_Bool");
+              break;
+
             case V_CHAR:
               fprintf (of, "char");
               break;
@@ -3480,7 +3536,8 @@ _mangleFunctionName(char *in)
 
 /*-----------------------------------------------------------------*/
 /* typeFromStr - create a typechain from an encoded string         */
-/* basic types -        'c' - char                                 */
+/* basic types -        'b' - bool                                 */
+/*                      'c' - char                                 */
 /*                      's' - short                                */
 /*                      'i' - int                                  */
 /*                      'l' - long                                 */
@@ -3511,6 +3568,10 @@ sym_link *typeFromStr (char *s)
             s++;
             continue ;
             break ;
+        case 'b':
+            r->class = SPECIFIER;
+            SPEC_NOUN(r) = V_BOOL;
+            break;
         case 'c':
             r->class = SPECIFIER;
             SPEC_NOUN(r) = V_CHAR;
@@ -3758,7 +3819,6 @@ initCSupport ()
                   __multypes[bwd][su/2],
                   2,
                   options.intlong_rent);
-              FUNC_NONBANKED (__muldiv[muldivmod][bwd][su]->type) = 1;
             }
         }
     }
@@ -3771,47 +3831,46 @@ initCSupport ()
             {
               /* div and mod : s8_t x s8_t -> s8_t should be s8_t x s8_t -> s16_t, see below */
               if (!TARGET_IS_PIC16 || muldivmod != 1 || bwd != 0 || su != 0)
-              {
-                SNPRINTF (buffer, sizeof(buffer),
-                    "_%s%s%s",
-                    smuldivmod[muldivmod],
-                    ssu[su*3],
-                    sbwd[bwd]);
-                __muldiv[muldivmod][bwd][su] = funcOfType (
-                    _mangleFunctionName(buffer),
-                    __multypes[bwd][su],
-                    __multypes[bwd][su],
-                    2,
-                    options.intlong_rent);
-                FUNC_NONBANKED (__muldiv[muldivmod][bwd][su]->type) = 1;
-              }
+                {
+                  SNPRINTF (buffer, sizeof(buffer),
+                      "_%s%s%s",
+                      smuldivmod[muldivmod],
+                      ssu[su*3],
+                      sbwd[bwd]);
+                  __muldiv[muldivmod][bwd][su] = funcOfType (
+                      _mangleFunctionName(buffer),
+                      __multypes[bwd][su],
+                      __multypes[bwd][su],
+                      2,
+                      options.intlong_rent);
+                }
             }
         }
     }
 
   if (TARGET_IS_PIC16)
-  {
-    /* PIC16 port wants __divschar/__modschar to return an int, so that both
-     * 100 / -4 = -25 and -128 / -1 = 128 can be handled correctly
-     * (first one would have to be sign extended, second one must not be).
-     * Similarly, modschar should be handled, but the iCode introduces cast
-     * here and forces '% : s8 x s8 -> s8' ... */
-    su = 0; bwd = 0;
-    for (muldivmod = 1; muldivmod < 2; muldivmod++) {
-      SNPRINTF (buffer, sizeof(buffer),
-          "_%s%s%s",
-          smuldivmod[muldivmod],
-          ssu[su],
-          sbwd[bwd]);
-      __muldiv[muldivmod][bwd][su] = funcOfType (
-          _mangleFunctionName(buffer),
-          __multypes[1][su],
-          __multypes[bwd][su],
-          2,
-          options.intlong_rent);
-      FUNC_NONBANKED (__muldiv[muldivmod][bwd][su]->type) = 1;
+    {
+      /* PIC16 port wants __divschar/__modschar to return an int, so that both
+       * 100 / -4 = -25 and -128 / -1 = 128 can be handled correctly
+       * (first one would have to be sign extended, second one must not be).
+       * Similarly, modschar should be handled, but the iCode introduces cast
+       * here and forces '% : s8 x s8 -> s8' ... */
+      su = 0; bwd = 0;
+      for (muldivmod = 1; muldivmod < 2; muldivmod++)
+        {
+          SNPRINTF (buffer, sizeof(buffer),
+              "_%s%s%s",
+              smuldivmod[muldivmod],
+              ssu[su],
+              sbwd[bwd]);
+          __muldiv[muldivmod][bwd][su] = funcOfType (
+              _mangleFunctionName(buffer),
+              __multypes[1][su],
+              __multypes[bwd][su],
+              2,
+              options.intlong_rent);
+        }
     }
-  }
 
   /* mul only */
   muldivmod = 0;
@@ -3825,8 +3884,12 @@ initCSupport ()
                 "_%s%s",
                 smuldivmod[muldivmod],
                 sbwd[bwd]);
-      __muldiv[muldivmod][bwd][0] = funcOfType (_mangleFunctionName(buffer), __multypes[bwd][su], __multypes[bwd][su], 2, options.intlong_rent);
-      FUNC_NONBANKED (__muldiv[muldivmod][bwd][0]->type) = 1;
+      __muldiv[muldivmod][bwd][0] = funcOfType (
+          _mangleFunctionName(buffer),
+          __multypes[bwd][su],
+          __multypes[bwd][su],
+          2,
+          options.intlong_rent);
       /* signed = unsigned */
       __muldiv[muldivmod][bwd][1] = __muldiv[muldivmod][bwd][0];
     }
@@ -3842,8 +3905,12 @@ initCSupport ()
                        srlrr[rlrr],
                        ssu[su*3],
                        sbwd[bwd]);
-              __rlrr[rlrr][bwd][su] = funcOfType (_mangleFunctionName(buffer), __multypes[bwd][su], __multypes[0][0], 2, options.intlong_rent);
-              FUNC_NONBANKED (__rlrr[rlrr][bwd][su]->type) = 1;
+              __rlrr[rlrr][bwd][su] = funcOfType (
+                  _mangleFunctionName(buffer),
+                  __multypes[bwd][su],
+                  __multypes[0][0],
+                  2,
+                  options.intlong_rent);
             }
         }
     }
@@ -3854,16 +3921,18 @@ initCSupport ()
 /*-----------------------------------------------------------------*/
 void initBuiltIns()
 {
-    int i;
-    symbol *sym;
+  int i;
+  symbol *sym;
 
-    if (!port->builtintable) return ;
+  if (!port->builtintable)
+    return;
 
-    for (i = 0 ; port->builtintable[i].name ; i++) {
-        sym = funcOfTypeVarg(port->builtintable[i].name,port->builtintable[i].rtype,
-                             port->builtintable[i].nParms,port->builtintable[i].parm_types);
-        FUNC_ISBUILTIN(sym->type) = 1;
-        FUNC_ISREENT(sym->type) = 0;    /* can never be reentrant */
+  for (i = 0 ; port->builtintable[i].name ; i++)
+    {
+      sym = funcOfTypeVarg(port->builtintable[i].name,port->builtintable[i].rtype,
+                           port->builtintable[i].nParms,port->builtintable[i].parm_types);
+      FUNC_ISBUILTIN(sym->type) = 1;
+      FUNC_ISREENT(sym->type) = 0;    /* can never be reentrant */
     }
 }
 
@@ -3876,15 +3945,15 @@ sym_link *validateLink(sym_link         *l,
 {
   if (l && l->class==select)
     {
-        return l;
+      return l;
     }
-    fprintf(stderr,
-            "Internal error: validateLink failed in %s(%s) @ %s:%u:"
-            " expected %s, got %s\n",
-            macro, args, file, line,
-            DECLSPEC2TXT(select), l ? DECLSPEC2TXT(l->class) : "null-link");
-    exit(EXIT_FAILURE);
-    return l; // never reached, makes compiler happy.
+  fprintf(stderr,
+          "Internal error: validateLink failed in %s(%s) @ %s:%u:"
+          " expected %s, got %s\n",
+          macro, args, file, line,
+          DECLSPEC2TXT(select), l ? DECLSPEC2TXT(l->class) : "null-link");
+  exit(EXIT_FAILURE);
+  return l; // never reached, makes compiler happy.
 }
 
 /*--------------------------------------------------------------------*/

@@ -39,6 +39,7 @@
 enum {
     TYPEOF_INT=1,
     TYPEOF_SHORT,
+    TYPEOF_BOOL,
     TYPEOF_CHAR,
     TYPEOF_LONG,
     TYPEOF_FLOAT,
@@ -105,6 +106,7 @@ typedef enum
     V_INT = 1,
     V_FLOAT,
     V_FIXED16X16,
+    V_BOOL,
     V_CHAR,
     V_VOID,
     V_STRUCT,
@@ -420,11 +422,11 @@ extern sym_link *validateLink(sym_link  *l,
 #define FUNC_ISOVERLAY(x) (x->funcAttrs.overlay)
 #define IFFUNC_ISOVERLAY(x) (IS_FUNC(x) && FUNC_ISOVERLAY(x))
 
-#define IFFUNC_ISBANKEDCALL(x) (!IFFUNC_NONBANKED(x) && \
-  (options.model == MODEL_HUGE || \
-   ((options.model == MODEL_LARGE || options.model == MODEL_MEDIUM) && \
-   (TARGET_IS_Z80 || TARGET_IS_GBZ80)) || \
-  IFFUNC_BANKED(x)))
+#define BANKED_FUNCTIONS        ( options.model == MODEL_HUGE || \
+                                  ( (options.model == MODEL_LARGE || options.model == MODEL_MEDIUM) && \
+                                    TARGET_Z80_LIKE ) )
+#define IFFUNC_ISBANKEDCALL(x)  ( IS_FUNC(x) && \
+                                  ( FUNC_BANKED(x) || ( BANKED_FUNCTIONS && !FUNC_NONBANKED(x) ) ) )
 
 #define SPEC_NOUN(x) validateLink(x, "SPEC_NOUN", #x, SPECIFIER, __FILE__, __LINE__)->select.s.noun
 #define SPEC_LONG(x) validateLink(x, "SPEC_LONG", #x, SPECIFIER, __FILE__, __LINE__)->select.s.b_long
@@ -493,10 +495,12 @@ extern sym_link *validateLink(sym_link  *l,
 #define IS_INLINE(x)     (IS_SPEC(x) && SPEC_INLINE(x))
 #define IS_INT(x)        (IS_SPEC(x) && x->select.s.noun == V_INT)
 #define IS_VOID(x)       (IS_SPEC(x) && x->select.s.noun == V_VOID)
+#define IS_BOOL(x)       (IS_SPEC(x) && x->select.s.noun == V_BOOL)
 #define IS_CHAR(x)       (IS_SPEC(x) && x->select.s.noun == V_CHAR)
 #define IS_EXTERN(x)     (IS_SPEC(x) && x->select.s.b_extern)
 #define IS_VOLATILE(x)   (isVolatile (x))
 #define IS_INTEGRAL(x)   (IS_SPEC(x) && (x->select.s.noun == V_INT ||  \
+                                         x->select.s.noun == V_BOOL || \
                                          x->select.s.noun == V_CHAR || \
                                          x->select.s.noun == V_BITFIELD || \
                                          x->select.s.noun == V_BIT ||  \

@@ -309,6 +309,7 @@ char *argv[];
 			 * Open output file(s)
 			 */
 			lkfopen();
+			/* end sdld specific */
 		} else {
 			/*
 			 * Link in library files

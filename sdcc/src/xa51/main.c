@@ -215,7 +215,6 @@ oclsExpense (struct memmap *oclass)
   return 0;
 }
 
-
 /** $1 is always the basename.
     $2 is always the output file.
     $3 varies
@@ -230,8 +229,10 @@ static const char *_linkCmd[] =
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
 static const char *_asmCmd[] =
 {
-  "xa_rasm", "$l", "$3", "\"$1.asm\"", NULL
+  "xa_rasm", "$l", "$3", "\"$2\"", "\"$1.asm\"", NULL
 };
+
+static const char * const _libs[] = { STD_XA51_LIB, NULL, };
 
 /* Globals */
 PORT xa51_port =
@@ -244,7 +245,8 @@ PORT xa51_port =
     glue,
     FALSE,                      /* Emit glue around main */
     MODEL_PAGE0,
-    MODEL_PAGE0
+    MODEL_PAGE0,
+    NULL,                       /* model == target */
   },
   {
     _asmCmd,
@@ -255,12 +257,14 @@ PORT xa51_port =
     ".asm",
     NULL                        /* no do_assemble function */
   },
-  {
+  {                             /* Linker */
     _linkCmd,
     NULL,
     NULL,
     ".rel",
-    1
+    1,
+    NULL,                       /* crt */
+    _libs,                      /* libs */
   },
   {
     _defaultRules

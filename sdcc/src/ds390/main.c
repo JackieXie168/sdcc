@@ -873,6 +873,31 @@ getRegsWritten (lineNode *line)
   return line->aln->regsWritten;
 }
 
+static const char *
+get_model (void)
+{
+  switch (options.model)
+    {
+    case MODEL_SMALL:
+      if (options.stackAuto)
+        return "small-stack-auto";
+      else
+        return "small";
+
+    case MODEL_LARGE:
+      if (options.stackAuto)
+        return "large-stack-auto";
+      else
+        return "large";
+
+    case MODEL_FLAT24:
+        return port->target_name;
+
+    default:
+      werror (W_UNKNOWN_MODEL, __FILE__, __LINE__);
+      return "unknown";
+    }
+}
 
 /** $1 is always the basename.
     $2 is always the output file.
@@ -888,8 +913,10 @@ static const char *_linkCmd[] =
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
 static const char *_asmCmd[] =
 {
-  "sdas8xcxxx", "$l", "$3", "\"$1.asm\"", NULL
+  "sdas8xcxxx", "$l", "$3", "\"$2\"", "\"$1.asm\"", NULL
 };
+
+static const char * const _libs_ds390[] = { STD_DS390_LIB, NULL, };
 
 /* Globals */
 PORT ds390_port =
@@ -902,7 +929,8 @@ PORT ds390_port =
     glue,
     TRUE,                       /* Emit glue around main */
     MODEL_SMALL | MODEL_LARGE | MODEL_FLAT24,
-    MODEL_SMALL
+    MODEL_SMALL,
+    get_model,
   },
   {
     _asmCmd,
@@ -913,12 +941,14 @@ PORT ds390_port =
     ".asm",
     NULL                        /* no do_assemble function */
   },
-  {
+  {                             /* Linker */
     _linkCmd,
     NULL,
     NULL,
     ".rel",
-    1
+    1,
+    NULL,                       /* crt */
+    _libs_ds390,                /* libs */
   },
   {
     _defaultRules,
@@ -1237,7 +1267,8 @@ PORT tininative_port =
     glue,
     FALSE,                      /* Emit glue around main */
     MODEL_FLAT24,
-    MODEL_FLAT24
+    MODEL_FLAT24,
+    get_model,
   },
   {
     _a390Cmd,
@@ -1248,12 +1279,14 @@ PORT tininative_port =
     ".a51",
     _tininative_do_assemble
   },
-  {
+  {                             /* Linker */
     NULL,
     NULL,
     NULL,
     ".tlib",
-    1
+    1,
+    NULL,                       /* crt */
+    _libs_ds390,                /* libs */
   },
   {
     _defaultRules,
@@ -1478,6 +1511,7 @@ static void _ds400_linkRomDataArea(FILE *fp)
     fprintf(fp, "-b ROMSEG = 0x0068\n");
 }
 
+static const char * const _libs_ds400[] = { STD_DS400_LIB, NULL, };
 
 PORT ds400_port =
 {
@@ -1489,7 +1523,8 @@ PORT ds400_port =
     glue,
     TRUE,                       /* Emit glue around main */
     MODEL_SMALL | MODEL_LARGE | MODEL_FLAT24,
-    MODEL_SMALL
+    MODEL_SMALL,
+    get_model,
   },
   {
     _asmCmd,
@@ -1500,12 +1535,14 @@ PORT ds400_port =
     ".asm",
     NULL                        /* no do_assemble function */
   },
-  {
+  {                             /* Linker */
     _linkCmd,
     NULL,
     NULL,
     ".rel",
-    1
+    1,
+    NULL,                       /* crt */
+    _libs_ds400,                /* libs */
   },
   {
     _defaultRules,

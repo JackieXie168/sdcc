@@ -66,6 +66,7 @@ char *moduleName;               /* module name is same as module name base, but 
                                 /* non-alphanumeric characters replaced with underscore */
 int currRegBank = 0;
 int RegBankUsed[4] = {1, 0, 0, 0}; /*JCF: Reg Bank 0 used by default*/
+
 int BitBankUsed;                /* MB: overlayable bit bank */
 struct optimize optimize;
 struct options options;
@@ -91,7 +92,6 @@ int ds390_jammed = 0;
 
 /* Globally accessible scratch buffer for file names.
    TODO: replace them with local buffers */
-char scratchFileName[PATH_MAX];
 char buffer[PATH_MAX * 2];
 
 #define LENGTH(_a)      (sizeof(_a)/sizeof(*(_a)))
@@ -99,6 +99,7 @@ char buffer[PATH_MAX * 2];
 #define OPTION_HELP             "--help"
 #define OPTION_OUT_FMT_IHX      "--out-fmt-ihx"
 #define OPTION_OUT_FMT_S19      "--out-fmt-s19"
+#define OPTION_HUGE_MODEL       "--model-huge"
 #define OPTION_LARGE_MODEL      "--model-large"
 #define OPTION_MEDIUM_MODEL     "--model-medium"
 #define OPTION_SMALL_MODEL      "--model-small"
@@ -143,8 +144,7 @@ char buffer[PATH_MAX * 2];
 #define OPTION_DOLLARS_IN_IDENT "--fdollars-in-identifiers"
 #define OPTION_UNSIGNED_CHAR    "--funsigned-char"
 
-static const OPTION
-optionsTable[] = {
+static const OPTION optionsTable[] = {
     { 0,    NULL,                   NULL, "General options" },
     { 0,    OPTION_HELP,            NULL, "Display this help" },
     { 'v',  OPTION_VERSION,         NULL, "Display sdcc's version" },
@@ -182,9 +182,10 @@ optionsTable[] = {
     { 0,    NULL,                   NULL, "Code generation options"},
     { 'm',  NULL,                   NULL, "Set the port to use e.g. -mz80." },
     { 'p',  NULL,                   NULL, "Select port specific processor e.g. -mpic14 -p16f84" },
-    { 0,    OPTION_LARGE_MODEL,     NULL, "external data space is used" },
-    { 0,    OPTION_MEDIUM_MODEL,    NULL, "external paged data space is used" },
     { 0,    OPTION_SMALL_MODEL,     NULL, "internal data space is used (default)" },
+  {0, OPTION_MEDIUM_MODEL, NULL, "external paged data space is used"},
+  {0, OPTION_LARGE_MODEL, NULL, "external data space is used"},
+  {0, OPTION_HUGE_MODEL, NULL, "functions are banked, data in external space"},
     { 0,    "--stack-auto",         &options.stackAuto, "Stack automatic variables" },
     { 0,    "--xstack",             &options.useXstack, "Use external stack" },
     { 0,    "--int-long-reent",     &options.intlong_rent, "Use reentrant calls on the int and long support functions" },
@@ -254,7 +255,8 @@ optionsTable[] = {
 /** Table of all unsupported options and help text to display when one
     is used.
 */
-typedef struct {
+typedef struct
+{
     /** shortOpt as in OPTIONS. */
     char shortOpt;
     /** longOpt as in OPTIONS. */
@@ -264,8 +266,7 @@ typedef struct {
     const char *message;
 } UNSUPPORTEDOPT;
 
-static const UNSUPPORTEDOPT
-unsupportedOptTable[] = {
+static const UNSUPPORTEDOPT unsupportedOptTable[] = {
     { 'X',  NULL,       "use --xstack-loc instead" },
     { 'x',  NULL,       "use --xstack instead" },
     { 'i',  NULL,       "use --idata-loc instead" },
@@ -289,8 +290,7 @@ static const char *_preCmd = "{cpp} -nostdinc -Wall {cppstd}{cppextraopts} \"{fu
 
 PORT *port;
 
-static PORT *_ports[] =
-{
+static PORT *_ports[] = {
 #if !OPT_DISABLE_MCS51
   &mcs51_port,
 #endif
@@ -375,8 +375,8 @@ _validatePorts (void)
 }
 
 
-static char
-*program_name (const char *path)
+static char *
+program_name (const char *path)
 {
 #ifdef _WIN32
   char fname[_MAX_FNAME];
@@ -457,8 +457,7 @@ printVersionInfo (FILE *stream)
 {
   int i;
 
-  fprintf (stream,
-           "SDCC : ");
+  fprintf (stream, "SDCC : ");
   for (i = 0; i < NUM_PORTS; i++)
     fprintf (stream, "%s%s", i == 0 ? "" : "/", _ports[i]->target);
 
@@ -466,21 +465,16 @@ printVersionInfo (FILE *stream)
 #ifdef SDCC_SUB_VERSION_STR
            "/" SDCC_SUB_VERSION_STR
 #endif
-           " #%s (%s) (%s)\n",
-           getBuildNumber(), getBuildDate(), getBuildEnvironment() );
+           " #%s (%s) (%s)\n", getBuildNumber (), getBuildDate (), getBuildEnvironment ());
 }
 
 static void
 printOptions(const OPTION *optionsTable, FILE *stream)
 {
   int i;
-  for (i = 0;
-       optionsTable[i].shortOpt != 0 || optionsTable[i].longOpt != NULL
-       || optionsTable[i].help != NULL;
-       i++)
+  for (i = 0; optionsTable[i].shortOpt != 0 || optionsTable[i].longOpt != NULL || optionsTable[i].help != NULL; i++)
     {
-      if (!optionsTable[i].shortOpt && !optionsTable[i].longOpt
-          && optionsTable[i].help)
+      if (!optionsTable[i].shortOpt && !optionsTable[i].longOpt && optionsTable[i].help)
         {
           fprintf (stream, "\n%s:\n", optionsTable[i].help);
         }
@@ -490,8 +484,7 @@ printOptions(const OPTION *optionsTable, FILE *stream)
                   optionsTable[i].shortOpt !=0 ? '-' : ' ',
                   optionsTable[i].shortOpt !=0 ? optionsTable[i].shortOpt : ' ',
                   optionsTable[i].longOpt != NULL ? optionsTable[i].longOpt : "",
-                  optionsTable[i].help != NULL ? optionsTable[i].help : ""
-                  );
+                   optionsTable[i].help != NULL ? optionsTable[i].help : "");
         }
     }
 }
@@ -508,8 +501,7 @@ printUsage (void)
     printVersionInfo (stream);
     fprintf (stream,
              "Usage : sdcc [options] filename\n"
-             "Options :-\n"
-             );
+           "Options :-\n");
 
     printOptions (optionsTable, stream);
 
@@ -582,8 +574,8 @@ setDefaultOptions (void)
   options.std_c99 = 0;            /* default to C89 until more C99 support */
   options.code_seg = CODE_NAME ? Safe_strdup(CODE_NAME) : NULL; /* default to CSEG for generated code */
   options.const_seg = CONST_NAME ? Safe_strdup(CONST_NAME) : NULL; /* default to CONST for generated code */
-
   options.stack10bit=0;
+  options.out_fmt = 0;
 
   /* now for the optimizations */
   /* turn on the everything */
@@ -610,7 +602,7 @@ processFile (char *s)
   struct dbuf_s path;
 
   dbuf_init (&ext, 128);
-  dbuf_init (&path, 128);
+  dbuf_init (&path, PATH_MAX);
 
   /* get the file extension.
      If no '.' then we don't know what the file type is
@@ -671,10 +663,9 @@ processFile (char *s)
       return;
     }
 
-  /* if the extension is type .rel or .r or .REL or .R
+  /* if the extension is type rel_ext
      additional object file will be passed to the linker */
-  if (STRCASECMP (extp, ".r") == 0 || STRCASECMP (extp, ".rel") == 0 ||
-      strcmp (extp, port->linker.rel_ext) == 0)
+  if (STRCASECMP (extp, port->linker.rel_ext) == 0)
     {
       dbuf_destroy (&ext);
       dbuf_destroy (&path);
@@ -789,9 +780,7 @@ tryHandleUnsupportedOpt(char **argv, int *pi)
               /* Found an unsupported opt. */
               char buffer[100];
               SNPRINTF(buffer, sizeof(buffer),
-                "%s%c%c",
-                longOpt ? longOpt : "",
-                shortOpt ? '-' : ' ', shortOpt ? shortOpt : ' ');
+                        "%s%c%c", longOpt ? longOpt : "", shortOpt ? '-' : ' ', shortOpt ? shortOpt : ' ');
               werror (W_UNSUPP_OPTION, buffer, unsupportedOptTable[i].message);
               return 1;
             }
@@ -811,10 +800,7 @@ scanOptionsTable(const OPTION *optionsTable, char shortOpt, const char *longOpt,
 {
   int i;
 
-  for (i = 0;
-       optionsTable[i].shortOpt != 0 || optionsTable[i].longOpt != NULL
-       || optionsTable[i].help != NULL;
-       i++)
+  for (i = 0; optionsTable[i].shortOpt != 0 || optionsTable[i].longOpt != NULL || optionsTable[i].help != NULL; i++)
     {
       if (optionsTable[i].shortOpt == shortOpt)
         {
@@ -852,7 +838,8 @@ scanOptionsTable(const OPTION *optionsTable, char shortOpt, const char *longOpt,
                     case CLAT_STRING:
                       if (*(char **)optionsTable[i].pparameter)
                         Safe_free(*(char **)optionsTable[i].pparameter);
-                      *(char **)optionsTable[i].pparameter = Safe_strdup (getStringArg (optionsTable[i].longOpt, argv, pi, argc));
+                      *(char **) optionsTable[i].pparameter =
+                        Safe_strdup (getStringArg (optionsTable[i].longOpt, argv, pi, argc));
                       break;
 
                     case CLAT_SET:
@@ -860,11 +847,13 @@ scanOptionsTable(const OPTION *optionsTable, char shortOpt, const char *longOpt,
                         {
                           deleteSet ((set **)optionsTable[i].pparameter);
                         }
-                      setParseWithComma ((set **)optionsTable[i].pparameter, getStringArg (optionsTable[i].longOpt, argv, pi, argc));
+                      setParseWithComma ((set **) optionsTable[i].pparameter,
+                                         getStringArg (optionsTable[i].longOpt, argv, pi, argc));
                       break;
 
                     case CLAT_ADD_SET:
-                      addSet((set **)optionsTable[i].pparameter, Safe_strdup (getStringArg (optionsTable[i].longOpt, argv, pi, argc)));
+                      addSet ((set **) optionsTable[i].pparameter,
+                              Safe_strdup (getStringArg (optionsTable[i].longOpt, argv, pi, argc)));
                       break;
                     }
                   return TRUE;
@@ -903,8 +892,7 @@ tryHandleSimpleOpt(char **argv, int *pi, int argc)
         {
           return TRUE;
         }
-      else if (port && port->poptions &&
-               scanOptionsTable(port->poptions, shortOpt, longOpt, argv, pi, argc))
+      else if (port && port->poptions && scanOptionsTable (port->poptions, shortOpt, longOpt, argv, pi, argc))
         {
           return TRUE;
         }
@@ -970,19 +958,19 @@ parseCmdLine (int argc, char **argv)
 
           if (strcmp (argv[i], OPTION_OUT_FMT_IHX) == 0)
             {
-              options.out_fmt = 0;
+              options.out_fmt = 'i';
               continue;
             }
 
           if (strcmp (argv[i], OPTION_OUT_FMT_S19) == 0)
             {
-              options.out_fmt = 1;
+              options.out_fmt = 's';
               continue;
             }
 
-          if (strcmp (argv[i], OPTION_LARGE_MODEL) == 0)
+          if (strcmp (argv[i], OPTION_SMALL_MODEL) == 0)
             {
-              _setModel (MODEL_LARGE, argv[i]);
+              _setModel (MODEL_SMALL, argv[i]);
               continue;
             }
 
@@ -992,9 +980,15 @@ parseCmdLine (int argc, char **argv)
               continue;
             }
 
-          if (strcmp (argv[i], OPTION_SMALL_MODEL) == 0)
+          if (strcmp (argv[i], OPTION_LARGE_MODEL) == 0)
             {
-              _setModel (MODEL_SMALL, argv[i]);
+              _setModel (MODEL_LARGE, argv[i]);
+              continue;
+            }
+
+          if (strcmp (argv[i], OPTION_HUGE_MODEL) == 0)
+            {
+              _setModel (MODEL_HUGE, argv[i]);
               continue;
             }
 
@@ -1126,7 +1120,8 @@ parseCmdLine (int argc, char **argv)
 
               dbuf_init (&segname, 16);
               dbuf_printf (&segname, "%-8s(CODE)", getStringArg (OPTION_CODE_SEG, argv, &i, argc));
-              if (options.code_seg) Safe_free(options.code_seg);
+              if (options.code_seg)
+                Safe_free (options.code_seg);
               options.code_seg = dbuf_detach (&segname);
               continue;
             }
@@ -1137,7 +1132,8 @@ parseCmdLine (int argc, char **argv)
 
               dbuf_init (&segname, 16);
               dbuf_printf (&segname, "%-8s(CODE)", getStringArg (OPTION_CONST_SEG, argv, &i, argc));
-              if (options.const_seg) Safe_free(options.const_seg);
+              if (options.const_seg)
+                Safe_free (options.const_seg);
               options.const_seg = dbuf_detach (&segname);
               continue;
             }
@@ -1199,7 +1195,7 @@ parseCmdLine (int argc, char **argv)
                   {
                     struct dbuf_s path;
 
-                    dbuf_init (&path, 128);
+                    dbuf_init (&path, PATH_MAX);
                     fullDstFileName = Safe_strdup (outName);
 
                     /* get rid of the "."-extension */
@@ -1208,7 +1204,7 @@ parseCmdLine (int argc, char **argv)
                     dbuf_c_str (&path);
                     dstFileName = dbuf_detach (&path);
 
-                    dbuf_init (&path, 128);
+                    dbuf_init (&path, PATH_MAX);
                     /* strip module name to get path */
                     if (dbuf_splitPath (dstFileName, &path, NULL))
                       {
@@ -1290,10 +1286,10 @@ parseCmdLine (int argc, char **argv)
                 if (sOpt == 'Y')
                   sOpt = 'I';
 
-                SNPRINTF (buffer, sizeof(buffer),
-                  ((sOpt == 'I') ? "-%c\"%s\"": "-%c%s"), sOpt, rest);
+                SNPRINTF (buffer, sizeof (buffer), ((sOpt == 'I') ? "-%c\"%s\"" : "-%c%s"), sOpt, rest);
                 addSet(&preArgvSet, Safe_strdup(buffer));
-                if(sOpt == 'I') {
+                if (sOpt == 'I')
+                  {
                   addSet(&includeDirsSet, Safe_strdup(rest));
                   addSet(&userIncDirsSet, Safe_strdup(rest));
                 }
@@ -1392,7 +1388,7 @@ parseCmdLine (int argc, char **argv)
           dbuf_c_str (&file);
           s = dbuf_detach (&file);
 
-          dbuf_init (&file, 128);
+          dbuf_init (&file, PATH_MAX);
 
           dbuf_splitPath (s, NULL, &file);
 
@@ -1400,7 +1396,7 @@ parseCmdLine (int argc, char **argv)
             {
               struct dbuf_s path;
 
-              dbuf_init(&path, 128);
+              dbuf_init (&path, PATH_MAX);
               dbuf_makePath (&path, dstPath, dbuf_c_str (&file));
               dbuf_destroy (&file);
               dbuf_c_str (&path);
@@ -1425,12 +1421,18 @@ parseCmdLine (int argc, char **argv)
   /* if debug option is set then open the cdbFile */
   if (options.debug && fullSrcFileName)
     {
-      SNPRINTF (scratchFileName, sizeof(scratchFileName),
-                "%s.adb", dstFileName); /*JCF: Nov 30, 2002*/
-      if(debugFile->openFile(scratchFileName))
+      struct dbuf_s adbFile;
+
+      dbuf_init (&adbFile, PATH_MAX);
+      dbuf_append_str (&adbFile, dstFileName);
+      dbuf_append_str (&adbFile, ".adb");
+
+      if (debugFile->openFile (dbuf_c_str (&adbFile)))
         debugFile->writeModule(moduleName);
       else
-        werror (E_FILE_OPEN_ERR, scratchFileName);
+        werror (E_FILE_OPEN_ERR, dbuf_c_str (&adbFile));
+
+      dbuf_destroy (&adbFile);
     }
   MSVC_style(options.vc_err_style);
 
@@ -1463,7 +1465,8 @@ readCfgFile (char * PathName)
   strcat(cfgpath, "sdcc.cfg");
 
   cfgFile=fopen(cfgpath, "r");
-  if(cfgFile==NULL) return 0; /* Nothing to do here */
+  if (cfgFile == NULL)
+    return 0;                   /* Nothing to do here */
 
   argv[0]="hi!"; /* Ignored by parseCmdLine() */
   argv[1]=str1;
@@ -1491,7 +1494,8 @@ readCfgFile (char * PathName)
         {
           if(strcmp(str1, "echo")==0)
           {
-            if(strlen(cfgline)>4) printf("%s\n", &cfgline[5]);
+                      if (strlen (cfgline) > 4)
+                        printf ("%s\n", &cfgline[5]);
           }
           else
           {
@@ -1516,6 +1520,23 @@ finalizeOptions (void)
     options.noPeepComments = 1;
 }
 
+static const char *
+getOutFmtExt (void)
+{
+  switch (options.out_fmt)
+    {
+    default:
+    case 'i':
+      return ".ihx";
+
+    case 's':
+      return ".s19";
+
+    case 't':
+      return ".elf";
+    }
+}
+
 /*-----------------------------------------------------------------*/
 /* linkEdit : - calls the linkage editor  with options             */
 /*-----------------------------------------------------------------*/
@@ -1523,39 +1544,33 @@ static void
 linkEdit (char **envp)
 {
   FILE *lnkfile;
-  char *segName, *c;
   int system_ret;
   const char *s;
-  char linkerScriptFileName[PATH_MAX];
+  struct dbuf_s linkerScriptFileName;
+  struct dbuf_s binFileName;
 
-  linkerScriptFileName[0] = 0;
-  c = NULL;
+  dbuf_init (&linkerScriptFileName, PATH_MAX);
+  dbuf_init (&binFileName, PATH_MAX);
 
   if (port->linker.needLinkerScript)
     {
-      char out_fmt;
+      char out_fmt = (options.out_fmt == 0) ? 'i' : options.out_fmt;
 
-      switch (options.out_fmt)
+      if (NULL != fullDstFileName)
         {
-        case 0:
-          out_fmt = 'i';        /* Intel hex */
-          break;
-        case 1:
-          out_fmt = 's';        /* Motorola S19 */
-          break;
-        case 2:
-          out_fmt = 't';        /* Elf */
-          break;
-        default:
-          out_fmt = 'i';
+          dbuf_append_str (&binFileName, fullDstFileName);
+        }
+      else
+        {
+          dbuf_append_str (&binFileName, dstFileName);
+          dbuf_append_str (&binFileName, getOutFmtExt ());
         }
 
       /* first we need to create the <filename>.lnk file */
-      SNPRINTF (linkerScriptFileName, sizeof(linkerScriptFileName),
-        "%s.lnk", dstFileName);
-      if (!(lnkfile = fopen (linkerScriptFileName, "w")))
+      dbuf_printf (&linkerScriptFileName, "%s.lnk", dstFileName);
+      if (!(lnkfile = fopen (dbuf_c_str (&linkerScriptFileName), "w")))
         {
-          werror (E_FILE_OPEN_ERR, linkerScriptFileName);
+          werror (E_FILE_OPEN_ERR, dbuf_c_str (&linkerScriptFileName));
           exit (EXIT_FAILURE);
         }
 
@@ -1574,19 +1589,19 @@ linkEdit (char **envp)
 
       if (TARGET_Z80_LIKE)
         {
-          fprintf (lnkfile, "-mjx\n-%c %s\n", out_fmt, dstFileName);
+          fprintf (lnkfile, "-mjx\n-%c %s\n", out_fmt, dbuf_c_str (&binFileName));
         }
-      else /*For all the other ports.  Including pics???*/
+      else                      /* For all the other portswhich need linker script */
         {
-          fprintf (lnkfile, "-myux\n-%c %s\n", out_fmt, dstFileName);
+          fprintf (lnkfile, "-myux\n-%c %s\n", out_fmt, dbuf_c_str (&binFileName));
           if (!options.no_pack_iram)
               fprintf (lnkfile, "-Y\n");
         }
 #else
-      fprintf (lnkfile, "-mux\n-%c %s\n", out_fmt, dstFileName);
+      fprintf (lnkfile, "-mux\n-%c %s\n", out_fmt, dbuf_c_str (&binFileName));
 #endif
 
-      if (!(TARGET_Z80_LIKE)) /*Not for the z80, gbz80*/
+      if (!TARGET_Z80_LIKE)   /* Not for the z80, gbz80 */
         {
           /* if iram size specified */
           if (options.iram_size)
@@ -1611,13 +1626,14 @@ linkEdit (char **envp)
 #define WRITE_SEG_LOC(N, L) \
   if (N) \
   { \
+    char *c, *segName; \
     segName = Safe_strdup(N); \
     c = strtok(segName, " \t"); \
     fprintf (lnkfile,"-b %s = 0x%04x\n", c, L); \
     if (segName) { Safe_free(segName); } \
   }
 
-      if (!(TARGET_Z80_LIKE)) /*Not for the z80, gbz80*/
+      if (!TARGET_Z80_LIKE)   /* Not for the z80, gbz80 */
         {
 
           /* code segment start */
@@ -1654,8 +1670,7 @@ linkEdit (char **envp)
           WRITE_SEG_LOC (BIT_NAME, 0);
 
           /* stack start */
-          if ( (options.stack_loc) && (options.stack_loc<0x100) &&
-               !TARGET_IS_HC08)
+          if ((options.stack_loc) && (options.stack_loc < 0x100) && !TARGET_IS_HC08)
             {
               WRITE_SEG_LOC ("SSEG", options.stack_loc);
             }
@@ -1685,184 +1700,116 @@ linkEdit (char **envp)
       /* standard library path */
       if (!options.nostdlib)
         {
-          if (!(TARGET_Z80_LIKE || TARGET_IS_HC08)) /*Not for the z80, gbz80*/
-            {
-              switch (options.model)
-                {
-                case MODEL_SMALL:
-                  if (options.stackAuto)
-                    c = "small-stack-auto";
-                  else
-                    c = "small";
-                  break;
-                case MODEL_MEDIUM:
-                  if (options.stackAuto)
-                    c = "medium-stack-auto";
-                  else
-                    c = "medium";
-                  break;
-                case MODEL_LARGE:
-                  if (options.stackAuto)
-                    c = "large-stack-auto";
-                  else
-                    c = "large";
-                  break;
-                case MODEL_FLAT24:
-                  /* c = "flat24"; */
-                  if (TARGET_IS_DS390)
-                    {
-                      c = "ds390";
-                    }
-                  else if (TARGET_IS_DS400)
-                    {
-                      c = "ds400";
-                    }
-                  else
-                    {
-                      fprintf(stderr,
-                        "Add support for your FLAT24 target in %s @ line %d\n",
-                        __FILE__, __LINE__);
-                      exit (EXIT_FAILURE);
-                    }
-                  break;
-                case MODEL_PAGE0:
-                  c = "xa51";
-                  break;
-                default:
-                  werror (W_UNKNOWN_MODEL, __FILE__, __LINE__);
-                  c = "unknown";
-                  break;
-                }
-            }
-          else /*for the z80, gbz80*/
-            {
-              if (TARGET_IS_HC08)
-                c = "hc08";
-              else if (TARGET_IS_Z80)
-                c = "z80";
-              else
-                c = "gbz80";
-            }
           for (s = setFirstItem(libDirsSet); s != NULL; s = setNextItem(libDirsSet))
-            mfprintf (lnkfile, getRuntimeVariables(), "-k %s{sep}%s\n", s, c);
+            fprintf (lnkfile, "-k %s\n", s);
         }
 
       /* command line defined library files if specified */
       for (s = setFirstItem(libFilesSet); s != NULL; s = setNextItem(libFilesSet))
         fprintf (lnkfile, "-l %s\n", s);
 
-      /* standard library files
-         TODO: the list of libraries should be defined in the target's PORT structure */
+      /* standard library files */
       if (!options.nostdlib)
         {
-#if !OPT_DISABLE_DS390
-          if (options.model == MODEL_FLAT24)
+          if (NULL != port->linker.libs)
             {
-              if (TARGET_IS_DS390)
-                {
-                  fprintf (lnkfile, "-l %s\n", STD_DS390_LIB);
-                }
-              else if (TARGET_IS_DS400)
-                {
-                  fprintf (lnkfile, "-l %s\n", STD_DS400_LIB);
-                }
-              else
-                {
-                  fprintf(stderr,
-                    "Add support for your FLAT24 target in %s @ line %d\n",
-                    __FILE__, __LINE__);
-                  exit (EXIT_FAILURE);
-                }
-              }
-#endif
+              const char *const *p;
 
-#if !OPT_DISABLE_XA51
-#ifdef STD_XA51_LIB
-          if (options.model == MODEL_PAGE0)
+              for (p = port->linker.libs; NULL != *p; ++p)
             {
-              fprintf (lnkfile, "-l %s\n", STD_XA51_LIB);
+                  fprintf (lnkfile, "-l %s\n", *p);
             }
-#endif
-#endif
-          if (TARGET_IS_MCS51)
-            {
-              fprintf (lnkfile, "-l mcs51\n");
             }
-          if (!(TARGET_Z80_LIKE || TARGET_IS_HC08)) /* Not for the z80, gbz80 */
-            { /* Why the z80 port is not using the standard libraries? */
-              fprintf (lnkfile, "-l %s\n", STD_LIB);
-              fprintf (lnkfile, "-l %s\n", STD_INT_LIB);
-              fprintf (lnkfile, "-l %s\n", STD_LONG_LIB);
-              fprintf (lnkfile, "-l %s\n", STD_FP_LIB);
             }
-          else if (TARGET_IS_HC08)
-            {
-              fprintf (lnkfile, "-l hc08\n");
-            }
-          else if (TARGET_IS_Z80)
-            {
-              fprintf (lnkfile, "-l z80\n");
-            }
-          else if (TARGET_IS_GBZ80)
-            {
-              fprintf (lnkfile, "-l gbz80\n");
-            }
-        }
 
       /* put in the object file, generated from the C cource */
-      if (fullSrcFileName) {
+      if (fullSrcFileName)
+        {
         struct dbuf_s path;
 
-        dbuf_init (&path, 128);
+          dbuf_init (&path, PATH_MAX);
         dbuf_printf (&path, "%s%s", dstFileName, port->linker.rel_ext);
         addSetHead (&relFilesSet, dbuf_detach (&path));
       }
 
-      /* For the z80 and gbz80 ports, try to find where crt0.o is...
-         It is very important for this file to be first on the linking proccess
-         so the areas are set in the correct order, expecially _GSINIT
-         TODO: the list of crt objects should be defined in the target's PORT structure */
-      if ((TARGET_Z80_LIKE) && !options.no_std_crt0) /* For the z80, gbz80 */
+      if (!options.no_std_crt0)
         {
-          struct dbuf_s crt0path;
-          FILE * crt0fp;
-          set *tempSet = NULL;
+          const char *const *p;
+          set *crtSet = NULL;
 
-          dbuf_init (&crt0path, PATH_MAX);
-
-          tempSet = appendStrSet (libDirsSet, NULL, DIR_SEPARATOR_STRING);
-          tempSet = appendStrSet (tempSet, NULL, c);
-          mergeSets (&tempSet, libPathsSet);
-
-          for (s = setFirstItem (tempSet); s != NULL; s = setNextItem (tempSet))
+          if (NULL != port->linker.crt)
             {
-              dbuf_printf (&crt0path, "%s%scrt0%s", s, DIR_SEPARATOR_STRING, port->linker.rel_ext);
+              struct dbuf_s crtpath;
 
-              crt0fp = fopen (dbuf_c_str(&crt0path), "r");
-              if (crt0fp != NULL)  /* Found it! */
+              dbuf_init (&crtpath, PATH_MAX);
+
+              for (p = port->linker.crt; NULL != *p; ++p)
+            {
+                  /* Try to find where C runtime files are ...
+                     It is very important for this file to be first on the linking proccess
+                     so the areas are set in the correct order, expecially _GSINIT */
+                  for (s = setFirstItem (libDirsSet); s != NULL; s = setNextItem (libDirsSet))
+                    {
+                      dbuf_set_length (&crtpath, 0);
+                      dbuf_printf (&crtpath, "%s%c%s", s, DIR_SEPARATOR_CHAR, *p);
+
+                      if (!access (dbuf_c_str (&crtpath), 0))   /* Found it! */
                 {
-                  fclose (crt0fp);
                   #ifdef __CYGWIN__
-                  {
+                          /* TODO: is this still needed? */
                     /* The CYGWIN version of the z80-gbz80 linker is getting confused with
                        windows paths, so convert them to the CYGWIN format */
                     char posix_path[PATH_MAX];
                     void cygwin_conv_to_full_posix_path (char * win_path, char * posix_path);
-                    cygwin_conv_to_full_posix_path ((char *)dbuf_c_str(&crt0path), posix_path);
-		    dbuf_set_length (&crt0path, 0);
-                    dbuf_append_str (&crt0path, posix_path);
+
+                          cygwin_conv_to_full_posix_path ((char *) dbuf_c_str (&crtpath), posix_path);
+                          dbuf_set_length (&crtpath, 0);
+                          dbuf_append_str (&crtpath, posix_path);
+#endif
+
+                          /* append C runtime file to the crt list */
+                          addSet (&crtSet, Safe_strdup (dbuf_c_str (&crtpath)));
+                          break;
                   }
+                    }
+                  if (NULL == s)
+                    {
+                      /* not found in standard library directories, serch in user defined linrary paths */
+                      /* TODO: sould be crt searched here at all? */
+                      for (s = setFirstItem (libPathsSet); s != NULL; s = setNextItem (libPathsSet))
+                        {
+                          dbuf_set_length (&crtpath, 0);
+                          dbuf_printf (&crtpath, "%s%c%s", s, DIR_SEPARATOR_CHAR, *p);
+
+                          if (!access (dbuf_c_str (&crtpath), 0))       /* Found it! */
+                            {
+#ifdef __CYGWIN__
+                              /* TODO: is this still needed? */
+                              /* The CYGWIN version of the z80-gbz80 linker is getting confused with
+                                 windows paths, so convert them to the CYGWIN format */
+                              char posix_path[PATH_MAX];
+                              void cygwin_conv_to_full_posix_path (char *win_path, char *posix_path);
+
+                              cygwin_conv_to_full_posix_path ((char *) dbuf_c_str (&crtpath), posix_path);
+                              dbuf_set_length (&crtpath, 0);
+                              dbuf_append_str (&crtpath, posix_path);
                   #endif
-                  /* append crt0.o to the files list */
-                  addSetHead (&relFilesSet, dbuf_detach (&crt0path));
+
+                              /* append C runtime file to the crt list */
+                              addSet (&crtSet, Safe_strdup (dbuf_c_str (&crtpath)));
                   break;
                 }
-              dbuf_set_length (&crt0path, 0);
             }
-          if (s == NULL) {
-            dbuf_destroy (&crt0path);
-            fprintf (stderr, "Warning: couldn't find crt0.o\n");
           }
+                  if (NULL == s)
+                    fprintf (stderr, "Warning: couldn't find %s\n", *p);
+        }
+              dbuf_destroy (&crtpath);
+            }
+
+          /* Merge crtSet and relFilesSet */
+          mergeSets (&crtSet, relFilesSet);
+          relFilesSet = crtSet;
         }
 
       /* put in all object files */
@@ -1875,44 +1822,15 @@ linkEdit (char **envp)
   if (options.verbose)
     printf ("sdcc: Calling linker...\n");
 
-  /* build linker output filename */
-  if (fullDstFileName /*&& !IS_SDASLD*/)
-    strncpyz (scratchFileName, fullDstFileName, sizeof(scratchFileName));
-  else
-    {
-      if (fullSrcFileName /*&& !IS_SDASLD*/)
-        {
-          /* the linked file gets the name of the C source file name */
-          strncpyz (scratchFileName, dstFileName, sizeof(scratchFileName));
-        }
-      else
-        {
-          /* the linked file gets the name of the first module */
-          /* ----   this is always true for sdld */
-          char *p;
-
-          s = peekSet (relFilesSet);
-
-          assert(s);
-
-          strncpyz (scratchFileName, s, sizeof(scratchFileName));
-          /* strip the extension */
-          if (NULL == (p = strrchr (scratchFileName, '.')))
-            p = strlen (scratchFileName) + scratchFileName;;
-          *p = 0;
-        }
-      strncatz (scratchFileName, options.out_fmt ? ".s19" : ".ihx", sizeof(scratchFileName));
-    }
-
   if (port->linker.cmd)
     {
       char buffer2[PATH_MAX];
       char buffer3[PATH_MAX];
       set *tempSet=NULL, *libSet=NULL;
 
-      strcpy(buffer3, linkerScriptFileName);
-      if(/*TARGET_IS_PIC16 ||*/ TARGET_IS_PIC) {
-
+      strcpy (buffer3, dbuf_c_str (&linkerScriptFileName));
+      if ( /*TARGET_IS_PIC16 || */ TARGET_IS_PIC)
+        {
          /* use $l to set the linker include directories */
          tempSet = appendStrSet(libDirsSet, "-I\"", "\"");
          mergeSets(&linkOptionsSet, tempSet);
@@ -1923,20 +1841,25 @@ linkEdit (char **envp)
          /* use $3 for libraries from command line --> libSet */
          mergeSets(&libSet, libFilesSet);
 
-         tempSet = appendStrSet(relFilesSet, "", "");
+          tempSet = setFromSetNonRev (relFilesSet);
          mergeSets(&libSet, tempSet);
 //         libSet = reverseSet(libSet);
 
-        if(fullSrcFileName) {
+          if (fullSrcFileName)
+            {
 //              strcpy(buffer3, strrchr(fullSrcFileName, DIR_SEPARATOR_CHAR)+1);
                 /* if it didn't work, revert to old behaviour */
-                if(!strlen(buffer3))strcpy(buffer3, dstFileName);
+              if (buffer3[0] == '\0')
+                strcpy (buffer3, dstFileName);
                 strcat(buffer3, port->linker.rel_ext);
 
-        } else strcpy(buffer3, "");
       }
+          else
+            buffer3[0] = '\0';
+        }
 
-      buildCmdLine (buffer2, port->linker.cmd, buffer3, scratchFileName, (libSet?joinStrSet(libSet):NULL), linkOptionsSet);
+      buildCmdLine (buffer2, port->linker.cmd, buffer3, dbuf_c_str (&binFileName), (libSet ? joinStrSet (libSet) : NULL),
+                    linkOptionsSet);
 
       buildCmdLine2 (buffer, sizeof(buffer), buffer2);
     }
@@ -1945,94 +1868,32 @@ linkEdit (char **envp)
       buildCmdLine2 (buffer, sizeof(buffer), port->linker.mcmd);
     }
 
+  dbuf_destroy (&linkerScriptFileName);
+
   system_ret = my_system (buffer);
 
-#if 0
-  if (fullDstFileName /*&& IS_SDASLD*/)
+  /* if the binary file name is defined,
+     rename the linker output file name to binary file name */
+  if (fullDstFileName)
     {
-      /* make some order in the mess left by sdld:
-         move generated files to the output directory */
-      char *p, *q;
+      struct dbuf_s lkrFileName;
 
-      /* the linked file gets the name of the first modul */
-      if (fullSrcFileName)
-        {
-          strncpyz (scratchFileName, dstFileName, sizeof(scratchFileName));
-          p = strlen (scratchFileName) + scratchFileName;
+      dbuf_init (&lkrFileName, PATH_MAX);
+      dbuf_append_str (&lkrFileName, dstFileName);
+      dbuf_append_str (&lkrFileName, getOutFmtExt ());
+
+      if (FILENAME_CMP (dbuf_c_str (&binFileName), dbuf_c_str (&lkrFileName)))
+        remove (dbuf_c_str (&binFileName));
+      rename (dbuf_c_str (&lkrFileName), dbuf_c_str (&binFileName));
+
+      dbuf_destroy (&lkrFileName);
         }
-      else
-        {
-          s = peekSet(relFilesSet);
 
-          assert(s);
-
-          strncpyz (scratchFileName, s, sizeof(scratchFileName));
-          /* strip the extension */
-          if (NULL == (p = strrchr (scratchFileName, '.')))
-            p = strlen (scratchFileName) + scratchFileName;;
-          *p = 0;
-        }
-      strncatz (scratchFileName, options.out_fmt ? ".s19" : ".ihx", sizeof(scratchFileName));
-
-      if (FILENAME_CMP (fullDstFileName, scratchFileName))
-        {
-          remove (fullDstFileName);
-          rename (scratchFileName, fullDstFileName);
-        }
+  dbuf_destroy (&binFileName);
  
-      strncpyz (buffer, fullDstFileName, sizeof(buffer));
-      if (NULL == (q = strrchr (buffer, '.')))
-        q = strlen (buffer) + buffer;
-
-      *p = 0;
-      strncatz (scratchFileName, ".map", sizeof(scratchFileName));
-      *q = 0;
-      strncatz(buffer, ".map", sizeof(buffer));
-      if (FILENAME_CMP (scratchFileName, buffer))
-        {
-          remove (buffer);
-          rename (scratchFileName, buffer);
-        }
- 
-      *p = 0;
-      strncatz (scratchFileName, ".mem", sizeof(scratchFileName));
-      *q = 0;
-      strncatz(buffer, ".mem", sizeof(buffer));
-      if (FILENAME_CMP (scratchFileName, buffer))
-        {
-          remove (buffer);
-          rename (scratchFileName, buffer);
-        }
- 
-      if (options.debug)
-        {
-          *p = 0;
-          strncatz (scratchFileName, ".cdb", sizeof(scratchFileName));
-          *q = 0;
-          strncatz(buffer, ".cdb", sizeof(buffer));
-          if (FILENAME_CMP (scratchFileName, buffer))
-            {
-              remove (buffer);
-              rename (scratchFileName, buffer);
-           }
-
-          /* and the OMF file without extension: */
-          *p = 0;
-          *q = 0;
-          if (FILENAME_CMP (scratchFileName, buffer))
-            {
-              remove (buffer);
-              rename (scratchFileName, buffer);
-            }
-        }
-    }
-#endif
-
   if (system_ret)
-    {
       exit (EXIT_FAILURE);
     }
-}
 
 /*-----------------------------------------------------------------*/
 /* assemble - spawns the assembler with arguments                  */
@@ -2042,7 +1903,7 @@ assemble (char **envp)
 {
   /* build assembler output filename */
   struct dbuf_s asmName;
-  dbuf_init (&asmName, 128);
+  dbuf_init (&asmName, PATH_MAX);
 
   /* -o option overrides default name? */
   if (options.cc_only && fullDstFileName)
@@ -2063,39 +1924,23 @@ assemble (char **envp)
   else if (port->assembler.cmd)
     {
       buildCmdLine (buffer, port->assembler.cmd, dstFileName, dbuf_c_str (&asmName),
-                    options.debug ? port->assembler.debug_opts : port->assembler.plain_opts,
-                    asmOptionsSet);
+                    options.debug ? port->assembler.debug_opts : port->assembler.plain_opts, asmOptionsSet);
     }
   else
     {
       buildCmdLine2 (buffer, sizeof(buffer), port->assembler.mcmd);
     }
 
+  dbuf_destroy (&asmName);
+
   if (my_system (buffer))
     {
       /* either system() or the assembler itself has reported an error
          perror ("Cannot exec assembler");
       */
-      dbuf_destroy (&asmName);
       exit (EXIT_FAILURE);
   }
-
-  if (IS_SDASLD && options.cc_only && fullDstFileName)
-    {
-      /* make some order in the mess remined behind sdas:
-         move generated files to the output directory */
-      dbuf_set_length (&asmName, 0);
-      dbuf_printf (&asmName, "%s%s", dstFileName, port->linker.rel_ext);
-
-      if (FILENAME_CMP (dbuf_c_str (&asmName), fullDstFileName))
-        {
-          remove (fullDstFileName);
-          rename (dbuf_c_str(&asmName), fullDstFileName);
         }
-    }
-
-    dbuf_destroy (&asmName);
-}
 
 /*-----------------------------------------------------------------*/
 /* preProcess - spawns the preprocessor with arguments             */
@@ -2151,21 +1996,34 @@ preProcess (char **envp)
         case MODEL_LARGE:
           addSet(&preArgvSet, Safe_strdup("-DSDCC_MODEL_LARGE"));
           break;
+
         case MODEL_SMALL:
           addSet(&preArgvSet, Safe_strdup("-DSDCC_MODEL_SMALL"));
           break;
+
         case MODEL_COMPACT:
           addSet(&preArgvSet, Safe_strdup("-DSDCC_MODEL_COMPACT"));
           break;
+
         case MODEL_MEDIUM:
           addSet(&preArgvSet, Safe_strdup("-DSDCC_MODEL_MEDIUM"));
           break;
+
+        case MODEL_HUGE:
+          addSet (&preArgvSet, Safe_strdup ("-DSDCC_MODEL_HUGE"));
+          break;
+
         case MODEL_FLAT24:
           addSet(&preArgvSet, Safe_strdup("-DSDCC_MODEL_FLAT24"));
           break;
+
         case MODEL_PAGE0:
           addSet(&preArgvSet, Safe_strdup("-DSDCC_MODEL_PAGE0"));
           break;
+
+        case NO_MODEL:
+          break;
+
         default:
           werror (W_UNKNOWN_MODEL, __FILE__, __LINE__);
           break;
@@ -2182,8 +2040,7 @@ preProcess (char **envp)
       /* add SDCC version number */
       {
         char buf[20];
-        SNPRINTF(buf, sizeof(buf), "-DSDCC=%d%d%d",
-                 SDCC_VERSION_HI, SDCC_VERSION_LO, SDCC_VERSION_P);
+        SNPRINTF (buf, sizeof (buf), "-DSDCC=%d%d%d", SDCC_VERSION_HI, SDCC_VERSION_LO, SDCC_VERSION_P);
         addSet(&preArgvSet, Safe_strdup(buf));
       }
 
@@ -2198,14 +2055,16 @@ preProcess (char **envp)
       addSet(&preArgvSet, Safe_strdup("-DSDCC_{port}"));
       addSet(&preArgvSet, Safe_strdup("-D__{port}"));
 
-      if (port && port->processor && TARGET_IS_PIC) {
+      if (port && port->processor && TARGET_IS_PIC)
+        {
         char proc[512];
         SNPRINTF(&proc[0], 512, "-DSDCC_PROCESSOR=\"%s\"", port->processor);
         addSet(&preArgvSet, Safe_strdup(proc));
       }
 
       /* standard include path */
-      if (!options.nostdinc) {
+      if (!options.nostdinc)
+        {
         inclList = appendStrSet(includeDirsSet, "-isystem \"", "\"");
         mergeSets(&preArgvSet, inclList);
       }
@@ -2230,8 +2089,10 @@ preProcess (char **envp)
         printf ("sdcc: Calling preprocessor...\n");
       buildCmdLine2 (buffer, sizeof(buffer), _preCmd);
 
-      if (preProcOnly) {
-        if (my_system (buffer)) {
+      if (preProcOnly)
+        {
+          if (my_system (buffer))
+            {
           exit (EXIT_FAILURE);
         }
 
@@ -2239,7 +2100,8 @@ preProcess (char **envp)
       }
 
       yyin = my_popen (buffer);
-      if (yyin == NULL) {
+      if (yyin == NULL)
+        {
           perror ("Preproc file not found");
           exit (EXIT_FAILURE);
       }
@@ -2269,7 +2131,8 @@ setBinPaths (const char *argv0)
   if ((p = getBinPath (argv0)) != NULL)
     addSetHead (&binPathSet, (void *)p);
 
-  if ((p = getenv (SDCC_DIR_NAME)) != NULL) {
+  if ((p = getenv (SDCC_DIR_NAME)) != NULL)
+    {
     SNPRINTF (buf, sizeof buf, "%s" PREFIX2BIN_DIR, p);
     addSetHead (&binPathSet, Safe_strdup (buf));
   }
@@ -2280,7 +2143,6 @@ static void
 setIncludePath (void)
 {
   char *p;
-  char *p2 = NULL;
   set *tempSet = NULL;
 
   /*
@@ -2306,23 +2168,21 @@ setIncludePath (void)
 
   if ((p = getenv (SDCC_INCLUDE_NAME)) != NULL)
     {
+      struct dbuf_s dbuf;
+
+      dbuf_init (&dbuf, PATH_MAX);
       addSetHead(&includeDirsSet, p);
-      p2=Safe_alloc(strlen(p)+strlen(DIR_SEPARATOR_STRING)+strlen(port->target)+1);
-      if (p2 != NULL)
-        {
-          strcpy (p2, p);
-          strcat (p2, DIR_SEPARATOR_STRING);
-          strcat (p2, port->target);
-          addSetHead (&includeDirsSet, p2);
+      dbuf_printf (&dbuf, "%s%c%s", p, DIR_SEPARATOR_CHAR, port->target);
+      addSetHead (&includeDirsSet, dbuf_detach (&dbuf));
         }
     }
-}
 
 /* Set system lib path */
 static void
 setLibPath (void)
 {
   char *p;
+  struct dbuf_s dbuf;
 
   /*
    * Search logic:
@@ -2336,10 +2196,13 @@ setLibPath (void)
   if (options.nostdlib)
       return;
 
-  libDirsSet = appendStrSet (dataDirsSet, NULL, LIB_DIR_SUFFIX);
-
   if ((p = getenv (SDCC_LIB_NAME)) != NULL)
-    addSetHead (&libDirsSet, p);
+    addSetHead (&libDirsSet, Safe_strdup (p));
+
+  dbuf_init (&dbuf, PATH_MAX);
+  dbuf_printf (&dbuf, "%s%c%s", LIB_DIR_SUFFIX, DIR_SEPARATOR_CHAR, port->general.get_model ? port->general.get_model () : port->target);
+
+  libDirsSet = appendStrSet (dataDirsSet, NULL, dbuf_c_str (&dbuf));
 }
 
 /* Set data path */
@@ -2357,19 +2220,22 @@ setDataPaths (const char *argv0)
    * 3. - DATADIR (only on *nix)
    */
 
-  if ((p = getenv (SDCC_DIR_NAME)) != NULL) {
+  if ((p = getenv (SDCC_DIR_NAME)) != NULL)
+    {
     SNPRINTF (buf, sizeof buf, "%s" PREFIX2DATA_DIR, p);
     addSet (&dataDirsSet, Safe_strdup (buf));
   }
 
-  if ((p = getBinPath (argv0)) != NULL) {
+  if ((p = getBinPath (argv0)) != NULL)
+    {
     SNPRINTF (buf, sizeof buf, "%s" BIN2DATA_DIR, p);
     Safe_free ((void *)p);
     addSet (&dataDirsSet, Safe_strdup(buf));
   }
 
 #ifdef _WIN32
-  if (peekSet (dataDirsSet) == NULL) {
+  if (peekSet (dataDirsSet) == NULL)
+    {
     /* this should never happen... */
     wassertl (0, "Can't get binary path");
   }
@@ -2430,6 +2296,8 @@ initValues (void)
 static void
 doPrintSearchDirs (void)
 {
+  const char *s;
+
   printf ("programs:\n");
   fputStrSet (stdout, binPathSet);
 
@@ -2440,7 +2308,10 @@ doPrintSearchDirs (void)
   fputStrSet (stdout, includeDirsSet);
 
   printf ("libdir:\n");
-  fputStrSet (stdout, libDirsSet);
+  for (s = setFirstItem (libDirsSet); s != NULL; s = setNextItem (libDirsSet))
+    fprintf (stdout, "%s\n", s);
+
+  printf ("libpath:\n");
   fputStrSet (stdout, libPathsSet);
 }
 
@@ -2455,15 +2326,19 @@ sig_handler (int signal)
     case SIGABRT:
       sig_string = "SIGABRT";
       break;
+
     case SIGTERM:
       sig_string = "SIGTERM";
       break;
+
     case SIGINT:
       sig_string = "SIGINT";
       break;
+
     case SIGSEGV:
       sig_string = "SIGSEGV";
       break;
+
     default:
       sig_string = "Unknown?";
       break;
@@ -2508,7 +2383,8 @@ main (int argc, char **argv, char **envp)
   _findPort (argc, argv);
 
 #ifdef JAMIN_DS390
-  if (strcmp (port->target, "mcs51") == 0) {
+  if (strcmp (port->target, "mcs51") == 0)
+    {
     printf ("DS390 jammed in A\n");
     _setPort ("ds390");
     ds390_jammed = 1;
@@ -2523,7 +2399,8 @@ main (int argc, char **argv, char **envp)
 
   setDefaultOptions ();
 #ifdef JAMIN_DS390
-  if (ds390_jammed) {
+  if (ds390_jammed)
+    {
     options.model = MODEL_SMALL;
     options.stack10bit=0;
   }
@@ -2616,11 +2493,7 @@ main (int argc, char **argv, char **envp)
   if (options.debug && debugFile)
     debugFile->closeFile ();
 
-  if (!options.cc_only &&
-      !fatalError &&
-      !noAssemble &&
-      !options.c1mode &&
-      (fullSrcFileName || peekSet (relFilesSet) != NULL))
+  if (!options.cc_only && !fatalError && !noAssemble && !options.c1mode && (fullSrcFileName || peekSet (relFilesSet) != NULL))
     {
       if (options.verbose)
         printf ("sdcc: Calling linker...\n");

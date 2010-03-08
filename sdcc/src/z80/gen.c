@@ -393,18 +393,8 @@ _newLineNode (const char *line)
 }
 
 static void
-_vemit2 (const char *szFormat, va_list ap)
+_add_line (const char *buffer)
 {
-  struct dbuf_s dbuf;
-  char *buffer;
-
-  dbuf_init(&dbuf, INITIAL_INLINEASM);
-
-  dbuf_tvprintf (&dbuf, szFormat, ap);
-
-  buffer = (char *)dbuf_c_str(&dbuf);
-
-  _tidyUp (buffer);
   _G.lines.current = (_G.lines.current ?
               connectLine (_G.lines.current, _newLineNode (buffer)) :
               (_G.lines.head = _newLineNode (buffer)));
@@ -413,6 +403,31 @@ _vemit2 (const char *szFormat, va_list ap)
   _G.lines.current->isDebug = _G.lines.isDebug;
   _G.lines.current->ic = _G.current_iCode;
   _G.lines.current->isComment = (*buffer == ';');
+}
+
+static void
+_vemit2 (const char *szFormat, va_list ap)
+{
+  struct dbuf_s dbuf;
+  char *buffer, *nextbuffer;
+
+  dbuf_init(&dbuf, INITIAL_INLINEASM);
+
+  dbuf_tvprintf (&dbuf, szFormat, ap);
+
+  buffer = (char *)dbuf_c_str(&dbuf);
+
+  _tidyUp (buffer);
+
+  /* Decompose multiline macros */
+  while(nextbuffer = strchr(buffer, '\n'))
+    {
+      *nextbuffer = 0;
+      _add_line(buffer);
+      buffer = nextbuffer + 1;
+    }
+
+  _add_line(buffer);
 
   dbuf_destroy(&dbuf);
 }
@@ -451,7 +466,7 @@ emitDebug (const char *szFormat,...)
 /*   with a debugger symbol                                        */
 /*-----------------------------------------------------------------*/
 void
-z80_emitDebuggerSymbol (char * debugSym)
+z80_emitDebuggerSymbol (const char * debugSym)
 {
   _G.lines.isDebug = 1;
   emit2 ("%s !equ .", debugSym);
@@ -2329,29 +2344,39 @@ _toBoolean (operand * oper)
 static void
 genNot (iCode * ic)
 {
+  operand *left = IC_LEFT(ic);
+  operand *result = IC_RESULT(ic);
 
   /* assign asmOps to operand & result */
-  aopOp (IC_LEFT (ic), ic, FALSE, TRUE);
-  aopOp (IC_RESULT (ic), ic, TRUE, FALSE);
+  aopOp (left, ic, FALSE, TRUE);
+  aopOp (result, ic, TRUE, FALSE);
 
   /* if in bit space then a special case */
-  if (AOP_TYPE (IC_LEFT (ic)) == AOP_CRY)
+  if (AOP_TYPE (left) == AOP_CRY)
     {
       wassertl (0, "Tried to negate a bit");
     }
+  else if(IS_BOOL(operandType(left)))
+    {
+      emit2("ld a,%s", aopGet(AOP(left), 0, FALSE));
+      emit2("xor a,#0x01");
+      emit2("ld %s,a", aopGet(AOP(result), 0, FALSE));
+      goto release;
+    }
 
-  _toBoolean (IC_LEFT (ic));
+  _toBoolean (left);
 
   /* Not of A:
      If A == 0, !A = 1
      else A = 0
      So if A = 0, A-1 = 0xFF and C is set, rotate C into reg. */
   emit2 ("sub a,!one");
-  outBitC (IC_RESULT (ic));
+  outBitC (result);
 
+release:
   /* release the aops */
-  freeAsmop (IC_LEFT (ic), NULL, ic);
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (left, NULL, ic);
+  freeAsmop (result, NULL, ic);
 }
 
 /*-----------------------------------------------------------------*/
@@ -2948,7 +2973,7 @@ emitCall (iCode * ic, bool ispcall)
 
   if (ispcall)
     {
-      if (IFFUNC_ISBANKEDCALL (dtype) && !SPEC_STAT(getSpec(dtype)))
+      if (IFFUNC_ISBANKEDCALL (dtype))
         {
           werror (W_INDIR_BANKED);
         }
@@ -2977,7 +3002,7 @@ emitCall (iCode * ic, bool ispcall)
   else
     {
       /* make the call */
-      if (IFFUNC_ISBANKEDCALL (dtype) && !SPEC_STAT(getSpec(dtype)))
+      if (IFFUNC_ISBANKEDCALL (dtype))
         {
           char *name = OP_SYMBOL (IC_LEFT (ic))->rname[0] ?
                        OP_SYMBOL (IC_LEFT (ic))->rname :
@@ -5329,18 +5354,22 @@ static void
 jmpTrueOrFalse (iCode * ic, symbol * tlbl)
 {
   // ugly but optimized by peephole
+  // Using emitLabel instead of emitLabelNoSpill (esp. on gbz80)
+  // We could jump there from locations with different values in hl.
+  // This should be changed to a more efficient solution that spills
+  // only what and when necessary.
   if (IC_TRUE (ic))
     {
       symbol *nlbl = newiTempLabel (NULL);
       emit2 ("jp !tlabel", nlbl->key + 100);
-      emitLabelNoSpill (tlbl->key + 100);
+      emitLabel (tlbl->key + 100);
       emit2 ("jp !tlabel", IC_TRUE (ic)->key + 100);
-      emitLabelNoSpill (nlbl->key + 100);
+      emitLabel (nlbl->key + 100);
     }
   else
     {
       emit2 ("jp !tlabel", IC_FALSE (ic)->key + 100);
-      emitLabelNoSpill (tlbl->key + 100);
+      emitLabel (tlbl->key + 100);
     }
   ic->generated = 1;
 }
@@ -7363,10 +7392,10 @@ genIfx (iCode * ic, iCode * popIc)
 
   /* get the value into acc */
   if(AOP_TYPE (cond) != AOP_CRY &&
-    !IS_BIT (operandType(cond)))
+    !IS_BOOL (operandType(cond)))
     _toBoolean (cond);
   /* Special case: Condition is bool */
-  else if(IS_BIT (operandType(cond)))
+  else if(IS_BOOL (operandType(cond)))
     {
       emit2 ("bit 0,%s", aopGet (AOP (cond), 0, FALSE));
       emit2 ("jp %s,!tlabel", IC_TRUE (ic) ? "NZ" : "Z",
@@ -7647,7 +7676,7 @@ genCast (iCode * ic)
     }
 
   /* casting to bool */
-  if (IS_BIT(operandType(result)))
+  if (IS_BOOL(operandType(result)))
     {
       symbol *tlbl1, *tlbl2;
       emitDebug("; Casting to bool");
@@ -7675,9 +7704,9 @@ genCast (iCode * ic)
       emit2("cp a,%s", aopGet (AOP (right), 0, FALSE));
       emit2("rla");
       emit2("jp !tlabel", tlbl2->key + 100);
-      emitLabel(tlbl1->key + 100);
+      emitLabelNoSpill(tlbl1->key + 100);
       emit2("ld a,#0x01");
-      emitLabel(tlbl2->key + 100);
+      emitLabelNoSpill(tlbl2->key + 100);
       aopPut(AOP (result), "a", 0);
       goto release;
     }

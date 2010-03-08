@@ -1,7 +1,7 @@
 /* asranlib.c - ranlib for asxxxx arvhives
    version 1.0.0, April 27th, 2008
 
-   Copyright (C) 2008-2009 Borut Razem, borut dot razem at siol dot net
+   Copyright (C) 2008-2010 Borut Razem, borut dot razem at siol dot net
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

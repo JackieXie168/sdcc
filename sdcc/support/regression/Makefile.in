@@ -93,7 +93,7 @@ test-gbz80:
 	$(MAKE) test-port PORT=gbz80
 
 # Helper rule for testing the mcs51 port only
-test-mcs51: test-mcs51-small test-mcs51-medium test-mcs51-large test-mcs51-stack-auto test-mcs51-xstack-auto
+test-mcs51: test-mcs51-small test-mcs51-medium test-mcs51-large test-mcs51-huge test-mcs51-stack-auto test-mcs51-xstack-auto
 
 test-mcs51-small:
 	$(MAKE) test-port PORT=mcs51-small
@@ -103,6 +103,9 @@ test-mcs51-medium:
 
 test-mcs51-large:
 	$(MAKE) test-port PORT=mcs51-large
+
+test-mcs51-huge:
+	$(MAKE) make_library test-port PORT=mcs51-huge
 
 test-mcs51-stack-auto:
 	$(MAKE) test-port PORT=mcs51-stack-auto
@@ -184,7 +187,7 @@ endif
 
 # List of intermediate files to keep.  Pretty much keep everything as
 # disk space is free.
-.PRECIOUS: $(PORT_CASES_DIR)/% %$(OBJEXT) %$(EXEEXT)
+.PRECIOUS: $(PORT_CASES_DIR)/% %$(OBJEXT) %$(EXEEXT) %$(BINEXT)
 
 # Rule to generate the iterations of a test suite off the soure suite.
 $(PORT_CASES_DIR)/%/iterations.stamp: $(TESTS_DIR)/%.c $(GENERATE_CASES)

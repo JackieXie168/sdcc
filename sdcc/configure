@@ -5954,7 +5954,7 @@ fi
 
 if test $OPT_DISABLE_MCS51 = 0; then
   ac_config_files="$ac_config_files src/mcs51/Makefile sdas/as8051/Makefile sdas/as8xcxxx/Makefile"
-  test $OPT_DISABLE_DEVICE_LIB = 0 && ac_config_files="$ac_config_files device/lib/mcs51/Makefile device/lib/small/Makefile device/lib/medium/Makefile device/lib/large/Makefile"
+  test $OPT_DISABLE_DEVICE_LIB = 0 && ac_config_files="$ac_config_files device/lib/mcs51/Makefile device/lib/small/Makefile device/lib/medium/Makefile device/lib/large/Makefile device/lib/huge/Makefile"
 
 fi
 
@@ -5984,7 +5984,7 @@ fi
 test $OPT_DISABLE_DEVICE_LIB = 0 && ac_config_files="$ac_config_files device/lib/Makefile"
 
 
-ac_config_files="$ac_config_files main.mk:main_in.mk src/Makefile device/include/Makefile sdas/linksrc/Makefile sdas/asranlib/Makefile support/librarian/Makefile support/makebin/Makefile support/regression/Makefile support/valdiag/Makefile Makefile Makefile.common:Makefile.common.in"
+ac_config_files="$ac_config_files main.mk:main_in.mk src/Makefile device/include/Makefile sdas/linksrc/Makefile sdas/asranlib/Makefile support/librarian/Makefile support/makebin/Makefile support/regression/Makefile support/valdiag/Makefile support/scripts/Makefile Makefile Makefile.common:Makefile.common.in"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6684,6 +6684,7 @@ do
     "device/lib/small/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/small/Makefile" ;;
     "device/lib/medium/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/medium/Makefile" ;;
     "device/lib/large/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/large/Makefile" ;;
+    "device/lib/huge/Makefile") CONFIG_FILES="$CONFIG_FILES device/lib/huge/Makefile" ;;
     "src/pic/Makefile") CONFIG_FILES="$CONFIG_FILES src/pic/Makefile" ;;
     "src/pic16/Makefile") CONFIG_FILES="$CONFIG_FILES src/pic16/Makefile" ;;
     "src/xa51/Makefile") CONFIG_FILES="$CONFIG_FILES src/xa51/Makefile" ;;
@@ -6702,6 +6703,7 @@ do
     "support/makebin/Makefile") CONFIG_FILES="$CONFIG_FILES support/makebin/Makefile" ;;
     "support/regression/Makefile") CONFIG_FILES="$CONFIG_FILES support/regression/Makefile" ;;
     "support/valdiag/Makefile") CONFIG_FILES="$CONFIG_FILES support/valdiag/Makefile" ;;
+    "support/scripts/Makefile") CONFIG_FILES="$CONFIG_FILES support/scripts/Makefile" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "Makefile.common") CONFIG_FILES="$CONFIG_FILES Makefile.common:Makefile.common.in" ;;
 
