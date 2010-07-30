@@ -2,9 +2,9 @@
  * Simulator of microcontrollers (hc08.cc)
  *
  * some hc08 code base from Karl Bongers karl@turbobit.com
- * 
+ *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
- * 
+ *
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
  *
  */
@@ -267,8 +267,8 @@ cl_hc08::get_disasm_info(t_addr addr,
   return b;
 }
 
-char *
-cl_hc08::disass(t_addr addr, char *sep)
+const char *
+cl_hc08::disass(t_addr addr, const char *sep)
 {
   char work[256], temp[20];
   char *buf, *p, *b, *t;
@@ -278,7 +278,7 @@ cl_hc08::disass(t_addr addr, char *sep)
   p= work;
 
   b = get_disasm_info(addr, &len, NULL, &immed_offset);
-  
+
   if (b == NULL) {
     buf= (char*)malloc(30);
     strcpy(buf, "UNKNOWN/INVALID");
@@ -393,9 +393,9 @@ cl_hc08::print_regs(class cl_console *con)
   con->dd_printf("X= 0x%02x %3d %c\n",
 		 regs.X, regs.X, isprint(regs.X)?regs.X:'.');
   con->dd_printf("SP= 0x%04x [SP+1]= %02x %3d %c\n",
-		 regs.SP, ram->get(regs.SP+1), ram->get(regs.SP+1),
-		 isprint(ram->get(regs.SP+1))?ram->get(regs.SP+1):'.');
-  
+                 regs.SP, ram->get(regs.SP+1), ram->get(regs.SP+1),
+                 isprint(ram->get(regs.SP+1))?ram->get(regs.SP+1):'.');
+
   print_disass(PC, con);
 }
 
@@ -544,7 +544,7 @@ cl_hc08::exec_inst(void)
               }
             default: return(resHALT);
           }
-              
+
       }
     case 0xa:
     case 0xb:

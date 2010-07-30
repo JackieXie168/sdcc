@@ -148,12 +148,12 @@ cl_timer2::write(class cl_memory_cell *cell, t_mem *val)
 	    exf2it->deactivate();
 	}
       if ((features & t2_clock_out) &&
-	  bit_t2oe)
-	mode= T2MODE_CLKOUT;
+          bit_t2oe)
+        mode= T2MODE_CLKOUT;
     }
-  if (mode != oldmode ||
-      TR && !oldtr ||
-      !TR && oldtr)
+  if ((mode != oldmode) ||
+      (TR && !oldtr) ||
+      (!TR && oldtr))
     T_edge= t2ex_edge= 0;
 }
 
