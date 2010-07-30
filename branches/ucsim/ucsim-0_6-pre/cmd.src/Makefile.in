@@ -11,39 +11,49 @@ CXX		= @CXX@
 CPP		= @CPP@
 CXXCPP		= @CXXCPP@
 RANLIB		= @RANLIB@
-INSTALL		= @INSTALL@
+INSTALL	        = @INSTALL@
+MAKEDEP         = @MAKEDEP@
 
 LEX		= @LEX@
 YACC		= @YACC@
 BISON_PLUS_PLUS	= @BISON_PLUS_PLUS@
 
-PRJDIR		= ..
+top_builddir	= @top_builddir@
+top_srcdir	= @top_srcdir@
 
 DEFS            = $(subs -DHAVE_CONFIG_H,,@DEFS@)
-CPPFLAGS        = @CPPFLAGS@ -I. -I$(PRJDIR) \
-		  -I$(PRJDIR)/sim.src -I$(PRJDIR)/gui.src
-CFLAGS          = @CFLAGS@ -Wall
-CXXFLAGS        = @CXXFLAGS@ -Wall
-M_OR_MM         = @M_OR_MM@
+CPPFLAGS        = @CPPFLAGS@ -I$(srcdir) -I$(top_srcdir) -I$(top_builddir) \
+		  -I$(top_srcdir)/sim.src -I$(top_srcdir)/gui.src
+CFLAGS          = @CFLAGS@ @WALL_FLAG@
+CXXFLAGS        = @CXXFLAGS@ @WALL_FLAG@
+WINSOCK_AVAIL   = @WINSOCK_AVAIL@
 
 prefix          = @prefix@
 exec_prefix     = @exec_prefix@
 bindir          = @bindir@
 libdir          = @libdir@
 datadir         = @datadir@
+datarootdir     = @datarootdir@
 includedir      = @includedir@
 mandir          = @mandir@
 man1dir         = $(mandir)/man1
 man2dir         = $(mandir)/man2
 infodir         = @infodir@
 srcdir          = @srcdir@
+VPATH           = @srcdir@
 
-OBJECTS		= cmdset.o command.o newcmd.o cmdutil.o syntax.o \
+OBJECTS		= cmdset.o command.o cmdutil.o syntax.o \
 		  get.o set.o timer.o bp.o info.o show.o cmdgui.o cmdconf.o \
 		  cmduc.o cmdstat.o cmdmem.o \
-		  cmdpars.o cmdlex.o
+		  cmdpars.o cmdlex.o newcmd.o
 
-DEVEL		= $(shell ( bash -c "test -e $(PRJDIR)/devel && echo yes" ))
+ifeq ($(WINSOCK_AVAIL), 1)
+OBJECTS += newcmdwin32.o
+else
+OBJECTS += newcmdposix.o
+endif
+
+DEVEL		= $(shell test -d $(top_builddir)/devel && echo yes)
 
 # Compiling entire program or any subproject
 # ------------------------------------------
@@ -83,24 +93,24 @@ installdirs:
 # ---------------------
 dep: Makefile.dep
 
-Makefile.dep: *.cc *.h
-	$(CXXCPP) $(CPPFLAGS) $(M_OR_MM) *.cc >Makefile.dep
+Makefile.dep: $(srcdir)/*.cc $(srcdir)/*.h
+	$(MAKEDEP) $(CPPFLAGS) $(addprefix $(srcdir)/, $(OBJECTS:.o=.cc)) >Makefile.dep
 
-include Makefile.dep
-include clean.mk
+-include Makefile.dep
+include $(srcdir)/clean.mk
 
 cmdpars.cc: cmdpars.y
 
 ifeq ($(DEVEL),yes)
-cmdlex.cc: cmdlex.l cmdpars.h
+  cmdlex.cc: cmdlex.l cmdpars.h
 endif
 
 # My rules
 # --------
 
-cmdlib: $(PRJDIR)/libcmd.a
+cmdlib: $(top_builddir)/libcmd.a
 
-$(PRJDIR)/libcmd.a: $(OBJECTS)
+$(top_builddir)/libcmd.a: $(OBJECTS)
 	ar -rcu $*.a $(OBJECTS)
 	$(RANLIB) $*.a
 
@@ -127,8 +137,8 @@ endif
 # Remaking configuration
 # ----------------------
 checkconf:
-	@if [ -f $(PRJDIR)/devel ]; then\
-	  $(MAKE) -f conf.mk srcdir="$(srcdir)" PRJDIR="$(PRJDIR)" freshconf;\
+	@if [ -f $(top_builddir)/devel ]; then\
+	  $(MAKE) -f conf.mk srcdir="$(srcdir)" top_builddir="$(top_builddir)" freshconf;\
 	fi
 
 # End of cmd.src/Makefile.in

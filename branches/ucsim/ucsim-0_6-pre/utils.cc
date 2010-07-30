@@ -109,24 +109,22 @@ get_string_id(struct id_element *ids, char *str, int def)
 }
 
 
-extern "C" int vasprintf(char **strp, const  char *format, va_list ap);
-extern "C" int vsnprintf(char *str, size_t size,const char *format,va_list ap);
-
 static char *
 vformat_string(char *format, va_list ap)
 {
-#ifdef HAVE_VASPRINTF
   char *msg= NULL;
-  vasprintf(&msg, format, ap);
+#ifdef HAVE_VASPRINTF
+  if (0 > vasprintf(&msg, format, ap))
+    msg = NULL;
   return(msg);
 #else
 #  ifdef HAVE_VSNPRINTF
-  char *msg= (char*)malloc(80*25);
+  msg = (char*)malloc(80*25);
   vsnprintf(msg, 80*25, format, ap);
   return(msg);
 #  else
 #    ifdef HAVE_VPRINTF
-  char *msg= (char*)malloc(80*25);
+  msg = (char*)malloc(80*25);
   vsprintf(msg, format, ap); /* Dangerous */
   return(msg);
 #    endif

@@ -2,7 +2,7 @@
  * Simulator of microcontrollers (cmd.src/bp.cc)
  *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
- * 
+ *
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
  *
  */
@@ -104,12 +104,12 @@ cl_break_cmd::do_fetch(class cl_uc *uc,
     {
       class cl_brk *b= new cl_fetch_brk(uc->address_space(MEM_ROM_ID),
 					uc->make_new_brknr(),
-					addr, perm, hit);
+                                        addr, perm, hit);
       b->init();
       uc->fbrk->add_bp(b);
-      char *s= uc->disass(addr, NULL);
+      const char *s= uc->disass(addr, NULL);
       con->dd_printf("Breakpoint %d at 0x%06x: %s\n", b->nr, addr, s);
-      free(s);
+      free((char *)s);
     }
 }
 
