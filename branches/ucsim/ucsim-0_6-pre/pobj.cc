@@ -84,6 +84,14 @@ cl_base::get_name(char *def)
   return(name);
 }
 
+/*char *
+cl_base::get_name(const char *def)
+{
+  if (!name)
+    return((char*)def);
+  return(name);
+  }*/
+
 char *
 cl_base::set_name(char *new_name)
 {

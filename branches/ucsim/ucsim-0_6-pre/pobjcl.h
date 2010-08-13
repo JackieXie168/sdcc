@@ -61,10 +61,13 @@ public:
   virtual int init(void);
   virtual char *get_name(void) { return(name); }
   virtual char *get_name(char *def);
+  virtual char *get_name(const char *def) { return get_name((char*)def); }
   virtual bool have_name(void) { return(name != 0); }
   virtual bool have_real_name(void) { return(name != 0 && *name != '\0'); }
   char *set_name(char *new_name);
   char *set_name(char *new_name, char *def_name);
+  char *set_name(char *new_name, const char *def_name)
+  { return(set_name(new_name, (char*)def_name)); }
   bool is_named(char *the_name);
   bool is_inamed(char *the_name);
 
