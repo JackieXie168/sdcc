@@ -235,12 +235,12 @@ static void
 _mcs51_genExtraAreas(FILE *of, bool hasMain)
 {
   tfprintf (of, "\t!area\n", HOME_NAME);
-  tfprintf (of, "\t!area\n", "GSINIT0 (CSEG)");
-  tfprintf (of, "\t!area\n", "GSINIT1 (CSEG)");
-  tfprintf (of, "\t!area\n", "GSINIT2 (CSEG)");
-  tfprintf (of, "\t!area\n", "GSINIT3 (CSEG)");
-  tfprintf (of, "\t!area\n", "GSINIT4 (CSEG)");
-  tfprintf (of, "\t!area\n", "GSINIT5 (CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT0\t(CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT1\t(CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT2\t(CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT3\t(CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT4\t(CSEG)");
+  tfprintf (of, "\t!area\n", "GSINIT5\t(CSEG)");
   tfprintf (of, "\t!area\n", STATIC_NAME);
   tfprintf (of, "\t!area\n", port->mem.post_static_name);
   tfprintf (of, "\t!area\n", CODE_NAME);
