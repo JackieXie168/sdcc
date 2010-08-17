@@ -1,3 +1,12 @@
+2010-08-17 Borut Razem <borut.razem AT siol.net>
+
+	* sdas/as8051/Makefile.in, sdas/asz80/Makefile.in,
+	  sdas/as6808/Makefile.in, sdas/asgb/Makefile.in,
+	  sdas/as8xcxxx/Makefile.in:
+	  define symbols SDCDB and NOICE
+	* sdas/asxxsrc/asdbg.c:
+	  fix for bug 3041470: use dbuf to dynamically allocate debug symbol
+
 2010-03-08 Borut Razem <borut.razem AT siol.net>
 
 	* */*: merged with changes from main branch, revision #5728

@@ -29,6 +29,7 @@
  */
 
 #include "asxxxx.h"
+#include "dbuf_string.h"
 
 /*)Module	asdbg.c
  *
@@ -85,15 +86,18 @@
 VOID
 DefineSDCC_Line()
 {
-	char name[ NCPS ];
+	struct dbuf_s dbuf;
         struct sym *pSym;
 
 	/*
 	 * Symbol is A$FILE$nnn
 	 */
-        sprintf( name, "A$%s$%u", BaseFileName( asmc ), srcline );
+	dbuf_init (&dbuf, NCPS);
+	dbuf_printf (&dbuf, "A$%s$%u", BaseFileName( asmc ), srcline);
 
-        pSym = lookup( name );
+	pSym = lookup (dbuf_c_str (&dbuf));
+	dbuf_destroy (&dbuf);
+
         pSym->s_type = S_USER;
         pSym->s_area = dot.s_area;
         pSym->s_addr = laddr;
@@ -132,15 +136,18 @@ DefineSDCC_Line()
 VOID
 DefineNoICE_Line()
 {
-	char name[ NCPS ];
+	struct dbuf_s dbuf;
         struct sym *pSym;
 
 	/*
 	 * Symbol is FILE.nnn
 	 */
-        sprintf( name, "%s.%u", BaseFileName( asmc ), srcline );
+	dbuf_init (&dbuf, NCPS);
+	dbuf_printf (&dbuf, "%s.%u", BaseFileName( asmc ), srcline);
 
-        pSym = lookup( name );
+	pSym = lookup (dbuf_c_str (&dbuf));
+	dbuf_destroy (&dbuf);
+
         pSym->s_type = S_USER;
         pSym->s_area = dot.s_area;
         pSym->s_addr = laddr;
