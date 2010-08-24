@@ -60,7 +60,7 @@
  *
  */
 
-cl_option::cl_option(class cl_base *the_creator, char *aname, char *Ihelp):
+cl_option::cl_option(class cl_base *the_creator, char *aname, const char *Ihelp):
   cl_base()
 {
   creator= the_creator;
@@ -168,6 +168,11 @@ cl_option::set_value(char *opt)
   inform_users();
 }
 
+void
+cl_option::set_value(const char *opt)
+{
+  set_value(cchars(opt));
+}
 
 void
 cl_option::get_value(void **val)
@@ -253,7 +258,7 @@ cl_options::del_option(class cl_option *opt)
 }
 
 class cl_option *
-cl_options::get_option(char *the_name)
+cl_options::get_option(const char *the_name)
 {
   t_index idx;
 
@@ -263,7 +268,7 @@ cl_options::get_option(char *the_name)
 }
 
 class cl_option *
-cl_options::get_option(char *the_name, class cl_base *creator)
+cl_options::get_option(const char *the_name, class cl_base *creator)
 {
   t_index idx;
   class cl_option *o;
@@ -301,7 +306,7 @@ cl_options::get_option(char *the_name, class cl_base *creator)
 }
 
 class cl_option *
-cl_options::get_option(char *the_name, char *creator)
+cl_options::get_option(const char *the_name, char *creator)
 {
   t_index idx;
   class cl_option *o;
@@ -376,7 +381,7 @@ cl_options::nuof_options(char *the_name, char *creator)
 }
 
 class cl_option *
-cl_options::set_value(char *the_name, cl_base *creator, bool value)
+cl_options::set_value(const char *the_name, cl_base *creator, bool value)
 {
   class cl_option *o= get_option(the_name, creator);
 
@@ -386,7 +391,7 @@ cl_options::set_value(char *the_name, cl_base *creator, bool value)
 }
 
 class cl_option *
-cl_options::set_value(char *the_name, cl_base *creator, char *value)
+cl_options::set_value(const char *the_name, cl_base *creator, char *value)
 {
   class cl_option *o= get_option(the_name, creator);
 
@@ -396,7 +401,7 @@ cl_options::set_value(char *the_name, cl_base *creator, char *value)
 }
 
 class cl_option *
-cl_options::set_value(char *the_name, cl_base *creator, void *value)
+cl_options::set_value(const char *the_name, cl_base *creator, void *value)
 {
   class cl_option *o= get_option(the_name, creator);
 
@@ -406,7 +411,7 @@ cl_options::set_value(char *the_name, cl_base *creator, void *value)
 }
 
 class cl_option *
-cl_options::set_value(char *the_name, cl_base *creator, long value)
+cl_options::set_value(const char *the_name, cl_base *creator, long value)
 {
   class cl_option *o= get_option(the_name, creator);
 
@@ -416,7 +421,7 @@ cl_options::set_value(char *the_name, cl_base *creator, long value)
 }
 
 class cl_option *
-cl_options::set_value(char *the_name, cl_base *creator, double value)
+cl_options::set_value(const char *the_name, cl_base *creator, double value)
 {
   class cl_option *o= get_option(the_name, creator);
 
@@ -639,7 +644,7 @@ cl_optref::get_value(double)
  */
 
 cl_bool_option::cl_bool_option(class cl_base *the_creator,
-			       char *aname, char *Ihelp):
+			       char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
@@ -678,7 +683,7 @@ cl_bool_option::set_value(char *s)
  */
 
 cl_string_option::cl_string_option(class cl_base *the_creator,
-				   char *aname, char *Ihelp):
+				   char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
@@ -708,7 +713,7 @@ cl_string_option::print(class cl_console *con)
  */
 
 cl_pointer_option::cl_pointer_option(class cl_base *the_creator,
-				     char *aname, char *Ihelp):
+				     char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
@@ -735,7 +740,7 @@ cl_pointer_option::print(class cl_console *con)
 /*
 cl_cons_debug_opt::cl_cons_debug_opt(class cl_app *the_app,
 				     char *Iid,
-				     char *Ihelp):
+				     const char *Ihelp):
   cl_option(0, Iid, Ihelp)
 {
   app= the_app;
@@ -797,7 +802,7 @@ cl_cons_debug_opt::set_value(char *s)
  */
 
 cl_number_option::cl_number_option(class cl_base *the_creator,
-				   char *aname, char *Ihelp):
+				   char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
@@ -823,7 +828,7 @@ cl_number_option::set_value(char *s)
  */
 
 cl_float_option::cl_float_option(class cl_base *the_creator,
-				 char *aname, char *Ihelp):
+				 char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 

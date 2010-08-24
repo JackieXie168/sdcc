@@ -104,8 +104,8 @@ public:
   cl_cmd(enum cmd_operate_on opon,
 	 char *aname,
 	 int  can_rep,
-	 char *short_hlp,
-	 char *long_hlp);
+	 const char *short_hlp,
+	 const char *long_hlp);
   virtual ~cl_cmd(void);
 
   virtual class cl_cmdset *get_subcommands(void) { return(0); }
@@ -135,8 +135,8 @@ class CLASS_NAME : public ANCESTOR \
 public:\
   CLASS_NAME (char *aname,\
               int  can_rep,\
-              char *short_help,\
-              char *long_help):\
+              const char *short_help,\
+              const char *long_help):\
     cl_cmd(operate_on_none, aname, can_rep, short_help, long_help) {}\
   virtual int do_work(class cl_cmdline *cmdline, class cl_console *con);
 
@@ -144,8 +144,8 @@ public:\
 public:\
   CLASS_NAME (char *aname,\
               int  can_rep,\
-              char *short_help,\
-              char *long_help):\
+              const char *short_help,\
+              const char *long_help):\
     cl_cmd(operate_on_ ## ON, aname, can_rep, short_help, long_help) {}\
   virtual int do_work(class cl_ ## ON * ON ,\
 		      class cl_cmdline *cmdline, class cl_console *con);
@@ -154,8 +154,8 @@ public:\
 public:\
   CLASS_NAME (char *aname,\
               int  can_rep,\
-              char *short_help,\
-              char *long_help):\
+              const char *short_help,\
+              const char *long_help):\
     ANCESTOR (aname, can_rep, short_help, long_help) {}\
   virtual int do_work(class cl_cmdline *cmdline, class cl_console *con);
 
@@ -163,8 +163,8 @@ public:\
 public:\
   CLASS_NAME (char *aname,\
               int  can_rep,\
-              char *short_help,\
-              char *long_help):\
+              const char *short_help,\
+              const char *long_help):\
     ANCESTOR (aname, can_rep, short_help, long_help) {}\
   virtual int do_work(class cl_ ## ON * ON ,\
 		      class cl_cmdline *cmdline, class cl_console *con); \
@@ -253,8 +253,8 @@ public:
 public:
   cl_super_cmd(char *aname,
 	       int  can_rep,
-	       char *short_hlp,
-	       char *long_hlp,
+	       const char *short_hlp,
+	       const char *long_hlp,
 	       class cl_cmdset *acommands);
   virtual ~cl_super_cmd(void);
 

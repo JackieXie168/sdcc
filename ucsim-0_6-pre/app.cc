@@ -134,7 +134,7 @@ int
 cl_app::init(int argc, char *argv[])
 {
   cl_base::init();
-  set_name("application");
+  set_name(cchars("application"));
   mk_options();
   proc_arguments(argc, argv);
   class cl_cmdset *cmdset= new cl_cmdset();
@@ -268,7 +268,7 @@ cl_app::proc_arguments(int argc, char *argv[])
 	  // By Sandeep
 	  // Modified by DD
 	  class cl_option *o;
-	  options->new_option(o= new cl_number_option(this, "port_number",
+	  options->new_option(o= new cl_number_option(this, cchars("port_number"),
 						      "Listen on port (-Z)"));
 	  o->init();
 	  o->hide();
@@ -455,7 +455,7 @@ cl_app::proc_arguments(int argc, char *argv[])
 	    }
 	break;
       case 'h':
-	print_help("s51");
+	print_help(cchars("s51"));
 	exit(0);
 	break;
       case 'H':

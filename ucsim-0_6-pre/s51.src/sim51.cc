@@ -61,10 +61,10 @@ cl_sim51::mk_controller(void)
   class cl_optref type_option(this);
 
   type_option.init();
-  type_option.use("cpu_type");
+  type_option.use(cchars("cpu_type"));
   i= 0;
   if ((typ= type_option.get_value(typ)) == NIL)
-    typ= "C51";
+    typ= cchars("C51");
   while ((cpus_51[i].type_str != NULL) &&
 	 (strcmp(typ, cpus_51[i].type_str) != 0))
     i++;

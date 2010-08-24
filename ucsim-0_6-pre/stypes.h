@@ -41,7 +41,7 @@ typedef TYPE_WORD	t_smem;		/* signed 16 bit memory */
 struct id_element
 {
   int id;
-  char *id_string;
+  const char *id_string;
 };
 
 enum error_type {
@@ -70,7 +70,7 @@ struct name_entry
 
 struct cpu_entry
 {
-  char *type_str;
+  const char *type_str;
   int  type;
   int  technology;
 };
@@ -114,11 +114,11 @@ enum mem_class
   MEM_TYPES
 };
 
-#define MEM_ROM_ID	"rom"
-#define MEM_SFR_ID	"sfr"
-#define MEM_XRAM_ID	"xram"
-#define MEM_IXRAM_ID	"ixram"
-#define MEM_IRAM_ID	"iram"
+#define MEM_ROM_ID	cchars("rom")
+#define MEM_SFR_ID	cchars("sfr")
+#define MEM_XRAM_ID	cchars("xram")
+#define MEM_IXRAM_ID	cchars("ixram")
+#define MEM_IRAM_ID	cchars("iram")
 
 // States of simulator
 #define SIM_NONE	0

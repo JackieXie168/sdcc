@@ -284,6 +284,17 @@ cl_list::cl_list(t_index alimit, t_index adelta, char *aname):
   set_name(aname, "unnamed list");
 }
 
+cl_list::cl_list(t_index alimit, t_index adelta, const char *aname):
+  cl_base()
+{
+  count= 0;
+  Items= 0;
+  Limit= 0;
+  Delta= adelta;
+  set_limit(alimit);
+  set_name(aname, "unnamed list");
+}
+
 
 /* 
  * Disposing object's variables
@@ -692,6 +703,12 @@ cl_sorted_list::cl_sorted_list(t_index alimit, t_index adelta, char *aname):
   Duplicates= DD_FALSE;
 }
 
+cl_sorted_list::cl_sorted_list(t_index alimit, t_index adelta, const char *aname):
+  cl_list(alimit, adelta, aname)
+{
+  Duplicates= DD_FALSE;
+}
+
 
 cl_sorted_list::~cl_sorted_list(void) {}
 
@@ -799,6 +816,12 @@ cl_strings::cl_strings(t_index alimit, t_index adelta, char *aname):
   Duplicates= DD_TRUE;
 }
 
+cl_strings::cl_strings(t_index alimit, t_index adelta, const char *aname):
+  cl_sorted_list(alimit, adelta, aname)
+{
+  Duplicates= DD_TRUE;
+}
+
 
 cl_strings::~cl_strings(void) {}
 
@@ -840,6 +863,9 @@ cl_ustrings::cl_ustrings(t_index alimit, t_index adelta, char *aname):
   cl_strings(alimit, adelta, aname)
 {}
 
+cl_ustrings::cl_ustrings(t_index alimit, t_index adelta, const char *aname):
+  cl_strings(alimit, adelta, aname)
+{}
 
 cl_ustrings::~cl_ustrings(void) {}
 
