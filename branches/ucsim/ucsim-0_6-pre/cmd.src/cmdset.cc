@@ -63,25 +63,26 @@ COMMAND_DO_WORK_SIM(cl_run_cmd)
   if (params[0])
     if (!(params[0]->get_address(sim->uc, &start)))
       {
-	con->dd_printf("Error: wrong start address\n");
+	con->dd_printf(cchars("Error: wrong start address\n"));
 	return(DD_FALSE);
       }
   if (params[1])
     if (!(params[1]->get_address(sim->uc, &end)))
       {
-	con->dd_printf("Error: wromg end address\n");
+	con->dd_printf(cchars("Error: wromg end address\n"));
 	return(DD_FALSE);
       }
   if (params[0])
     {
       if (!sim->uc->inst_at(start))
-	con->dd_printf("Warning: maybe not instruction at 0x%06lx\n", start);
+	con->dd_printf(cchars("Warning: maybe not instruction at 0x%06lx\n"),
+		       start);
       sim->uc->PC= start;
       if (params[1])
 	{
 	  if (start == end)
 	    {
-	      con->dd_printf("Addresses must be different.\n");
+	      con->dd_printf(cchars("Addresses must be different.\n"));
 	      return(DD_FALSE);
 	    }
 	  if ((b= sim->uc->fbrk_at(end)))
@@ -96,7 +97,7 @@ COMMAND_DO_WORK_SIM(cl_run_cmd)
 	    }
 	}
     }
-  con->dd_printf("Simulation started, PC=0x%06x\n", sim->uc->PC);
+  con->dd_printf(cchars("Simulation started, PC=0x%06x\n"), sim->uc->PC);
   if (sim->uc->fbrk_at(sim->uc->PC))
     sim->uc->do_inst(1);
 

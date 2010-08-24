@@ -68,6 +68,8 @@ public:
   char *set_name(char *new_name, char *def_name);
   char *set_name(char *new_name, const char *def_name)
   { return(set_name(new_name, (char*)def_name)); }
+  char *set_name(const char *new_name, const char *def_name)
+  { return set_name((char*)new_name, (char*)def_name); }
   bool is_named(char *the_name);
   bool is_inamed(char *the_name);
 
@@ -123,6 +125,7 @@ protected:
 
 public:
   cl_list(t_index alimit, t_index adelta, char *aname);
+  cl_list(t_index alimit, t_index adelta, const char *aname);
   virtual ~cl_list(void);
 
 	  void	   *at(t_index index);
@@ -172,6 +175,7 @@ public:
   bool		   Duplicates;
 public:
   cl_sorted_list(t_index alimit, t_index adelta, char *aname);
+  cl_sorted_list(t_index alimit, t_index adelta, const char *aname);
   virtual ~cl_sorted_list(void);
   
   virtual bool	   search(void *key, t_index& index);
@@ -194,6 +198,7 @@ class cl_strings: public cl_sorted_list
 {
 public:
   cl_strings(t_index alimit, t_index adelta, char *aname);
+  cl_strings(t_index alimit, t_index adelta, const char *aname);
   virtual ~cl_strings(void);
   
 private:
@@ -213,6 +218,7 @@ class cl_ustrings: public cl_strings
 {
 public:
   cl_ustrings(t_index alimit, t_index adelta, char *aname);
+  cl_ustrings(t_index alimit, t_index adelta, const char *aname);
   virtual ~cl_ustrings(void);
   
 private:

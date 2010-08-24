@@ -409,6 +409,22 @@ cl_console::dd_printf(char *format, ...)
 }
 
 int
+cl_console::dd_printf(const char *format, ...)
+{
+  va_list ap;
+  int ret= 0;
+  FILE *Out= rout?rout:out;
+
+  if (Out)
+    {
+      va_start(ap, format);
+      ret= cmd_do_print(Out, cchars(format), ap);
+      va_end(ap);
+    }
+  return(ret);
+}
+
+int
 cl_console::debug(char *format, ...)
 {
   if ((flags & CONS_DEBUG) == 0)

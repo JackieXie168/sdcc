@@ -18,6 +18,13 @@ chars::chars(char *s)
   allocate_string(s);
 }
 
+chars::chars(const char *s)
+{
+  chars_string= 0;
+  chars_length= 0;
+  allocate_string((char*)s);
+}
+
 chars::chars(const chars &cs)
 {
   chars_string= 0;
@@ -184,6 +191,25 @@ bool
 operator!=(const char *s, const chars &cs)
 {
   return(!(chars(cs)).equal((char*)s));
+}
+
+
+void
+cchars::allocate_string(char *s)
+{
+  deallocate_string();
+  if (s)
+    {
+      chars_length= strlen(s);
+      chars_string= s
+    }
+}
+
+void
+cchars::deallocate_string(void)
+{
+  chars_string= 0;
+  chars_length= 0;
 }
 
 

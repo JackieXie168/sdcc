@@ -140,7 +140,7 @@ public:
 class cl_hws: public cl_list
 {
 public:
-  cl_hws(void): cl_list(2, 2, "hws") {}
+ cl_hws(void): cl_list(2, 2, cchars("hws")) {}
   virtual t_index add(void *item);
   virtual void mem_cell_changed(class cl_address_space *mem, t_addr addr);
   virtual void address_space_added(class cl_address_space *as);

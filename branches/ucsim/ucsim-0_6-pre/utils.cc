@@ -75,7 +75,7 @@ get_id_string(struct id_element *ids, int id)
   while (ids[i].id_string &&
 	 id != ids[i].id)
     i++;
-  return(ids[i].id_string);
+  return(cchars(ids[i].id_string));
 }
 
 char *
@@ -176,7 +176,7 @@ object_name(class cl_base *o)
   if (name &&
       *name)
     return(name);
-  return("(unkown)");
+  return(cchars("(unkown)"));
 }
 
 

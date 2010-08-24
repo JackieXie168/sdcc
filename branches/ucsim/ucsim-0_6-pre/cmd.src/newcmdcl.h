@@ -98,7 +98,14 @@ public:
  * Command console
  */
 
-class cl_console: public cl_base
+class cl_console_base: public cl_base
+{
+ public:
+ cl_console_base(void): cl_base()
+    {}
+};
+
+class cl_console: public cl_console_base
 {
   friend class cl_commander;
 protected:
@@ -116,7 +123,7 @@ public:
   char *prompt;
   
 public:
-  cl_console(void): cl_base()
+  cl_console(void): cl_console_base()
   {
     app= 0;
     in= out= 0;
@@ -143,6 +150,7 @@ public:
   int cmd_do_print(FILE *f, char *format, va_list ap);
   virtual void print_prompt(void);
   virtual int  dd_printf(char *format, ...);
+  virtual int  dd_printf(const char *format, ...);
   virtual int  debug(char *format, ...);
   virtual void print_bin(long data, int bits);
   virtual void print_char_octal(char c);

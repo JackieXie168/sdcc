@@ -12,14 +12,15 @@ private:
 public:
   chars(void);
   chars(char *s);
+  chars(const char *s);
   chars(const chars &cs);
   virtual ~chars(void);
 private:
-  void allocate_string(char *s);
-  void deallocate_string(void);
+  virtual void allocate_string(char *s);
+  virtual void deallocate_string(void);
 
 public:
-  chars &append(char *s);
+  virtual chars &append(char *s);
 
 public:
   // Operators
@@ -51,6 +52,16 @@ extern bool operator==(const char *s, const chars &cs);
 extern bool operator!=(char *s, const chars &cs);
 extern bool operator!=(const char *s, const chars &cs);
 
+
+class cchars: public chars
+{
+ public:
+  cchars(const char *s);
+  virtual ~cchars(void);
+ private:
+  virtual void allocate_string(const char *s);
+  virtual void deallocate_string(void);
+};
 
 #endif
 

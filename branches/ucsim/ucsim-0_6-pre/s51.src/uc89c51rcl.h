@@ -32,6 +32,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #include "uc51rcl.h"
 
+#include "newcmdcl.h"
+
 
 class cl_uc89c51r: public cl_uc51r
 {

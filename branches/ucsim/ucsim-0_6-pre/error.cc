@@ -112,7 +112,7 @@ cl_error_class::get_name(void)
 char *
 cl_error_class::get_type_name()
 {
-  return(get_id_string(error_type_names, type, "untyped"));
+  return(get_id_string(error_type_names, type, cchars("untyped")));
   /*switch (type)
     {
     case err_unknown: return("unclassified"); break;
@@ -129,7 +129,7 @@ cl_error_class::get_type_name()
 cl_error::cl_error(void):
   cl_base()
 {
-  classification= error_registry.find("non-classified");
+  classification= error_registry.find(cchars("non-classified"));
 
 }
 
@@ -170,20 +170,20 @@ cl_error::is_on(void)
 void
 cl_error::print(class cl_commander *c)
 {
-  c->dd_printf("%s\n", get_type_name());
+  c->dd_printf(cchars("%s\n"), get_type_name());
 }
 
 char *
 cl_error::get_type_name()
 {
   enum error_type type= get_type();
-  return(get_id_string(error_type_names, type, "untyped"));
+  return(get_id_string(error_type_names, type, cchars("untyped")));
 }
 
 cl_error_registry::cl_error_registry(void)
 {
-  if (NULL == error_registry.find("non-classified"))
-    register_error(new cl_error_class(err_error, "non-classified", ERROR_ON));
+  if (NULL == error_registry.find(cchars("non-classified")))
+    register_error(new cl_error_class(err_error, cchars("non-classified"), ERROR_ON));
 }
 
 /* End of sim.src/error.cc */
