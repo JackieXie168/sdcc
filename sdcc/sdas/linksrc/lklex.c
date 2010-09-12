@@ -35,10 +35,10 @@
  *		int	get()
  *		VOID	getfid()
  *		VOID	getid()
- *		int	as_getline()
  *		int	getmap()
  *		int	getnb()
  *		int	more()
+ *		int	nxtline()
  *		VOID	skip()
  *		VOID	unget()
  *
@@ -361,15 +361,15 @@ int d;
 	return (c);
 }
 
-/*)Function	int	as_getline()
+/*)Function	int	nxtline()
  *
- *	The function as_getline() reads a line of input text from a
+ *	The function nxtline() reads a line of input text from a
  *	.rel source text file, a .lnk command file or from stdin.
  *	Lines of text are processed from a single .lnk file or
  *	multiple .rel files until all files have been read.
  *	The input text line is copied into the global string ib[]
  *	and converted to a NULL terminated string.  The function
- *	as_getline() returns a (1) after succesfully reading a line
+ *	nxtline() returns a (1) after succesfully reading a line
  *	or a (0) if all files have been read.
  *	This function also opens each input .lst file and output
  *	.rst file as each .rel file is processed.
@@ -415,7 +415,7 @@ int d;
  */
 
 int
-as_getline()
+nxtline()
 {
 	int ftype;
 	char *fid;

@@ -38,12 +38,12 @@
  *		int	get()
  *		int	getdlm()
  *		VOID	getid()
- *		int	as_getline()
  *		int	getmap()
  *		int	getnb()
  *		int	getlnm()
  *		VOID	getst()
  *		int	more()
+ *		int	nxtline()
  *		int	replace()
  *		VOID	scanline()
  *		VOID	unget()
@@ -511,9 +511,9 @@ int flag;
 	return(1);
 }
 
-/*)Function	int	as_getline()
+/*)Function	int	nxtline()
  *
- *	The function as_getline() reads a line of assembler-source text
+ *	The function nxtline() reads a line of assembler-source text
  *	from an assembly source text file, include file, or macro.
  *	Lines of text are processed from assembler-source files until
  *	all files have been read.  If an include file is opened then
@@ -525,7 +525,7 @@ int flag;
  *	for internal processing by the assembler.  The function
  *	scanline() is called to process any .define substitutions
  *	in the assembler-source text line.  The function
- *	as_getline() returns a (1) after succesfully reading
+ *	nxtline() returns a (1) after succesfully reading
  *	a line,	or a (0) if all files have been read.
  *
  *	local variables:
@@ -640,7 +640,7 @@ int flag;
 
 #if 0
 int
-as_getline()
+nxtline()
 {
 	struct asmf *asmt;
 
@@ -760,7 +760,7 @@ loop:	if (asmc == NULL) return(0);
 		break;
 
 	default:
-		fprintf(stderr, "?ASxxxx-Internal-getline(objtyp)-Error.\n\n");
+		fprintf(stderr, "?ASxxxx-Internal-nxtline(objtyp)-Error.\n\n");
 		asexit(ER_FATAL);
 		break;
 	}
@@ -773,7 +773,7 @@ loop:	if (asmc == NULL) return(0);
 
 /* sdld specific */
 int
-as_getline()
+nxtline()
 {
 	struct asmf *asmt;
 	static struct dbuf_s dbuf;
@@ -903,7 +903,7 @@ loop:	if (asmc == NULL) return(0);
 		break;
 
 	default:
-		fprintf(stderr, "?ASxxxx-Internal-getline(objtyp)-Error.\n\n");
+		fprintf(stderr, "?ASxxxx-Internal-nxtline(objtyp)-Error.\n\n");
 		asexit(ER_FATAL);
 		break;
 	}
