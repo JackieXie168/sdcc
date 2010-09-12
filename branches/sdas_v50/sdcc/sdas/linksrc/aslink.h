@@ -869,7 +869,7 @@ extern	char	ccase[];	/*	an array of characters which
 extern	struct	lfile	*filep;	/*	The pointers (lfile *) filep,
 				 *	(lfile *) cfp, and (FILE *) sfp
 				 *	are used in conjunction with
-				 *	the routine as_getline() to read
+				 *	the routine nxtline() to read
 				 *	aslink commands from
 				 *	(1) the standard input or
 				 *	(2) or a command file
@@ -1110,10 +1110,10 @@ extern	char		endline(void);
 extern	int		get(void);
 extern	VOID		getfid(char *str, int c);
 extern	VOID		getid(char *id, int c);
-extern	int		as_getline(void);
 extern	int		getmap(int d);
 extern	int		getnb(void);
 extern	int		more(void);
+extern	int		nxtline(void);
 extern	VOID		skip(int c);
 extern	VOID		unget(int c);
 
@@ -1285,10 +1285,10 @@ extern	char		endline();
 extern	int		get();
 extern	VOID		getfid();
 extern	VOID		getid();
-extern	int		as_getline();
 extern	int		getmap();
 extern	int		getnb();
 extern	int		more();
+extern	int		nxtline();
 extern	VOID		skip();
 extern	VOID		unget();
 

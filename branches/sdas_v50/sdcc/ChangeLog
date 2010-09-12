@@ -1,5 +1,13 @@
 2010-08-17 Borut Razem <borut.razem AT siol.net>
 
+	* linksrc/lksym.c, linksrc/lkdata.c, linksrc/lklist.c,
+	  linksrc/lkbank.c, linksrc/lkmain.c, linksrc/lklex.c,
+	  linksrc/aslink.h, asxxsrc/aslist.c, asxxsrc/asmain.c,
+	  asxxsrc/asxxxx.h, asxxsrc/aslex.c, asxxsrc/asmcro.c,
+	  asxxsrc/asout.c: sync with asxxxx v5.0 patches u01500 and u02500
+
+2010-08-17 Borut Razem <borut.razem AT siol.net>
+
 	* sdas/as8051/Makefile.in, sdas/asz80/Makefile.in,
 	  sdas/as6808/Makefile.in, sdas/asgb/Makefile.in,
 	  sdas/as8xcxxx/Makefile.in:
@@ -10,7 +18,7 @@
 2010-03-08 Borut Razem <borut.razem AT siol.net>
 
 	* */*: merged with changes from main branch, revision #5728
-	* sdas\linksrc\aslink.dsp: adapted for sdas v50
+	* sdas/linksrc/aslink.dsp: adapted for sdas v50
 
 2010-01-31 Borut Razem <borut.razem AT siol.net>
 

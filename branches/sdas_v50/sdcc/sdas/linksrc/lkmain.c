@@ -54,6 +54,78 @@
  *
  */
 
+/* sdld 8051 & 6808 specific */
+/*JCF:	Creates some of the default areas so they are allocated in the right order.*/
+void Areas51 (void)
+{
+	char * rel[] = {
+		"XH",
+		"H 7 areas 0 global symbols",
+		"A _CODE size 0 flags 0",		/*Each .rel has one, so...*/
+		"A REG_BANK_0 size 0 flags 4",	/*Register banks are overlayable*/
+		"A REG_BANK_1 size 0 flags 4",
+		"A REG_BANK_2 size 0 flags 4",
+		"A REG_BANK_3 size 0 flags 4",
+		"A BSEG size 0 flags 80",		/*BSEG must be just before BITS*/
+		"A BSEG_BYTES size 0 flags 0",	/*Size will be obtained from BSEG in lnkarea()*/
+		""
+	};
+
+	char * rel2[] = {
+		"XH",
+		"H C areas 0 global symbols",
+		"A _CODE size 0 flags 0",		/*Each .rel has one, so...*/
+		"A REG_BANK_0 size 0 flags 4",	/*Register banks are overlayable*/
+		"A REG_BANK_1 size 0 flags 4",
+		"A REG_BANK_2 size 0 flags 4",
+		"A REG_BANK_3 size 0 flags 4",
+		"A BSEG size 0 flags 80",		/*BSEG must be just before BITS*/
+		"A BSEG_BYTES size 0 flags 0",	/*Size will be obtained from BSEG in lnkarea()*/
+		"A BIT_BANK size 0 flags 4",	/*Bit register bank is overlayable*/
+		"A DSEG size 0 flags 0",
+		"A OSEG size 0 flags 4",
+		"A ISEG size 0 flags 0",
+		"A SSEG size 0 flags 4",
+		""
+	};
+	int j;
+	struct sym * sp;
+/*
+	if (packflag) {
+		for (j = 0; rel2[j][0] != 0; j++) {
+			ip = rel2[j];
+			link_main();
+		}
+	}
+	else */ {
+		for (j = 0; rel[j][0] != 0; j++) {
+			ip = rel[j];
+			link();
+		}
+	}
+
+	/*Set the start address of the default areas:*/
+	for (ap = areap; ap; ap = ap->a_ap) {
+		/**/ if (!strcmp(ap->a_id, "REG_BANK_0")) { ap->a_addr = 0x00; /* ap->a_type = 1; */ }
+		else if (!strcmp(ap->a_id, "REG_BANK_1")) { ap->a_addr = 0x08; /* ap->a_type = 1; */ }
+		else if (!strcmp(ap->a_id, "REG_BANK_2")) { ap->a_addr = 0x10; /* ap->a_type = 1; */ }
+		else if (!strcmp(ap->a_id, "REG_BANK_3")) { ap->a_addr = 0x18; /* ap->a_type = 1; */ }
+		else if (!strcmp(ap->a_id, "BSEG_BYTES")) { ap->a_addr = 0x20; /* ap->a_type = 1; */ }
+		/* else if (TARGET_IS_8051 && !strcmp(ap->a_id, "SSEG")) {
+			if (stacksize) ap->a_axp->a_size = stacksize;
+		} */
+	}
+/*
+	if (TARGET_IS_8051) {
+		sp = lkpsym("l_IRAM", 1);
+		sp->s_addr = ((iram_size>0) && (iram_size<=0x100)) ? iram_size : 0x0100;
+		sp->s_axp = NULL;
+		sp->s_type |= S_DEF;
+	}
+*/
+}
+/* end sdld 8051 & 6808 specific */
+
 /*)Function	int	main(argc,argv)
  *
  *		int	argc		number of command line arguments + 1
@@ -62,7 +134,7 @@
  *
  *	The function main() evaluates the command line arguments to
  *	determine if the linker parameters are to input through 'stdin'
- *	or read from a command file.  The functiond as_getline() and parse()
+ *	or read from a command file.  The functiond nxtline() and parse()
  *	are to input and evaluate the linker parameters.  The linking process
  *	proceeds by making the first pass through each .rel file in the order
  *	presented to the linker.  At the end of the first pass the setbase(),
@@ -116,7 +188,6 @@
  *		VOID	chkbank()	lkbank.c
  *		int	fclose()	c_library
  *		int	fprintf()	c_library
- *		int	as_getline()	lklex.c
  *		VOID	library()	lklibr.c
  *		VOID	link()		lkmain.c
  *		VOID	lkexit()	lkmain.c
@@ -124,6 +195,7 @@
  *		VOID	lnkarea()	lkarea.c
  *		VOID	map()		lkmain.c
  *		VOID	new()		lksym.c
+ *		int	nxtline()	lklex.c
  *		int	parse()		lkmain.c
  *		VOID	reloc()		lkreloc.c
  *		VOID	search()	lklibr.c
@@ -262,7 +334,12 @@ char *argv[];
 		hp = NULL;
 		radix = 10;
 
-		while (as_getline()) {
+		/* sdld specific */
+		////if (TARGET_IS_8051 || TARGET_IS_6808)
+			Areas51(); /*JCF: Create the default 8051 areas in the right order*/
+		/* end sdld specific */
+
+		while (nxtline()) {
 			ip = ib;
 			link();
 		}
@@ -1033,7 +1110,7 @@ parse()
  *		int	fclose()	c_library
  *		int	fprintf()	c_library
  *		VOID	getfid()	lklex.c
- *		int	as_getline()	lklex.c
+ *		int	nxtline()	lklex.c
  *		int	parse()		lkmain.c
  *
  *	side effects:
@@ -1049,7 +1126,7 @@ doparse()
 	filep = startp;
 	while (1) {
 		ip = ib;
-		if (as_getline() == 0)
+		if (nxtline() == 0)
 			break;
 		if (pflag && cfp->f_type != F_STD)
 			fprintf(stdout, "ASlink >> %s\n", ip);

@@ -676,7 +676,7 @@ int *wpt, nb, n, f, g;
 			list2(*wpt++);
 			fprintf(lfp, frmt1, (*wp++)&0377);
 		} else {
-			fprintf(lfp, frmt2);
+			fprintf(lfp, "%s", frmt2);
 		}
 	}
 
@@ -685,7 +685,7 @@ int *wpt, nb, n, f, g;
 	 */
 	if (f) {
 		while (i++ < n) {
-			fprintf(lfp, frmt2);
+			fprintf(lfp, "%s", frmt2);
 		}
 	}
 
@@ -1012,7 +1012,7 @@ FILE *fp;
 				break;
 
 			}
-			fprintf(fp, frmt);
+			fprintf(fp, "%s", frmt);
 		} else {
 			sa = sp->s_addr & a_mask;
 #ifdef	LONGINT
