@@ -1,0 +1,26 @@
+# sdcc-builder profile
+
+# host name without domain
+HOSTNAME=`hostname | sed "s/^\([^.]*\).*$/\1/"`
+export HOSTNAME
+
+# dos utils aliases
+unix2dos -h > /dev/null 2>&1 || alias unix2dos=todos
+dos2unix -h > /dev/null 2>&1 || alias dos2unix=fromdos
+
+# this for svn
+EDITOR=vi
+export EDITOR
+
+# perl library
+PERL5LIB=${HOME}/local-${HOSTNAME}/lib/perl5/site_perl/5.10.0
+export PERL5LIB
+
+# shared libraries path
+LD_LIBRARY_PATH=${HOME}/local-${HOSTNAME}/lib
+export LD_LIBRARY_PATH
+
+# path
+# /usr/ccs/bin for Solaris
+PATH=${HOME}/local-${HOSTNAME}/bin:/usr/local/bin:/usr/ccs/bin:${PATH}
+export PATH

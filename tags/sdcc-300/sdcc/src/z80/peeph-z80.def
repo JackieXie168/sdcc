@@ -1,0 +1,2396 @@
+// peeph-z80.def - Z80 peephole rules
+//
+// Some of these peepholes could be potentially moved to peeph.def, but a
+// GBZ80 expert should have a look at them before.
+//
+// (c) Philipp Klaus Krause (pkk@spth.de, philipp@colecovision.eu) 2006 - 2010
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License as published by the
+// Free Software Foundation; either version 2, or (at your option) any
+// later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+replace restart {
+	ld	%1, %1
+} by {
+	; peephole -1 removed redundant load.
+} if notVolatile(%1)
+
+replace restart {
+	ld	%1, %2
+} by {
+	; peephole 0a removed dead load from %2 into %1.
+} if notVolatile(%1), notUsed(%1)
+// Should probably check for notVolatile(%2), too, but gives many false positives and no regression tests fail.
+
+replace restart {
+	ld	%1, %2
+	ld	%3, %1
+} by {
+	; peephole 0b loaded %3 from %2 directly instead of going through %1.
+	ld	%3, %2
+} if canAssign(%3 %2), notVolatile(%1), notUsed(%1)
+
+replace restart {
+	ld	%1, %2
+	ld	%3, %4
+	ld	%5, %1
+} by {
+	ld	%5, %2
+	; peephole 0b'-v5 loaded %5 from %2 directly instead of going through %1.
+	ld	%3, %4
+} if canAssign(%5 %2), notVolatile(%1), operandsNotRelated(%1 %4), operandsNotRelated(%1 %3), operandsNotRelated(%4 %5), notUsed(%1), notSame(%3 %4 '(hl)' '(de)' '(bc)'), notVolatile(%5)
+// Rule OK unless both %5 and %4 are volatile, but we can't express that diretly, so we need another rule.
+replace restart {
+	ld	%1, %2
+	ld	%3, %4
+	ld	%5, %1
+} by {
+	ld	%5, %2
+	; peephole 0b'-v4 loaded %5 from %2 directly instead of going through %1.
+	ld	%3, %4
+} if canAssign(%5 %2), notVolatile(%1), operandsNotRelated(%1 %4), operandsNotRelated(%1 %3), operandsNotRelated(%4 %5), notUsed(%1), notSame(%3 %4 '(hl)' '(de)' '(bc)'), notVolatile(%4)
+
+replace restart {
+	ld	%1, %2 (%3)
+	ld	%4, %1
+} by {
+	; peephole 0c1 loaded %2 (%3) into %4 directly instead of going through %1.
+	ld	%4, %2 (%3)
+} if canAssign(%4 %2 %3), notVolatile(%1), notUsed(%1)
+
+replace restart {
+	ld	%1, %2
+	ld	%3 (%4), %1
+} by {
+	; peephole 0c2 loaded %2 into %3 (%4) directly instead of going through %1.
+	ld	%3 (%4), %2
+} if canAssign(%3 %4 %2), notVolatile(%1), notUsed(%1)
+
+replace restart {
+	ld	%1, %2 (%3)
+	ld	%4, %5 (%6)
+	ld	%7, %1
+} by {
+	ld	%7, %2 (%3)
+	; peephole 0c3 loaded %2 (%3) into %7 directly instead of going through %1.
+	ld	%4, %5 (%6)
+} if canAssign(%7 %2 %3), notVolatile(%1), notUsed(%1), notSame(%1 %4), notSame(%7 %4)
+
+replace restart {
+	ld	%1, %7
+	ld	%5 (%6), %4
+	ld	%2 (%3), %1
+} by {
+	ld	%5 (%6), %4
+	; peephole 0c4 loaded %7 into %2 (%3) directly instead of going through %1.
+	ld	%2 (%3), %7
+} if canAssign(%2 %3 %7), notVolatile(%1), notUsed(%1), notSame(%1 %4)
+
+replace restart {
+	ld	%1, %2 (%3)
+	ld	%4, %5
+	ld	%7, %1
+} by {
+	ld	%7, %2 (%3)
+	; peephole 0c5 loaded %2 (%3) into %7 directly instead of going through %1.
+	ld	%4, %5
+} if canAssign(%7 %2 %3), notVolatile(%1), notUsed(%1), notSame(%1 %5), notSame(%7 %4), notSame(%4 '(hl)' '(de)' '(bc)')
+
+replace restart {
+	ld	%1,#%2
+	ld	a,%3 (%1)
+} by {
+	; peephole 0d loaded %2 into a directly instead of going through %1.
+	ld	a,(#%2 + %3)
+} if notUsed(%1)
+
+replace restart {
+	ld	hl,#%1
+	ld	a,(hl)
+} by {
+	ld	a,(#%1)
+	; peephole 0d' loaded a from (#%1) directly instead of using through hl.
+} if notUsed('hl')
+
+replace restart {
+	ld	hl,#%1 + %2
+	ld	a,(hl)
+} by {
+	; peephole 0d'' loaded %2 into a directly instead of using hl.
+	ld	a,(#%1 + %2)
+} if notUsed('hl')
+
+replace restart {
+	ld	hl,#%1
+	ld	(hl),a
+} by {
+	ld	(#%1),a
+	; peephole 0d''' loaded (#%1) from a directly instead of through hl.
+} if notUsed('hl')
+
+replace restart {
+	ld	hl,#%1 + %2
+	ld	(hl),a
+} by {
+	ld	(#%1 + %2),a
+	; peephole 0d'''' loaded (#%1) from a directly instead of through hl.
+} if notUsed('hl')
+
+replace restart {
+	srl	%1
+	ld	a,%1
+} by {
+	ld	a,%1
+	; peephole 0e shifted in a instead of %1.
+	srl	a
+} if notVolatile(%1), notUsed(%1)
+
+replace restart {
+	ld	%1,(hl)
+	ld	a,%2 (%3)
+	sub	a,%1
+} by {
+	ld	a,%2 (%3)
+	; peephole 0f used (hl) in sub directly instead of going through %1.
+	sub	a,(hl)
+} if notVolatile(%1), notUsed(%1)
+
+replace restart {
+	inc	bc
+	ld	l,c
+	ld	h,b
+} by {
+	ld	l,c
+	ld	h,b
+	; peephole 0g incremented in hl instead of bc.
+	inc	hl
+} if notUsed('bc')
+
+replace restart {
+	inc	de
+	ld	l,e
+	ld	h,d
+} by {
+	ld	l,e
+	ld	h,d
+	; peephole 0h incremented in hl instead of de.
+	inc	hl
+} if notUsed('de')
+
+replace restart {
+	ld	bc,#%2 + %3
+	ld	a,(bc)
+	ld	c,a
+} by {
+	; peephole 0j used hl for #%2 + %3 instead of bc, not going through a.
+	ld	hl,#%2 + %3
+	ld	c,(hl)
+} if notUsed('a'), notUsed('hl')
+
+replace restart {
+	ld	c,l
+	ld	b,h
+	ld	a,#%1
+	ld	(bc),a
+} by {
+	ld	c,l
+	ld	b,h
+	ld	(hl),#%1
+	; peephole 0j' loaded #%1 into (hl) instead of (bc).
+}
+
+replace restart {
+	ld	de,#%2 + %3
+	ld	a,(de)
+	ld	e,a
+} by {
+	; peephole 0j'' used hl for #%2 + %3 instead of de, not going through a.
+	ld	hl,#%2 + %3
+	ld	e,(hl)
+} if notUsed('a'), notUsed('hl'), notUsed('d')
+
+replace restart {
+	ex	de, hl
+	push	hl
+} by {
+	; peephole 0k pushed de directly instead of going through hl.
+	push	de
+} if notUsed('de'), notUsed('hl')
+
+replace restart {
+	ex	de, hl
+	push	de
+} by {
+	; peephole 0k' pushed hl directly instead of going through de.
+	push	hl
+} if notUsed('de'), notUsed('hl')
+
+replace restart {
+	ld	l,%1
+	ld	h,d
+	push	hl
+} by {
+	; peephole 0k'' pushed de instead of hl removing a load.
+	ld	e,%1
+	push	de
+} if notUsed('hl'), notUsed('e')
+
+replace restart {
+	ex	de, hl
+	push	bc
+	push	de
+} by {
+	; peephole 0l pushed hl directly instead of going through de.
+	push	bc
+	push	hl
+} if notUsed('de'), notUsed('hl')
+
+replace restart {
+	ld	l,c
+	ld	h,b
+	push	hl
+} by {
+	; peephole 0m pushed bc directly instead of going through hl.
+	push	bc
+} if notUsed('hl')
+
+replace restart {
+	ld	l,%1
+	ld	h,b
+	push	hl
+} by {
+	; peephole 0m' pushed bc instead of hl removing a load.
+	ld	c,%1
+	push	bc
+} if notUsed('hl'), notUsed('c')
+
+replace restart {
+	ld	c,l
+	ld	b,h
+	push	%1
+	push	bc
+} by {
+	; peephole 0m'' pushed hl directly instead of going through bc.
+	push	%1
+	push	hl
+} if notUsed('bc'), notSame(%1 'bc')
+
+replace restart {
+	ld	c,a
+	push	de
+	ld	a,c
+} by {
+	; peephole 0n removed redundant load of a through c.
+	push	de
+} if notUsed('c')
+
+replace restart {
+	ld	c, e
+	ld	b, d
+	ld	a, (bc)
+} by {
+	; peephole 0o used de directly instead of going through bc.
+	ld	a, (de)
+} if notUsed('bc')
+
+replace restart {
+	pop	de
+	ld	l, e
+	ld	h, d
+} by {
+	; peephole 0p popped hl directly instead of going through de.
+	pop	hl
+} if notUsed('de')
+
+replace restart {
+	pop	bc
+	ld	l, c
+	ld	h, b
+} by {
+	; peephole 0p' popped hl directly instead of going through bc.
+	pop	hl
+} if notUsed('bc')
+
+replace restart {
+	ld	%1 (ix), %2
+	ld	%3, %1 (ix)
+} by {
+	; peephole 0r loaded %3 from %2 instead of going through %1 (ix).
+	ld	%1 (ix), %2
+	ld	%3, %2
+}
+// Don't need to check for volatile, since ix is used for the stack.
+
+replace restart {
+	ld	%1, a
+	ld	%2, %3
+	ld	%4, %1
+} by {
+	; peephole 0t loaded %4 from a instead of going through %1.
+	ld	%1, a
+	ld	%2, %3
+	ld	%4, a
+} if notVolatile(%1), operandsNotRelated(%1 %3), operandsNotRelated(%1 %2)
+
+replace restart {
+	ld	%1,a
+	ld	a,%2
+	adc	a,#%3
+	ld	%4,%1
+} by {
+	ld	%1,a
+	; peephole 0t' loaded %4 from a instead of going through %1.
+	ld	%4,a
+	ld	a,%2
+	adc	a,#%3
+} if notVolatile(%1), operandsNotRelated(%1 %2), operandsNotRelated(%4 %2)
+
+replace restart {
+	ld	%1,a
+	ld	a,#%2
+	adc	a,#%3
+	ld	%4,%1
+} by {
+	ld	%1,a
+	; peephole 0t'' loaded %4 from a instead of going through %1.
+	ld	%4,a
+	ld	a,#%2
+	adc	a,#%3
+} if notVolatile(%1)
+
+replace restart {
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	ld	%3,(hl)
+	srl	%3
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	ld	(hl),%3
+} by {	
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	; peephole 0w shifted (hl) in place.
+	srl	(hl)
+	ld	%3,(hl)
+} if notVolatile(%3)
+// Don't check for volatile since ix points to the stack.
+
+replace restart {
+	push	af
+	inc	sp
+	ld	a,e
+	push	af
+	inc	sp
+} by {
+	; peephole 0x pushed de instead of pushing a twice.
+	ld	d,a
+	push	de
+} if notUsed('d'), notUsed('a')
+
+replace restart {
+	push	af
+	inc	sp
+	ld	a,#%1
+	push	af
+	inc	sp
+} by {
+	; peephole 0x' pushed de instead of pushing a twice.
+	ld	d,a
+	ld	e,#%1
+	push	de
+} if notUsed('de')
+
+replace restart {
+	push	af
+	inc	sp
+	ld	a,c
+	push	af
+	inc	sp
+} by {
+	; peephole 0y pushed bc instead of pushing a twice.
+	ld	b,a
+	push	bc
+} if notUsed('b'), notUsed('a')
+
+replace restart {
+	push	af
+	inc	sp
+	ld	a,#%1
+	push	af
+	inc	sp
+} by {
+	; peephole 0y' pushed bc instead of pushing a twice.
+	ld	b,a
+	ld	c,#%1
+	push	bc
+} if notUsed('bc')
+
+replace restart {
+	ld	a,#%1
+	ld	d,a
+} by {
+	; peephole 0z loaded #%1 into d directly instead of going through a.
+	ld	d,#%1
+} if notUsed('a')
+
+// Causes infinite loop.
+//replace restart {
+//	ld	%1,a
+//	ld	%2,%1
+//} by {
+//	; peephole 0z' loaded %2 from a directly instead of going through %1.
+//	ld	%1,a
+//	ld	%2,a
+//} if notVolatile(%1), operandsNotRelated(%1 'a')
+
+// Nerfed version:
+replace restart {
+	ld	%1,a
+	ld	%2,%1
+} by {
+	; peephole 0z'-nerfed loaded %2 from a directly instead of going through %1.
+	ld	%2,a
+} if notUsed(%1)
+
+replace restart {
+	ld	a,%1 (ix)
+	push	af
+	inc	sp
+	ld	a,%2 (ix)
+	push	af
+	inc	sp
+} by {
+	; peephole 0za pushed %1 (ix), %2(ix) through hl instead of af.
+	ld	h,%1 (ix)
+	ld	l,%2 (ix)
+	push	hl
+} if notUsed('a'), notUsed('hl')
+
+replace restart {
+	ld	c, l
+	ld	b, h
+	push	bc
+} by {
+	; peephole 0zb pushed hl instead of bc.
+	push	hl
+} if notUsed('bc')
+
+replace restart {
+	pop	%1
+	push	%1
+} by {
+	; peephole 0zc eleminated dead pop/push pair.
+} if notUsed(%1)
+
+replace restart {
+	inc	%1
+	dec	%1
+	push	%2
+	ld	%3, %4
+	inc	%1
+} by {
+	; peephole 0zc' eliminated dead inc/dec pair.
+	push	%2
+	ld	%3, %4
+	inc	%1
+} if operandsNotRelated(%2 'af')
+
+replace restart {
+	ld	iy,#%1
+	or	a,%2 (iy)
+} by {
+	; peephole 0zd used hl instead of iy.
+	ld	hl,#%1 + %2
+	or	a,(hl)
+} if notUsed('iy'), notUsed('hl')
+
+replace restart {
+	ld	iy,#%1
+	ld	%2,%3 (iy)
+} by {
+	; peephole 0ze used hl instead of iy.
+	ld	hl,#%1 + %3
+	ld	%2,(hl)
+} if notUsed('iy'), notUsed('hl')
+
+replace restart {
+	ld	iy,#%1
+	ld	%2 (iy),%3
+	ld	l,%2 (iy)
+} by {
+	; peephole 0ze' used hl instead of iy.
+	ld	hl,#%1 + %2
+	ld	(hl),%3
+	ld	l,(hl)
+} if notUsed('iy'), notUsed('h')
+
+replace restart {
+	ld	iy,#%1
+	ld	%2 (%3), %4
+} by {
+	; peephole 0zf used hl instead of iy.
+	ld	hl,#%1 + %2
+	ld	(hl), %4
+} if notUsed('iy'), notUsed('hl'), operandsNotRelated(%4 'h'), operandsNotRelated(%4 'l')
+
+replace restart {
+	ld	%1,(hl)
+	or	a,%1
+} by {
+	or	a,(hl)
+	; peephole 0zf' used (hl) directly instead of going through %1.
+} if notUsed(%1), operandsNotRelated(%1 'a')
+
+replace restart {
+	ld	e,l
+	ld	d,h
+	ld	%1,(de)
+} by {
+	; peephole 0zg loaded %1 from (hl) directly instead of going through (de).
+	ld	%1,(hl)
+} if notUsed('de')
+
+replace restart {
+	ld	c,l
+	ld	b,h
+	ld	%1,(bc)
+} by {
+	; peephole 0zh loaded %1 from (hl) directly instead of going through (bc).
+	ld	%1,(hl)
+} if notUsed('bc')
+
+replace restart {
+	ld	c,l
+	ld	b,h
+	inc	bc
+} by {
+	; peephole 0zi incremented in hl instead of bc.
+	inc	hl
+	ld	c,l
+	ld	b,h
+} if notUsed('hl')
+
+replace restart {
+	ld	a,%1 (%2)
+	bit	%3,a
+} by {
+	; peephole 0zj tested bit of %1 (%2) directly instead of going through a.
+	bit	%3,%1 (%2)
+} if notUsed('a')
+
+replace restart {
+	ld	a,b
+	bit	%1,a
+} by {
+	; peephole 0zj' tested bit %1 of b directly instead of going through a.
+	bit	%1,b
+} if notUsed('a')
+
+replace restart {
+	ld	a,d
+	bit	%1,a
+} by {
+	; peephole 0zj'' tested bit %1 of d directly instead of going through a.
+	bit	%1,d
+} if notUsed('a')
+
+replace restart {
+	ld	bc, #%1 + %2
+	ld	l,c
+	ld	h,b
+} by {
+	; peephole 0zk stored constant #%1 + %2 into hl directly instead of going through bc.
+	ld	hl, #%1 + %2
+} if notUsed('bc')
+
+replace restart {
+	ld	c, %1 (%2)
+	ld	b, %3 (%4)
+	ld	l,c
+	ld	h,b
+} by {
+	; peephole 0zk' stored %1 (%2) %3 (%4) into hl directly instead of going through bc.
+	ld	l, %1 (%2)
+	ld	h, %3 (%4)
+} if notUsed('bc')
+
+replace restart {
+	ld	c, %1
+	ld	b, %2
+	ld	l,c
+	ld	h,b
+} by {
+	; peephole 0zk'' stored %2%1 into hl directly instead of going through bc.
+	ld	l, %1
+	ld	h, %2
+} if notUsed('bc'), operandsNotRelated(%2 'l')
+
+replace restart {
+	jp	NC,%1
+	jp	%2
+%1:
+} by {
+	jp	C,%2
+	; peephole 3 removed jp by using inverse jump logic
+%1:
+} if labelRefCountChange(%1 -1)
+
+replace restart {
+	jp	C,%1
+	jp	%2
+%1:
+} by {
+	jp	NC,%2
+	; peephole 4 removed jp by using inverse jump logic
+%1:
+} if labelRefCountChange(%1 -1)
+
+replace restart {
+	jp	NZ,%1
+	jp	%2
+%1:
+} by {
+	jp	Z,%2
+	; peephole 5 removed jp by using inverse jump logic
+%1:
+} if labelRefCountChange(%1 -1)
+
+replace restart {
+	jp	Z,%1
+	jp	%2
+%1:
+} by {
+	jp	NZ,%2
+	; peephole 6 removed jp by using inverse jump logic
+%1:
+} if labelRefCountChange(%1 -1)
+
+replace restart {
+	ld	%1,#0x00
+	jp	%2
+%3:
+	ld	%1,#0x01
+%2:
+	bit	0,%1
+	jp	Z,%4
+} by {
+	ld	%1,#0x00
+	jp	%4
+	; peephole 6a redirected jump from %2 to %4
+%3:
+	ld	%1,#0x01
+%2:
+	bit	0,%1
+	jp	Z,%4
+} if labelRefCountChange(%2 -1), labelRefCountChange(%4 +1)
+
+// The following rule causes a SIGSEGV, Reenable it when the bug is fixed.
+//replace restart {
+//	jp      Z,%1
+//	ld      %4,#0x01
+//	jp      %2
+//%1:
+//	ld      %4,#0x00
+//%2:
+//	xor     a,a
+//	or      a,%4
+//	jp      Z,%3
+//} by {
+//	ld      %4,#0x00
+//	jp      Z,%3
+//	; peephole 6a' redirected jump from %2 to %3
+//	ld      %4,#0x01
+//	jp      %2
+//%1:
+//	ld      %4,#0x00
+//%2:
+//	xor     a,a
+//	or      a,%4
+//	jp      Z,%3
+//} if labelRefCountChange(%1 -1), labelRefCountChange(%3 +1)
+
+replace restart {
+	jp	%1
+	ld	%2, #%3
+%1:
+} by {
+	; peephole 6b removed unecessary jump.
+%1:
+} if labelRefCountChange(%1 -1)
+
+replace restart {
+	ld	%1,#0x01
+	xor	a,a
+	or	a,%1
+	jp	Z,%2
+} by {
+	ld	%1,#0x01
+	ld	a,%1
+	; peephole 6b' removed never taken conditional jump.
+} if labelRefCountChange(%2 -1)
+
+replace restart {
+	ld	%1, #0x01
+	bit	0,%1
+	jp	Z,%2
+} by {
+	ld	%1, #0x01
+	; peephole 6c eliminated conditional jump to %2
+} if labelRefCountChange(%2 -1)
+
+replace restart {
+	jp	%5
+} by {
+	jp	%6
+	; peephole 7 jumped to %6 directly instead of via %5.
+} if labelIsUncondJump(), notSame(%5 %6), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
+
+replace restart {
+	jp	%1,%5
+} by {
+	jp	%1,%6
+	; peephole 8 jumped to %6 directly instead of via %5.
+} if labelIsUncondJump(), notSame(%5 %6), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
+
+replace restart {
+	xor	a,a
+	ld	a,#0x00
+} by {
+	xor	a,a
+	; peephole 10 removed redundant load of 0 into a.
+}
+
+replace {
+	ld	e,#0x%1
+	ld	d,#0x%2
+} by {
+	ld	de,#0x%2%1
+	; peephole 11 combined constant loads into register pair.
+}
+
+replace {
+	ld	l,#0x%1
+	ld	h,#0x%2
+} by {
+	ld	hl,#0x%2%1
+	; peephole 12 combined constant loads into register pair.
+}
+
+replace {
+	ld	c,#0x%1
+	ld	b,#0x%2
+} by {
+	ld	bc,#0x%2%1
+	; peephole 13 combined constant loads into register pair.
+}
+
+replace restart {
+	ld	%1,a
+	ld	a,%1
+} by {
+	ld	%1,a
+	; peephole 14 removed redundant load from %1 into a.
+} if notVolatile(%1)
+// This gives many false negatives and without the test no problems are encountered in the regression tests
+// Maybe we can try this after 2.7.0 release
+
+replace restart {
+	ld	a,%1
+	ld	%1,a
+} by {
+	ld	a,%1
+	; peephole 15 removed redundant load from a into %1.
+} if notVolatile(%1)
+// This gives many false negatives and without the test no problems are encountered in the regression tests
+// Maybe we can try this after 2.7.0 release
+
+//replace restart {
+//	ld	%1,a
+//	ld	a,%2
+//	or	a,%1
+//} by {
+//	ld	%1,a
+//	or	a,%2
+//	; peephole 17a removed load by reordering or arguments.
+//} if notVolatile(%1)
+// Removed since it triggers for %2 of the form (#...
+
+replace restart {
+	ld	%1,a
+	ld	a,%2 (ix)
+	or	a,%1
+} by {
+	ld	%1,a
+	or	a,%2 (ix)
+	; peephole 17b removed load by reordering or arguments.
+} if notVolatile(%1)
+
+replace restart {
+	ld	%1,a
+	xor	a,a
+	or	a,%1
+} by {
+	ld	%1,a
+	or	a,a
+	; peephole 18 used value still in a instead of loading it from %1.
+}
+
+replace restart {
+	or	a,%1
+	or	a,a
+} by {
+	or	a,%1
+	; peephole 19 removed redundant or after or.
+}
+
+replace restart {
+	or	a,%1 (%2)
+	or	a,a
+} by {
+	or	a,%1 (%2)
+	; peephole 19a removed redundant or after or.
+}
+
+replace restart {
+	and	a,%1
+	or	a,a
+} by {
+	and	a,%1
+	; peephole 20 removed redundant or after and.
+}
+
+replace restart {
+	and	a,%1 (%2)
+	or	a,a
+} by {
+	and	a,%1 (%2)
+	; peephole 20a removed redundant or after and.
+}
+
+replace restart {
+	xor	a,%1
+	or	a,a
+} by {
+	xor	a,%1
+	; peephole 21 removed redundant or after xor.
+}
+
+replace restart {
+	xor	a,%1 (%2)
+	or	a,a
+} by {
+	xor	a,%1 (%2)
+	; peephole 21a removed redundant or after xor.
+}
+
+replace {
+	ld	%1,%2
+	ld	a,%2
+} by {
+	ld	a,%2
+	ld	%1,a
+	; peephole 23 load value in a first and use it next
+} if notVolatile(%1 %2)
+
+replace restart {
+	ld	%1,%2
+	ld	%3,%4
+	ld	%2,%1
+	ld	%4,%3
+} by {
+	ld	%1,%2
+	ld	%3,%4
+	; peephole 24 removed redundant load from %3%1 into %4%2
+} if notVolatile(%1 %2 %3 %4)
+
+replace restart {
+	ld	a,c
+	push	af
+	inc	sp
+	ld	a,#%2
+	push	af
+	inc	sp
+	call	%3
+} by {
+	ld	b,c
+	ld	c,#%2
+	push	bc
+	; peephole 31 moved and pushed arguments c and #%2 through bc instead of pushing them individually.
+	call	%3
+}
+
+replace restart {
+	ld	a,e
+	push	af
+	inc	sp
+	ld	a,#%2
+	push	af
+	inc	sp
+	call	%3
+} by {
+	ld	d,e
+	ld	e,#%2
+	push	de
+	; peephole 32 moved and pushed arguments e and #%2 through de instead of pushing them individually.
+	call	%3
+}
+
+replace restart {
+	push	de
+	inc	sp
+	ld	a,e
+	push	af
+	inc	sp
+} by {
+	push	de
+	; peephole 32' pushed de
+} if notUsed('a')
+
+replace restart {
+	ld	iy,%1
+	add	iy,sp
+	ld	sp,iy
+} by {
+	ld	hl,%1
+	add	hl,sp
+	ld	sp,hl
+	; peephole 32'' fixed stack using hl instead of iy.
+} if notUsed('hl'), notUsed('iy')
+
+replace restart {
+	ld	a,%1
+	sub	a,%2
+	jp	%3,%4
+	ld	a,%1
+} by {
+	ld	a,%1
+	cp	a,%2
+	jp	%3,%4
+	; peephole 33 removed load by replacing sub with cp
+	assert	a=%1
+} if notVolatile(%1)
+
+replace restart {
+	assert	a=%1
+	sub	a,%2
+	jp	%3,%4
+	ld	a,%1
+} by {
+	cp	a,#%2
+	jp	%3,%4
+	; peephole 34 removed load by replacing sub with cp
+	assert	a=%1
+}
+
+replace restart {
+	assert	a=%1
+} by {
+}
+
+replace restart {
+	sub	a,#0xFF
+	jp	Z,%1
+} by {
+	inc	a
+	; peephole 35 replaced sub a,#0xFF by inc a.
+	jp	Z,%1
+}
+
+replace restart {
+	sub	a,#0xFF
+	jp	NZ,%1
+} by {
+	inc	a
+	; peephole 36 replaced sub a,#0xFF by inc a.
+	jp	NZ,%1
+}
+
+replace restart {
+	ld	bc,#%1 + %2
+	ld	a,c
+	add	a,%3
+	ld	c,a
+	ld	a,b
+	adc	a,%4
+	ld	b,a
+} by {
+	ld	a,#<(%1 + %2)
+	add	a,%3
+	ld	c,a
+	ld	a,#>(%1 + %2)
+	; peephole 37 directly used (%1 + %2) in calculation instead of placing it in bc first.
+	adc	a,%4
+	ld	b,a
+}
+
+replace restart {
+	ld	de,#%1 + %2
+	ld	a,e
+	add	a,%3
+	ld	e,a
+	ld	a,d
+	adc	a,%4
+	ld	d,a
+} by {
+	ld	a,#<(%1 + %2)
+	add	a,%3
+	ld	e,a
+	ld	a,#>(%1 + %2)
+	; peephole 38 directly used (%1 + %2) in calculation instead of placing it in de first.
+	adc	a,%4
+	ld	d,a
+}
+
+replace restart {
+	rlca
+	ld	a,#0x00
+	rla
+} by {
+	rlca
+	and	a,#0x01
+	; peephole 39 replaced zero load, rla by and since rlca writes the same value to carry bit and least significant bit.
+}
+
+replace restart {
+	ld	%1,%2
+	push	%1
+	pop	%4
+	ld	%1,%3
+} by {
+	ld	%4,%2
+	; peephole 40 moved %2 directly into de instead of going through %1.
+	ld	%1,%3
+}
+
+replace restart {
+	add	a,#0x00
+	ld	%2,a
+	ld	a,%3
+	adc	a,%4
+} by {
+	; peephole 41 removed lower part of multibyte addition.
+	ld	%2,a
+	ld	a,%3
+	add	a,%4
+}
+
+replace restart {
+	ld	a, l
+	add	a, #0x%1
+	ld	l, a
+	ld	a, h
+	adc	a, #0x%2
+	ld	h, a
+} by {
+	ld	de, #0x%2%1
+	add	hl, de
+	; peephole 41a used 16-bit addition.
+	ld	a, h
+} if notUsed('de')
+
+replace restart {
+	ld	a, l
+	add	a, #0x%1
+	ld	l, a
+	ld	a, h
+	adc	a, #0x%2
+	ld	h, a
+} by {
+	ld	bc, #0x%2%1
+	add	hl, bc
+	; peephole 41b used 16-bit addition.
+	ld	a, h
+} if notUsed('bc')
+
+replace restart {
+	ld	a, l
+	add	a, #0x%1
+	ld	e, a
+	ld	a, h
+	adc	a, #0x%2
+	ld	d, a
+} by {
+	ld	de, #0x%2%1
+	add	hl, de
+	; peephole 41c used 16-bit addition.
+	ld	e, l
+	ld	d, h
+	ld	a, h
+}
+
+replace restart {
+	ld	a, l
+	add	a, #0x%1
+	ld	c, a
+	ld	a, h
+	adc	a, #0x%2
+	ld	b, a
+} by {
+	ld	bc, #0x%2%1
+	add	hl,bc
+	; peephole 41d used 16-bit addition.
+	ld	c, l
+	ld	b, h
+	ld	a, h
+}
+
+replace restart {
+	ld	%1,a
+	ld	a,%2
+	add	a,%1
+} by {
+	; peephole 42 removed loads by exploiting commutativity of addition.
+	add	a,%2
+} if notVolatile(%1), notUsed(%1), operandsNotRelated(%2 '(bc)' '(de)')
+
+replace restart {
+	ld	%1 (ix),a
+	ld	a,#%2
+	add	a,%1 (ix)
+} by {
+	ld	%1 (ix),a
+	; peephole 42a removed loads by exploiting commutativity of addition.
+	add	a,#%2
+}
+// Don't need to check for volatile, since ix is used to access the stack.
+
+// sdcc does not use the H flag. sla resets it, while add sets it.
+// To ensure that the state of the H flag is not changed by this
+// peephole uncomment the add %3, %4 at the end (since it overwrite the H flag).
+replace restart {
+	ld	%1, a
+	sla	%1
+	ld	a, %2
+	//add	%3, %4
+} by {
+	add	a, a
+	; peephole 42b shifted in accumulator insted of %1
+	ld	%1, a
+	ld	a, %2
+	//add	%3, %4
+}
+
+// sdcc does not use the H flag. sla resets it, while add sets it.
+// To ensure that the state of the H flag is not changed by this
+// peephole uncomment the add %3, %4 at the end (since it overwrite the H flag).
+replace restart {
+	ld	%1, a
+	sla	%1
+	sla	%1
+	ld	a, %2
+	//add	%3, %4
+} by {
+	add	a, a
+	add	a, a
+	; peephole 42b' shifted in accumulator insted of %1
+	ld	%1, a
+	ld	a, %2
+	//add	%3, %4
+}
+
+replace restart {
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	ld	a,(hl)
+	inc	a
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	ld	(hl),a
+} by {
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	inc	(hl)
+	; peephole 42c incremented in (hl) instead of going through a.
+} if notUsed('a')
+
+replace restart {
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	ld	a,(hl)
+	dec	a
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	ld	(hl),a
+} by {
+	ld	l,%1 (ix)
+	ld	h,%2 (ix)
+	dec	(hl)
+	; peephole 42d decremented in (hl) instead of going through a.
+} if notUsed('a')
+
+replace restart {
+	ld	%1,a
+	ld	a,%2
+	add	a,%1
+} by {
+	ld	%1, a
+	; peephole 43 removed load by exploiting commutativity of addition.
+	add	a,%2
+} if operandsNotRelated(%2 '(bc)' '(de)')
+
+replace restart {
+	ld	c,l
+	ld	b,h
+	ld	hl,#%1
+	add	hl,bc
+} by {
+	; peephole 43a removed loads by exploiting commutativity of addition.
+	ld	bc,#%1
+	add	hl,bc
+} if notUsed('bc')
+
+replace restart {
+	ld	hl,#%1
+	add	hl,%2
+	ld	bc,#%4
+	add	hl,bc
+} by {
+	; peephole 43b removed loads by exploiting commutativity of addition.
+	ld	hl,#%1 + %4
+	add	hl,%2
+} if notUsed('bc')
+
+replace restart {
+	ld	c,e
+	ld	b,d
+	ld	hl,#%1
+	add	hl,bc
+} by {
+	; peephole 43c removed loads by exploiting commutativity of addition.
+	ld	hl,#%1
+	add	hl,de
+} if notUsed('bc')
+
+replace restart {
+	or	a,%1
+	jp	NZ,%2
+	xor	a,a
+	or	a,%3
+} by {
+	or	a,%1
+	jp	NZ,%2
+	; peephole 44 removed redundant zeroing of a (which has just been tested to be #0x00).
+	or	a,%3
+}
+
+replace restart {
+	or	a,%1
+	jp	NZ,%2
+	ld	%3,#0x00
+} by {
+	or	a,%1
+	jp	NZ,%2
+	ld	%3,a
+	; peephole 45 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+replace restart {
+	and	a,%1
+	jp	NZ,%2
+	ld	%3,#0x00
+} by {
+	and	a,%1
+	jp	NZ,%2
+	ld	%3,a
+	; peephole 46 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+replace restart {
+	sub	a,%1
+	jp	NZ,%2
+	ld	%3,#0x00
+} by {
+	sub	a,%1
+	jp	NZ,%2
+	ld	%3,a
+	; peephole 47 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+replace restart {
+	dec	a
+	jp	NZ,%1
+	ld	%2,#0x00
+} by {
+	dec	a
+	jp	NZ,%1
+	ld	%2,a
+	; peephole 48 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+// Commented out since it triggers for %3 of the form (#...)
+//replace restart {
+//	or	a,%1
+//	jp	NZ,%2
+//	ld	a,%3
+//	or	a,a
+//} by {
+//	or	a,%1
+//	jp	NZ,%2
+//	or	a,%3
+//	; peephole 49 shortened or using a (which has just been tested to be #0x00).
+//} if operandsNotRelated(%3 '(bc)' '(de)')
+
+replace restart {
+	and	a,%1
+	jp	NZ,%2
+	ld	a,%3
+	or	a,a
+} by {
+	and	a,%1
+	jp	NZ,%2
+	or	a,%3
+	; peephole 50 shortened or using a (which has just been tested to be #0x00).
+} if operandsNotRelated(%3 '(bc)' '(de)')
+
+// Commented out since it triggers for %3 of the form (#...)
+// replace restart {
+//	sub	a,%1
+//	jp	NZ,%2
+//	ld	a,%3
+//	or	a,a
+//} by {
+//	sub	a,%1
+//	jp	NZ,%2
+//	or	a,%3
+//	; peephole 51 shortened or using a (which has just been tested to be #0x00).
+//}
+//if notSame(%3 '(bc)' '(de)')
+
+replace restart {
+	dec	a
+	jp	NZ,%1
+	ld	a,%2
+	or	a,a
+} by {
+	dec	a
+	jp	NZ,%1
+	or	a,%2
+	; peephole 52 shortened or using a (which has just been tested to be #0x00).
+}
+if operandsNotRelated(%2 '(bc)' '(de)')
+
+replace restart {
+	dec	%1 (%2)
+	xor	a,a
+	or	a, %1 (%2)
+	jp	NZ,%3
+} by {
+	dec	%1 (%2)
+	; Peephole 52a removed nonzeroness test.
+	jp	NZ,%3
+}if notUsed('a')
+
+replace restart {
+	dec	%1 (%2)
+	xor	a,a
+	or	a, %1 (%2)
+	jp	Z,%3
+} by {
+	dec	%1 (%2)
+	; Peephole 52a' removed zeroness test.
+	jp	Z,%3
+}if notUsed('a')
+
+replace restart {
+	or	a,%1
+	jp	NZ,%2
+	push	%3
+	ld	%4,#0x00
+} by {
+	or	a,%1
+	jp	NZ,%2
+	push	%3
+	ld	%4,a
+	; peephole 53 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+replace restart {
+	and	a,%1
+	jp	NZ,%2
+	push	%3
+	ld	%4,#0x00
+} by {
+	sub	a,%1
+	jp	NZ,%2
+	push	%3
+	ld	%4,a
+	; peephole 54 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+replace restart {
+	sub	a,%1
+	jp	NZ,%2
+	push	%3
+	ld	%4,#0x00
+} by {
+	sub	a,%1
+	jp	NZ,%2
+	push	%3
+	ld	%4,a
+	; peephole 55 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+replace restart {
+	dec	a
+	jp	NZ,%1
+	push	%2
+	ld	%3,#0x00
+} by {
+	dec	a
+	jp	NZ,%1
+	push	%2
+	ld	%3,a
+	; peephole 56 replaced constant #0x00 by a (which has just been tested to be #0x00).
+}
+
+replace restart {
+	ld	de,#%1 + %2
+	inc	de
+} by {
+	ld	de,#%1 + %2+1
+	; peephole 59 moved increment of de to constant.
+}
+
+replace restart {
+	ld	bc,#%1 + %2
+	inc	bc
+} by {
+	ld	bc,#%1 + %2+1
+	; peephole 60 moved increment of bc to constant.
+}
+
+replace restart {
+	ld	hl,#%1
+	add	hl,%2
+	inc	hl
+} by {
+	ld	hl,#%1+1
+	add	hl,%2
+	; peephole 62 moved increment of hl to constant.
+}
+
+replace restart {
+	ld	%1,#%2
+	add	hl,%1
+	inc	hl
+} by {
+	ld	%1,#%2+1
+	add	hl,%1
+	; peephole 62a moved increment of hl to constant.
+} if notUsed(%1)
+
+replace restart {
+	ld	bc,#%1
+	ld	a,c
+	add	a,#0x%2
+	ld	c,a
+	ld	a,b
+	adc	a,#0x%3
+	ld	b,a
+} by {
+	ld	bc,#%1 + 0x%3%2
+	; peephole 63 moved addition of constant 0x%3%2 to bc to constant.
+}
+
+replace restart {
+	pop	af
+	ld	sp,%1
+} by {
+	; peephole 64 removed redundant pop af.
+	ld	sp,%1
+} if notUsed('a')
+
+replace restart {
+	inc	sp
+	ld	sp,%1
+} by {
+	; peephole 64a removed redundant inc sp.
+	ld	sp,%1
+} if notUsed('a')
+
+//replace restart {
+//	call	%1
+//	ret
+//} by {
+//	jp	%1
+//	; peephole 65 replaced call at end of function by jump (tail call optimization).
+//}
+
+// Callee saves ix.
+//replace restart {
+//	call	%1
+//	pop	ix
+//	ret
+//} by {
+//	pop	ix
+//	jp	%1
+//	; peephole 66 replaced call at end of function by jump moving call beyond pop ix (tail call optimization).
+//}
+
+replace restart {
+	ld	%1,a
+	ld	%2,%1
+	ld	%3,%1
+} by {
+	; peephole 67 loaded %2, %3 from a instead of %1.
+	ld	%1,a
+	ld	%2,a
+	ld	%3,a
+} if notVolatile(%1)
+
+replace restart {
+	ld	%1,a
+	ld	%2,a
+	ld	%3,%1
+} by {
+	ld	%1,a
+	ld	%2,a
+	; peephole 68 loaded %3 from a instead of %1.
+	ld	%3,a
+} if notVolatile(%1)
+
+replace restart {
+	ld	%1,l
+	xor	a,a
+	or	a,%1
+} by {	
+	ld	%1,l
+	xor	a,a
+	; peephole 69 used l in or instead of %1.
+	or	a,l
+} if notVolatile(%1)
+
+replace restart {
+	ld	%1,#%2
+	ld	%3,%4
+	ld	%1,#%2
+} by {
+	ld	%1,#%2
+	ld	%3,%4
+	; peephole 70 removed load of #%2 into %1 since it's still there.
+} if notVolatile(%1), operandsNotRelated(%3 %1)
+
+replace restart {
+	ld	hl,#%1
+	ld	de,#%1
+} by {
+	; peephole 70a used #%1 from hl for load into de.
+	ld	hl,#%1
+	ld	e,l
+	ld	d,h
+}
+
+replace restart {
+	ld	hl,#%1
+	push	hl
+	ld	l,e
+	ld	h,d
+	jp	(hl)
+%1:
+} by {
+	; peephole 71 used ex to get de into hl.
+	ex	de,hl
+	ld	de,#%1
+	push	de
+	jp	(hl)
+%1:
+}
+// Lets' hope this is never applied to a jump table. It's fine for calls.
+
+// Should be after 0z.
+replace restart {
+	ld	%1 (ix),l
+	ld	%2 (ix),h
+	ld	%3,%1 (ix)
+	ld	%4,%2 (ix)
+} by {	
+	ld	%1 (ix),l
+	ld	%2 (ix),h
+	; peephole 72 used hl instead of %2 (ix), %1 (ix) to load %4%3.
+	ld	%3,l
+	ld	%4,h
+} if operandsNotRelated('h' %3)
+// Don't check for volatile since ix points to the stack.
+
+replace restart {
+	ld	%1, a
+	ld	a, %2 (%3)
+	adc	a, #%4
+	ld	%6, %1
+} by {
+	ld	%6, a
+	ld	a, %2 (%3)
+	adc	a, #%4
+	; peephole 76 loaded %6 from a directly instead of going through %1.
+} if notUsed(%1)
+
+replace restart {
+	ld	%1, a
+	ld	a, %2 (%3)
+	adc	a, #%4
+	ld	%5, a
+	ld	%6, %1
+} by {
+	ld	%6, a
+	ld	a, %2 (%3)
+	adc	a, #%4
+	ld	%5, a
+	; peephole 76' loaded %6 from a directly instead of going through %1.
+} if notUsed(%1), notSame(%5 %1), notSame(%5 '(hl)' '(de)' '(bc)'), notSame(%5 %6), notSame(%6 '(hl)' '(de)' '(bc)'), notSame(%5 'a')
+
+replace restart {
+	ld	%1, a
+	ld	a, #%2
+	adc	a, #%3
+	ld	%6, %1
+} by {
+	ld	%6, a
+	ld	a, #%2
+	adc	a, #%3
+	; peephole 77 loaded %6 from a directly instead of going through %1.
+} if notUsed(%1)
+
+replace restart {
+	ld	%1, a
+	ld	a, #%2
+	adc	a, #%3
+	ld	%5, a
+	ld	%6, %1
+} by {
+	ld	%6, a
+	ld	a, #%2
+	adc	a, #%3
+	ld	%5, a
+	; peephole 77' loaded %6 from a directly instead of going through %1.
+} if notUsed(%1), notSame(%5 %1), notSame(%5 %6 '(hl)' '(de)' '(bc)'), notSame(%6 'a')
+
+replace restart {
+	ld	hl, #%1
+	add	hl, %2
+	ex	de, hl
+	ld	hl, #%3
+	add	hl, de
+} by {
+	ld	hl, #%1+%3
+	add	hl, %2
+	; peephole 78 removed addition and loads exploiting commutativity of addition.
+} if notUsed('de')
+
+replace restart {
+	ex	de, hl
+	ld	hl, #%1
+	add	hl, de
+} by {
+	; peephole 78a removed ex exploiting commutativity of addition.
+	ld	de, #%1
+	add	hl, de
+} if notUsed('de')
+
+replace restart {
+	ex	de, hl
+	push	bc
+	ex	de, hl
+} by {
+	push	bc
+	; peephole 78b canceled subsequent ex de, hl.
+}
+
+replace restart {
+	ld	hl, #%1
+	add	hl, %2
+	ex	de, hl
+	inc	de
+} by {
+	ld	hl, #%1+1
+	; peephole 79 moved increment to constant.
+	add	hl, %2
+	ex	de, hl
+} if notUsed('hl')
+
+replace restart {
+	ld	%1,#0x00
+	jp	%3
+%2:
+	ld	%1,#0x01
+%3:
+	xor	a,a
+	cp	a,%1
+	rla
+} by {
+	ld	%1,#0x00
+	jp	%3
+%2:
+	ld	%1,#0x01
+%3:
+	ld	a,%1
+	; peephole 83 replaced cast from bool to bool by assignment.
+}
+
+replace restart {
+	ld	a,#0x01
+	jp	%1
+%2:
+	xor	a,a
+%1:
+	sub	a,#0x01
+	ld	a,#0x00
+	rla
+} by {
+	xor	a,a
+	jp	%1
+%2:
+	ld	a,#0x01
+%1:
+	; peephole 84 removed negation.
+} if labelRefCount(%1 1)
+
+replace restart {
+	and	a,#0x01
+	sub	a,#0x01
+	ld	a,#0x00
+	rla
+} by {
+	and	a,#0x01
+	xor	a,#0x01
+	; peephole 84a used xor for negation.
+}
+
+replace restart {
+	ld	%1,a
+	xor	a,a
+	sbc	a,%1
+} by {
+	ld	%1,a
+	neg
+	; peephole 84b used neg for negation.
+} if notVolatile(%1)
+
+replace restart {
+	and	a,#0x01
+	xor	a,#0x01
+	jp	NZ,%1
+} by {
+	and	a,#0x01
+	; peephole 85a removed xor by inverting jump condition.
+	jp	Z,%1
+} if notUsed('a')
+
+replace restart {
+	and	a,#0x01
+	xor	a,#0x01
+	jp	Z,%1
+} by {
+	and	a,#0x01
+	; peephole 85b removed xor by inverting jump condition.
+	jp	NZ,%1
+} if notUsed('a')
+
+replace restart {
+	rlca
+	and	a,#0x01
+	jp	NZ,%1
+} by {
+	rlca
+	; peephole 86a jumped by carry instead of bit 0.
+	jp	C,%1
+} if notUsed('a')
+
+replace restart {
+	rlca
+	and	a,#0x01
+	jp	Z,%1
+} by {
+	rlca
+	; peephole 86b jumped by carry instead of bit 0.
+	jp	NC,%1
+} if notUsed('a')
+
+replace restart {
+	or	a,a
+	sub	a,#%1
+} by {
+	; peephole 87 removed redundant or.
+	sub	a,#%1
+}
+
+replace restart {
+	ld	a,#0x00
+	rla
+	sub	a,#0x01
+	ld	a,#0x00
+	rla
+} by {
+	ld	a,#0x00
+	ccf
+	; peephole 88 moved negation from bit 0 to carry flag.
+	rla
+}
+
+replace restart {
+	ld	a,#0x00
+	ccf
+	rla
+	or	a,a
+	jp	NZ,%1
+} by {
+	; peephole 89a jumped by carry instead of going through bit 0 of a.
+	jp	NC,%1
+} if notUsed('a')
+
+replace restart {
+	ld	a,#0x00
+	ccf
+	rla
+	or	a,a
+	jp	Z,%1
+} by {
+	; peephole 89b jumped by carry instead of going through bit 0 of a.
+	jp	C,%1
+} if notUsed('a')
+
+replace restart {
+	sbc	a,%1
+	rlca
+	jp	C,%2
+} by {
+	sbc	a,%1
+	; peephole 90a jumped by sign instead of going through carry.
+	jp	M,%2
+}
+
+replace restart {
+	sbc	a,%1
+	rlca
+	jp	NC,%2
+} by {
+	sbc	a,%1
+	; peephole 90b jumped by sign instead of going through carry.
+	jp	P,%2
+}
+
+replace restart {
+	jp	NZ,%2
+%1:
+	ld	b,#0x00
+	jp	%3
+%2:
+	ld	b,#0x01
+%3:
+	xor	a,a
+	or	a,b
+	jp	Z,%4
+} by {
+	jp	NZ,%2
+%1:
+	ld	b,#0x00
+	ld	a,b
+	jp	%4
+	; peephole 91 redirected jump from %3 to %4.
+%2:
+	ld	b,#0x01
+%3:
+	xor	a,a
+	or	a,b
+	jp	Z,%4
+} if labelRefCountChange(%3 -1), labelRefCountChange(%4 +1)
+
+replace restart {
+	pop	af
+	push	hl
+} by {
+	; peephole 92 used ex to move hl onto the stack.
+	ex	(sp),hl
+} if notUsed('a'), notUsed('hl')
+
+replace restart {
+	pop	af
+	ld	hl,#%1
+	push	hl
+} by {
+	ld	hl,#%1
+	; peephole 92a used ex to move #%1 onto the stack.
+	ex	(sp),hl
+} if notUsed('a'), notUsed('hl')
+
+replace restart {
+	pop	af
+	inc	sp
+	ld	hl,#%1
+	push	hl
+} by {
+	inc	sp
+	ld	hl,#%1
+	; peephole 93 used ex to move #%1 onto the stack.
+	ex	(sp),hl
+} if notUsed('a'), notUsed('hl')
+
+replace restart {
+	pop	af
+	ld	a,#%1
+	push	af
+	inc	sp
+} by {
+	ld	h,#%1
+	ex	(sp),hl
+	; peephole 94 used ex to move #%1 onto the stack.
+	inc	sp
+} if notUsed('a'), notUsed('hl')
+
+replace restart {
+	ld	a,%1 (%2)
+	or	a,#0x01
+	ld	%1 (%2),a
+} by {
+	set	0,%1 (%2)
+	; peephole z0 used set instead of or.
+} if notUsed('a')
+// TODO: Do this at a higher level using SETABIT icode instead of peephole optimizer
+
+replace restart {
+	ld	%1,#%2
+	ld	a,%3 (%1)
+	ld	%4,a
+	ld	%1,#%5
+} by {
+	ld	a,(#%2 + %3)
+	; peephole z1 used #%2 directly instead of going through %1 using indirect addressing.
+	ld	%4,a
+	ld	%1,#%5
+}
+
+replace restart {
+	ld	%1,#%2
+	ld	%3 (%1),a
+%4:
+	ld	%1,%5
+} by {
+	ld	(#%2 + %3),a
+	; peephole z2 directly used #%2 instead of going through %1 using indirect addressing.
+%4:
+	ld	%1,%5
+}
+
+replace restart {
+	pop	af
+	ld	%1,#%2
+	ld	%3 (%1),%4
+	ld	%1,#%5
+} by {
+	ld	a,%4
+	ld	(#%2 + %3),a
+	; peephole z3 used #%2 directly instead of going through %1 using indirect addressing.
+	pop	af
+	ld	%1,#%5
+} if operandsNotRelated(%3 'a')
+
+replace restart {
+	ld	bc,#%1 + %2
+	ld	a,%3
+	ld	(bc),a
+} by {
+	ld	a,%3
+	ld	(#%1 + %2),a
+	; peephole z4 directly used address #%1 + %2 instead of placing it in bc first.
+} if notUsed('bc')
+
+replace restart {
+	ld	bc,#%1 + %2 + %6
+	ld	a,%3
+	ld	(bc),a
+} by {
+	ld	a,%3
+	ld	(#%1 + %2 + %6),a
+	; peephole z5 directly used address #%1 + %2 + %6 instead of placing it in bc first.
+} if notUsed('bc')
+
+replace restart {
+	ld	c,%1
+	ld	l,c
+	ret
+} by {
+	ld	l,%1
+	; peephole z8 moved %1 directly into l instead of going through c.
+	ret
+}
+
+replace restart {
+	ld	b,h
+	ld	c,l
+	pop	af
+	push	bc
+	call	%1
+} by {
+	ex	(sp),hl
+	; peephole z9 moved hl directly to the stack instead of going through bc.
+	call	%1
+}
+
+replace restart {
+	ld	d,h
+	ld	e,l
+	pop	af
+	push	de
+	call	%1
+} by {
+	ex	(sp),hl
+	; peephole z10 moved hl directly to the stack instead of going through de.
+	call	%1
+}
+
+replace restart {
+	ld	%1,a
+	bit	%2,%1
+} by {
+	bit	%2,a
+	; peephole z10a tested bit %2 of a directly instead of going through %1.
+} if notUsed(%1)
+
+replace restart {
+	rla
+	bit	0,a
+	jp	Z,%1
+} by {
+	jp	NC,%1
+	; peephole z10b jumped by carry.
+} if notUsed('a')
+
+replace restart {
+	rla
+	bit	0,a
+	jp	NZ,%1
+} by {
+	jp	C,%1
+	; peephole z10b' jumped by carry.
+} if notUsed('a')
+
+replace restart {
+	and	a,#0x01
+	sub	a,#0x01
+	jp	NC,%1
+} by {
+	bit	0,a
+	jp	NZ,%1
+	; peephole z10c jumped by bit test.
+}
+
+replace restart {
+	and	a,#0x01
+	sub	a,#0x01
+	jp	C,%1
+} by {
+	bit	0,a
+	jp	Z,%1
+	; peephole z10c' jumped by bit test.
+}
+
+replace restart {
+	rlca
+	bit	0,a
+} by {
+	bit	7,a
+	; peephole z10d tested bit 7 intead of rotating and testing 0.
+} if notUsed('a')
+
+replace restart {
+	sbc	a,%1
+	bit	7,a
+	jp	Z,%2
+} by {
+	sbc	a,%1
+	jp	P,%2
+	; peephole z10e used sign flag instead of testing bit 7.
+}
+
+replace restart {
+	sbc	a,%1
+	bit	7,a
+	jp	NZ,%2
+} by {
+	sbc	a,%1
+	jp	M,%2
+	; peephole z10e' used sign flag instead of testing bit 7.
+}
+
+replace restart {
+	ld	%1,a
+	or	a,a
+	jp	%3,%4
+	ld	a,%1
+} by {
+	ld	%1,a
+	or	a,a
+	jp	%3,%4
+	; peephole z10f used value still in a instead of reloading from %1.
+}
+
+// Applying z11 or z11a followed by z12 will often leave a dead ret at the end of the function. Remove it.
+replace {
+	jp	%5
+	ret
+} by {
+	jp	%5
+	; peephole z13 removed unused ret.
+}
+
+replace {
+	jp	%5
+	ld	sp,ix
+	pop	ix
+	ret
+} by {
+	jp	%5
+	; peephole z13a removed unused ret.
+}
+
+replace restart {
+	or	a,%1
+	jp	NZ,%2
+	xor	a,a
+	jp	%3
+} by {
+	or	a,%1
+	jp	NZ,%2
+	; peephole 84' removed redundant zeroing of a (which has just been tested to be #0x00).
+	jp	%3
+}
+
+replace restart {
+	ld	l, e
+	ld	h, d
+	ld	a, (hl)
+} by {
+	; peephole 85 used de directly instead of going through hl.
+	ld	a, (de)
+} if notUsed('hl')
+
+replace restart {
+	ld	l, c
+	ld	h, b
+	ld	a, (hl)
+} by {
+	; peephole 85a used bc directly instead of going through hl.
+	ld	a, (bc)
+} if notUsed('hl')
+
+barrier
+
+// These ex-generating rules should be among the last ones since ex counts as a read from both hl and de for notUsed().
+replace restart {
+	ld	d,h
+	ld	e,l
+} by {
+	; peephole 90 used ex to load hl into de.
+	ex	de,hl
+} if notUsed('hl')
+
+replace restart {
+	ld	e,l
+	ld	d,h
+} by {
+	; peephole 91 used ex to load hl into de.
+	ex	de,hl
+} if notUsed('hl')
+
+replace restart {
+	ld	l,e
+	ld	h,d
+} by {
+	; peephole 92 used ex to load de into hl.
+	ex	de,hl
+} if notUsed('de')
+
+// Do all jump optimizations before replacing by ret.
+
+replace restart {
+	jp	%5
+} by {
+	ret
+	; peephole z11 replaced jump by return.
+} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
+
+replace restart {
+	jp	%1,%5
+} by {
+	ret	%1
+	; peephole z11a replaced jump by return.
+} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
+
+// Ensure that all rules above see only jp, not jr.
+barrier
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+%2:
+} by {
+	; peephole z12-3 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+%2:
+} by {
+	; peephole z12-4 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+%2:
+} by {
+	; peephole z12-5 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+	jp	%10
+%2:
+} by {
+	; peephole z12-6 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+	jr	%10
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+	jp	%10
+	jp	%11
+%2:
+} by {
+	; peephole z12-6 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+	jr	%10
+	jr	%11
+%2:
+} if labelJTInRange
+
+barrier
+
+// Should be one of the last ones. Opens the code to further peephole optimization.
+replace restart {
+%1:
+} by {
+	; peephole z12 removed unused label %1.
+} if labelRefCount(%1 0)
+
+barrier
+
+replace {
+	jp	%5
+} by {
+	jr	%5
+	; peephole z14 changed absolute to relative unconditional jump.
+} if labelInRange()
+
+replace {
+	jp	Z,%5
+} by {
+	jr	Z,%5
+	; peephole z15 changed absolute to relative conditional jump.
+} if labelInRange()
+
+replace {
+	jp	NZ,%5
+} by {
+	jr	NZ,%5
+	; peephole z16 changed absolute to relative conditional jump.
+} if labelInRange()
+
+replace {
+	jp	C,%5
+} by {
+	jr	C,%5
+	; peephole z17 changed absolute to relative conditional jump.
+} if labelInRange()
+
+replace {
+	jp	NC,%5
+} by {
+	jr	NC,%5
+	; peephole z18 changed absolute to relative conditional jump.
+} if labelInRange()
+
