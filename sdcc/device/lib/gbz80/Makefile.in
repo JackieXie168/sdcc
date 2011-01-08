@@ -4,7 +4,9 @@ VPATH  = @srcdir@
 srcdir = @srcdir@
 top_builddir = @top_builddir@
 
-LIB_TYPE     = @LIB_TYPE@
+AR_S            = @AR@ @AR_S_FLAG@
+
+LIB_TYPE        = @LIB_TYPE@
 
 TOPDIR = ../../..
 
@@ -28,6 +30,7 @@ Z80_SDCC = $(COMMON_SDCC) \
   _itoa.c \
   _ltoa.c \
   _startup.c \
+  sprintf.c \
   vprintf.c \
   _strlen.c \
   _memmove.c
@@ -35,7 +38,7 @@ Z80_SDCC = $(COMMON_SDCC) \
 Z80SOURCES = $(addprefix ../,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_SDCC))
 Z8OBJECTS = $(patsubst %.c,%.rel,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_SDCC))
 
-OBJ = div.rel mul.rel putchar.rel printf.rel shift.rel stubs.rel crt0_rle.rel heap.rel fstubs.rel
+OBJ = div.rel mul.rel putchar.rel shift.rel stubs.rel crt0_rle.rel heap.rel fstubs.rel
 
 LIB = gbz80.lib
 CC = $(SCC)
@@ -55,10 +58,10 @@ ifeq ($(LIB_TYPE), SDCCLIB)
 	../../../bin/sdcclib -a $@ $(OBJ) $(Z8OBJECTS)
 else
   ifeq ($(LIB_TYPE), AR)
-	ar -Scq $@ $(OBJ) $(Z8OBJECTS)
+	$(AR_S) -cq $@ $(OBJ) $(Z8OBJECTS)
   else
     ifeq ($(LIB_TYPE), RANLIB)
-	ar -Scq $@ $(OBJ) $(Z8OBJECTS)
+	$(AR_S) -cq $@ $(OBJ) $(Z8OBJECTS)
 	$(top_builddir)/bin/asranlib $@
     else
 	rm -f $@; \

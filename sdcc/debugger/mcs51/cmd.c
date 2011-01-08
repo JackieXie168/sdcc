@@ -37,7 +37,7 @@ static int listlines = LISTLINES;
    no better context is available */
 static module *list_mod = NULL;
 
-EXTERN_STACK_DCL(callStack,function *,1024);
+EXTERN_STACK_DCL(callStack,function *,1024)
 
 #if defined(__APPLE__) && defined(__MACH__)
 static char *copying=
@@ -327,8 +327,8 @@ static char *warranty=
 "POSSIBILITY OF SUCH DAMAGES.\n";
 #endif
 
-static void printTypeInfo(link *);
-static void printValAggregates (symbol *,link *,char,unsigned int,int);
+static void printTypeInfo(st_link *);
+static void printValAggregates (symbol *,st_link *,char,unsigned int,int);
 static  int printOrSetSymValue (symbol *sym, context *cctxt,
                                 int flg, int dnum, int fmt,
                                 char *rs, char *val, char cmp);
@@ -452,16 +452,18 @@ static void clearBPatModLine (module *mod, int line)
 
     for ( ; line < (srcMode == SRC_CMODE ? mod->ncLines : mod->nasmLines ) ;
           line++ ) {
-        if (srcMode == SRC_CMODE)
+        if (srcMode == SRC_CMODE) {
             if (mod->cLines[line]->addr) {
                 clearUSERbp (mod->cLines[line]->addr);
                 break;
             }
-        else
+        }
+        else {
             if (mod->asmLines[line]->addr) {
                 clearUSERbp (mod->asmLines[line]->addr);
                 break;
             }
+        }
     }
 
     return;
@@ -712,7 +714,7 @@ void simGo (unsigned int gaddr)
     }
     if ( gaddr == 0 )
     {
-        function *func = NULL;;
+        function *func = NULL;
         if (applyToSet(functions,funcInAddr,gaddr,&func))
             STACK_PUSH(callStack,func);
     }
@@ -959,163 +961,196 @@ int cmdDisasmF(char *s, context *cctxt)
 
 static int commonSetUserBp(char *s, context *cctxt, char bpType)
 {
-    char *bp ;
-    function *func = NULL;
+  char *bp ;
+  function *func = NULL;
 
-    /* user break point location specification can be of the following
-       forms
-       a) <nothing>        - break point at current location
-       b) lineno           - number of the current module
-       c) filename:lineno  - line number of the given file
-       e) filename:function- function X in file Y (useful for static functions)
-       f) function         - function entry point
-       g) *addr            - break point at address
-    */
+  /* user break point location specification can be of the following
+     forms
+     a) <nothing>        - break point at current location
+     b) lineno           - number of the current module
+     c) filename:lineno  - line number of the given file
+     e) filename:function- function X in file Y (useful for static functions)
+     f) function         - function entry point
+     g) *addr            - break point at address
+  */
 
-    if (!cctxt) {
-        fprintf(stdout,"No symbol table is loaded.  Use the \"file\" command.\n");
-        return 0;
-    }
-    /* trim left and right */
-    s = trim(s);
-
-    /* case a) nothing */
-    /* if nothing given then current location : we know
-       the current execution location from the currentContext */
-    if (! *s ) {
-
-        /* if current context is known */
-        if (cctxt->func) {
-        Dprintf(D_break, ("commonSetUserBp: a) cctxtaddr:%x \n",cctxt->addr));
-            if (srcMode == SRC_CMODE)
-                /* set the break point */
-                setBreakPoint ( cctxt->addr , CODE , bpType , userBpCB ,
-                                cctxt->func->mod->c_name, cctxt->cline);
-            else
-                setBreakPoint ( cctxt->addr , CODE , bpType , userBpCB ,
-                                cctxt->func->mod->asm_name, cctxt->asmline);
-
-        }
-        else
-            fprintf(stderr,"No default breakpoint address now.\n");
-
-        goto ret ;
-    }
-    /* case g) *addr */
-    if ( *s == '*' && isdigit(*(s+1)))
+  if (!cctxt)
     {
-        int  line   = 0;
-        long braddr = strtol(s+1,0,0);
-        if (!applyToSet(functions,funcInAddr,braddr,&func))
-        {
-            module *modul;
-            if (!applyToSet(modules,moduleLineWithAddr,braddr,&modul,&line))
-            {
-                fprintf(stderr,"Address 0x%08lx not exists in code.\n",braddr);
-            }
-            else
-            {
-                Dprintf(D_break, ("commonSetUserBp: g) addr:%lx \n",braddr));
-                setBreakPoint ( braddr , CODE , bpType , userBpCB ,
-                            modul->c_name,line);
-            }
-            goto ret ;
-        }
-                else
-        {
-            int line = func->exitline;
-            if ( !applyToSet(func->cfpoints,lineAtAddr,braddr,
-                                  &line,NULL,NULL))
-                applyToSet(func->cfpoints,lineNearAddr,braddr,&line,NULL,NULL);
-            setBreakPoint ( braddr , CODE , bpType , userBpCB ,
-                            func->mod->c_name,line);
-        }
-        goto ret ;
+      fprintf (stdout, "No symbol table is loaded.  Use the \"file\" command.\n");
+      return 0;
     }
-    /* case b) lineno */
-    /* check if line number */
-    if ( !strchr(s,':') && isdigit(*s)) {
-        /* get the lineno */
-        int line = atoi(s) -1;
-    Dprintf(D_break, ("commonSetUserBp: b) line:%d \n",line));
-    if ( line < 0 )
+  /* trim left and right */
+  s = trim(s);
+
+  /* case a) nothing */
+  /* if nothing given then current location : we know
+     the current execution location from the currentContext */
+  if (! *s )
     {
-                fprintf(stdout,"linenumber <= 0\n");
-        goto ret;
+      /* if current context is known */
+      if (cctxt->func)
+        {
+          Dprintf (D_break, ("commonSetUserBp: a) cctxtaddr:%x \n", cctxt->addr));
+          if (srcMode == SRC_CMODE)
+            {
+              /* set the break point */
+              setBreakPoint (cctxt->addr, CODE, bpType, userBpCB,
+                             cctxt->func->mod->c_name, cctxt->cline);
+            }
+          else
+            {
+              setBreakPoint (cctxt->addr, CODE, bpType, userBpCB,
+                             cctxt->func->mod->asm_name, cctxt->asmline);
+            }
+        }
+      else
+        {
+          fprintf(stderr, "No default breakpoint address now.\n");
+        }
+
+      goto ret;
     }
-        /* if current context not present then we must get the module
-           which has main & set the break point @ line number provided
-           of that module : if current context known then set the bp
-           at the line number given for the current module
-        */
-        if (cctxt->func) {
-            if (!cctxt->func->mod) {
-                if (!applyToSet(functions,funcWithName,"main"))
-                    fprintf(stderr,"Function \"main\" not defined.\n");
-                else
-                    setBPatModLine(func->mod,line, bpType);
-            } else
-                setBPatModLine(cctxt->func->mod,line, bpType);
-        } else {
-                if (list_mod) {
-                        setBPatModLine(list_mod,line, bpType);
-                } else {
-                  fprintf(stdout,"Sdcdb fails to have module symbol context at %d\n", __LINE__);
+  /* case g) *addr */
+  if (*s == '*' && isdigit(*(s+1)))
+    {
+      int  line   = 0;
+      long braddr = strtol(s+1, 0, 0);
+      if (!applyToSet (functions, funcInAddr, braddr, &func))
+        {
+          module *modul;
+          if (!applyToSet (modules, moduleLineWithAddr, braddr, &modul, &line))
+            {
+              fprintf (stderr, "Address 0x%08lx not exists in code.\n", braddr);
+            }
+          else
+            {
+              Dprintf (D_break, ("commonSetUserBp: g) addr:%lx \n", braddr));
+              setBreakPoint (braddr, CODE, bpType, userBpCB, modul->c_name, line);
+            }
+          goto ret;
+        }
+      else
+        {
+          int line = func->exitline;
+          if (!applyToSet (func->cfpoints, lineAtAddr, braddr, &line, NULL, NULL))
+            {
+              applyToSet (func->cfpoints, lineNearAddr, braddr, &line, NULL, NULL);
+            }
+          setBreakPoint (braddr, CODE, bpType, userBpCB, func->mod->c_name, line);
+        }
+      goto ret;
+    }
+  /* case b) lineno */
+  /* check if line number */
+  if (!strchr(s,':') && isdigit(*s))
+    {
+      /* get the lineno */
+      int line = atoi(s) -1;
+      Dprintf (D_break, ("commonSetUserBp: b) line:%d \n", line));
+      if (line < 0)
+        {
+          fprintf(stdout, "linenumber <= 0\n");
+          goto ret;
+        }
+      /* if current context not present then we must get the module
+         which has main & set the break point @ line number provided
+         of that module : if current context known then set the bp
+         at the line number given for the current module
+      */
+      if (cctxt->func)
+        {
+          if (!cctxt->func->mod)
+            {
+              if (!applyToSet (functions, funcWithName, "main"))
+                {
+                  fprintf (stderr, "Function \"main\" not defined.\n");
                 }
-        }
-
-        goto ret;
-    }
-
-    if ((bp = strchr(s,':'))) {
-
-        module *mod = NULL;
-        *bp = '\0';
-
-        if (srcMode == SRC_CMODE) {
-            if (!applyToSet(modules,moduleWithCName,s,&mod)) {
-                fprintf (stderr,"No source file named %s.\n",s);
-                goto ret;
+              else
+                {
+                  setBPatModLine (func->mod, line, bpType);
+                }
             }
-        } else {
-            if (!applyToSet(modules,moduleWithAsmName,s,&mod)) {
-                fprintf (stderr,"No source file named %s.\n",s);
-                goto ret;
+          else
+            {
+              setBPatModLine(cctxt->func->mod,line, bpType);
             }
         }
-
-        /* case c) filename:lineno */
-        if (isdigit(*(bp +1))) {
-        Dprintf(D_break, ("commonSetUserBp: c) line:%d \n",atoi(bp+1)));
-            setBPatModLine (mod,atoi(bp+1)-1,bpType);
-            goto ret;
-
+      else
+        {
+          if (list_mod)
+            {
+              setBPatModLine (list_mod, line, bpType);
+            }
+          else
+            {
+              fprintf (stdout, "Sdcdb fails to have module symbol context at %d\n", __LINE__);
+            }
         }
-        /* case d) filename:function */
-        if (!applyToSet(functions,funcWithNameModule,bp+1,s,&func))
-            fprintf(stderr,"Function \"%s\" not defined.\n",bp+1);
-        else
-        Dprintf(D_break, ("commonSetUserBp: d) \n"));
-            setBPatModLine (mod,
-                            (srcMode == SRC_CMODE ?
-                             func->entryline :
-                             func->aentryline),bpType);
 
-        goto ret;
+      goto ret;
     }
 
-    /* case e) function */
-    Dprintf(D_break, ("commonSetUserBp: e) \n"));
-    if (!applyToSet(functions,funcWithName,s,&func))
-        fprintf(stderr,"Function \"%s\" not defined.\n",s);
-    else
-        setBPatModLine(func->mod,
-                       (srcMode == SRC_CMODE ?
-                        func->entryline :
-                        func->aentryline),bpType);
+  if ((bp = strchr(s,':')))
+    {
+      module *mod = NULL;
+      *bp = '\0';
 
- ret:
-    return 0;
+      if (srcMode == SRC_CMODE)
+        {
+          if (!applyToSet (modules, moduleWithCName, s, &mod))
+            {
+              fprintf (stderr, "No source file named %s.\n", s);
+              goto ret;
+            }
+        }
+      else
+        {
+          if (!applyToSet (modules, moduleWithAsmName, s, &mod))
+            {
+              fprintf (stderr, "No source file named %s.\n", s);
+              goto ret;
+            }
+        }
+
+      /* case c) filename:lineno */
+      if (isdigit(*(bp +1)))
+        {
+          Dprintf (D_break, ("commonSetUserBp: c) line:%d \n", atoi(bp+1)));
+          setBPatModLine (mod, atoi(bp+1)-1, bpType);
+          goto ret;
+        }
+      /* case d) filename:function */
+      if (!applyToSet (functions, funcWithNameModule, bp+1, s, &func))
+        {
+          fprintf(stderr, "Function \"%s\" not defined.\n", bp+1);
+        }
+      else
+        {
+          Dprintf (D_break, ("commonSetUserBp: d) \n"));
+          setBPatModLine (mod,
+                          (srcMode == SRC_CMODE ?
+                           func->entryline :
+                           func->aentryline),bpType);
+        }
+      goto ret;
+    }
+
+  /* case e) function */
+  Dprintf (D_break, ("commonSetUserBp: e) \n"));
+  if (!applyToSet (functions, funcWithName, s, &func))
+    {
+      fprintf(stderr,"Function \"%s\" not defined.\n", s);
+    }
+  else
+    {
+      setBPatModLine (func->mod,
+                      (srcMode == SRC_CMODE ?
+                       func->entryline :
+                       func->aentryline),bpType);
+    }
+
+ret:
+  return 0;
 }
 
 /*-----------------------------------------------------------------*/
@@ -1140,7 +1175,6 @@ int cmdSetUserBp (char *s, context *cctxt)
 int cmdJump (char *s, context *cctxt)
 {
     char *bp;
-    function *func = NULL;
     if (STACK_EMPTY(callStack))
     {
         fprintf(stdout,"The program is not running.\n");
@@ -1731,61 +1765,59 @@ int cmdListFunctions (char *s, context *cctxt)
 |-----------------------------------------------------------------*/
 int cmdListModules (char *s, context *cctxt)
 {
-    module *m;
-    srcLine *cs, *as;
-    int i, mi;
-    int our_verbose = 0;
+  module *m;
+  srcLine *cs, *as;
+  int i, mi;
+  int our_verbose = 0;
 
-    if (strstr(s, "v1")) {
-      our_verbose = 1;
-    } else if (strstr(s, "v2")) {
-      our_verbose = 2;
-    }
+  if (strstr(s, "v1")) {
+    our_verbose = 1;
+  }
+  else if (strstr(s, "v2")) {
+    our_verbose = 2;
+  }
 
-    printf("[modules]\n");
-    m = setFirstItem(modules);
-    mi = 0;
-    for (;;) {
-      if (m == NULL)
-        break;
+  printf("[modules]\n");
+  m = setFirstItem(modules);
+  mi = 0;
+  for (; ; ) {
+    if (m == NULL)
+      break;
 
-      if (our_verbose >= 0) {
+    if (our_verbose >= 0) {
       printf("  %d) cfullname:%s, afullname:%s, name:%s\n", ++mi,
         m->cfullname, m->afullname, m->name);
       printf("    c_name:%s, asm_name:%s, ncLines:%d, nasmLines:%d\n",
-              m->c_name, m->asm_name, m->ncLines, m->nasmLines);
+        m->c_name, m->asm_name, m->ncLines, m->nasmLines);
       printf("    cLines:%p, asmLines:%p\n",
-              m->cLines, m->asmLines);
-      }
-      if (our_verbose >= 2) {
-        if (m->ncLines) {
-          printf("    [cLines] ");
-          if ( our_verbose)
-          for (i=0; i<m->ncLines; i++ ) {
-              cs = m->cLines[i];
-              printf("   (%d) addr:%x, block:%d, level:%d, src:%s\n",
-                 i, cs->addr, cs->block, cs->level, cs->src);
-          }
-          if (!our_verbose)
-              printf("%d records", i);
-        }
-        if (m->nasmLines) {
-          printf("    [asmLines] ");
-          if ( our_verbose)
-          for (i=0; i<m->nasmLines; i++ ) {
-              as = m->asmLines[i];
-              printf("   (%d) addr:%x, block:%d, level:%d, src:%s\n",
-                 i, as->addr, as->block, as->level, as->src);
-          }
-          if (!our_verbose)
-              printf("%d records", i);
-        }
-        printf("\n");
-      }
-
-      m = setNextItem(modules);
+        m->cLines, m->asmLines);
     }
-    return 0;
+    if (our_verbose >= 2) {
+      if (m->ncLines) {
+        printf("    [cLines] ");
+        if (our_verbose) {
+          for (i = 0; i < m->ncLines; i++) {
+            cs = m->cLines[i];
+            printf("   (%d) addr:%x, block:%d, level:%d, src:%s\n",
+              i, cs->addr, cs->block, cs->level, cs->src);
+          }
+        }
+      }
+      if (m->nasmLines) {
+        printf("    [asmLines] ");
+        if (our_verbose) {
+          for (i = 0; i < m->nasmLines; i++) {
+            as = m->asmLines[i];
+            printf("   (%d) addr:%x, block:%d, level:%d, src:%s\n",
+               i, as->addr, as->block, as->level, as->src);
+          }
+        }
+      }
+      printf("\n");
+    }
+    m = setNextItem(modules);
+  }
+  return 0;
 }
 
 /*-----------------------------------------------------------------
@@ -2271,9 +2303,17 @@ int cmdListSrc (char *s, context *cctxt)
         return 0;
     if ( infomode )
     {
-        unsigned firstaddr , lastaddr ;
-            if ( pline  >= list_mod->ncLines )
-            pline = cctxt->cline;
+        unsigned firstaddr, lastaddr;
+
+        if (pline  >= list_mod->ncLines) {
+            if (!cctxt) {
+                fprintf(stdout, "Missing context at %d. Try list filename:lineno\n", __LINE__);
+                return 0;
+            }
+            else
+                pline = cctxt->cline;
+        }
+
         firstaddr = lastaddr = list_mod->cLines[pline]->addr;
         if (!func && cctxt && cctxt->func )
             func = cctxt->func;
@@ -2321,7 +2361,7 @@ int cmdListSrc (char *s, context *cctxt)
     return 0;
 }
 
-static unsigned long getValBasic(symbol *sym, link *type, char *val)
+static unsigned long getValBasic(symbol *sym, st_link *type, char *val)
 {
     char *s;
     union
@@ -2345,7 +2385,7 @@ static unsigned long getValBasic(symbol *sym, link *type, char *val)
     {
             if (IS_INTEGRAL(type))
         {
-            link *etype;
+            st_link *etype;
             if ( type->next )
                 etype = type->next;
             else
@@ -2458,7 +2498,7 @@ static void printFmtInteger(char *deffmt,int fmt, long val,
 /*-----------------------------------------------------------------*/
 /* printValBasic - print value of basic types                      */
 /*-----------------------------------------------------------------*/
-static void printValBasic(symbol *sym, link *type,
+static void printValBasic(symbol *sym, st_link *type,
                           char mem, unsigned addr,int size, int fmt)
 {
     union {
@@ -2482,7 +2522,7 @@ static void printValBasic(symbol *sym, link *type,
         else
         if (IS_INTEGRAL(type))
         {
-            link *etype;
+            st_link *etype;
             if ( type->next )
                 etype = type->next;
             else
@@ -2532,10 +2572,10 @@ static void printValFunc (symbol *sym, int fmt)
 /*-----------------------------------------------------------------*/
 /* printArrayValue - will print the values of array elements       */
 /*-----------------------------------------------------------------*/
-static void printArrayValue (symbol *sym,  link *type,
+static void printArrayValue (symbol *sym,  st_link *type,
                              char space, unsigned int addr, int fmt)
 {
-        link *elem_type = type->next;
+        st_link *elem_type = type->next;
         int i;
 
         fprintf(stdout,"{");
@@ -2556,7 +2596,7 @@ static void printArrayValue (symbol *sym,  link *type,
 /*-----------------------------------------------------------------*/
 /* printStructValue - prints structures elements                   */
 /*-----------------------------------------------------------------*/
-static void printStructValue (symbol *sym, link *type,
+static void printStructValue (symbol *sym, st_link *type,
                               char space, unsigned int addr, int fmt)
 {
         symbol *fields = SPEC_STRUCT(type)->fields;
@@ -2579,7 +2619,7 @@ static void printStructValue (symbol *sym, link *type,
 /*-----------------------------------------------------------------*/
 /* printValAggregates - print value of aggregates                  */
 /*-----------------------------------------------------------------*/
-static void printValAggregates (symbol *sym, link *type,
+static void printValAggregates (symbol *sym, st_link *type,
                                 char space,unsigned int addr, int fmt)
 {
 
@@ -2604,9 +2644,9 @@ static int printOrSetSymValue (symbol *sym, context *cctxt,
     static char fmtChar[] = " todx ";
     static int stack = 1;
         symbol *fields;
-    link *type;
-    unsigned int  addr;
-    int size, n;
+    st_link *type;
+    unsigned int  addr, size;
+    int n;
     char *s, *s2;
     char save_ch, save_ch2;
 
@@ -2806,7 +2846,7 @@ static void printStructInfo (structdef *sdef)
 /*-----------------------------------------------------------------*/
 /* printTypeInfo - print out the type information                  */
 /*-----------------------------------------------------------------*/
-static void printTypeInfo(link *p)
+static void printTypeInfo(st_link *p)
 {
     if (!p)
         return ;
@@ -3219,7 +3259,6 @@ static void printFrame()
 {
     int i;
     function *func     = NULL;
-    function *lastfunc = NULL;
 
     if ( currentFrame < 0 )
     {
@@ -3281,9 +3320,6 @@ int cmdDown(char *s, context *cctxt)
 /*-----------------------------------------------------------------*/
 int cmdFrame (char *s, context *cctxt)
 {
-    function *func = NULL;
-    int framenr = 0;
-
     s = trim_left(s);
     if ( *s )
         currentFrame = strtol(s,0,10);

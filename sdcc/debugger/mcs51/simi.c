@@ -27,7 +27,6 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <winsock2.h>
-#include <signal.h>
 #include <io.h>
 #include <fcntl.h>
 #else
@@ -37,11 +36,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <signal.h>
+#include <sys/ioctl.h>
 #else
 #error "Cannot build debugger without socket support"
 #endif
 #endif
+#include <signal.h>
+#include <time.h>
 
 FILE *simin ; /* stream for simulator input */
 FILE *simout; /* stream for simulator output */
@@ -54,7 +55,6 @@ int sock = -1; /* socket descriptor to comm with simulator */
 pid_t simPid = -1;
 #endif
 static char simibuff[MAX_SIM_BUFF];    /* sim buffer       */
-static char regBuff[MAX_SIM_BUFF];
 static char *sbp = simibuff;           /* simulator buffer pointer */
 extern char **environ;
 char simactive = 0;
@@ -64,7 +64,7 @@ static memcache_t memCache[NMEM_CACHE];
 /*-----------------------------------------------------------------*/
 /* get data from  memory cache/ load cache from simulator          */
 /*-----------------------------------------------------------------*/
-static char *getMemCache(unsigned int addr,int cachenum, int size)
+static char *getMemCache(unsigned int addr,int cachenum, unsigned int size)
 {
     char *resp, *buf;
     unsigned int laddr;
@@ -131,22 +131,23 @@ static void invalidateCache( int cachenum )
 }
 
 /*-----------------------------------------------------------------*/
-/* waitForSim - wait till simulator is done its job                */
+/* waitForSim - wait till simulator is done doing its job          */
 /*-----------------------------------------------------------------*/
 void waitForSim(int timeout_ms, char *expect)
 {
-  int i=0;
   int ch;
+  clock_t timeout;
 
-Dprintf(D_simi, ("simi: waitForSim start(%d)\n", timeout_ms));
-    sbp = simibuff;
+  Dprintf(D_simi, ("simi: waitForSim start(%d)\n", timeout_ms));
+  sbp = simibuff;
 
-    while ((ch = fgetc(simin)) > 0 ) {
-        *sbp++ = ch;
+  timeout = clock() + ((timeout_ms * CLOCKS_PER_SEC) / 1000);
+  while (((ch = fgetc(simin)) > 0 ) && (clock() <= timeout))
+    {
+      *sbp++ = ch;
     }
-    *sbp = 0;
-    Dprintf(D_simi, ("waitForSim(%d) got[%s]\n", timeout_ms, simibuff));
-
+  *sbp = 0;
+  Dprintf(D_simi, ("waitForSim(%d) got[%s]\n", timeout_ms, simibuff));
 }
 
 /*-----------------------------------------------------------------*/
@@ -163,68 +164,13 @@ static void init_winsock(void)
         int iResult;
 
         // Initialize Winsock
-        if (0 != WSAStartup(MAKEWORD(2,2), &wsaData))
+        iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+        if (0 != iResult)
         {
             fprintf(stderr, "WSAStartup failed: %d\n", iResult);
             exit(1);
         }
     }
-}
-
-static char *argsToCmdLine(char **args, int nargs)
-{
-#define CHUNCK  256
-    int i;
-    int cmdPos = 0;
-    char *cmd = Safe_malloc(CHUNCK);
-    int cmdLen = CHUNCK;
-
-    for (i = 0; i < nargs; i++)
-    {
-        int quote = 0;
-        int argLen = strlen(args[i]);
-
-        if (NULL != strchr(args[i], ' '))
-        {
-            quote = 1;
-            argLen += 2;
-        }
-
-        if (0 < i)
-            ++argLen;
-
-        if (cmdPos + argLen >= cmdLen)
-        {
-            do
-            {
-                cmdLen += cmdLen;
-            }
-            while (cmdPos + argLen >= cmdLen);
-            cmd = Safe_realloc(cmd, cmdLen);
-        }
-
-        if (0 < i)
-        {
-            cmd[cmdPos++] = ' ';
-            --argLen;
-        }
-
-        if (quote)
-        {
-            cmd[cmdPos++] = '"';
-            --argLen;
-        }
-
-        memcpy(&cmd[cmdPos], args[i], argLen);
-        cmdPos += argLen;
-
-        if (quote)
-            cmd[cmdPos++] = '"';
-    }
-
-    cmd[cmdPos] = '\0';
-
-    return cmd;
 }
 
 static PROCESS_INFORMATION *execSimulator(char **args, int nargs)
@@ -239,7 +185,7 @@ static PROCESS_INFORMATION *execSimulator(char **args, int nargs)
 
     // Start the child process.
     if (!CreateProcess(NULL,   // No module name (use command line)
-        cmdLine, // Command line
+        cmdLine,        // Command line
         NULL,           // Process handle not inheritable
         NULL,           // Thread handle not inheritable
         FALSE,          // Set handle inheritance to FALSE
@@ -255,7 +201,6 @@ static PROCESS_INFORMATION *execSimulator(char **args, int nargs)
         return NULL;
     }
 
-    Safe_free(cmdLine);
     return &pi;
 }
 
@@ -264,6 +209,8 @@ void openSimulator (char **args, int nargs)
     struct sockaddr_in sin;
     int retry = 0;
     int i;
+    u_long iMode;
+    int iResult;
     int fh;
 
     init_winsock();
@@ -312,21 +259,29 @@ void openSimulator (char **args, int nargs)
         exit(1);
     }
 
-    fh = _open_osfhandle((intptr_t)sock, _O_TEXT);
+    iMode = 1; /* set non-blocking mode */
+    iResult = ioctlsocket(sock, FIONBIO, &iMode);
+    if (iResult != NO_ERROR)
+    {
+        perror("ioctlsocket failed");
+        exit(1);
+    }
+
+    fh = _open_osfhandle(sock, _O_TEXT);
     if (-1 == fh)
     {
         perror("cannot _open_osfhandle");
         exit(1);
     }
 
-    /* go the socket now turn it into a file handle */
+    /* got the socket now turn it into a file handle */
     if (!(simin = fdopen(fh, "r")))
     {
         perror("cannot open socket for read");
         exit(1);
     }
 
-    fh = _open_osfhandle((intptr_t)sock, _O_TEXT);
+    fh = _open_osfhandle(sock, _O_TEXT);
     if (-1 == fh)
     {
         perror("cannot _open_osfhandle");
@@ -371,6 +326,8 @@ void openSimulator (char **args, int nargs)
     struct sockaddr_in sin;
     int retry = 0;
     int i;
+    u_long iMode;
+    int iResult;
     Dprintf(D_simi, ("simi: openSimulator\n"));
 #ifdef SDCDB_DEBUG
     if (D_simi & sdcdbDebug)
@@ -417,7 +374,16 @@ void openSimulator (char **args, int nargs)
         perror("connect failed :");
         exit(1);
     }
-    /* go the socket now turn it into a file handle */
+
+    iMode = 1; /* set non-blocking mode */
+    iResult = ioctl(sock, FIONBIO, &iMode);
+    if (iResult != 0)
+    {
+        perror("ioctl failed");
+        exit(1);
+    }
+
+    /* got the socket now turn it into a file handle */
     if (!(simin = fdopen(sock,"r")))
     {
         fprintf(stderr,"cannot open socket for read\n");
@@ -458,7 +424,7 @@ void sendSim(char *s)
 
 
 static int getMemString(char *buffer, char wrflag,
-                        unsigned int *addr, char mem, int size )
+                        unsigned int *addr, char mem, unsigned int size )
 {
     int cachenr = NMEM_CACHE;
     char *prefix;
@@ -528,9 +494,10 @@ void simSetPC( unsigned int addr )
     simResponse();
 }
 
-int simSetValue (unsigned int addr,char mem, int size, unsigned long val)
+int simSetValue (unsigned int addr,char mem, unsigned int size, unsigned long val)
 {
-    char cachenr, i;
+    unsigned int i;
+    char cachenr;
     char buffer[40];
     char *s;
 
@@ -560,10 +527,10 @@ int simSetValue (unsigned int addr,char mem, int size, unsigned long val)
 /*-----------------------------------------------------------------*/
 /* simGetValue - get value @ address for mem space                 */
 /*-----------------------------------------------------------------*/
-unsigned long simGetValue (unsigned int addr,char mem, int size)
+unsigned long simGetValue (unsigned int addr,char mem, unsigned int size)
 {
     unsigned int b[4] = {0,0,0,0}; /* can be a max of four bytes long */
-    char cachenr, i;
+    char cachenr;
     char buffer[40];
     char *resp;
 
@@ -609,6 +576,8 @@ unsigned long simGetValue (unsigned int addr,char mem, int size)
     }
     else
     {
+        unsigned int i;
+
         for (i = 0 ; i < size ; i++ )
         {
             /* skip white space */
@@ -665,8 +634,6 @@ void simLoadFile (char *s)
 unsigned int simGoTillBp ( unsigned int gaddr)
 {
     char *sr;
-    unsigned addr ;
-    char *sfmt;
     int wait_ms = 1000;
 
     invalidateCache(XMEM_CACHE);

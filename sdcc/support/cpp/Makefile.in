@@ -36,7 +36,7 @@ srcdir = @srcdir@
 
 
 LIBS = @LIBS@
-CFLAGS = @CFLAGS@ -Wall
+CFLAGS = @CFLAGS@ @WALL_FLAG@
 ALL_CFLAGS = $(INTERNAL_CFLAGS) $(X_CFLAGS) $(T_CFLAGS) \
   $(CFLAGS) $(WARN_CFLAGS) $(XCFLAGS) @DEFS@
 ALL_CPPFLAGS = $(CPPFLAGS) $(X_CPPFLAGS) $(T_CPPFLAGS)
@@ -277,10 +277,13 @@ traditional.o: $(LIBCPP_DIR)/traditional.c $(CONFIG_H) $(LIBCPP_DEPS)
 ##########################
 # Libiberty
 
-MY_LIBIBERTY_BITS = concat.o fopen_unlocked.o getpwd.o hashtab.o hex.o \
+MY_LIBIBERTY_BITS = alloca.o concat.o fopen_unlocked.o getpwd.o hashtab.o hex.o \
 		    lbasename.o md5.o obstack.o safe-ctype.o splay-tree.o \
 		    vasprintf.o xexit.o xmalloc.o xmemdup.o xstrdup.o \
 		    xstrerror.o
+
+alloca.o: $(LIBIBERTY_DIR)/alloca.c $(CONFIG_H) $(LIBCPP_DEPS)
+	$(CC) -c $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $< $(OUTPUT_OPTION)
 
 concat.o: $(LIBIBERTY_DIR)/concat.c $(CONFIG_H) $(LIBCPP_DEPS)
 	$(CC) -c $(ALL_CFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $< $(OUTPUT_OPTION)
@@ -333,7 +336,7 @@ xstrerror.o: $(LIBIBERTY_DIR)/xstrerror.c  $(CONFIG_H) $(LIBCPP_DEPS)
 ##########################
 # Sdcpp
 
-SDCC_OBJS = sdcpp.o sdcpp-opts.o c-ppoutput.o cppdefault.o prefix.o version.o opts.o opts-common.o options.o c-incpath.o
+SDCC_OBJS = sdcpp.o sdcpp-opts.o sdcpp-diagnostic.o c-ppoutput.o cppdefault.o prefix.o version.o opts.o opts-common.o options.o c-incpath.o
 
 $(TARGET): $(SDCC_OBJS) $(MY_LIBIBERTY_BITS) libcpp.a $(LIBDEPS)
 	mkdir -p $(dir $@)
@@ -343,6 +346,8 @@ $(TARGET): $(SDCC_OBJS) $(MY_LIBIBERTY_BITS) libcpp.a $(LIBDEPS)
 sdcpp.o: sdcpp.c $(CONFIG_H) $(SYSTEM_H) options.h
 
 sdcpp-opts.o: sdcpp-opts.c $(CONFIG_H) $(LIBCPP_DEPS) options.h
+
+sdcpp-diagnostic.o: sdcpp-diagnostic.c $(CONFIG_H) $(LIBCPP_DEPS)
 
 c-ppoutput.o: c-ppoutput.c $(CONFIG_H) $(SYSTEM_H)
 
