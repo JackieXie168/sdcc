@@ -1,3 +1,7 @@
+2011-01-08 Borut Razem <borut.razem AT siol.net>
+
+	* */*: merged with changes from main branch, revision #6092
+
 2010-09-12 Borut Razem <borut.razem AT siol.net>
 
 	* linksrc/lksym.c, linksrc/lkdata.c, linksrc/lklist.c,

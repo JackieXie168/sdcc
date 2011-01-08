@@ -1,9 +1,16 @@
 /*
    preproc.c
+
+   preprocessor and punctuators tests
 */
 
 #include <testfwk.h>
 
+/*
+ * the following tests are applicable only for SDCC,
+ * since they are using SDCC specific pragmas
+ */
+#ifdef SDCC
 /*
  * test for bug 135170
  */
@@ -28,8 +35,6 @@ return "A"
 /*
  * test for bug 982435
  */
-#if !defined (__GNUC__) && !defined (_MSC_VER)
-/* since this fails on GCC cpp and MSVC cl -E... */
 #pragma pedantic_parse_number +
 
 #define LO_B(x) ((x) & 0xff)
@@ -49,6 +54,17 @@ return (a + b);
 }
 #endif
 
-void testBug(void)
-{
-}
+/*
+ * test punctuators, as defined in ISO/IEC 9899:1999, chapter 6.4.6#3
+ */
+void
+testPunctuators (void)
+<%
+%:define N        10
+%:define VAL      123
+%:define C(NAME)  NAME %:%: ___
+  int C(a)<:N:>;
+
+  C(a)<:0:> = VAL;
+  ASSERT (a___<:0:> == VAL);
+%>
