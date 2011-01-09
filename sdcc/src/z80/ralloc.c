@@ -905,7 +905,7 @@ deassignLRs (iCode * ic, eBBlock * ebp)
                   else
                     result->regs[i] = getRegGpr (ic, ebp, result);
 
-                  /* if the allocation falied which means
+                  /* if the allocation failed which means
                      this was spilt then break */
                   if (!result->regs[i])
                     {
@@ -1084,7 +1084,6 @@ serialRegAssign (eBBlock ** ebbs, int count)
   /* for all blocks */
   for (i = 0; i < count; i++)
     {
-
       iCode *ic;
 
       if (ebbs[i]->noPath &&
@@ -1092,10 +1091,9 @@ serialRegAssign (eBBlock ** ebbs, int count)
            ebbs[i]->entryLabel != returnLabel))
         continue;
 
-      /* of all instructions do */
+      /* for all instructions do */
       for (ic = ebbs[i]->sch; ic; ic = ic->next)
         {
-
           /* if this is an ipop that means some live
              range will have to be assigned again */
           if (ic->op == IPOP)
@@ -1107,20 +1105,24 @@ serialRegAssign (eBBlock ** ebbs, int count)
           /* if result is present && is a true symbol */
           if (IC_RESULT (ic) && ic->op != IFX &&
               IS_TRUE_SYMOP (IC_RESULT (ic)))
-            OP_SYMBOL (IC_RESULT (ic))->allocreq++;
+            {
+              OP_SYMBOL (IC_RESULT (ic))->allocreq++;
+            }
 
           /* take away registers from live
              ranges that end at this instruction */
           deassignLRs (ic, ebbs[i]);
 
           /* some don't need registers */
-          /* MLH: removed RESULT and POINTER_SET condition */
           if (SKIP_IC2 (ic) ||
               ic->op == JUMPTABLE ||
               ic->op == IFX ||
               ic->op == IPUSH ||
-              ic->op == IPOP)
-            continue;
+              ic->op == IPOP ||
+              (IC_RESULT (ic) && POINTER_SET (ic)))
+            {
+              continue;
+            }
 
           /* now we need to allocate registers only for the result */
           if (IC_RESULT (ic))
@@ -1147,7 +1149,7 @@ serialRegAssign (eBBlock ** ebbs, int count)
                   bitVectBitValue (_G.regAssigned, sym->key) ||
                   sym->liveTo <= ic->seq)
                 {
-                  D (D_ALLOC, ("serialRegAssign: wont live long enough.\n"));
+                  D (D_ALLOC, ("serialRegAssign: won't live long enough.\n"));
                   continue;
                 }
 
@@ -2095,11 +2097,13 @@ packRegsForOneuse (iCode * ic, operand * op, eBBlock * ebp)
         }
     }
 
-    /* Fixes #2646174, but there might be a better way */
-    if(ic->op == SEND)
-        {
-          return NULL;
-        }
+  /* Fixes #2646174, but there might be a better way */
+  if(ic->op == SEND)
+    return NULL;
+
+  /* Fixes #2982135, but there might be a better way */
+  if(ic->op == RETURN)
+    return NULL;
 
   OP_SYMBOL (op)->ruonly = 1;
   return sic;
@@ -2698,7 +2702,7 @@ opPreservesA (iCode * uic)
     }
 
   /* A pointer assign preserves A if A is the left value. */
-  if (uic->op == '=' && POINTER_SET (uic))
+  if (uic->op == '=' && POINTER_SET (uic) && !IY_RESERVED)
     {
       return TRUE;
     }
@@ -2743,7 +2747,7 @@ opCanUseA (iCode * uic)
       return FALSE;
     }
 
-  if (uic->op == '=')
+  if (uic->op == '=' && !(IY_RESERVED && POINTER_SET (uic)))
     {
       return TRUE;
     }
@@ -3108,13 +3112,13 @@ packRegisters (eBBlock * ebp)
          one and right is not in far space */
       if (!DISABLE_PACK_ONE_USE &&
           POINTER_SET (ic) &&
+          IS_SYMOP (IC_RESULT (ic)) &&
           /* MLH: no such thing.
              !isOperandInFarSpace(IC_RIGHT(ic)) && */
           !OP_SYMBOL (IC_RESULT (ic))->remat &&
           !IS_OP_RUONLY (IC_RIGHT (ic)) &&
           getSize (aggrToPtr (operandType (IC_RESULT (ic)), FALSE)) > 1)
         {
-
           packRegsForOneuse (ic, IC_RESULT (ic), ebp);
         }
 
@@ -3128,7 +3132,6 @@ packRegisters (eBBlock * ebp)
           !IS_OP_RUONLY (IC_RESULT (ic)) &&
           getSize (aggrToPtr (operandType (IC_LEFT (ic)), FALSE)) > 1)
         {
-
           packRegsForOneuse (ic, IC_LEFT (ic), ebp);
         }
 
@@ -3142,7 +3145,7 @@ packRegisters (eBBlock * ebp)
       if (!DISABLE_PACK_HL && IS_ITEMP (IC_RESULT (ic)))
         {
           /* PENDING */
-          if (IS_GB)
+          if (IS_GB || IY_RESERVED)
             {
               if (0)
                 packRegsForHLUse (ic);
@@ -3153,7 +3156,7 @@ packRegisters (eBBlock * ebp)
             }
         }
 
-      if (!DISABLE_PACK_IY && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
+      if (!DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
         {
           packRegsForIYUse (ic, IC_RESULT (ic), ebp);
         }

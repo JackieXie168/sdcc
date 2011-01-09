@@ -4,11 +4,9 @@
 #define SDCCGLOBL_H
 
 #include <memory.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <setjmp.h>
 #include <stdio.h>
-
 #include "SDCCset.h"
 
 
@@ -266,6 +264,7 @@ struct options
     int stack_size;             /* MCS51/DS390 - Tells the linker to allocate this space for stack */
     int no_pack_iram;           /* MCS51/DS390 - Tells the linker not to pack variables in internal ram */
     int acall_ajmp;             /* MCS51 - Use acall/ajmp instead of lcall/ljmp */
+    int use_non_free;           /* Search / include non-free licensed libraries and header files */
     /* starting address of the segments */
     int xstack_loc;             /* initial location of external stack */
     int stack_loc;              /* initial value of internal stack pointer */
@@ -351,19 +350,19 @@ void setParseWithComma (set **, const char *);
 
 #define wassert(a)    wassertl(a,"code generator internal error")
 
-#define DUMP_RAW0 1
-#define DUMP_RAW1 DUMP_RAW0+1
-#define DUMP_CSE DUMP_RAW1+1
-#define DUMP_DFLOW DUMP_CSE+1
-#define DUMP_GCSE DUMP_DFLOW+1
+#define DUMP_RAW0     1
+#define DUMP_RAW1     DUMP_RAW0+1
+#define DUMP_CSE      DUMP_RAW1+1
+#define DUMP_DFLOW    DUMP_CSE+1
+#define DUMP_GCSE     DUMP_DFLOW+1
 #define DUMP_DEADCODE DUMP_GCSE+1
-#define DUMP_LOOP DUMP_DEADCODE+1
-#define DUMP_LOOPG DUMP_LOOP+1
-#define DUMP_LOOPD DUMP_LOOPG+1
-#define DUMP_RANGE DUMP_LOOPD+1
-#define DUMP_PACK DUMP_RANGE+1
-#define DUMP_RASSGN DUMP_PACK+1
-#define DUMP_LRANGE DUMP_RASSGN+1
+#define DUMP_LOOP     DUMP_DEADCODE+1
+#define DUMP_LOOPG    DUMP_LOOP+1
+#define DUMP_LOOPD    DUMP_LOOPG+1
+#define DUMP_RANGE    DUMP_LOOPD+1
+#define DUMP_PACK     DUMP_RANGE+1
+#define DUMP_RASSGN   DUMP_PACK+1
+#define DUMP_LRANGE   DUMP_RASSGN+1
 
 struct _dumpFiles {
   int id;

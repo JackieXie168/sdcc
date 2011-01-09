@@ -55,33 +55,33 @@ aopLiteralLong (value * val, int offset, int size)
     unsigned char c[4];
   }
   fl;
+  unsigned long v = ulFromVal (val);
 
-  if (!val) {
-    // assuming we have been warned before
-    val = constCharVal (0);
-  }
+  if (!val)
+    {
+      // assuming we have been warned before
+      val = constCharVal (0);
+    }
 
   /* if it is a float then it gets tricky */
   /* otherwise it is fairly simple */
-  if (!IS_FLOAT (val->type)) {
-    unsigned long v = ulFromVal (val);
-
-    v >>= (offset * 8);
-    switch (size) {
-    case 1:
-      tsprintf (buffer, sizeof(buffer),
-          "!immedbyte", (unsigned int) v & 0xff);
-      break;
-    case 2:
-      tsprintf (buffer, sizeof(buffer),
-          "!immedword", (unsigned int) v & 0xffff);
-      break;
-    default:
-      /* Hmm.  Too big for now. */
-      assert (0);
+  if (!IS_FLOAT (val->type))
+    {
+      v >>= (offset * 8);
+      switch (size)
+        {
+        case 1:
+          tsprintf (buffer, sizeof(buffer), "!immedbyte", (unsigned int) v & 0xff);
+          break;
+        case 2:
+          tsprintf (buffer, sizeof(buffer), "!immedword", (unsigned int) v & 0xffff);
+          break;
+        default:
+          /* Hmm.  Too big for now. */
+          assert (0);
+        }
+      return Safe_strdup (buffer);
     }
-    return Safe_strdup (buffer);
-  }
 
   /* PENDING: For now size must be 1 */
   assert (size == 1);
@@ -595,10 +595,10 @@ pointerTypeToGPByte (const int p_type, const char *iname, const char *oname)
     case POINTER:
       return GPTYPE_NEAR;
     case GPOINTER:
-      werror (E_CANNOT_USE_GENERIC_POINTER,
+      werror (W_USING_GENERIC_POINTER,
               iname ? iname : "<null>",
               oname ? oname : "<null>");
-      exit (1);
+      return -1;
     case FPOINTER:
       return GPTYPE_FAR;
     case CPOINTER:
@@ -608,7 +608,7 @@ pointerTypeToGPByte (const int p_type, const char *iname, const char *oname)
     default:
       fprintf (stderr, "*** internal error: unknown pointer type %d in GPByte.\n",
                p_type);
-      break;
+      exit (EXIT_FAILURE);
     }
   return -1;
 }
@@ -620,7 +620,14 @@ pointerTypeToGPByte (const int p_type, const char *iname, const char *oname)
 static void
 _printPointerType (struct dbuf_s * oBuf, const char *name, int size)
 {
-  if (size == 3)
+  if (size == 4)
+    {
+      if (port->little_endian)
+        dbuf_printf (oBuf, "\t.byte %s,(%s >> 8),(%s >> 16),(%s >> 24)", name, name, name, name);
+      else
+        dbuf_printf (oBuf, "\t.byte (%s >> 24),(%s >> 16),(%s >> 8),%s", name, name, name, name);
+    }
+  else if (size == 3)
     {
       if (port->little_endian)
         dbuf_printf (oBuf, "\t.byte %s,(%s >> 8),(%s >> 16)", name, name, name);
@@ -653,8 +660,17 @@ static void
 printGPointerType (struct dbuf_s * oBuf, const char *iname, const char *oname,
                    int type)
 {
-  _printPointerType (oBuf, iname, (options.model == MODEL_FLAT24) ? 3 : 2);
-  dbuf_printf (oBuf, ",#0x%02x\n", pointerTypeToGPByte (type, iname, oname));
+  int byte = pointerTypeToGPByte (type, iname, oname);
+  int size = (options.model == MODEL_FLAT24) ? 3 : 2;
+  if (byte == -1)
+    {
+      _printPointerType (oBuf, iname, size + 1);
+    }
+  else
+    {
+      _printPointerType (oBuf, iname, size);
+      dbuf_printf (oBuf, ",#0x%02x\n", byte);
+    }
 }
 
 /*-----------------------------------------------------------------*/
@@ -1117,7 +1133,7 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s * oB
         case 3:
           if (IS_GENPTR(type) && floatFromVal(val)!=0) {
             // non-zero mcs51 generic pointer
-            werrorfl (sym->fileDef, sym->lineDef, E_LITERAL_GENERIC);
+            werrorfl (sym->fileDef, sym->lineDef, W_LITERAL_GENERIC);
           }
           if (port->little_endian) {
             dbuf_printf (oBuf, "\t.byte %s,%s,%s\n",
@@ -1134,7 +1150,7 @@ printIvalCharPtr (symbol * sym, sym_link * type, value * val, struct dbuf_s * oB
         case 4:
           if (IS_GENPTR(type) && floatFromVal(val)!=0) {
             // non-zero ds390 generic pointer
-            werrorfl (sym->fileDef, sym->lineDef, E_LITERAL_GENERIC);
+            werrorfl (sym->fileDef, sym->lineDef, W_LITERAL_GENERIC);
           }
           if (port->little_endian) {
             dbuf_printf (oBuf, "\t.byte %s,%s,%s,%s\n",
@@ -1193,6 +1209,7 @@ printIvalPtr (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s * o
   /* check the type      */
   if (compareType (type, val->type) == 0)
     {
+      assert (ilist != NULL);
       werrorfl (ilist->filename, ilist->lineno, W_INIT_WRONG);
       printFromToType (val->type, type);
     }
@@ -1222,7 +1239,7 @@ printIvalPtr (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s * o
           if (IS_GENPTR (val->type))
             dbuf_printf (oBuf, ",%s\n", aopLiteral (val, 2));
           else if (IS_PTR (val->type))
-            dbuf_printf (oBuf, ",#%x\n", pointerTypeToGPByte (DCL_TYPE (val->type), NULL, NULL));
+            dbuf_printf (oBuf, ",#%x\n", pointerTypeToGPByte (DCL_TYPE (val->type), val->name, sym->name));
           else
             dbuf_printf (oBuf, ",%s\n", aopLiteral (val, 2));
         }
@@ -1266,7 +1283,7 @@ printIval (symbol * sym, sym_link * type, initList * ilist, struct dbuf_s * oBuf
       return;
     }
 
-  /* if this is an array   */
+  /* if this is an array  */
   if (IS_ARRAY (type))
     {
       printIvalArray (sym, type, ilist, oBuf, check);
@@ -1369,6 +1386,12 @@ emitStaticSeg (memmap * map, struct dbuf_s * oBuf)
         }
       else
         {
+          int size = getSize (sym->type);
+
+          if (size==0)
+            {
+              werrorfl (sym->fileDef, sym->lineDef, E_UNKNOWN_SIZE, sym->name);
+            }
           /* if it has an initial value */
           if (sym->ival)
             {
@@ -1398,12 +1421,6 @@ emitStaticSeg (memmap * map, struct dbuf_s * oBuf)
           else
             {
               /* allocate space */
-              int size = getSize (sym->type);
-
-              if (size==0)
-                {
-                  werrorfl (sym->fileDef, sym->lineDef, E_UNKNOWN_SIZE,sym->name);
-                }
               if (options.debug)
                 {
                   emitDebugSym (oBuf, sym);

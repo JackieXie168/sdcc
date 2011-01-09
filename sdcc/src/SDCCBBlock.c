@@ -30,20 +30,20 @@ int eBBNum = 0;
 set *graphEdges = NULL;         /* list of edges in this flow graph */
 
 struct _dumpFiles dumpFiles[] = {
-  {DUMP_RAW0, ".dumpraw0", NULL},
-  {DUMP_RAW1, ".dumpraw1", NULL},
-  {DUMP_CSE, ".dumpcse", NULL},
-  {DUMP_DFLOW, ".dumpdflow", NULL},
-  {DUMP_GCSE, ".dumpgcse", NULL},
+  {DUMP_RAW0,     ".dumpraw0",     NULL},
+  {DUMP_RAW1,     ".dumpraw1",     NULL},
+  {DUMP_CSE,      ".dumpcse",      NULL},
+  {DUMP_DFLOW,    ".dumpdflow",    NULL},
+  {DUMP_GCSE,     ".dumpgcse",     NULL},
   {DUMP_DEADCODE, ".dumpdeadcode", NULL},
-  {DUMP_LOOP, ".dumploop", NULL},
-  {DUMP_LOOPG, ".dumploopg", NULL},
-  {DUMP_LOOPD, ".dumploopd", NULL},
-  {DUMP_RANGE, ".dumprange", NULL},
-  {DUMP_PACK, ".dumppack", NULL},
-  {DUMP_RASSGN, ".dumprassgn", NULL},
-  {DUMP_LRANGE, ".dumplrange", NULL},
-  {0, NULL, NULL}
+  {DUMP_LOOP,     ".dumploop",     NULL},
+  {DUMP_LOOPG,    ".dumploopg",    NULL},
+  {DUMP_LOOPD,    ".dumploopd",    NULL},
+  {DUMP_RANGE,    ".dumprange",    NULL},
+  {DUMP_PACK,     ".dumppack",     NULL},
+  {DUMP_RASSGN,   ".dumprassgn",   NULL},
+  {DUMP_LRANGE,   ".dumplrange",   NULL},
+  {0,             NULL,            NULL}
 };
 
 /*-----------------------------------------------------------------*/
@@ -112,7 +112,7 @@ FILE *createDumpFile (int id) {
 
     dbuf_init (&dumpFileName, PATH_MAX);
     dbuf_append_str (&dumpFileName, dstFileName);
-#if 0
+#ifdef _DEBUG
     dbuf_append_str (&dumpFileName, dumpIndexStr);
 #endif
     dbuf_append_str (&dumpFileName, dumpFilesPtr->ext);
@@ -190,23 +190,26 @@ dumpLiveRanges (int id, hTab * liveRanges)
 
 
 /*-----------------------------------------------------------------*/
-/* dumpEbbsToFileExt - writeall the basic blocks to a file         */
+/* dumpEbbsToFileExt - write all the basic blocks to a file        */
 /*-----------------------------------------------------------------*/
 void
 dumpEbbsToFileExt (int id, ebbIndex * ebbi)
 {
   FILE *of;
-  int i;
+  int i, d;
   eBBlock *bb;
   set *cseSet;
   eBBlock ** ebbs = ebbi->dfOrder ? ebbi->dfOrder : ebbi->bbOrder;
   int count = ebbi->count;
 
-  if (id) {
-    of=createDumpFile(id);
-  } else {
-    of = stdout;
-  }
+  if (id)
+    {
+      of=createDumpFile(id);
+    }
+  else
+    {
+      of = stdout;
+    }
 
   for (i = 0; i < count; i++)
     {
@@ -223,24 +226,25 @@ dumpEbbsToFileExt (int id, ebbIndex * ebbi)
       fprintf (of, "\nsuccessors: ");
       for (bb=setFirstItem(ebbs[i]->succList);
            bb;
-           bb=setNextItem(ebbs[i]->succList)) {
-        fprintf (of, "%s ", bb->entryLabel->name);
-      }
+           bb=setNextItem(ebbs[i]->succList))
+        {
+          fprintf (of, "%s ", bb->entryLabel->name);
+        }
       fprintf (of, "\npredecessors: ");
       for (bb=setFirstItem(ebbs[i]->predList);
            bb;
-           bb=setNextItem(ebbs[i]->predList)) {
-        fprintf (of, "%s ", bb->entryLabel->name);
-      }
-      {
-        int d;
-        fprintf (of, "\ndominators: ");
-        for (d=0; d<ebbs[i]->domVect->size; d++) {
-          if (bitVectBitValue(ebbs[i]->domVect, d)) {
-            fprintf (of, "%s ", ebbi->bbOrder[d]->entryLabel->name); //ebbs[d]->entryLabel->name);
-          }
+           bb=setNextItem(ebbs[i]->predList))
+        {
+          fprintf (of, "%s ", bb->entryLabel->name);
         }
-      }
+      fprintf (of, "\ndominators: ");
+      for (d=0; d<ebbs[i]->domVect->size; d++)
+        {
+          if (bitVectBitValue(ebbs[i]->domVect, d))
+            {
+              fprintf (of, "%s ", ebbi->bbOrder[d]->entryLabel->name); //ebbs[d]->entryLabel->name);
+            }
+        }
       fprintf (of, "\n");
 
       fprintf (of, "\ndefines bitVector :");
@@ -258,32 +262,36 @@ dumpEbbsToFileExt (int id, ebbIndex * ebbi)
       bitVectDebugOn (ebbs[i]->usesDefs, of);
 #endif
 
-      if (ebbs[i]->isLastInLoop) {
-              fprintf (of, "\nInductions Set bitvector :");
-              bitVectDebugOn (ebbs[i]->linds, of);
-      }
+      if (ebbs[i]->isLastInLoop)
+        {
+          fprintf (of, "\nInductions Set bitvector :");
+          bitVectDebugOn (ebbs[i]->linds, of);
+        }
 
       fprintf (of, "\ninExprs:");
-      for (cseSet = ebbs[i]->inExprs; cseSet; cseSet=cseSet->next) {
-        cseDef *item=cseSet->item;
-        fprintf (of, " %s(%d)",OP_SYMBOL(item->sym)->name,item->diCode->key);
-        if (item->fromGlobal)
-          fprintf (of, "g");
-      }
+      for (cseSet = ebbs[i]->inExprs; cseSet; cseSet=cseSet->next)
+        {
+          cseDef *item=cseSet->item;
+          fprintf (of, " %s(%d)",OP_SYMBOL(item->sym)->name,item->diCode->key);
+          if (item->fromGlobal)
+            fprintf (of, "g");
+        }
       fprintf (of, "\noutExprs:");
-      for (cseSet = ebbs[i]->outExprs; cseSet; cseSet=cseSet->next) {
-        cseDef *item=cseSet->item;
-        fprintf (of, " %s(%d)",OP_SYMBOL(item->sym)->name,item->diCode->key);
-        if (item->fromGlobal)
-          fprintf (of, "g");
-      }
+      for (cseSet = ebbs[i]->outExprs; cseSet; cseSet=cseSet->next)
+        {
+          cseDef *item=cseSet->item;
+          fprintf (of, " %s(%d)",OP_SYMBOL(item->sym)->name,item->diCode->key);
+          if (item->fromGlobal)
+            fprintf (of, "g");
+        }
       fprintf (of, "\nkilledExprs:");
-      for (cseSet = ebbs[i]->killedExprs; cseSet; cseSet=cseSet->next) {
-        cseDef *item=cseSet->item;
-        fprintf (of, " %s(%d)",OP_SYMBOL(item->sym)->name,item->diCode->key);
-        if (item->fromGlobal)
-          fprintf (of, "g");
-      }
+      for (cseSet = ebbs[i]->killedExprs; cseSet; cseSet=cseSet->next)
+        {
+          cseDef *item=cseSet->item;
+          fprintf (of, " %s(%d)",OP_SYMBOL(item->sym)->name,item->diCode->key);
+          if (item->fromGlobal)
+            fprintf (of, "g");
+        }
 
       fprintf (of, "\n----------------------------------------------------------------\n");
       printiCChain (ebbs[i]->sch, of);
