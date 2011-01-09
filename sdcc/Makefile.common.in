@@ -19,6 +19,7 @@ YACC            = @YACC@
 LEX             = @LEX@
 AWK             = @AWK@
 STRIP           = @STRIP@
+MAKEDEP         = @MAKEDEP@
 prefix          = @prefix@
 exec_prefix     = @exec_prefix@
 bindir          = @bindir@
@@ -42,7 +43,7 @@ OPT_DISABLE_DS390 = @OPT_DISABLE_DS390@
 OPT_DISABLE_DS400 = @OPT_DISABLE_DS400@
 OPT_DISABLE_HC08  = @OPT_DISABLE_HC08@
 OPT_DISABLE_MCS51 = @OPT_DISABLE_MCS51@
-OPT_DISABLE_PIC   = @OPT_DISABLE_PIC@
+OPT_DISABLE_PIC14 = @OPT_DISABLE_PIC14@
 OPT_DISABLE_PIC16 = @OPT_DISABLE_PIC16@
 OPT_DISABLE_XA51  = @OPT_DISABLE_XA51@
 OPT_DISABLE_Z80   = @OPT_DISABLE_Z80@
@@ -62,9 +63,8 @@ transform       = @program_transform_name@
 
 DEFS           += $(subs -DHAVE_CONFIG_H,,@DEFS@)
 CPPFLAGS       += @CPPFLAGS@ $(INCLUDEFLAGS) -I. -I$(top_builddir) -I$(srcdir)/$(SLIB) -I$(srcdir)
-CFLAGS         += -Wall @CFLAGS@
+CFLAGS         += @CFLAGS@ @WALL_FLAG@
 LDFLAGS        += @LDFLAGS@
-M_OR_MM         = @M_OR_MM@
 
 EXTRALIBS      += @LIBS@
 

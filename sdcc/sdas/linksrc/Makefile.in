@@ -12,6 +12,7 @@ CC              = @CC@
 CPP             = @CPP@
 INSTALL         = @INSTALL@
 STRIP           = @STRIP@
+MAKEDEP         = @MAKEDEP@
 
 top_builddir    = @top_builddir@
 top_srcdir      = @top_srcdir@
@@ -85,8 +86,8 @@ $(ASLINK): $(LKOBJECTS)
 install: all installdirs
 	for ld in $(ASLINK) $(top_builddir)/bin/sdldz80$(EXEEXT) $(top_builddir)/bin/sdldgb$(EXEEXT) $(top_builddir)/bin/sdld6808$(EXEEXT); \
 	do \
-	  $(INSTALL) $$ld $$(echo $(DESTDIR)$(bindir)/$$(basename $$ld) | sed '$(transform)'); \
-	  $(STRIP) $$(echo $(DESTDIR)$(bindir)/$$(basename $$ld) | sed '$(transform)'); \
+	  $(INSTALL) $$ld `echo $(DESTDIR)$(bindir)/\`basename $$ld\` | sed '$(transform)'`; \
+	  $(STRIP) `echo $(DESTDIR)$(bindir)/\`basename $$ld\` | sed '$(transform)'`; \
 	done
 
 # Deleting all the installed files
@@ -94,7 +95,7 @@ install: all installdirs
 uninstall:
 	for ld in $(ASLINK) $(top_builddir)/bin/sdldz80$(EXEEXT) $(top_builddir)/bin/sdldgb$(EXEEXT) $(top_builddir)/bin/sdld6808$(EXEEXT); \
 	do \
-	  rm -f $(DESTDIR)$(bindir)/$$(basename $$ld); \
+	  rm -f $(DESTDIR)$(bindir)/`basename $$ld`; \
 	done
 
 
@@ -119,7 +120,7 @@ installdirs:
 dep: Makefile.dep
 
 Makefile.dep: $(LKSOURCES) $(LKLIB)/*.h $(top_builddir)/*.h
-	$(CPP) $(CPPFLAGS) $(M_OR_MM) $(filter %.c,$^) >Makefile.dep
+	$(MAKEDEP) $(CPPFLAGS) $(filter %.c,$^) >Makefile.dep
 
 ifeq "$(findstring $(MAKECMDGOALS),uninstall check installcheck installdirs \
                                    clean distclean mostlyclean realclean)" ""
