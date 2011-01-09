@@ -1,7 +1,7 @@
 /* lkrloc4.c */
 
 /*
- *  Copyright (C) 2003-2009  Alan R. Baldwin
+ *  Copyright (C) 2003-2010  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -741,7 +741,7 @@ relr4()
 			rerr.rval = relv - reli;
 			relerr4(errmsg4[error]);
 
-			for (i=rtp; i<rtp+a_bytes-1; i++) {
+			for (i=rtp; i<rtp+a_bytes; i++) {
 				if (rtflg[i]) {
 					rterr[i] = error;
 					break;

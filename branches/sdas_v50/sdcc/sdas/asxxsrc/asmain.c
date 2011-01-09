@@ -1,7 +1,7 @@
 /* asmain.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2010  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -276,6 +276,11 @@ char *argv[];
 				case 'u':
 				case 'U':
 					++uflag;
+					break;
+
+				case 'v':
+				case 'V':
+					++vflag;
 					break;
 
 				case 'w':
@@ -2489,6 +2494,7 @@ char *usetxt[] = {
 	"  -s   Create symbol file/outfile[.sym]",
 	"  -p   Disable automatic listing pagination",
 	"  -u   Disable .list/.nlist processing",
+	"  -v   Enable out of range signed / unsigned errors",
 	"  -w   Wide listing format for symbol table",
 	"  -z   Disable case sensitivity for symbols",
 	"  -f   Flag relocatable references by  `   in listing file",

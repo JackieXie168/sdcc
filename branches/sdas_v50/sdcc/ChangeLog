@@ -2,6 +2,12 @@
 
 	* */*: merged with changes from main branch, revision #6092
 	* src/pic14/glue.c: removed extra newline
+	* sdas/linksrc/lkrloc3.c, sdas/linksrc/lkrloc4.c,
+	  sdas/linksrc/aslink.h, sdas/asxxsrc/assubr.c,
+	  sdas/asxxsrc/asexpr.c, sdas/asxxsrc/asxxxx.h,
+	  sdas/asxxsrc/asmain.c, sdas/asxxsrc/aslex.c,
+	  sdas/asxxsrc/asmcro.c, sdas/asxxsrc/asdata.c:
+	  sync with asxxxx v5.0 patch u03500
 
 2011-01-08 Borut Razem <borut.razem AT siol.net>
 

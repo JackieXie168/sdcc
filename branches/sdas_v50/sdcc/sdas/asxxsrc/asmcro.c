@@ -1,7 +1,7 @@
 /* asmcro.c */
 
 /*
- *  Copyright (C) 2009  Alan R. Baldwin
+ *  Copyright (C) 2010  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1234,9 +1234,7 @@ struct	macrofp *nfp;
 	return(0);
 }
 
-/*)Function	VOID *	mstruct(n)
- *
- *		unsigned int	n	number of bytes to allocate
+/*)Function	VOID *	mhunk()
  *
  *	Allocate space.
  *	Return a pointer to the allocated space.

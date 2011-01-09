@@ -1,7 +1,7 @@
 /* asdata.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2010  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -242,6 +242,8 @@ int	pflag;		/*	-p, disable listing pagination
 int	sflag;		/*	-s, generate symbol table flag
 			 */
 int	uflag;		/*	-u, disable .list/.nlist processing flag
+			 */
+int	vflag;		/*	-v, enable out of range signed / unsigned errors
 			 */
 int	wflag;		/*	-w, enable wide listing format
 			 */

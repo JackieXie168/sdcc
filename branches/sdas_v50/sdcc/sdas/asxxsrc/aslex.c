@@ -1,7 +1,7 @@
 /* aslex.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2010  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,7 +24,10 @@
  */
 
 #include "asxxxx.h"
+
+/* sdas specific */
 #include "dbuf_string.h"
+/* end sdas specific */
 
 /*)Module	aslex.c
  *
