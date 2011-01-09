@@ -22,8 +22,8 @@
    what you give them.   Help stamp out software-hoarding!
 -------------------------------------------------------------------------*/
 
-#ifndef SDCCEXPR_H
-#define SDCCEXPR_H
+#ifndef SDCCAST_H
+#define SDCCAST_H
 
 #include "SDCCglobl.h"
 #include "SDCCsymt.h"
@@ -32,7 +32,7 @@
 #include "SDCCmem.h"
 
 typedef enum {
-  EX_OP=0,
+  EX_OP = 0,
   EX_VALUE,
   EX_LINK,
   EX_OPERAND
@@ -41,7 +41,6 @@ typedef enum {
 /* expression tree   */
 typedef struct ast
   {
-
     ASTTYPE type;
     unsigned decorated:1;
     unsigned isError:1;
@@ -97,7 +96,7 @@ typedef struct ast
                                          * type resulting from a typecast.
                                          */
             unsigned removedCast:1;     /* true if the explicit cast has been removed */
-          };
+          } cast;
         int argreg;                     /* argreg number when operand type == EX_OPERAND */
       }
     values;
@@ -177,7 +176,7 @@ ast;
                           (x) == AND_ASSIGN || (x) == OR_ASSIGN  || (x) == INC_OP     || (x) == DEC_OP)
 #define IS_DEREF_OP(x) ( ( (x)->opval.op == '*' && (x)->right == NULL) || \
                          (x)->opval.op == '.' || \
-						 (x)->opval.op == PTR_OP )
+                         (x)->opval.op == PTR_OP )
 
 /* forward declarations for global variables */
 extern ast *staticAutos;
@@ -196,6 +195,7 @@ ast *removeIncDecOps (ast *);
 ast *removePreIncDecOps (ast *);
 ast *removePostIncDecOps (ast *);
 value *sizeofOp (sym_link *);
+ast *offsetofOp (sym_link *type, ast *snd);
 value *evalStmnt (ast *);
 ast *createRMW (ast *, unsigned, ast *);
 ast *createFunction (symbol *, ast *);
@@ -207,6 +207,7 @@ ast *forLoopOptForm (ast *);
 ast *argAst (ast *);
 ast *resolveSymbols (ast *);
 void CodePtrPointsToConst (sym_link *t);
+void checkPtrCast (sym_link * newType, sym_link *orgType, bool implicit);
 ast *decorateType (ast *, RESULT_TYPE);
 ast *createWhile (symbol *, symbol *, symbol *, ast *, ast *);
 ast *createIf (ast *, ast *, ast *);

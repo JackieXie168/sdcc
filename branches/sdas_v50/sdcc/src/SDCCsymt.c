@@ -326,7 +326,7 @@ newStruct (char *tag)
 
   s = Safe_alloc ( sizeof (structdef));
 
-  strncpyz (s->tag, tag, sizeof(s->tag));               /* copy the tag */
+  strncpyz (s->tag, tag, sizeof(s->tag));           /* copy the tag */
   return s;
 }
 
@@ -516,6 +516,8 @@ addDecl (symbol * sym, int type, sym_link * p)
           sym->etype = sym->etype->next = newLink (SPECIFIER);
         }
       SPEC_SCLS (sym->etype) = SPEC_SCLS (DCL_TSPEC (p));
+      SPEC_ABSA (sym->etype) |= SPEC_ABSA (DCL_TSPEC (p));
+      SPEC_ADDR (sym->etype) |= SPEC_ADDR (DCL_TSPEC (p));
       DCL_TSPEC (p) = NULL;
     }
 
@@ -535,25 +537,30 @@ void checkTypeSanity(sym_link *etype, char *name)
 {
   char *noun;
 
-  if (!etype) {
-    if (getenv("DEBUG_SANITY")) {
-      fprintf (stderr, "sanity check skipped for %s (etype==0)\n", name);
+  if (!etype)
+    {
+      if (getenv("DEBUG_SANITY"))
+        {
+          fprintf (stderr, "sanity check skipped for %s (etype==0)\n", name);
+        }
+      return;
     }
-    return;
-  }
 
-  if (!IS_SPEC(etype)) {
-    if (getenv("DEBUG_SANITY")) {
-      fprintf (stderr, "sanity check skipped for %s (!IS_SPEC)\n", name);
+  if (!IS_SPEC(etype))
+    {
+      if (getenv("DEBUG_SANITY"))
+        {
+          fprintf (stderr, "sanity check skipped for %s (!IS_SPEC)\n", name);
+        }
+      return;
     }
-    return;
-  }
 
-  noun=nounName(etype);
+  noun = nounName(etype);
 
-  if (getenv("DEBUG_SANITY")) {
-    fprintf (stderr, "checking sanity for %s %p\n", name, etype);
-  }
+  if (getenv("DEBUG_SANITY"))
+    {
+      fprintf (stderr, "checking sanity for %s %p\n", name, etype);
+    }
 
   if ((SPEC_NOUN(etype)==V_BOOL ||
        SPEC_NOUN(etype)==V_CHAR ||
@@ -561,49 +568,52 @@ void checkTypeSanity(sym_link *etype, char *name)
        SPEC_NOUN(etype)==V_FIXED16X16 ||
        SPEC_NOUN(etype)==V_DOUBLE ||
        SPEC_NOUN(etype)==V_VOID) &&
-      (SPEC_SHORT(etype) || SPEC_LONG(etype))) {
-    // long or short for char float double or void
-    werror (E_LONG_OR_SHORT_INVALID, noun, name);
-  }
+      (SPEC_SHORT(etype) || SPEC_LONG(etype)))
+    {// long or short for char float double or void
+      werror (E_LONG_OR_SHORT_INVALID, noun, name);
+    }
   if ((SPEC_NOUN(etype)==V_BOOL ||
        SPEC_NOUN(etype)==V_FLOAT ||
        SPEC_NOUN(etype)==V_FIXED16X16 ||
        SPEC_NOUN(etype)==V_DOUBLE ||
        SPEC_NOUN(etype)==V_VOID) &&
-      (etype->select.s.b_signed || SPEC_USIGN(etype))) {
-    // signed or unsigned for float double or void
-    werror (E_SIGNED_OR_UNSIGNED_INVALID, noun, name);
-  }
+      (etype->select.s.b_signed || SPEC_USIGN(etype)))
+    {// signed or unsigned for float double or void
+      werror (E_SIGNED_OR_UNSIGNED_INVALID, noun, name);
+    }
 
   // special case for "short"
-  if (SPEC_SHORT(etype)) {
-    SPEC_NOUN(etype) = options.shortis8bits ? V_CHAR : V_INT;
-    SPEC_SHORT(etype) = 0;
-  }
+  if (SPEC_SHORT(etype))
+    {
+      SPEC_NOUN(etype) = options.shortis8bits ? V_CHAR : V_INT;
+      SPEC_SHORT(etype) = 0;
+    }
 
   /* if no noun e.g.
      "const a;" or "data b;" or "signed s" or "long l"
      assume an int */
-  if (!SPEC_NOUN(etype)) {
-    SPEC_NOUN(etype) = V_INT;
-  }
+  if (!SPEC_NOUN(etype))
+    {
+      SPEC_NOUN(etype) = V_INT;
+    }
 
   /* ISO/IEC 9899 J.3.9 implementation defined behaviour: */
   /* a "plain" int bitfield is unsigned */
   if (SPEC_NOUN(etype)==V_BIT ||
-      SPEC_NOUN(etype)==V_SBIT) {
-    if (!etype->select.s.b_signed)
-      SPEC_USIGN(etype) = 1;
-  }
+      SPEC_NOUN(etype)==V_SBIT)
+    {
+      if (!etype->select.s.b_signed)
+        SPEC_USIGN(etype) = 1;
+    }
 
-  if (etype->select.s.b_signed && SPEC_USIGN(etype)) {
-    // signed AND unsigned
-    werror (E_SIGNED_AND_UNSIGNED_INVALID, noun, name);
-  }
-  if (SPEC_SHORT(etype) && SPEC_LONG(etype)) {
-    // short AND long
-    werror (E_LONG_AND_SHORT_INVALID, noun, name);
-  }
+  if (etype->select.s.b_signed && SPEC_USIGN(etype))
+    {// signed AND unsigned
+      werror (E_SIGNED_AND_UNSIGNED_INVALID, noun, name);
+    }
+  if (SPEC_SHORT(etype) && SPEC_LONG(etype))
+    {// short AND long
+      werror (E_LONG_AND_SHORT_INVALID, noun, name);
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -787,9 +797,6 @@ genSymName (int level)
 sym_link *
 getSpec (sym_link * p)
 {
-  sym_link *loop;
-
-  loop = p;
   while (p && !(IS_SPEC (p)))
     p = p->next;
 
@@ -948,15 +955,18 @@ getSize (sym_link * p)
     }
 }
 
+#define FLEXARRAY   1
+#define INCOMPLETE  2
+
 /*------------------------------------------------------------------*/
 /* checkStructFlexArray - check tree behind a struct                */
 /*------------------------------------------------------------------*/
-static bool
+static int
 checkStructFlexArray (symbol *sym, sym_link *p)
 {
   /* if nothing return FALSE */
   if (!p)
-    return FALSE;
+    return 0;
 
   if (IS_SPEC (p))
     {
@@ -964,9 +974,14 @@ checkStructFlexArray (symbol *sym, sym_link *p)
       if (IS_STRUCT (p) && SPEC_STRUCT (p)->b_flexArrayMember)
         {
           werror (W_INVALID_FLEXARRAY);
-          return FALSE;
+          return INCOMPLETE;
         }
-      return FALSE;
+      /* or otherwise incomplete (nested) struct? */
+      if (IS_STRUCT (p) && ((SPEC_STRUCT (p)->size == 0) || !SPEC_STRUCT (p)->fields))
+        {
+          return INCOMPLETE;
+        }
+      return 0;
     }
 
   /* this is a declarator */
@@ -977,12 +992,14 @@ checkStructFlexArray (symbol *sym, sym_link *p)
         {
           if (!options.std_c99)
             werror (W_C89_NO_FLEXARRAY);
-          return TRUE;
+          if (checkStructFlexArray (sym, p->next) == INCOMPLETE)
+            werror (E_INCOMPLETE_FIELD, sym->name);
+          return FLEXARRAY;
         }
       /* walk tree */
       return checkStructFlexArray (sym, p->next);
     }
-  return FALSE;
+  return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -1475,16 +1492,24 @@ compStructSize (int su, structdef * sdef)
 
           /* search for "flexible array members" */
           /* and do some syntax checks */
-          if (su == STRUCT && checkStructFlexArray (loop, loop->type))
+          if (su == STRUCT)
             {
-              /* found a "flexible array member" */
-              sdef->b_flexArrayMember = TRUE;
-              /* is another struct-member following? */
-              if (loop->next)
-                werror (E_FLEXARRAY_NOTATEND);
-              /* is it the first struct-member? */
-              else if (loop == sdef->fields)
-                werror (E_FLEXARRAY_INEMPTYSTRCT);
+              int ret = checkStructFlexArray (loop, loop->type);
+              if (ret == FLEXARRAY)
+                {
+                  /* found a "flexible array member" */
+                  sdef->b_flexArrayMember = TRUE;
+                  /* is another struct-member following? */
+                  if (loop->next)
+                    werror (E_FLEXARRAY_NOTATEND);
+                  /* is it the first struct-member? */
+                  else if (loop == sdef->fields)
+                    werror (E_FLEXARRAY_INEMPTYSTRCT);
+                }
+              else if (ret == INCOMPLETE)
+                {
+                  werror (E_INCOMPLETE_FIELD, loop->name);
+                }
             }
         }
 
@@ -1615,9 +1640,9 @@ checkSClass (symbol * sym, int isProto)
   /* if absolute address given then it mark it as
      volatile -- except in the PIC port */
 
-#if !OPT_DISABLE_PIC || !OPT_DISABLE_PIC16
+#if !OPT_DISABLE_PIC14 || !OPT_DISABLE_PIC16
   /* The PIC port uses a different peep hole optimizer based on "pCode" */
-  if (!TARGET_IS_PIC && !TARGET_IS_PIC16)
+  if (!TARGET_PIC_LIKE)
 #endif
 
     if (IS_ABSOLUTE (sym->etype))
@@ -1963,11 +1988,17 @@ computeType (sym_link * type1, sym_link * type2,
 
   etype2 = type2 ? getSpec (type2) : type1;
 
+  /* if one of them is a pointer or array then that prevails */
+  if (IS_PTR (type1) || IS_ARRAY (type1))
+    rType = copyLinkChain (type1);
+  else if (IS_PTR (type2) || IS_ARRAY (type2))
+    rType = copyLinkChain (type2);
+
   /* if one of them is a float then result is a float */
   /* here we assume that the types passed are okay */
   /* and can be cast to one another                */
   /* which ever is greater in size */
-  if (IS_FLOAT (etype1) || IS_FLOAT (etype2))
+  else if (IS_FLOAT (etype1) || IS_FLOAT (etype2))
     rType = newFloatLink ();
   /* if both are fixed16x16 then result is float */
   else if (IS_FIXED16X16(etype1) && IS_FIXED16X16(etype2))
@@ -1997,12 +2028,6 @@ computeType (sym_link * type1, sym_link * type2,
       if (getSize (etype2) > 1)
         SPEC_NOUN (getSpec (rType)) = V_INT;
     }
-  /* if one of them is a pointer or array then that
-     prevails */
-  else if (IS_PTR (type1) || IS_ARRAY (type1))
-    rType = copyLinkChain (type1);
-  else if (IS_PTR (type2) || IS_ARRAY (type2))
-    rType = copyLinkChain (type2);
   else if (getSize (type1) > getSize (type2))
     rType = copyLinkChain (type1);
   else
@@ -2042,6 +2067,10 @@ computeType (sym_link * type1, sym_link * type2,
       case RESULT_TYPE_INT:
       case RESULT_TYPE_NONE:
       case RESULT_TYPE_OTHER:
+        if (!IS_SPEC (rType))
+          {
+            return rType;
+          }
         if (IS_BOOL (reType) || IS_BIT (reType))
           {
             SPEC_NOUN (reType) = V_CHAR;
@@ -2063,6 +2092,21 @@ computeType (sym_link * type1, sym_link * type2,
             /* promotion of some special cases */
             switch (op)
               {
+                case ':':
+                  /* Currently only the Z80 really supports _Bool */
+                  if(!TARGET_IS_Z80)
+                    break;
+                  /* Avoid unnecessary cast to _Bool if both operands are _Bool */
+                  if((IS_BOOL(etype1) || (IS_LITERAL(etype1) &&
+                    (floatFromVal (valFromType (etype1)) == 1.0 ||
+                    floatFromVal (valFromType (etype1)) == 0.0))) &&
+                    (IS_BOOL(etype2) || (IS_LITERAL(etype2) &&
+                    (floatFromVal (valFromType (etype2)) == 1.0 ||
+                    floatFromVal (valFromType (etype2)) == 0.0))))
+                    {
+                      SPEC_NOUN (reType) = V_BOOL;
+                    }
+                  break;
                 case '|':
                 case '^':
                   return computeTypeOr (etype1, etype2, reType);
@@ -2304,8 +2348,8 @@ compareType (sym_link * dest, sym_link * src)
             }
           if (IS_PTR (dest) && IS_ARRAY (src))
             {
-              value *val=aggregateToPointer (valFromType(src));
-              int res=compareType (dest, val->type);
+              value *val = aggregateToPointer (valFromType(src));
+              int res = compareType (dest, val->type);
               Safe_free(val->type);
               Safe_free(val);
               return res;
@@ -2314,6 +2358,9 @@ compareType (sym_link * dest, sym_link * src)
             {
               return compareType (dest->next, src);
             }
+          if (IS_PTR (dest) && IS_VOID (dest->next) && IS_FUNC (src))
+            return -1;
+
           return 0;
         }
       else if (IS_PTR (dest) && IS_INTEGRAL (src))
@@ -2469,7 +2516,7 @@ compareTypeExact (sym_link * dest, sym_link * src, int level)
       (IS_SPEC (dest) && !IS_SPEC (src)))
     return 0;
 
-  /* if one of them is a void then ok */
+  /* if they have a different noun */
   if (SPEC_NOUN (dest) != SPEC_NOUN (src))
     return 0;
 
@@ -2522,12 +2569,15 @@ compareTypeExact (sym_link * dest, sym_link * src, int level)
     }
 
   /* compensate for allocGlobal() */
-  if ((srcScls == S_FIXED || srcScls == S_AUTO)
-      && port->mem.default_globl_map == xdata
-      && !level)
-    srcScls = S_XDATA;
+  if ((srcScls == S_FIXED || srcScls == S_AUTO) &&
+      (port->mem.default_globl_map == xdata) &&
+      (destScls == S_XDATA) &&
+      (level <= 0))
+    {
+      srcScls = S_XDATA;
+    }
 
-  if (level>0 && !SPEC_STAT (dest))
+  if ((level > 0) && !SPEC_STAT (dest))
     {
       /* Compensate for hack-o-matic in checkSClass() */
       if (options.stackAuto || (currFunc && IFFUNC_ISREENT (currFunc->type)))
@@ -2604,12 +2654,14 @@ aggregateToPointer (value * val)
           DCL_TYPE (val->type) = PPOINTER;
           break;
         case S_FIXED:
-          if (SPEC_OCLS(val->etype)) {
-            DCL_TYPE(val->type)=PTR_TYPE(SPEC_OCLS(val->etype));
-          } else {
-            // this happens for (external) function parameters
-            DCL_TYPE (val->type) = port->unqualified_pointer;
-          }
+          if (SPEC_OCLS(val->etype))
+            {
+              DCL_TYPE (val->type) = PTR_TYPE (SPEC_OCLS (val->etype));
+            }
+          else
+            {// this happens for (external) function parameters
+              DCL_TYPE (val->type) = port->unqualified_pointer;
+            }
           break;
         case S_AUTO:
           DCL_TYPE (val->type) = PTR_TYPE(SPEC_OCLS(val->etype));
@@ -3484,38 +3536,38 @@ powof2 (TYPE_TARGET_ULONG num)
   return nshifts - 1;
 }
 
-symbol *__fsadd;
-symbol *__fssub;
-symbol *__fsmul;
-symbol *__fsdiv;
-symbol *__fseq;
-symbol *__fsneq;
-symbol *__fslt;
-symbol *__fslteq;
-symbol *__fsgt;
-symbol *__fsgteq;
+symbol *fsadd;
+symbol *fssub;
+symbol *fsmul;
+symbol *fsdiv;
+symbol *fseq;
+symbol *fsneq;
+symbol *fslt;
+symbol *fslteq;
+symbol *fsgt;
+symbol *fsgteq;
 
-symbol *__fps16x16_add;
-symbol *__fps16x16_sub;
-symbol *__fps16x16_mul;
-symbol *__fps16x16_div;
-symbol *__fps16x16_eq;
-symbol *__fps16x16_neq;
-symbol *__fps16x16_lt;
-symbol *__fps16x16_lteq;
-symbol *__fps16x16_gt;
-symbol *__fps16x16_gteq;
+symbol *fps16x16_add;
+symbol *fps16x16_sub;
+symbol *fps16x16_mul;
+symbol *fps16x16_div;
+symbol *fps16x16_eq;
+symbol *fps16x16_neq;
+symbol *fps16x16_lt;
+symbol *fps16x16_lteq;
+symbol *fps16x16_gt;
+symbol *fps16x16_gteq;
 
 /* Dims: mul/div/mod, BYTE/WORD/DWORD, SIGNED/UNSIGNED/BOTH */
-symbol *__muldiv[3][3][4];
+symbol *muldiv[3][3][4];
 /* Dims: BYTE/WORD/DWORD SIGNED/UNSIGNED */
-sym_link *__multypes[3][2];
+sym_link *multypes[3][2];
 /* Dims: to/from float, BYTE/WORD/DWORD, SIGNED/USIGNED */
-symbol *__conv[2][3][2];
+symbol *conv[2][3][2];
 /* Dims: to/from fixed16x16, BYTE/WORD/DWORD/FLOAT, SIGNED/USIGNED */
-symbol *__fp16x16conv[2][4][2];
+symbol *fp16x16conv[2][4][2];
 /* Dims: shift left/shift right, BYTE/WORD/DWORD, SIGNED/UNSIGNED */
-symbol *__rlrr[2][3][2];
+symbol *rlrr[2][3][2];
 
 sym_link *charType;
 sym_link *floatType;
@@ -3674,7 +3726,7 @@ initCSupport ()
     "rl", "rr"
   };
 
-  int bwd, su, muldivmod, tofrom, rlrr;
+  int bwd, su, muldivmod, tofrom, slsr;
 
   if (getenv("SDCC_NO_C_SUPPORT")) {
     /* for debugging only */
@@ -3698,36 +3750,36 @@ initCSupport ()
         default:
           assert (0);
         }
-      __multypes[bwd][0] = l;
-      __multypes[bwd][1] = copyLinkChain (l);
-      SPEC_USIGN (__multypes[bwd][1]) = 1;
+      multypes[bwd][0] = l;
+      multypes[bwd][1] = copyLinkChain (l);
+      SPEC_USIGN (multypes[bwd][1]) = 1;
     }
 
   floatType = newFloatLink ();
   fixed16x16Type = newFixed16x16Link ();
   charType = (options.unsigned_char) ? UCHARTYPE : SCHARTYPE;
 
-  __fsadd = funcOfType ("__fsadd", floatType, floatType, 2, options.float_rent);
-  __fssub = funcOfType ("__fssub", floatType, floatType, 2, options.float_rent);
-  __fsmul = funcOfType ("__fsmul", floatType, floatType, 2, options.float_rent);
-  __fsdiv = funcOfType ("__fsdiv", floatType, floatType, 2, options.float_rent);
-  __fseq = funcOfType ("__fseq", charType, floatType, 2, options.float_rent);
-  __fsneq = funcOfType ("__fsneq", charType, floatType, 2, options.float_rent);
-  __fslt = funcOfType ("__fslt", charType, floatType, 2, options.float_rent);
-  __fslteq = funcOfType ("__fslteq", charType, floatType, 2, options.float_rent);
-  __fsgt = funcOfType ("__fsgt", charType, floatType, 2, options.float_rent);
-  __fsgteq = funcOfType ("__fsgteq", charType, floatType, 2, options.float_rent);
+  fsadd = funcOfType ("__fsadd", floatType, floatType, 2, options.float_rent);
+  fssub = funcOfType ("__fssub", floatType, floatType, 2, options.float_rent);
+  fsmul = funcOfType ("__fsmul", floatType, floatType, 2, options.float_rent);
+  fsdiv = funcOfType ("__fsdiv", floatType, floatType, 2, options.float_rent);
+  fseq = funcOfType ("__fseq", charType, floatType, 2, options.float_rent);
+  fsneq = funcOfType ("__fsneq", charType, floatType, 2, options.float_rent);
+  fslt = funcOfType ("__fslt", charType, floatType, 2, options.float_rent);
+  fslteq = funcOfType ("__fslteq", charType, floatType, 2, options.float_rent);
+  fsgt = funcOfType ("__fsgt", charType, floatType, 2, options.float_rent);
+  fsgteq = funcOfType ("__fsgteq", charType, floatType, 2, options.float_rent);
 
-  __fps16x16_add = funcOfType ("__fps16x16_add", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_sub = funcOfType ("__fps16x16_sub", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_mul = funcOfType ("__fps16x16_mul", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_div = funcOfType ("__fps16x16_div", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_eq = funcOfType ("__fps16x16_eq", charType, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_neq = funcOfType ("__fps16x16_neq", charType, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_lt = funcOfType ("__fps16x16_lt", charType, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_lteq = funcOfType ("__fps16x16_lteq", charType, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_gt = funcOfType ("__fps16x16_gt", charType, fixed16x16Type, 2, options.float_rent);
-  __fps16x16_gteq = funcOfType ("__fps16x16_gteq", charType, fixed16x16Type, 2, options.float_rent);
+  fps16x16_add = funcOfType ("__fps16x16_add", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+  fps16x16_sub = funcOfType ("__fps16x16_sub", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+  fps16x16_mul = funcOfType ("__fps16x16_mul", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+  fps16x16_div = funcOfType ("__fps16x16_div", fixed16x16Type, fixed16x16Type, 2, options.float_rent);
+  fps16x16_eq = funcOfType ("__fps16x16_eq", charType, fixed16x16Type, 2, options.float_rent);
+  fps16x16_neq = funcOfType ("__fps16x16_neq", charType, fixed16x16Type, 2, options.float_rent);
+  fps16x16_lt = funcOfType ("__fps16x16_lt", charType, fixed16x16Type, 2, options.float_rent);
+  fps16x16_lteq = funcOfType ("__fps16x16_lteq", charType, fixed16x16Type, 2, options.float_rent);
+  fps16x16_gt = funcOfType ("__fps16x16_gt", charType, fixed16x16Type, 2, options.float_rent);
+  fps16x16_gteq = funcOfType ("__fps16x16_gteq", charType, fixed16x16Type, 2, options.float_rent);
 
   for (tofrom = 0; tofrom < 2; tofrom++)
     {
@@ -3738,12 +3790,12 @@ initCSupport ()
               if (tofrom)
                 {
                   SNPRINTF (buffer, sizeof(buffer), "__fs2%s%s", ssu[su*3], sbwd[bwd]);
-                  __conv[tofrom][bwd][su] = funcOfType (buffer, __multypes[bwd][su], floatType, 1, options.float_rent);
+                  conv[tofrom][bwd][su] = funcOfType (buffer, multypes[bwd][su], floatType, 1, options.float_rent);
                 }
               else
                 {
                   SNPRINTF (buffer, sizeof(buffer), "__%s%s2fs", ssu[su*3], sbwd[bwd]);
-                  __conv[tofrom][bwd][su] = funcOfType (buffer, floatType, __multypes[bwd][su], 1, options.float_rent);
+                  conv[tofrom][bwd][su] = funcOfType (buffer, floatType, multypes[bwd][su], 1, options.float_rent);
                 }
             }
         }
@@ -3758,18 +3810,18 @@ initCSupport ()
               if (tofrom)
                 {
                   SNPRINTF (buffer, sizeof(buffer), "__fps16x162%s%s", ssu[su*3], fp16x16sbwd[bwd]);
-                  if(bwd == 3) {
-                    __fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, floatType, fixed16x16Type, 1, options.float_rent);
-                  } else
-                    __fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, __multypes[bwd][su], fixed16x16Type, 1, options.float_rent);
+                  if(bwd == 3)
+                    fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, floatType, fixed16x16Type, 1, options.float_rent);
+                  else
+                    fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, multypes[bwd][su], fixed16x16Type, 1, options.float_rent);
                 }
               else
                 {
                   SNPRINTF (buffer, sizeof(buffer), "__%s%s2fps16x16", ssu[su*3], fp16x16sbwd[bwd]);
-                  if(bwd == 3) {
-                    __fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, fixed16x16Type, floatType, 1, options.float_rent);
-                  } else
-                    __fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, fixed16x16Type, __multypes[bwd][su], 1, options.float_rent);
+                  if(bwd == 3)
+                    fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, fixed16x16Type, floatType, 1, options.float_rent);
+                  else
+                    fp16x16conv[tofrom][bwd][su] = funcOfType (buffer, fixed16x16Type, multypes[bwd][su], 1, options.float_rent);
                 }
             }
         }
@@ -3787,8 +3839,8 @@ initCSupport ()
                        smuldivmod[muldivmod],
                        ssu[su*3],
                        sbwd[bwd]);
-              __muldiv[muldivmod][bwd][su] = funcOfType (_mangleFunctionName(buffer), __multypes[bwd][su], __multypes[bwd][su], 2, options.intlong_rent);
-              FUNC_NONBANKED (__muldiv[muldivmod][bwd][su]->type) = 1;
+              muldiv[muldivmod][bwd][su] = funcOfType (_mangleFunctionName(buffer), multypes[bwd][su], multypes[bwd][su], 2, options.intlong_rent);
+              FUNC_NONBANKED (muldiv[muldivmod][bwd][su]->type) = 1;
             }
         }
     }
@@ -3813,10 +3865,10 @@ initCSupport ()
                   smuldivmod[muldivmod],
                   ssu[su],
                   sbwd[bwd]);
-              __muldiv[muldivmod][bwd][su] = funcOfType (
+              muldiv[muldivmod][bwd][su] = funcOfType (
                   _mangleFunctionName(buffer),
-                  __multypes[bwd][su%2],
-                  __multypes[bwd][su/2],
+                  multypes[bwd][su%2],
+                  multypes[bwd][su/2],
                   2,
                   options.intlong_rent);
             }
@@ -3837,10 +3889,10 @@ initCSupport ()
                       smuldivmod[muldivmod],
                       ssu[su*3],
                       sbwd[bwd]);
-                  __muldiv[muldivmod][bwd][su] = funcOfType (
+                  muldiv[muldivmod][bwd][su] = funcOfType (
                       _mangleFunctionName(buffer),
-                      __multypes[bwd][su],
-                      __multypes[bwd][su],
+                      multypes[bwd][su],
+                      multypes[bwd][su],
                       2,
                       options.intlong_rent);
                 }
@@ -3863,10 +3915,10 @@ initCSupport ()
               smuldivmod[muldivmod],
               ssu[su],
               sbwd[bwd]);
-          __muldiv[muldivmod][bwd][su] = funcOfType (
+          muldiv[muldivmod][bwd][su] = funcOfType (
               _mangleFunctionName(buffer),
-              __multypes[1][su],
-              __multypes[bwd][su],
+              multypes[1][su],
+              multypes[bwd][su],
               2,
               options.intlong_rent);
         }
@@ -3884,17 +3936,17 @@ initCSupport ()
                 "_%s%s",
                 smuldivmod[muldivmod],
                 sbwd[bwd]);
-      __muldiv[muldivmod][bwd][0] = funcOfType (
+      muldiv[muldivmod][bwd][0] = funcOfType (
           _mangleFunctionName(buffer),
-          __multypes[bwd][su],
-          __multypes[bwd][su],
+          multypes[bwd][su],
+          multypes[bwd][su],
           2,
           options.intlong_rent);
       /* signed = unsigned */
-      __muldiv[muldivmod][bwd][1] = __muldiv[muldivmod][bwd][0];
+      muldiv[muldivmod][bwd][1] = muldiv[muldivmod][bwd][0];
     }
 
-  for (rlrr = 0; rlrr < 2; rlrr++)
+  for (slsr = 0; slsr < 2; slsr++)
     {
       for (bwd = 0; bwd < 3; bwd++)
         {
@@ -3902,13 +3954,13 @@ initCSupport ()
             {
               SNPRINTF (buffer, sizeof(buffer),
                         "_%s%s%s",
-                       srlrr[rlrr],
+                       srlrr[slsr],
                        ssu[su*3],
                        sbwd[bwd]);
-              __rlrr[rlrr][bwd][su] = funcOfType (
+              rlrr[slsr][bwd][su] = funcOfType (
                   _mangleFunctionName(buffer),
-                  __multypes[bwd][su],
-                  __multypes[0][0],
+                  multypes[bwd][su],
+                  multypes[0][0],
                   2,
                   options.intlong_rent);
             }

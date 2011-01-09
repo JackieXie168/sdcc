@@ -49,8 +49,8 @@ BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
-# ADD BASE LINK32 mcs51\Debug\port.lib z80\Debug\port.lib avr\Debug\port.lib ds390\Debug\port.lib pic\Debug\port.lib /nologo /subsystem:console /debug /machine:I386 /out:"..\bin_vc\sdcc.exe" /pdbtype:sept
-# ADD LINK32 mcs51\Debug\port.lib z80\Debug\port.lib avr\Debug\port.lib ds390\Debug\port.lib pic\Debug\port.lib /nologo /subsystem:console /debug /machine:I386 /out:"..\bin_vc\sdcc.exe" /pdbtype:sept
+# ADD BASE LINK32 mcs51\Debug\port.lib z80\Debug\port.lib avr\Debug\port.lib ds390\Debug\port.lib pic14\Debug\port.lib /nologo /subsystem:console /debug /machine:I386 /out:"..\bin_vc\sdcc.exe" /pdbtype:sept
+# ADD LINK32 mcs51\Debug\port.lib z80\Debug\port.lib avr\Debug\port.lib ds390\Debug\port.lib pic14\Debug\port.lib /nologo /subsystem:console /debug /machine:I386 /out:"..\bin_vc\sdcc.exe" /pdbtype:sept
 
 !ELSEIF  "$(CFG)" == "src - Win32 Release"
 
@@ -74,8 +74,8 @@ BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
-# ADD BASE LINK32 mcs51\Release\port.lib z80\Release\port.lib avr\Release\port.lib ds390\Release\port.lib pic\Release\port.lib /nologo /subsystem:console /pdb:none /machine:I386 /out:"..\bin_vc\sdcc.exe"
-# ADD LINK32 mcs51\Release\port.lib z80\Release\port.lib avr\Release\port.lib ds390\Release\port.lib pic\Release\port.lib /nologo /subsystem:console /pdb:none /machine:I386 /out:"..\bin_vc\sdcc.exe"
+# ADD BASE LINK32 mcs51\Release\port.lib z80\Release\port.lib avr\Release\port.lib ds390\Release\port.lib pic14\Release\port.lib /nologo /subsystem:console /pdb:none /machine:I386 /out:"..\bin_vc\sdcc.exe"
+# ADD LINK32 mcs51\Release\port.lib z80\Release\port.lib avr\Release\port.lib ds390\Release\port.lib pic14\Release\port.lib /nologo /subsystem:console /pdb:none /machine:I386 /out:"..\bin_vc\sdcc.exe"
 
 !ENDIF 
 
@@ -88,10 +88,6 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=..\support\Util\BuildCmd.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\cdbFile.c
 # End Source File
 # Begin Source File
@@ -101,10 +97,6 @@ SOURCE=..\support\Util\dbuf.c
 # Begin Source File
 
 SOURCE=..\support\Util\dbuf_string.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\support\Util\MySystem.c
 # End Source File
 # Begin Source File
 
@@ -158,6 +150,10 @@ SOURCE=.\SDCCBBlock.c
 # Begin Source File
 
 SOURCE=.\SDCCbitv.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\SDCCbuild_cmd.c
 # End Source File
 # Begin Source File
 
@@ -245,6 +241,10 @@ SOURCE=.\SDCCsymt.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\SDCCsystem.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\SDCCutil.c
 # End Source File
 # Begin Source File
@@ -273,10 +273,6 @@ SOURCE=..\support\Util\dbuf_string.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\support\Util\MySystem.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\support\Util\newalloc.h
 # End Source File
 # Begin Source File
@@ -302,6 +298,10 @@ SOURCE=.\SDCCBBlock.h
 # Begin Source File
 
 SOURCE=.\SDCCbitv.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SDCCbuild_cmd.h
 # End Source File
 # Begin Source File
 
@@ -374,6 +374,10 @@ SOURCE=.\SDCCset.h
 # Begin Source File
 
 SOURCE=.\SDCCsymt.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SDCCsystem.h
 # End Source File
 # Begin Source File
 

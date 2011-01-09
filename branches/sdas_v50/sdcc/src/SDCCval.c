@@ -227,6 +227,7 @@ copyIlist (initList * src)
     }
 
   if (src->next)
+    assert (dest != NULL);
     dest->next = copyIlist (src->next);
 
   return dest;
@@ -321,11 +322,11 @@ symbolVal (symbol * sym)
 
   if (*sym->rname)
     {
-        SNPRINTF (val->name, sizeof(val->name), "%s", sym->rname);
+      SNPRINTF (val->name, sizeof(val->name), "%s", sym->rname);
     }
   else
     {
-        SNPRINTF (val->name, sizeof(val->name), "_%s", sym->name);
+      SNPRINTF (val->name, sizeof(val->name), "_%s", sym->name);
     }
 
   return val;
@@ -716,7 +717,7 @@ value *constVal (const char *s)
   double dval;
   bool is_integral = 0;
 
-  val = newValue ();            /* alloc space for value   */
+  val = newValue (); /* alloc space for value */
 
   val->type = val->etype = newLink (SPECIFIER); /* create the specifier */
   SPEC_SCLS (val->type) = S_LITERAL;
@@ -1342,8 +1343,7 @@ valMult (value * lval, value * rval)
 
   if (IS_FLOAT (val->type))
     SPEC_CVAL (val->type).v_float = floatFromVal (lval) * floatFromVal (rval);
-  else
-  if (IS_FIXED16X16 (val->type))
+  else if (IS_FIXED16X16 (val->type))
     SPEC_CVAL (val->type).v_fixed16x16 = fixed16x16FromDouble(floatFromVal (lval) * floatFromVal (rval));
       /* signed and unsigned mul are the same, as long as the precision of the
          result isn't bigger than the precision of the operands. */
@@ -1465,18 +1465,18 @@ valPlus (value * lval, value * rval)
 
   /* create a new value */
   val = newValue();
-  val->type = val->etype = computeType (lval->etype,
-                                        rval->etype,
-                                        RESULT_TYPE_INT,
-                                        '+');
+  val->type = computeType (lval->type, rval->type, RESULT_TYPE_INT, '+');
+  val->etype = getSpec (val->type);
   SPEC_SCLS (val->etype) = S_LITERAL; /* will remain literal */
 
-  if (IS_FLOAT (val->type))
+  if (!IS_SPEC (val->type))
+    SPEC_CVAL (val->etype).v_ulong = (TYPE_TARGET_ULONG) ulFromVal (lval) +
+      (TYPE_TARGET_ULONG) ulFromVal (rval);
+  else if (IS_FLOAT (val->type))
     SPEC_CVAL (val->type).v_float = floatFromVal (lval) + floatFromVal (rval);
-  else
-  if (IS_FIXED16X16 (val->type))
+  else if (IS_FIXED16X16 (val->type))
     SPEC_CVAL (val->type).v_fixed16x16 = fixed16x16FromDouble( floatFromVal (lval) + floatFromVal (rval) );
-  else  if (SPEC_LONG (val->type))
+  else if (SPEC_LONG (val->type))
     {
       if (SPEC_USIGN (val->type))
         SPEC_CVAL (val->type).v_ulong = (TYPE_TARGET_ULONG) ulFromVal (lval) +
@@ -1507,16 +1507,16 @@ valMinus (value * lval, value * rval)
 
   /* create a new value */
   val = newValue();
-  val->type = val->etype = computeType (lval->etype,
-                                        rval->etype,
-                                        RESULT_TYPE_INT,
-                                        '-');
+  val->type = computeType (lval->type, rval->type, RESULT_TYPE_INT, '-');
+  val->etype = getSpec (val->type);
   SPEC_SCLS (val->etype) = S_LITERAL; /* will remain literal */
 
-  if (IS_FLOAT (val->type))
+  if (!IS_SPEC (val->type))
+    SPEC_CVAL (val->etype).v_ulong = (TYPE_TARGET_ULONG) ulFromVal (lval) -
+      (TYPE_TARGET_ULONG) ulFromVal (rval);
+  else if (IS_FLOAT (val->type))
     SPEC_CVAL (val->type).v_float = floatFromVal (lval) - floatFromVal (rval);
-  else
-  if (IS_FIXED16X16 (val->type))
+  else if (IS_FIXED16X16 (val->type))
     SPEC_CVAL (val->type).v_fixed16x16 = fixed16x16FromDouble( floatFromVal (lval) - floatFromVal (rval) );
   else  if (SPEC_LONG (val->type))
     {
