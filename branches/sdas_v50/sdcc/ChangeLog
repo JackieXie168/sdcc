@@ -1,3 +1,8 @@
+2011-01-09 Borut Razem <borut.razem AT siol.net>
+
+	* */*: merged with changes from main branch, revision #6092
+	* src/pic14/glue.c: removed extra newline
+
 2011-01-08 Borut Razem <borut.razem AT siol.net>
 
 	* */*: merged with changes from main branch, revision #6092

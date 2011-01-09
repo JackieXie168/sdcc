@@ -1,6 +1,6 @@
 /* sdas.c
 
-   Copyright (C) 2009 Borut Razem
+   Copyright (C) 2009-2010 Borut Razem
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "sdas.h"
 
@@ -86,7 +87,7 @@ sdas_init (char *path)
             {
               target = tgt[i].target;
               break;
-	    }
+            }
         }
     }
   /* diagnostic message */

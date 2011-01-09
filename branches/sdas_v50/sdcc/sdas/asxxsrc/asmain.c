@@ -189,7 +189,7 @@ main(argc, argv)
 int argc;
 char *argv[];
 {
-	char *p, *q;
+	char *p, *q = NULL;
 	int c, i;
 	struct area *ap;
 	struct def *dp;

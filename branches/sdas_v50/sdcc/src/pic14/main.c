@@ -5,7 +5,7 @@
     it easier to set a breakpoint using the debugger.
 */
 #include "common.h"
-#include "MySystem.h"
+#include "SDCCsystem.h"
 #include "SDCCmacro.h"
 
 #include "device.h"
@@ -81,10 +81,12 @@ static int regParmFlg = 0;  /* determine if we can register a parameter */
     $l is the list of extra options that should be there somewhere...
     MUST be terminated with a NULL.
 */
+/*
 static const char *_linkCmd[] =
 {
   "gplink", "$l", "-w", "-r", "-o \"$2\"", "\"$1\"", "$3", NULL
 };
+*/
 
 static const char *_asmCmd[] =
 {
@@ -230,17 +232,17 @@ _pic14_do_link (void)
    *
    */
 
-  sprintf(lfrm, "{linker} {incdirs} {sysincdirs} {lflags} -w -r -o {outfile} {user_ofile} {spec_ofiles} {ofiles} {libs}");
+  sprintf (lfrm, "{linker} {incdirs} {sysincdirs} {lflags} -w -r -o \"{outfile}\" \"{user_ofile}\" {spec_ofiles} {ofiles} {libs}");
 
-  shash_add(&linkValues, "linker", "gplink");
+  shash_add (&linkValues, "linker", "gplink");
 
   /* LIBRARY SEARCH DIRS */
-  mergeSets(&tSet, libPathsSet);
-  mergeSets(&tSet, libDirsSet);
-  shash_add(&linkValues, "incdirs", joinStrSet(appendStrSet(tSet, "-I\"", "\"")));
+  mergeSets (&tSet, libPathsSet);
+  mergeSets (&tSet, libDirsSet);
+  shash_add (&linkValues, "incdirs", joinStrSet (appendStrSet (tSet, "-I\"", "\"")));
 
   joinStrSet (appendStrSet (libDirsSet, "-I\"", "\""));
-  shash_add (&linkValues, "sysincdirs", joinStrSet (appendStrSet(libDirsSet, "-I\"", "\"")));
+  shash_add (&linkValues, "sysincdirs", joinStrSet (appendStrSet (libDirsSet, "-I\"", "\"")));
   
   shash_add (&linkValues, "lflags", joinStrSet (linkOptionsSet));
 
@@ -252,23 +254,23 @@ _pic14_do_link (void)
       shash_add (&linkValues, "user_ofile", temp);
     }
 
-  shash_add (&linkValues, "ofiles", joinStrSet (relFilesSet));
+  shash_add (&linkValues, "ofiles", joinStrSet (appendStrSet (relFilesSet, "\"", "\"")));
 
   /* LIBRARIES */
-  procName = processor_base_name();
+  procName = processor_base_name ();
   if (!procName)
     {
       procName = "16f877";
     }
 
   addSet (&libFilesSet, Safe_strdup ("libsdcc.lib"));
-  SNPRINTF(temp, sizeof (temp), "pic%s.lib", procName);
+  SNPRINTF (temp, sizeof (temp), "pic%s.lib", procName);
   addSet (&libFilesSet, Safe_strdup (temp));
-  shash_add (&linkValues, "libs", joinStrSet (libFilesSet));
+  shash_add (&linkValues, "libs", joinStrSet (appendStrSet (libFilesSet, "\"", "\"")));
 
   lcmd = msprintf(linkValues, lfrm);
 
-  ret = my_system (lcmd);
+  ret = sdcc_system (lcmd);
 
   Safe_free (lcmd);
 
@@ -276,16 +278,10 @@ _pic14_do_link (void)
     exit (1);
 }
 
-static const char *
-get_model (void)
-{
-  return "pic";
-}
-
 /* Globals */
 PORT pic_port =
 {
-  TARGET_ID_PIC,
+  TARGET_ID_PIC14,
   "pic14",
   "MCU pic",        /* Target name */
   "",               /* Processor */
@@ -294,7 +290,7 @@ PORT pic_port =
     TRUE,           /* Emit glue around main */
     NO_MODEL,
     NO_MODEL,
-    get_model,
+    NULL,           /* model == target */
   },
   {
     _asmCmd,
@@ -308,7 +304,7 @@ PORT pic_port =
     NULL            /* no do_assemble function */
   },
   {
-    _linkCmd,
+    NULL,
     NULL,
     _pic14_do_link, /* own do link function */
     ".o",
