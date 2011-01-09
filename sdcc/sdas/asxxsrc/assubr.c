@@ -1,7 +1,7 @@
 /* assubr.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2010  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -196,6 +196,7 @@ char *errors[] = {
 	"<r> relocation error",
 	"<s> string substitution / recursion error",
 	"<u> undefined symbol encountered during assembly",
+	"<v> out of range signed / unsigned value",
 	"<z> divide by zero or mod of zero error",
 	NULL
 };

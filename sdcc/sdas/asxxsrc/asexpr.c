@@ -1,7 +1,7 @@
 /* asexpr.c */
 
 /*
- *  Copyright (C) 1989-2009  Alan R. Baldwin
+ *  Copyright (C) 1989-2010  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -129,7 +129,7 @@ int n;
 		esp->e_rlcf |= re.e_rlcf;
 		
 		/*
-		 * 16-Bit Unsigned Arithmetic
+		 * N-Bit Unsigned Arithmetic
 		 */
 		ae = esp->e_addr & a_mask;
 		ar = re.e_addr & a_mask;
@@ -229,7 +229,7 @@ int n;
 				break;
 			}
 		}
-		esp->e_addr = (ae & s_mask) ? ae | ~v_mask : ae & v_mask;
+		esp->e_addr = rngchk(ae);
 	}
 	unget(c);
 }
@@ -417,6 +417,7 @@ struct expr *esp;
 				n = 10*n + v;
 				c = get();
 			}
+			n = rngchk(n);
 			tp = symp->s_tsym;
 			while (tp) {
 				if (n == tp->t_num) {
@@ -466,7 +467,7 @@ struct expr *esp;
 			c = get();
 		}
 		unget(c);
-		esp->e_addr = (n & s_mask) ? n | ~v_mask : n & v_mask;
+		esp->e_addr = rngchk(n);
 		return;
 	}
 	/*
@@ -500,7 +501,7 @@ struct expr *esp;
 			}
 			unget(c);
 			esp->e_mode = S_USER;
-			esp->e_addr = (n & s_mask) ? n | ~v_mask : n & v_mask;
+			esp->e_addr = rngchk(n);
 			return;
 		}
 		unget(c);
@@ -724,6 +725,51 @@ struct expr *esp;
 	esp->e_addr = 0;
 	esp->e_base.e_ap = NULL;
 	esp->e_rlcf = 0;
+}
+
+/*)Function	a_uint	rngchk(n)
+ *
+ *		a_uint	n		a signed /unsigned value
+ *
+ *	The function rngchk() verifies that the
+ *	value of n is a signed or unsigned value
+ *	within the range of the current exprmasks()
+ *	settings and returns the value masked to
+ *	the current exprmasks() settings.
+ *
+ *	local variables:
+ *		none
+ *
+ *	global variables:
+ *		a_uint	a_mask		Address mask
+ *		int	vflag		Enable flag
+ *		a_aint	v_mask		Value mask
+ *
+ *	functions called:
+ *		VOID	err()		assubr.c
+ *
+ *	side effects:
+ *		a 'v' error message may be generated.
+ *
+ *	Note:
+ *		When the default arithmetic size is the
+ *		same as the default sizeof(int) then the
+ *		arithmetic overflow cannot be determined.
+ *		This ambiguity is caused by the inability
+ *		to distinguish signed and unsigned values
+ *		at the instrinsic sizeof(int) size. 
+ */
+
+a_uint
+rngchk(n)
+a_uint n;
+{
+	if (vflag) {
+		if ((n & ~a_mask) && ((n & ~a_mask) != ~a_mask)) {
+			err('v');
+		}
+	}
+	return(n & s_mask) ? n | ~v_mask : n & v_mask;
 }
 
 /*)Function	VOID	exprmasks(esp)
