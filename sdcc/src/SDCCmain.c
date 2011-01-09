@@ -65,7 +65,7 @@ char *moduleNameBase;           /* module name base is source file without path 
 char *moduleName;               /* module name is same as module name base, but with all */
                                 /* non-alphanumeric characters replaced with underscore */
 int currRegBank = 0;
-int RegBankUsed[4] = {1, 0, 0, 0}; /*JCF: Reg Bank 0 used by default*/
+int RegBankUsed[4] = {1, 0, 0, 0}; /*JCF: Reg Bank 0 used by default */
 
 int BitBankUsed;                /* MB: overlayable bit bank */
 struct optimize optimize;
@@ -370,7 +370,7 @@ _validatePorts (void)
           /* Uncomment this line to debug which port is causing the problem
            * (the target name is close to the beginning of the port struct
            * and probably can be accessed just fine). */
-          fprintf (stderr,"%s :",_ports[i]->target);
+          fprintf (stderr,"%s :", _ports[i]->target);
           wassertl (0, "Port definition structure is incomplete");
         }
     }
@@ -483,9 +483,9 @@ printOptions (const OPTION *optionsTable, FILE *stream)
       else
         {
           fprintf (stream, "  %c%c  %-20s  %s\n",
-                  optionsTable[i].shortOpt !=0 ? '-' : ' ',
-                  optionsTable[i].shortOpt !=0 ? optionsTable[i].shortOpt : ' ',
-                  optionsTable[i].longOpt != NULL ? optionsTable[i].longOpt : "",
+                   optionsTable[i].shortOpt != 0 ? '-' : ' ',
+                   optionsTable[i].shortOpt != 0 ? optionsTable[i].shortOpt : ' ',
+                   optionsTable[i].longOpt != NULL ? optionsTable[i].longOpt : "",
                    optionsTable[i].help != NULL ? optionsTable[i].help : "");
         }
     }
@@ -574,9 +574,9 @@ setDefaultOptions (void)
   options.shortis8bits = 0;
   options.std_sdcc = 1;           /* enable SDCC language extensions */
   options.std_c99 = 0;            /* default to C89 until more C99 support */
-  options.code_seg = CODE_NAME ? Safe_strdup(CODE_NAME) : NULL; /* default to CSEG for generated code */
-  options.const_seg = CONST_NAME ? Safe_strdup(CONST_NAME) : NULL; /* default to CONST for generated code */
-  options.stack10bit=0;
+  options.code_seg = CODE_NAME ? Safe_strdup (CODE_NAME) : NULL; /* default to CSEG for generated code */
+  options.const_seg = CONST_NAME ? Safe_strdup (CONST_NAME) : NULL; /* default to CONST for generated code */
+  options.stack10bit = 0;
   options.out_fmt = 0;
 
   /* now for the optimizations */
@@ -781,7 +781,7 @@ tryHandleUnsupportedOpt (char **argv, int *pi)
             {
               /* Found an unsupported opt. */
               char buffer[100];
-              SNPRINTF(buffer, sizeof (buffer),
+              SNPRINTF (buffer, sizeof (buffer),
                         "%s%c%c", longOpt ? longOpt : "", shortOpt ? '-' : ' ', shortOpt ? shortOpt : ' ');
               werror (W_UNSUPP_OPTION, buffer, unsupportedOptTable[i].message);
               return 1;
@@ -1078,7 +1078,7 @@ parseCmdLine (int argc, char **argv)
           if (strcmp (argv[i], OPTION_WERROR) == 0)
             {
               setWError (1);
-              addSet (&preArgvSet, Safe_strdup("-Werror"));
+              addSet (&preArgvSet, Safe_strdup ("-Werror"));
               continue;
             }
 
@@ -1172,11 +1172,11 @@ parseCmdLine (int argc, char **argv)
               break;
 
             case 'L':
-              addSet (&libPathsSet, Safe_strdup(getStringArg("-L", argv, &i, argc)));
+              addSet (&libPathsSet, Safe_strdup (getStringArg("-L", argv, &i, argc)));
               break;
 
             case 'l':
-              addSet(&libFilesSet, Safe_strdup(getStringArg("-l", argv, &i, argc)));
+              addSet (&libFilesSet, Safe_strdup (getStringArg ("-l", argv, &i, argc)));
               break;
 
             case 'o':
@@ -1223,17 +1223,17 @@ parseCmdLine (int argc, char **argv)
               /* pre-processer options */
               if (argv[i][2] == 'p')
                 {
-                  setParseWithComma (&preArgvSet, getStringArg("-Wp", argv, &i, argc));
+                  setParseWithComma (&preArgvSet, getStringArg ("-Wp", argv, &i, argc));
                 }
               /* linker options */
               else if (argv[i][2] == 'l')
                 {
-                  setParseWithComma (&linkOptionsSet, getStringArg("-Wl", argv, &i, argc));
+                  setParseWithComma (&linkOptionsSet, getStringArg ("-Wl", argv, &i, argc));
                 }
               /* assembler options */
               else if (argv[i][2] == 'a')
                 {
-                  setParseWithComma (&asmOptionsSet, getStringArg("-Wa", argv, &i, argc));
+                  setParseWithComma (&asmOptionsSet, getStringArg ("-Wa", argv, &i, argc));
                 }
               else
                 {
@@ -1274,7 +1274,7 @@ parseCmdLine (int argc, char **argv)
                     if (i >= argc)
                       {
                         /* No argument. */
-                        werror (E_ARGUMENT_MISSING, argv[i-1]);
+                        werror (E_ARGUMENT_MISSING, argv[i - 1]);
                         break;
                       }
                     else
@@ -1289,11 +1289,11 @@ parseCmdLine (int argc, char **argv)
                   sOpt = 'I';
 
                 SNPRINTF (buffer, sizeof (buffer), ((sOpt == 'I') ? "-%c\"%s\"" : "-%c%s"), sOpt, rest);
-                addSet (&preArgvSet, Safe_strdup(buffer));
+                addSet (&preArgvSet, Safe_strdup (buffer));
                 if (sOpt == 'I')
                   {
-                    addSet (&includeDirsSet, Safe_strdup(rest));
-                    addSet (&userIncDirsSet, Safe_strdup(rest));
+                    addSet (&includeDirsSet, Safe_strdup (rest));
+                    addSet (&userIncDirsSet, Safe_strdup (rest));
                   }
               }
               break;
@@ -1541,8 +1541,8 @@ linkEdit (char **envp)
           if (options.iram_size)
             fprintf (lnkfile, "-a 0x%04x\n", options.iram_size);
 
-          /* if stack size specified*/
-          if(options.stack_size)
+          /* if stack size specified */
+          if (options.stack_size)
             fprintf (lnkfile, "-A 0x%02x\n", options.stack_size);
 
           /* if xram size specified */
@@ -1609,7 +1609,7 @@ linkEdit (char **envp)
               WRITE_SEG_LOC ("SSEG", options.stack_loc);
             }
         }
-      else /*For the z80, gbz80*/
+      else /*For the z80, gbz80 */
         {
           WRITE_SEG_LOC ("_CODE", options.code_loc);
           WRITE_SEG_LOC ("_DATA", options.data_loc);
@@ -1781,7 +1781,7 @@ linkEdit (char **envp)
 
           if (fullSrcFileName)
             {
-//            strcpy (buffer3, strrchr(fullSrcFileName, DIR_SEPARATOR_CHAR)+1);
+//            strcpy (buffer3, strrchr (fullSrcFileName, DIR_SEPARATOR_CHAR) + 1);
               /* if it didn't work, revert to old behaviour */
               if (buffer3[0] == '\0')
                 strcpy (buffer3, dstFileName);
@@ -1927,7 +1927,7 @@ preProcess (char **envp)
 
       /* if using dollar signs in identifiers */
       if (options.dollars_in_ident)
-        addSe t(&preArgvSet, Safe_strdup ("-fdollars-in-identifiers"));
+        addSet (&preArgvSet, Safe_strdup ("-fdollars-in-identifiers"));
 
       /* if using external stack define the macro */
       if (options.useXstack)
@@ -2011,7 +2011,7 @@ preProcess (char **envp)
       {
         char buf[25];
         SNPRINTF (buf, sizeof (buf), "-DSDCC_REVISION=%s", getBuildNumber ());
-        addSe t(&preArgvSet, Safe_strdup (buf));
+        addSet (&preArgvSet, Safe_strdup (buf));
       }
 
       /* add port (processor information to processor */
@@ -2056,6 +2056,9 @@ preProcess (char **envp)
         {
           if (sdcc_system (buffer))
             {
+              exit (EXIT_FAILURE);
+            }
+
           exit (EXIT_FAILURE);
         }
 
@@ -2218,7 +2221,7 @@ setDataPaths (const char *argv0)
     {
       SNPRINTF (buf, sizeof buf, "%s" BIN2DATA_DIR, p);
       Safe_free ((void *)p);
-      addSet (&dataDirsSet, Safe_strdup(buf));
+      addSet (&dataDirsSet, Safe_strdup (buf));
     }
 
 #ifdef _WIN32
@@ -2390,7 +2393,7 @@ main (int argc, char **argv, char **envp)
   if (ds390_jammed)
     {
       options.model = MODEL_SMALL;
-      options.stack10bit=0;
+      options.stack10bit = 0;
     }
 #endif
 
