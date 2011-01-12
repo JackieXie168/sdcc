@@ -1,3 +1,7 @@
+2011-01-12 Borut Razem <borut.razem AT siol.net>
+
+	* sdas/asxxsrc/asmain.c (asmbl): error on multiple mnemonics on one line if is_sdas()
+
 2011-01-09 Borut Razem <borut.razem AT siol.net>
 
 	* */*: merged with changes from main branch, revision #6092

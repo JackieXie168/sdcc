@@ -2138,7 +2138,14 @@ loop:
 
 		break;
 	}
-	goto loop;
+	if (is_sdas()) {
+		if ((c = endline()) != 0) {
+			err('q');
+		}
+	}
+	else {
+		goto loop;
+	}
 }
 
 /*)Function	VOID	equate(id,e1,equtype)
