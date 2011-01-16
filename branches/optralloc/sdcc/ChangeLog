@@ -1,5 +1,22 @@
 2011-01-16 Philipp Klaus Krause <pkk AT spth.de>
 
+	* configure.in,
+	  configure,
+	  Makefile.common.in,
+	  src/Makefile.in,
+	  src/port.mk,
+	  src/SDCCsymt.h,
+	  src/SDCCsymt.c,
+	  src/z80/z80.h,
+	  src/z80/main.c,
+	  src/z80/ralloc.h,
+	  src/z80/ralloc.c,
+	  src/z80/tree_dec.hh,
+	  src/z80/ralloc2.cc:
+	  Initial import of the new register allocator.
+
+2011-01-16 Philipp Klaus Krause <pkk AT spth.de>
+
 	* SDCClrange.h,
 	  SDCClrange.c:
 	  Comment on the effects of dead code on live ranges.
