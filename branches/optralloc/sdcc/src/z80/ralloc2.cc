@@ -44,12 +44,12 @@ struct assignment
 {
 	float s;
 
-	std::map<unsigned short int, unsigned short int> local;	// Entries: (var, reg)
+	std::set<unsigned short int> local;	// Entries: var
 	std::vector<signed char> global;	// Entries: gloabal[var] = reg (-1 if no reg assigned)
 
 	bool operator<(const assignment& a) const
 	{
-		std::map<unsigned short int, unsigned short int>::const_iterator i, ai, i_end, ai_end;
+		std::set<unsigned short int>::const_iterator i, ai, i_end, ai_end;
 
 		i_end = local.end();
 		ai_end = a.local.end();
@@ -61,14 +61,14 @@ struct assignment
 			if(ai == ai_end)
 				return(false);
 
-			if(i->first < ai->first)
+			if(*i < *ai)
 				return(true);
-			if(i->first > ai->first)
+			if(*i > *ai)
 				return(false);
 
-			if(i->second < ai->second)
+			if(global[*i] < a.global[*ai])
 				return(true);
-			if(i->second > ai->second)
+			if(global[*i] > a.global[*ai])
 				return(false);
 		}
 	}
@@ -266,17 +266,17 @@ void print_assignment(const assignment &a)
 template <class I_t>
 bool assignment_ok_conflict(const assignment &a, const I_t &I)
 {
-	std::map<unsigned short int, unsigned short int>::const_iterator i, j;
+	std::set<unsigned short int>::const_iterator i, j;
 
 	for(i = a.local.begin(); i != a.local.end(); ++i)
 		for(j = i, ++j; j != a.local.end(); ++j)
 		{
 			// Different registers - always OK.
-			if(i->second != j->second)
+			if(a.global[*i] != a.global[*j])
 				continue;
 
 			// Same registers - check for conflict.
-			if(boost::edge(i->first, j->first, I).second)
+			if(boost::edge(*i, *j, I).second)
 				return(false);
 		}
 	return(true);
@@ -293,12 +293,10 @@ void assignment_introduce_variable(std::list<assignment> &alist, unsigned short 
 		++ai2;
 		
 		assignment a = *ai;
-
-		unsigned short int r;
-		for(r = 0; r < NUM_REGS; r++)
+		a.local.insert(v);
+		for(unsigned short int r = 0; r < NUM_REGS; r++)
 		{
-			a.local[v] = r;
-
+			a.global[v] = r;
 			if(assignment_ok_conflict(a, I))
 				alist.insert(ai2, a);
 		}
@@ -311,7 +309,6 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 	float c = 0.0f;
 
 	std::map<int, unsigned short int>::const_iterator oi, oi_end;
-	std::map<unsigned short int, unsigned short int>::const_iterator vi;
 
 	unsigned short int byteregs[4];	// Todo: Change this when sdcc supports variables larger than 4 bytes.
 	unsigned short int size;
@@ -324,17 +321,17 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 			unsigned short int v = oi->second;
 
 			// In registers.
-			if((vi = a.local.find(v)) != a.local.end())
+			if(a.local.find(v) != a.local.end())
 			{
 				c += 1.0f;
-				byteregs[I[v].byte] = vi->second;
+				byteregs[I[v].byte] = a.global[v];
 				size = 1;
 
 				while(++oi != oi_end)
 				{
 					v = oi->second;
-					c += ((vi = a.local.find(v)) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
-					byteregs[I[v].byte] = vi->second;
+					c += (a.local.find(v) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
+					byteregs[I[v].byte] = a.global[v];
 					size++;
 				}
 
@@ -368,8 +365,6 @@ float default_instruction_cost(const assignment &a, unsigned short int i, const 
 
 	const iCode *ic = G[i].ic;
 
-	unsigned short int v;
-
 	c += default_operand_cost(IC_RESULT(ic), a, i, G, I);
 	c += default_operand_cost(IC_LEFT(ic), a, i, G, I);
 	c += default_operand_cost(IC_RIGHT(ic), a, i, G, I);
@@ -384,8 +379,6 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	float c = 0.0f;
 	
 	const iCode *ic = G[i].ic;
-	
-	unsigned short int v;
 
 	operand *right = IC_RIGHT(ic);
 	operand *result = IC_RESULT(ic);
@@ -396,7 +389,6 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	signed char byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
 	
 	std::map<int, unsigned short int>::const_iterator oi, oi_end;
-	std::map<unsigned short int, unsigned short int>::const_iterator vi;
 
 	int size1 = 0, size2 = 0;
 	
@@ -405,18 +397,18 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	{
 		unsigned short int v = oi->second;
 
-		if((vi = a.local.find(v)) == a.local.end())
+		if(a.local.find(v) == a.local.end())
 			return(default_instruction_cost(a, i, G, I));
 
 		c += 1.0f;
-		byteregs[I[v].byte] = vi->second;
+		byteregs[I[v].byte] = a.global[v];
 		size1 = 1;
 
 		while(++oi != oi_end)
 		{
 			v = oi->second;
-			c += ((vi = a.local.find(v)) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
-			byteregs[I[v].byte] = vi->second;
+			c += (a.local.find(v) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
+			byteregs[I[v].byte] = a.global[v];
 			size1++;
 		}
 	}
@@ -429,19 +421,19 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	{
 		unsigned short int v = oi->second;
 
-		if((vi = a.local.find(v)) == a.local.end())
+		if(a.local.find(v) == a.local.end())
 			return(default_instruction_cost(a, i, G, I));
 
 		c += 1.0f;
-		if(byteregs[I[v].byte] == vi->second)
+		if(byteregs[I[v].byte] == a.global[v])
 			c -= 2.0f;
 		size2 = 1;
 
 		while(++oi != oi_end)
 		{
 			v = oi->second;
-			c += ((vi = a.local.find(v)) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
-			if(byteregs[I[v].byte] == vi->second)
+			c += (a.local.find(v) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
+			if(byteregs[I[v].byte] == a.global[v])
 				c -= 2.0f;
 			size2++;
 		}
@@ -604,6 +596,20 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 	std::cout << "\n";*/
 }
 
+bool assignments_locally_same(const assignment &a1, const assignment &a2)
+{
+	if(a1.local != a2.local)
+		return(false);
+
+	std::set<unsigned short int>::iterator i, i_end;
+
+	for(i = a1.local.begin(), i_end = a1.local.end(); i != i_end; ++i)
+		if(a1.global[*i] != a2.global[*i])
+			return(false);
+	
+	return(true);
+}
+
 // Handle forget nodes in the nice tree decomposition
 template <class T_t, class G_t, class I_t>
 void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I)
@@ -630,16 +636,13 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 	// Restrict assignments (locally) to current variables.
 	for(ai = alist.begin(); ai != alist.end(); ++ai)
 	{
-		std::map<unsigned short int, unsigned short int>::iterator mi, mi2, m_end;
+		std::set<unsigned short int>::iterator mi, mi2, m_end;
 		for(mi = ai->local.begin(), m_end = ai->local.end(); mi != m_end; mi = mi2)
 		{
 			mi2 = mi;
 			++mi2;
-			if(old_vars.find(mi->first) != old_vars.end())
-			{
-				ai->global[mi->first] = mi->second;
+			if(old_vars.find(*mi) != old_vars.end())
 				ai->local.erase(mi);
-			}
 		}
 	}
 
@@ -650,7 +653,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 	{
 		aif = ai;
 
-		for(++ai; ai != alist.end() && aif->local == ai->local;)
+		for(++ai; ai != alist.end() && assignments_locally_same(*aif, *ai);)
 		{
 			if(aif->s > ai->s)
 			{
@@ -696,7 +699,7 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	std::list<assignment>::iterator ai2, ai3;
 	for(ai2 = alist2.begin(), ai3 = alist3.begin(); ai2 != alist2.end() && ai3 != alist3.end();)
 	{
-		if(ai2->local == ai3->local)
+		if(assignments_locally_same(*ai2, *ai3))
 		{
 			ai2->s += ai3->s;
 			// Avoid double-counting instruction costs.
