@@ -31,7 +31,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 {
 	float c = 0.0f;
 
-	std::map<int, var_t>::const_iterator oi, oi_end;
+	std::multimap<int, var_t>::const_iterator oi, oi_end;
 
 	var_t byteregs[4];	// Todo: Change this when sdcc supports variables larger than 4 bytes.
 	unsigned short int size;
@@ -111,7 +111,7 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 
 	reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
 	
-	std::map<int, var_t>::const_iterator oi, oi_end;
+	std::multimap<int, var_t>::const_iterator oi, oi_end;
 
 	int size1 = 0, size2 = 0;
 	
