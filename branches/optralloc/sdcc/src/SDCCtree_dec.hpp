@@ -168,7 +168,7 @@ template <class T_t>
 typename boost::graph_traits<T_t>::vertex_iterator find_bag(const std::set<unsigned int> &X, const T_t &T)
 {
 	typedef typename boost::graph_traits<T_t>::vertex_iterator T_vertex_iter_t;
-	typedef typename std::set<unsigned int>::iterator vertex_index_iter_t;
+	typedef typename std::set<unsigned int>::const_iterator vertex_index_iter_t;
 
 	T_vertex_iter_t t, t_end, t_found;
 	vertex_index_iter_t v;
@@ -196,7 +196,7 @@ typename boost::graph_traits<T_t>::vertex_iterator find_bag(const std::set<unsig
 template <class G_t>
 void make_clique(const std::set<unsigned int> &X , G_t &G)
 {
-	std::set<unsigned int>::iterator n1, n2;
+	std::set<unsigned int>::const_iterator n1, n2;
 	for(n1 = X.begin(); n1 != X.end(); n1++)
 		for(n2 = n1, ++n2; n2 != X.end(); ++n2)
 			add_edge(*n1, *n2, G);
@@ -248,9 +248,9 @@ void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_
 
 // Create a tree decomposition from en elimination ordering.
 template <class T_t, class G_t>
-void tree_decomposition_from_elimination_ordering(T_t &T, std::list<unsigned int>& l, const G_t &G)
+void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsigned int>& l, const G_t &G)
 {
-	std::list<unsigned int>::reverse_iterator v, v_end;
+	std::list<unsigned int>::const_reverse_iterator v, v_end;
 	v = l.rbegin(), v_end = l.rend();
 
 	// Todo: Implement a graph adaptor for boost that allows to treat directed graphs as undirected graphs.
