@@ -51,7 +51,6 @@
 
 extern "C"
 {
-#include "sdccconf.h"
 #include "SDCCsymt.h"
 #include "SDCCicode.h"
 #include "SDCCBBlock.h"
