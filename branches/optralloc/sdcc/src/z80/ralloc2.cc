@@ -49,10 +49,55 @@ extern "C"
 typedef short int var_t;
 typedef signed char reg_t;
 
+// Assignment at an instruction
 struct i_assignment
 {
-	iCode *ic;
 	short int registers[4][2];
+	
+	i_assignment(void)
+	{
+		for(reg_t r = 0; r < 4; r++)
+			for(unsigned int i = 0; i < 2; i++)
+				registers[r][i] = -1;
+	}
+	
+	bool operator<(const i_assignment &i_a) const
+	{
+		for(reg_t r = 0; r < 4; r++)
+			for(unsigned int i = 0; i < 2; i++)
+			{
+				if(registers[r][i] < i_a.registers[r][i])
+					return(true);
+				else if(registers[r][i] > i_a.registers[r][i])
+					return(false);
+			}
+		return(false);
+	}
+	
+	void add_var(var_t v, reg_t r)
+	{
+		if(registers[r][1] < v)
+		{
+			registers[r][0] = registers[r][1];
+			registers[r][1] = v;
+		}
+		else
+			registers[r][0] = v;
+	}
+	
+	void remove_var(var_t v)
+	{
+		for(reg_t r = 0; r < 4; r++)
+		{
+			if(registers[r][1] == v)
+			{
+				registers[r][1] = registers[r][0];
+				registers[r][0] = -1;
+			}
+			else if(registers[r][0] == v)
+				registers[r][0] = -1;
+		}
+	}
 };
 
 struct assignment
@@ -61,6 +106,8 @@ struct assignment
 
 	std::set<var_t> local;	// Entries: var
 	std::vector<reg_t> global;	// Entries: gloabal[var] = reg (-1 if no reg assigned)
+	
+	std::map<int, i_assignment> i_assignments;
 
 	bool operator<(const assignment& a) const
 	{
@@ -292,8 +339,30 @@ bool assignment_ok_conflict(const assignment &a, const I_t &I)
 	return(true);
 }
 
+template<class G_t>
+void assignments_introduce_instruction(std::list<assignment> &alist, unsigned short int i, const G_t &G)
+{
+	std::list<assignment>::iterator ai, ai_end;
+	
+	for(ai = alist.begin(), ai_end = alist.end(); ai != ai_end; ++ai)
+	{
+		std::set<var_t> i_variables;
+		
+		std::set_intersection(ai->local.begin(), ai->local.end(), G[i].alive.begin(), G[i].alive.end(), std::inserter(i_variables, i_variables.end()));
+		
+		i_assignment ia;
+		
+		std::set<var_t>::iterator v, v_end;
+		for(v = i_variables.begin(), v_end = i_variables.end(); v != v_end; ++v)
+			if(ai->global[*v] >= 0)
+				ia.add_var(*v, ai->global[*v]);
+
+		ai->i_assignments[i] = ia;
+	}
+}
+
 template <class I_t>
-void assignment_introduce_variable(std::list<assignment> &alist, short int v, const I_t &I)
+void assignments_introduce_variable(std::list<assignment> &alist, unsigned short int i, short int v, const I_t &I)
 {
 	std::list<assignment>::iterator ai, ai_end, ai2;
 
@@ -308,7 +377,13 @@ void assignment_introduce_variable(std::list<assignment> &alist, short int v, co
 		{
 			a.global[v] = r;
 			if(assignment_ok_conflict(a, I))
+			{
+				std::map<int, i_assignment>::iterator ia_i = a.i_assignments.find(i);
+				i_assignment ia = ia_i->second;
+				ia_i->second.add_var(v, r);
 				alist.insert(ai2, a);
+				ia_i->second = ia;
+			}
 		}
 	}
 }
@@ -502,13 +577,14 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	a.s = 0;
 	a.global.resize(boost::num_vertices(I), -1);
 	alist.push_back(a);
+	
+	unsigned short int i = *(T[t].bag.begin());
 
 	std::set<var_t>::const_iterator v;
 	for(v = T[t].alive.begin(); v != T[t].alive.end(); ++v)
-		assignment_introduce_variable(alist, *v, I);
+		assignments_introduce_variable(alist, i, *v, I);
 
 	// Summation of costs and early removal of assignments.
-	unsigned short int i = *(T[t].bag.begin());
 	std::list<assignment>::iterator ai;
 	for(ai = alist.begin(); ai != alist.end();)
 	{
@@ -582,18 +658,21 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 	std::set<var_t> new_vars;
 	std::set_difference(T[t].alive.begin(), T[t].alive.end(), T[*c].alive.begin(), T[*c].alive.end(), std::inserter(new_vars, new_vars.end()));
 
+	std::set<unsigned short> new_inst;
+	std::set_difference(T[t].bag.begin(), T[t].bag.end(), T[*c].bag.begin(), T[*c].bag.end(), std::inserter(new_inst, new_inst.end()));
+	unsigned short int i = *(new_inst.begin());
+	
+	// Extend to new instruction.
+	assignments_introduce_instruction(alist, i, G);
+	
 	std::set<var_t>::const_iterator v;
 	for(v = new_vars.begin(); v != new_vars.end(); ++v)
 	{
 		drop_worst_assignments(alist);
-		assignment_introduce_variable(alist, *v, I);
+		assignments_introduce_variable(alist, i, *v, I);
 	}
 
 	// Summation of costs and early removal of assignments.
-	std::set<unsigned short> new_inst;
-	std::set_difference(T[t].bag.begin(), T[t].bag.end(), T[*c].bag.begin(), T[*c].bag.end(), std::inserter(new_inst, new_inst.end()));
-	unsigned short int i = *(new_inst.begin());
-
 	for(ai = alist.begin(); ai != alist.end();)
 	{
 		if((ai->s += instruction_cost(*ai, i, G, I)) == std::numeric_limits<float>::infinity())
@@ -656,6 +735,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 			if(old_vars.find(*mi) != old_vars.end())
 				ai->local.erase(mi);
 		}
+		ai->i_assignments.erase(i);
 	}
 
 	alist.sort();
