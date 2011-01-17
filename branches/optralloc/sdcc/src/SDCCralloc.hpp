@@ -18,6 +18,21 @@
 //
 // An optimal, polynomial-time register allocator.
 // The current version can handle general-purpose registers only.
+//
+// To use this from a port do teh following:
+//
+// 1) Supply a cost function
+// template <class G_t, class I_t>
+// float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+// Which can range from
+// simple, e.g. cost 1 for each byte accessed in a register, cost 4 for each byte accessed in memory
+// to
+// quite involved, e.g. the number of bytes of code the code generator would generate.
+//
+// 2) Call
+// create_cfg(), thorup_tree_decomposition(), nicify(), alive_tree_dec(), tree_dec_ralloc_nodes().
+//
+// The Z80 port can serve as an example, see z80_ralloc2_cc() in z80/ralloc2.cc.
 
 #ifndef SDCCRALLOC_HH
 #define SDCCRALLOC_HH 1
