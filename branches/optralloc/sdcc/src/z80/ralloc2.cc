@@ -40,11 +40,18 @@ extern "C"
 #include "ralloc.h"
 }
 
+#ifdef TARGET_IS_Z80
 #define REG_C 0
 #define REG_B 1
 #define REG_E 2
 #define REG_D 3
-#define NUM_REGS (IS_GB ? 2 : 4)
+#define NUM_REGS 4
+#elif defined TARGET_IS_GBZ80
+#define REG_C 0
+#define REG_B 1
+#define NUM_REGS 2
+#endif
+
 
 typedef short int var_t;
 typedef signed char reg_t;
@@ -85,6 +92,7 @@ struct i_assignment
 			registers[r][0] = v;
 	}
 	
+#if 0
 	void remove_var(var_t v)
 	{
 		for(reg_t r = 0; r < 4; r++)
@@ -98,6 +106,7 @@ struct i_assignment
 				registers[r][0] = -1;
 		}
 	}
+#endif
 };
 
 struct assignment
@@ -206,7 +215,7 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 					continue;
 
 				// Add node to conflict graph:
-				if(sym_to_index.find(std::pair<int, int>(j2, 0)) != sym_to_index.end())
+				if(sym_to_index.find(std::pair<int, reg_t>(j2, 0)) != sym_to_index.end())
 					continue;
 
 				for(reg_t k = 0; k < sym->nRegs; k++)
@@ -215,7 +224,7 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 					con[j].v = j2;
 					con[j].byte = k;
 					con[j].name = sym->name;
-					sym_to_index[std::pair<int, int>(j2, k)] = j;
+					sym_to_index[std::pair<int, reg_t>(j2, k)] = j;
 					for(reg_t l = 0; l < k; l++)
 						boost::add_edge(j - l - 1, j, con);
 					j++;
@@ -242,7 +251,7 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 
 		for(int i = 0; i <= operandKey; i++)
 		{
-			if(sym_to_index.find(std::pair<int, int>(i, 0)) == sym_to_index.end())
+			if(sym_to_index.find(std::pair<int, reg_t>(i, 0)) == sym_to_index.end())
 				continue;
 
 			if(bitVectBitValue(ic->rlive, i))
@@ -266,10 +275,10 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 			if(bitVectBitValue(isym->clashes, j))
 			{
 				//symbol *jsym = (symbol *)(hTabItemWithKey(liveRanges, j));
-				if(sym_to_index.find(std::pair<int, int>(j, 0)) == sym_to_index.end())
+				if(sym_to_index.find(std::pair<int, reg_t>(j, 0)) == sym_to_index.end())
 					continue;
 				for(reg_t k = 0; k < isym->nRegs; k++)
-					boost::add_edge(i, sym_to_index[std::pair<int, int>(j, k)], con);
+					boost::add_edge(i, sym_to_index[std::pair<int, reg_t>(j, k)], con);
 			}
 	}
 
