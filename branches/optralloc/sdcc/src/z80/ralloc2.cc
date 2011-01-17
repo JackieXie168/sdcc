@@ -21,17 +21,10 @@
 
 #include "SDCCralloc.hpp"
 
-#ifdef TARGET_IS_Z80
 #define REG_C 0
 #define REG_B 1
 #define REG_E 2
 #define REG_D 3
-#define NUM_REGS 4
-#elif defined TARGET_IS_GBZ80
-#define REG_C 0
-#define REG_B 1
-#define NUM_REGS 2
-#endif
 
 template <class G_t, class I_t>
 float default_operand_cost(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
@@ -241,15 +234,15 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	const assignment &winner = *(T[*t].assignments.begin());
 	
 	// Todo: Make this an assertion
-	if(winner.global.size() != boost::num_vertices(I))
-		std::cerr << "ERROR\n";
+	//if(winner.global.size() != boost::num_vertices(I))
+	//	std::cerr << "ERROR\n";
 	
 	for(var_t v = 0; v < boost::num_vertices(I); v++)
 	{
 		symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
-		if(winner.global[v] >= 0)
-			sym->regs[I[v].byte] = regsZ80 + winner.global[v];
-		else
+		//if(winner.global[v] >= 0)
+		//	sym->regs[I[v].byte] = regsZ80 + winner.global[v];
+		//else
 			spillThis(sym);
 	}
 	

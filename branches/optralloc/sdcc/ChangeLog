@@ -1,5 +1,11 @@
 2011-01-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Fixed the allocator for gbz80.
+
+2011-01-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCtree_dec.hpp,
 	  src/z80/tree_dec.hh,
 	  src/SDCCralloc.hpp,

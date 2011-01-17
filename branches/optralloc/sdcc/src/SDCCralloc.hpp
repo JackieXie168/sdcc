@@ -49,16 +49,12 @@ typedef short int var_t;
 typedef signed char reg_t;
 
 // Todo: Move this port-dependency somewehere else?
-#ifdef TARGET_IS_Z80
-#define NUM_REGS 4
-#elif defined TARGET_IS_GBZ80
-#define NUM_REGS 2
-#endif
+#define NUM_REGS (TARGET_IS_Z80 ? 4 : (TARGET_IS_GBZ80 ? 2 : 0))
 
 // Assignment at an instruction
 struct i_assignment
 {
-	short int registers[NUM_REGS][2];
+	short int registers[4][2];	// 4 needs to be at least MAX_REGS
 	
 	i_assignment(void)
 	{
