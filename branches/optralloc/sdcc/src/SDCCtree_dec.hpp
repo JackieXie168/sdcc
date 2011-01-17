@@ -257,8 +257,7 @@ void tree_decomposition_from_elimination_ordering(T_t &T, std::list<unsigned int
 	boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> G_sym;
 	boost::copy_graph(G, G_sym);
 
-	std::vector<bool> active(boost::num_vertices(G));
-	active.assign(true, boost::num_vertices(G));
+	std::vector<bool> active(boost::num_vertices(G), true);
 
 	add_vertices_to_tree_decomposition(T, v, v_end, G_sym, active);
 }
