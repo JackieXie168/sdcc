@@ -1,5 +1,7 @@
 // Philipp Klaus Krause, philipp@informatik.uni-frankfurt.de, pkk@spth.de, 2010 - 2011
 //
+// (c) 2010-2011 Goethe-Universität Frankfurt
+//
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
 // Free Software Foundation; either version 2, or (at your option) any
