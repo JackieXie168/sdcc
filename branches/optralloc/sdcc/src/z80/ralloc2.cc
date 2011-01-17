@@ -40,16 +40,31 @@ extern "C"
 #include "ralloc.h"
 }
 
+#define REG_C 0
+#define REG_B 1
+#define REG_E 2
+#define REG_D 3
+#define NUM_REGS (IS_GB ? 2 : 4)
+
+typedef short int var_t;
+typedef signed char reg_t;
+
+struct i_assignment
+{
+	iCode *ic;
+	short int registers[4][2];
+};
+
 struct assignment
 {
 	float s;
 
-	std::set<unsigned short int> local;	// Entries: var
-	std::vector<signed char> global;	// Entries: gloabal[var] = reg (-1 if no reg assigned)
+	std::set<var_t> local;	// Entries: var
+	std::vector<reg_t> global;	// Entries: gloabal[var] = reg (-1 if no reg assigned)
 
 	bool operator<(const assignment& a) const
 	{
-		std::set<unsigned short int>::const_iterator i, ai, i_end, ai_end;
+		std::set<var_t>::const_iterator i, ai, i_end, ai_end;
 
 		i_end = local.end();
 		ai_end = a.local.end();
@@ -77,15 +92,15 @@ struct assignment
 struct tree_dec_node
 {
 	std::set<unsigned int> bag;
-	std::set<unsigned short int> alive;
+	std::set<var_t> alive;
 	std::list<assignment> assignments;
 };
 
 struct cfg_node
 {
 	iCode *ic;
-	std::multimap<int, unsigned short int> operands;
-	std::set<unsigned short int> alive;
+	std::multimap<int, var_t> operands;
+	std::set<var_t> alive;
 };
 
 struct con_node
@@ -101,14 +116,14 @@ typedef boost::adjacency_matrix<boost::undirectedS, con_node> con2_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_node> cfg_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> cfg_sym_t;
 
-void add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, int>, unsigned int> &sym_to_index)
+void add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
 {
-	unsigned int k;
-	if(o && IS_SYMOP(o) && sym_to_index.find(std::pair<int, int>(OP_SYMBOL(o)->key, 0)) != sym_to_index.end())
+	reg_t k;
+	if(o && IS_SYMOP(o) && sym_to_index.find(std::pair<int, reg_t>(OP_SYMBOL(o)->key, 0)) != sym_to_index.end())
 	{
 		if(n.operands.find(OP_SYMBOL(o)->key) == n.operands.end())
 			for(k = 0; k < OP_SYMBOL(o)->nRegs; k++)
-				n.operands.insert(std::pair<int, unsigned short int>(OP_SYMBOL(o)->key, sym_to_index[std::pair<int, int>(OP_SYMBOL(o)->key, k)]));
+				n.operands.insert(std::pair<int, var_t>(OP_SYMBOL(o)->key, sym_to_index[std::pair<int, int>(OP_SYMBOL(o)->key, k)]));
 	}
 }
 
@@ -118,14 +133,15 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 	eBBlock **ebbs = ebbi->bbOrder;
 	iCode *start_ic;
 	iCode *ic;
-	unsigned int i, j, k, l;
 
 	std::map<int, unsigned int> key_to_index;
-	std::map<std::pair<int, int>, unsigned int> sym_to_index;
+	std::map<std::pair<int, reg_t>, var_t> sym_to_index;
 
 	start_ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbs, ebbi->count));
 	//start_ic = joinPushes(start_ic);
 
+	int i;
+	var_t j;
 	for(ic = start_ic, i = 0, j = 0; ic; ic = ic->next, i++)
 	{
 		boost::add_vertex(cfg);
@@ -133,7 +149,7 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 
 		cfg[i].ic = ic;
 
-		for(unsigned int j2 = 0; j2 <= operandKey; j2++)
+		for(int j2 = 0; j2 <= operandKey; j2++)
 		{
 			if(bitVectBitValue(ic->rlive, j2))
 			{
@@ -146,14 +162,14 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 				if(sym_to_index.find(std::pair<int, int>(j2, 0)) != sym_to_index.end())
 					continue;
 
-				for(k = 0; k < sym->nRegs; k++)
+				for(reg_t k = 0; k < sym->nRegs; k++)
 				{
 					boost::add_vertex(con);
 					con[j].v = j2;
 					con[j].byte = k;
 					con[j].name = sym->name;
 					sym_to_index[std::pair<int, int>(j2, k)] = j;
-					for(l = 0; l < k; l++)
+					for(reg_t l = 0; l < k; l++)
 						boost::add_edge(j - l - 1, j, con);
 					j++;
 				}
@@ -185,7 +201,7 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 			if(bitVectBitValue(ic->rlive, i))
 			{
 				symbol *isym = (symbol *)(hTabItemWithKey(liveRanges, i));
-				for(k = 0; k < isym->nRegs; k++)
+				for(reg_t k = 0; k < isym->nRegs; k++)
 					cfg[key_to_index[ic->key]].alive.insert(sym_to_index[std::pair<int, int>(i, k)]);
 			}
 		}
@@ -196,16 +212,16 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 	}
 
 	// Get conflict graph from sdcc
-	for(i = 0; i < num_vertices(con); i++)
+	for(var_t i = 0; i < num_vertices(con); i++)
 	{
 		symbol *isym = (symbol *)(hTabItemWithKey(liveRanges, con[i].v));
-		for(j = 0; j <= operandKey; j++)
+		for(int j = 0; j <= operandKey; j++)
 			if(bitVectBitValue(isym->clashes, j))
 			{
-				symbol *jsym = (symbol *)(hTabItemWithKey(liveRanges, j));
+				//symbol *jsym = (symbol *)(hTabItemWithKey(liveRanges, j));
 				if(sym_to_index.find(std::pair<int, int>(j, 0)) == sym_to_index.end())
 					continue;
-				for(k = 0; k < isym->nRegs; k++)
+				for(reg_t k = 0; k < isym->nRegs; k++)
 					boost::add_edge(i, sym_to_index[std::pair<int, int>(j, k)], con);
 			}
 	}
@@ -229,7 +245,7 @@ void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 		if(boost::connected_components(cfg2, &component[0]) > 1)
 		{
 			//std::cerr << "Non-connected liverange found and spilt:" << con[i].name << "\n";
-			for(k = 0; k < boost::num_vertices(cfg) - 1; k++)
+			for(unsigned int k = 0; k < boost::num_vertices(cfg) - 1; k++)
 				cfg[k].alive./*insert*/erase(i);
 		}
 	}
@@ -246,12 +262,6 @@ void alive_tree_dec(tree_dec_t &tree_dec, const cfg_t &cfg)
 	}
 }
 
-#define REG_C 0
-#define REG_B 1
-#define REG_E 2
-#define REG_D 3
-#define NUM_REGS (IS_GB ? 2 : 4)
-
 #if 0
 void print_assignment(const assignment &a)
 {
@@ -266,7 +276,7 @@ void print_assignment(const assignment &a)
 template <class I_t>
 bool assignment_ok_conflict(const assignment &a, const I_t &I)
 {
-	std::set<unsigned short int>::const_iterator i, j;
+	std::set<var_t>::const_iterator i, j;
 
 	for(i = a.local.begin(); i != a.local.end(); ++i)
 		for(j = i, ++j; j != a.local.end(); ++j)
@@ -283,7 +293,7 @@ bool assignment_ok_conflict(const assignment &a, const I_t &I)
 }
 
 template <class I_t>
-void assignment_introduce_variable(std::list<assignment> &alist, unsigned short int v, const I_t &I)
+void assignment_introduce_variable(std::list<assignment> &alist, short int v, const I_t &I)
 {
 	std::list<assignment>::iterator ai, ai_end, ai2;
 
@@ -294,7 +304,7 @@ void assignment_introduce_variable(std::list<assignment> &alist, unsigned short 
 		
 		assignment a = *ai;
 		a.local.insert(v);
-		for(unsigned short int r = 0; r < NUM_REGS; r++)
+		for(reg_t r = 0; r < NUM_REGS; r++)
 		{
 			a.global[v] = r;
 			if(assignment_ok_conflict(a, I))
@@ -308,9 +318,9 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 {
 	float c = 0.0f;
 
-	std::map<int, unsigned short int>::const_iterator oi, oi_end;
+	std::map<int, var_t>::const_iterator oi, oi_end;
 
-	unsigned short int byteregs[4];	// Todo: Change this when sdcc supports variables larger than 4 bytes.
+	var_t byteregs[4];	// Todo: Change this when sdcc supports variables larger than 4 bytes.
 	unsigned short int size;
 
 	if(o && IS_SYMOP(o))
@@ -318,7 +328,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 		boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL(o)->key);
 		if(oi != oi_end)
 		{
-			unsigned short int v = oi->second;
+			var_t v = oi->second;
 
 			// In registers.
 			if(a.local.find(v) != a.local.end())
@@ -386,16 +396,16 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	if(!right || !IS_SYMOP(right) || !result || !IS_SYMOP(result))
 		return(default_instruction_cost(a, i, G, I));
 
-	signed char byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
+	reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
 	
-	std::map<int, unsigned short int>::const_iterator oi, oi_end;
+	std::map<int, var_t>::const_iterator oi, oi_end;
 
 	int size1 = 0, size2 = 0;
 	
 	boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL(right)->key);
 	if(oi != oi_end)
 	{
-		unsigned short int v = oi->second;
+		var_t v = oi->second;
 
 		if(a.local.find(v) == a.local.end())
 			return(default_instruction_cost(a, i, G, I));
@@ -419,7 +429,7 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL(result)->key);
 	if(oi != oi_end)
 	{
-		unsigned short int v = oi->second;
+		var_t v = oi->second;
 
 		if(a.local.find(v) == a.local.end())
 			return(default_instruction_cost(a, i, G, I));
@@ -493,7 +503,7 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	a.global.resize(boost::num_vertices(I), -1);
 	alist.push_back(a);
 
-	std::set<unsigned short int>::const_iterator v;
+	std::set<var_t>::const_iterator v;
 	for(v = T[t].alive.begin(); v != T[t].alive.end(); ++v)
 		assignment_introduce_variable(alist, *v, I);
 
@@ -538,7 +548,7 @@ void drop_worst_assignments(std::list<assignment> &alist)
 
 	//std::cerr << "Too many assignments here:" << z80_opts.max_allocs_per_node << "Dropping some.\n";
 
-	assignment_rep arep[alist_size];
+	assignment_rep *arep = new assignment_rep[alist_size];
 
 	for(i = 0, ai = alist.begin(); i < alist_size; ++ai, i++)
 	{
@@ -550,6 +560,8 @@ void drop_worst_assignments(std::list<assignment> &alist)
 
 	for(i = z80_opts.max_allocs_per_node / NUM_REGS; i < alist_size; i++)
 		alist.erase(arep[i].i);
+		
+	delete[] arep;
 }
 
 // Handle introduce nodes in the nice tree decomposition
@@ -567,10 +579,10 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 
 	std::swap(alist, T[*c].assignments);
 
-	std::set<unsigned short> new_vars;
+	std::set<var_t> new_vars;
 	std::set_difference(T[t].alive.begin(), T[t].alive.end(), T[*c].alive.begin(), T[*c].alive.end(), std::inserter(new_vars, new_vars.end()));
 
-	std::set<unsigned short int>::const_iterator v;
+	std::set<var_t>::const_iterator v;
 	for(v = new_vars.begin(); v != new_vars.end(); ++v)
 	{
 		drop_worst_assignments(alist);
@@ -601,7 +613,7 @@ bool assignments_locally_same(const assignment &a1, const assignment &a2)
 	if(a1.local != a2.local)
 		return(false);
 
-	std::set<unsigned short int>::iterator i, i_end;
+	std::set<var_t>::iterator i, i_end;
 
 	for(i = a1.local.begin(), i_end = a1.local.end(); i != i_end; ++i)
 		if(a1.global[*i] != a2.global[*i])
@@ -624,11 +636,11 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
 	std::swap(alist, T[*c].assignments);
 
-	std::set<unsigned short> old_inst;
+	std::set<unsigned short int> old_inst;
 	std::set_difference(T[*c].bag.begin(), T[*c].bag.end(), T[t].bag.begin(), T[t].bag.end(), std::inserter(old_inst, old_inst.end()));
 	unsigned short int i = *(old_inst.begin());
 
-	std::set<unsigned short> old_vars;
+	std::set<var_t> old_vars;
 	std::set_difference(T[*c].alive.begin(), T[*c].alive.end(), T[t].alive.begin(), T[t].alive.end(), std::inserter(old_vars, old_vars.end()));
 
 	std::list<assignment>::iterator ai, aif;
@@ -636,7 +648,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 	// Restrict assignments (locally) to current variables.
 	for(ai = alist.begin(); ai != alist.end(); ++ai)
 	{
-		std::set<unsigned short int>::iterator mi, mi2, m_end;
+		std::set<var_t>::iterator mi, mi2, m_end;
 		for(mi = ai->local.begin(), m_end = ai->local.end(); mi != m_end; mi = mi2)
 		{
 			mi2 = mi;
@@ -801,7 +813,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	if(winner.global.size() != boost::num_vertices(I))
 		std::cerr << "ERROR\n";
 	
-	for(unsigned int v = 0; v < boost::num_vertices(I); v++)
+	for(var_t v = 0; v < boost::num_vertices(I); v++)
 	{
 		symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
 		if(winner.global[v] >= 0)
@@ -818,7 +830,7 @@ void dump_con(const con_t &con)
 {
 	std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());
 
-	std::string name[num_vertices(con)];
+	std::string *name = new std::string[num_vertices(con)];
 	for(unsigned int i = 0; i < num_vertices(con); i++)
 	{
 		std::ostringstream os;
@@ -828,6 +840,7 @@ void dump_con(const con_t &con)
 		name[i] = os.str();
 	}
 	write_graphviz(dump_file, con, boost::make_label_writer(name));
+	delete[] name;
 }
 
 // Dump cfg, with numbered nodes, show live variables at each node.
@@ -835,17 +848,18 @@ void dump_cfg(const cfg_t &cfg)
 {
 	std::ofstream dump_file((std::string(dstFileName) + ".dumpcfg" + currFunc->rname + ".dot").c_str());
 
-	std::string name[num_vertices(cfg)];
+	std::string *name = new std::string[num_vertices(cfg)];
 	for(unsigned int i = 0; i < num_vertices(cfg); i++)
 	{
 		std::ostringstream os;
 		os << i << ", " << cfg[i].ic->key << ": ";
-		std::set<unsigned short int>::const_iterator v;
+		std::set<var_t>::const_iterator v;
 		for(v = cfg[i].alive.begin(); v != cfg[i].alive.end(); ++v)
 			os << *v << " ";
 		name[i] = os.str();
 	}
 	write_graphviz(dump_file, cfg, boost::make_label_writer(name));
+	delete[] name;
 }
 
 // Dump tree decomposition, show bag and live variables at each node.
@@ -855,7 +869,7 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 
 	unsigned int w = 0;
 
-	std::string name[num_vertices(tree_dec)];
+	std::string *name = new std::string[num_vertices(tree_dec)];
 	for(unsigned int i = 0; i < num_vertices(tree_dec); i++)
 	{
 		if(tree_dec[i].bag.size() > w)
@@ -865,13 +879,14 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 		for(v1 = tree_dec[i].bag.begin(); v1 != tree_dec[i].bag.end(); ++v1)
 			os << *v1 << " ";
 		os << ": ";
-		std::set<unsigned short int>::const_iterator v2;
+		std::set<var_t>::const_iterator v2;
 		for(v2 = tree_dec[i].alive.begin(); v2 != tree_dec[i].alive.end(); ++v2)
 			os << *v2 << " ";
 		name[i] = os.str();
 	}
 	write_graphviz(dump_file, tree_dec, boost::make_label_writer(name));
-
+	delete[] name;
+	
 	//std::cout << "Width: " << (w  - 1) << "(" << currFunc->name << ")\n";
 }
 

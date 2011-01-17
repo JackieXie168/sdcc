@@ -2741,7 +2741,7 @@ static void
 serialRegMark (eBBlock ** ebbs, int count)
 {
   int i;
-  int max_alloc_bytes = 1024;	// Byte limit. Set this to a low value to pass only few variables to the register allocator. This can be useful for debugging.
+  short int max_alloc_bytes = SHRT_MAX;	// Byte limit. Set this to a low value to pass only few variables to the register allocator. This can be useful for debugging.
 
   /* for all blocks */
   for (i = 0; i < count; i++)

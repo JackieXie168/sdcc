@@ -1,3 +1,10 @@
+2011-01-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCsymt.h,
+	  src/z80/ralloc.c,
+	  src/z80/ralloc2.cc:
+	  Improved variable handling and C++ standard conformance.
+
 2011-01-16 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc2.cc:
