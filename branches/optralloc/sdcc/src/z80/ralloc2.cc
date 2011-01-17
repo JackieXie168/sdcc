@@ -234,15 +234,15 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	const assignment &winner = *(T[*t].assignments.begin());
 	
 	// Todo: Make this an assertion
-	//if(winner.global.size() != boost::num_vertices(I))
-	//	std::cerr << "ERROR\n";
+	if(winner.global.size() != boost::num_vertices(I))
+		std::cerr << "ERROR\n";
 	
 	for(var_t v = 0; v < boost::num_vertices(I); v++)
 	{
 		symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
-		//if(winner.global[v] >= 0)
-		//	sym->regs[I[v].byte] = regsZ80 + winner.global[v];
-		//else
+		if(winner.global[v] >= 0)
+			sym->regs[I[v].byte] = regsZ80 + winner.global[v];
+		else
 			spillThis(sym);
 	}
 	
