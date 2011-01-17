@@ -38,7 +38,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 
 	if(o && IS_SYMOP(o))
 	{
-		boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL(o)->key);
+		boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
 		if(oi != oi_end)
 		{
 			var_t v = oi->second;
@@ -115,7 +115,7 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 
 	int size1 = 0, size2 = 0;
 	
-	boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL(right)->key);
+	boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(right)->key);
 	if(oi != oi_end)
 	{
 		var_t v = oi->second;
@@ -139,7 +139,7 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	if(!size1)
 		return(default_instruction_cost(a, i, G, I));
 	
-	boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL(result)->key);
+	boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(result)->key);
 	if(oi != oi_end)
 	{
 		var_t v = oi->second;

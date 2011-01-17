@@ -98,21 +98,29 @@ typedef struct operand
   }
 operand;
 
-extern operand *validateOpType(const operand    *op,
+extern operand *validateOpType(operand          *op,
                                const char       *macro,
                                const char       *args,
                                OPTYPE           type,
                                const char       *file,
                                unsigned         line);
 
-#define OP_SYMBOL(op)      validateOpType(op, "OP_SYMBOL", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand
-#define OP_VALUE(op)       validateOpType(op, "OP_VALUE", #op, VALUE, __FILE__, __LINE__)->operand.valOperand
-#define OP_SYM_TYPE(op)    validateOpType(op, "OP_SYM_TYPE", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->type
-#define OP_SYM_ETYPE(op)   validateOpType(op, "OP_SYM_ETYPE", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->etype
-#define SPIL_LOC(op)       validateOpType(op, "SPIL_LOC", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->usl.spillLoc
-#define OP_LIVEFROM(op)    validateOpType(op, "OP_LIVEFROM", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->liveFrom
-#define OP_LIVETO(op)      validateOpType(op, "OP_LIVETO", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->liveTo
-#define OP_REQV(op)        validateOpType(op, "OP_REQV", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->reqv
+extern const operand *validateOpTypeConst(const operand    *op,
+                                          const char       *macro,
+                                          const char       *args,
+                                          OPTYPE           type,
+                                          const char       *file,
+                                          unsigned         line);
+
+#define OP_SYMBOL(op)        validateOpType(op, "OP_SYMBOL", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand
+#define OP_SYMBOL_CONST(op)  validateOpTypeConst(op, "OP_SYMBOL", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand
+#define OP_VALUE(op)         validateOpType(op, "OP_VALUE", #op, VALUE, __FILE__, __LINE__)->operand.valOperand
+#define OP_SYM_TYPE(op)      validateOpType(op, "OP_SYM_TYPE", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->type
+#define OP_SYM_ETYPE(op)     validateOpType(op, "OP_SYM_ETYPE", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->etype
+#define SPIL_LOC(op)         validateOpType(op, "SPIL_LOC", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->usl.spillLoc
+#define OP_LIVEFROM(op)      validateOpType(op, "OP_LIVEFROM", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->liveFrom
+#define OP_LIVETO(op)        validateOpType(op, "OP_LIVETO", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->liveTo
+#define OP_REQV(op)          validateOpType(op, "OP_REQV", #op, SYMBOL, __FILE__, __LINE__)->operand.symOperand->reqv
 
 /* definition for intermediate code */
 #define IC_RESULT(x) (x)->ulrrcnd.lrr.result

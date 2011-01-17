@@ -4594,12 +4594,32 @@ static const char *opTypeToStr(OPTYPE op)
 }
 
 
-operand *validateOpType(const operand   *op,
+operand *validateOpType(operand         *op,
                         const char      *macro,
                         const char      *args,
                         OPTYPE          type,
                         const char      *file,
                         unsigned        line)
+{
+    if (op && op->type == type)
+    {
+        return op;
+    }
+    fprintf(stderr,
+            "Internal error: validateOpType failed in %s(%s) @ %s:%u:"
+            " expected %s, got %s\n",
+            macro, args, file, line,
+            opTypeToStr(type), op ? opTypeToStr(op->type) : "null op");
+    exit(EXIT_FAILURE);
+    return op; // never reached, makes compiler happy.
+}
+
+const operand *validateOpTypeConst(const operand   *op,
+                                   const char      *macro,
+                                   const char      *args,
+                                   OPTYPE          type,
+                                   const char      *file,
+                                   unsigned        line)
 {
     if (op && op->type == type)
     {

@@ -185,11 +185,11 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> cfg_
 inline void add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
 {
 	reg_t k;
-	if(o && IS_SYMOP(o) && sym_to_index.find(std::pair<int, reg_t>(OP_SYMBOL(o)->key, 0)) != sym_to_index.end())
+	if(o && IS_SYMOP(o) && sym_to_index.find(std::pair<int, reg_t>(OP_SYMBOL_CONST(o)->key, 0)) != sym_to_index.end())
 	{
-		if(n.operands.find(OP_SYMBOL(o)->key) == n.operands.end())
-			for(k = 0; k < OP_SYMBOL(o)->nRegs; k++)
-				n.operands.insert(std::pair<int, var_t>(OP_SYMBOL(o)->key, sym_to_index[std::pair<int, int>(OP_SYMBOL(o)->key, k)]));
+		if(n.operands.find(OP_SYMBOL_CONST(o)->key) == n.operands.end())
+			for(k = 0; k < OP_SYMBOL_CONST(o)->nRegs; k++)
+				n.operands.insert(std::pair<int, var_t>(OP_SYMBOL_CONST(o)->key, sym_to_index[std::pair<int, int>(OP_SYMBOL_CONST(o)->key, k)]));
 	}
 }
 
