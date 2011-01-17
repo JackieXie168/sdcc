@@ -188,7 +188,7 @@ inline void add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<
 	{
 		if(n.operands.find(OP_SYMBOL_CONST(o)->key) == n.operands.end())
 			for(k = 0; k < OP_SYMBOL_CONST(o)->nRegs; k++)
-				n.operands.insert(std::pair<int, var_t>(OP_SYMBOL_CONST(o)->key, sym_to_index[std::pair<int, int>(OP_SYMBOL_CONST(o)->key, k)]));
+				n.operands.insert(std::pair<int, var_t>(OP_SYMBOL_CONST(o)->key, sym_to_index[std::pair<int, reg_t>(OP_SYMBOL_CONST(o)->key, k)]));
 	}
 }
 
@@ -370,7 +370,7 @@ void assignments_introduce_instruction(std::list<assignment> &alist, unsigned sh
 		
 		i_assignment ia;
 		
-		std::set<var_t>::iterator v, v_end;
+		std::set<var_t>::const_iterator v, v_end;
 		for(v = i_variables.begin(), v_end = i_variables.end(); v != v_end; ++v)
 			if(ai->global[*v] >= 0)
 				ia.add_var(*v, ai->global[*v]);

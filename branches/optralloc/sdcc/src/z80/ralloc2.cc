@@ -103,8 +103,8 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 	
 	const iCode *ic = G[i].ic;
 
-	operand *right = IC_RIGHT(ic);
-	operand *result = IC_RESULT(ic);
+	const operand *right = IC_RIGHT(ic);
+	const operand *result = IC_RESULT(ic);
 	
 	if(!right || !IS_SYMOP(right) || !result || !IS_SYMOP(result))
 		return(default_instruction_cost(a, i, G, I));
@@ -223,9 +223,8 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	tree_dec_ralloc_nodes(T, *t, G, I2);
 
 	
-	std::map<unsigned short int, unsigned short int>::const_iterator i;
-
-	/*std::cout << "Winner: ";
+	/*std::map<unsigned short int, unsigned short int>::const_iterator i;
+	std::cout << "Winner: ";
 	std::cout << "[";
 	for(i = T[*t].assignments.begin()->global.begin(); i != T[*t].assignments.begin()->global.end(); ++i)
 		std::cout << "(" << i->first << ", " << i->second << "), ";
