@@ -1,3 +1,8 @@
+2011-01-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80ralloc2.cc:
+	  Reg name cleanup.
+
 2011-01-18 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80ralloc2.cc:

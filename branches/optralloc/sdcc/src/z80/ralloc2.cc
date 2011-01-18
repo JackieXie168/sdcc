@@ -25,9 +25,9 @@
 #define REG_B 1
 #define REG_E 2
 #define REG_D 3
-#define REG_A 4
-#define REG_L 5
-#define REG_H 6
+#define REG_L 4
+#define REG_H 5
+#define REG_A 6
 
 template <class G_t, class I_t>
 float default_operand_cost(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
