@@ -25,9 +25,9 @@
 #define REG_B 1
 #define REG_E 2
 #define REG_D 3
-#define REG_L 4
-#define REG_H 5
-#define REG_A 6
+//#define REG_L 4
+//#define REG_H 5
+#define REG_A (NUM_REGS - 1)
 
 template <class G_t, class I_t>
 float default_operand_cost(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
@@ -67,6 +67,14 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 					c += 2.0f;
 				if(size == 4 && (byteregs[3] != byteregs[2] + 1 || byteregs[2] != REG_C && byteregs[2] != REG_E))
 					c += 2.0f;
+					
+				// Code generator cannot handle variables only partially in A.
+				if(size > 1)
+					for(unsigned short int i = 0; i < size; i++)
+						if(byteregs[i] == REG_A)
+							c += std::numeric_limits<float>::infinity();
+				else if(byteregs[0] == REG_A)
+					c -= 0.4;
 			}
 			// Spilt.
 			else
@@ -187,11 +195,125 @@ float jumptab_cost(const assignment &a, unsigned short int i, const G_t &G, cons
 	return(default_operand_cost(IC_JTCOND(ic), a, i, G, I));
 }
 
+// Return true, iff the operand is placed in A.
+template <class G_t>
+bool Aoperand(const operand *o, const i_assignment &ia, unsigned short int i, const G_t &G)
+{
+	if(!o || !IS_SYMOP(o))
+		return(false);
+		
+	std::multimap<int, var_t>::const_iterator oi = G[i].operands.find(OP_SYMBOL_CONST(o)->key);
+	if(oi != G[i].operands.end() && (oi->second == ia.registers[REG_A][1] || oi->second == ia.registers[REG_A][0]))
+		return(true);
+		
+	return(false);
+}
+
+template <class G_t, class I_t>
+bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+	const iCode *ic = G[i].ic;
+	
+	std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
+	if(iai == a.i_assignments.end())
+	{
+		std::cerr << "ERROR: Instruction assignment not found.\n";
+		return(false);
+	}
+	const i_assignment &ia = iai->second;
+	
+	if(ia.registers[REG_A][1] < 0)
+		return(true);	// Register A not in use.
+	
+	//std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
+	
+	// Check if the result of this instruction is placed in A.
+	bool result_in_A = Aoperand(IC_RESULT(ic), ia, i, G);
+
+	// Check if an input of this instruction is placed in A.
+	bool input_in_A;
+	switch(ic->op)
+	{
+	case IFX:
+		input_in_A = Aoperand(IC_COND(ic), ia, i, G);
+		break;
+	case JUMPTABLE:
+		input_in_A = Aoperand(IC_JTCOND(ic), ia, i, G);
+		break;
+	default:
+		input_in_A = Aoperand(IC_LEFT(ic), ia, i, G) || Aoperand(IC_RIGHT(ic), ia, i, G);
+		break;
+	}
+	
+	if(!result_in_A && !input_in_A)
+	{
+		// Variable in A is not used by this instruction
+		if(ic->op == '+' && IS_ITEMP(IC_LEFT(ic)) && IS_ITEMP(IC_RESULT(ic)) && IS_OP_LITERAL(IC_RIGHT(ic)) &&
+			ulFromVal(IC_RIGHT(ic)->operand.valOperand) == 1 &&
+			IC_RESULT(ic)->operand.symOperand->key == IC_LEFT(ic)->operand.symOperand->key)
+			return(true);
+			
+		if(ic->op == '=' && !POINTER_SET(ic) && isOperandEqual(IC_RESULT(ic), IC_RIGHT(ic)))
+			return(true);
+
+		if(ic->op == GOTO || ic->op == LABEL)
+			return(true);
+			
+		//std::cout << "Not Used: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+		return(false);
+	}
+	
+	// Last use of operand in A.
+	const std::set<var_t> &dying = G[i].dying;
+	if(input_in_A && (result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end()))
+	{
+		if(ic->op != IFX &&
+			!((ic->op == RIGHT_OP || ic->op == LEFT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))) &&
+			!(ic->op == '=' && !(IY_RESERVED && POINTER_SET(ic))) &&
+			!IS_BITWISE_OP (ic))
+			{
+				//std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+				return(false);
+			}
+	}
+	// A is used, and has to be preserved for later use.
+	else if(input_in_A &&
+		ic->op != IFX &&
+		ic->op != JUMPTABLE)
+		{
+			//std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+			return(false);
+		}
+	
+	// First use of operand in A.
+	if(result_in_A &&
+		!POINTER_GET (ic) &&
+		ic->op != '+' &&
+		ic->op != '-' &&
+		!IS_BITWISE_OP (ic) &&
+		ic->op != '=' &&
+		ic->op != EQ_OP &&
+		ic->op != '<' &&
+		ic->op != '>' &&
+		ic->op != CAST &&
+		ic->op != GETHBIT &&
+		!((ic->op == LEFT_OP || ic->op == RIGHT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
+		{
+			//std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+			return(false);
+		}
+	
+	return(true);
+}
+
 // Cost function.
 template <class G_t, class I_t>
 float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
 	const iCode *ic = G[i].ic;
+
+	if(!Ainst_ok(a, i, G, I))
+		return(std::numeric_limits<float>::infinity());
 
 	switch(ic->op)
 	{
@@ -237,13 +359,21 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	
 	// Todo: Make this an assertion
 	if(winner.global.size() != boost::num_vertices(I))
-		std::cerr << "ERROR\n";
+		std::cerr << "ERROR: No Assignments at root\n";
 	
 	for(var_t v = 0; v < boost::num_vertices(I); v++)
 	{
 		symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
 		if(winner.global[v] >= 0)
-			sym->regs[I[v].byte] = regsZ80 + winner.global[v];
+		{
+			if(winner.global[v] != REG_A)
+				sym->regs[I[v].byte] = regsZ80 + winner.global[v];
+			else
+			{
+				sym->accuse = ACCUSE_A;
+				sym->nRegs = 0;
+			}
+		}
 		else
 			spillThis(sym);
 	}

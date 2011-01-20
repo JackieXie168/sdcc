@@ -80,7 +80,6 @@ enum
 #endif
 
 #define DISABLE_PACKREGSFORSUPPORT      1
-#define DISABLE_PACKREGSFORACCUSE       1
 
 extern void genZ80Code (iCode *);
 
@@ -952,7 +951,7 @@ verifyRegsAssigned (operand *op, iCode * ic)
 /* rUmaskForOp :- returns register mask for an operand             */
 /*-----------------------------------------------------------------*/
 bitVect *
-rUmaskForOp (operand * op)
+rUmaskForOp (const operand * op)
 {
   bitVect *rumask;
   symbol *sym;
@@ -962,7 +961,7 @@ rUmaskForOp (operand * op)
   if (!IS_ITEMP (op))
     return NULL;
 
-  sym = OP_SYMBOL (op);
+  sym = OP_SYMBOL_CONST (op);
 
   /* if spilt or no registers assigned to it
      then nothing */
@@ -985,7 +984,7 @@ rUmaskForOp (operand * op)
 }
 
 bitVect *
-z80_rUmaskForOp (operand * op)
+z80_rUmaskForOp (const operand * op)
 {
   return rUmaskForOp (op);
 }
@@ -1699,148 +1698,6 @@ genAssign (ptr)
     ld  (iy),(hl)
 */
 
-#if !DISABLE_PACKREGSFORACCUSE
-// PENDING
-
-/** Pack registers for acc use.
-    When the result of this operation is small and short lived it may
-    be able to be stored in the accumelator.
- */
-static void
-packRegsForAccUse (iCode * ic)
-{
-  iCode *uic;
-
-  /* if this is an aggregate, e.g. a one byte char array */
-  if (IS_AGGREGATE(operandType(IC_RESULT(ic)))) {
-    return;
-  }
-
-  /* if + or - then it has to be one byte result */
-  if ((ic->op == '+' || ic->op == '-')
-      && getSize (operandType (IC_RESULT (ic))) > 1)
-    return;
-
-  /* if shift operation make sure right side is not a literal */
-  if (ic->op == RIGHT_OP &&
-      (isOperandLiteral (IC_RIGHT (ic)) ||
-       getSize (operandType (IC_RESULT (ic))) > 1))
-    return;
-
-  if (ic->op == LEFT_OP &&
-      (isOperandLiteral (IC_RIGHT (ic)) ||
-       getSize (operandType (IC_RESULT (ic))) > 1))
-    return;
-
-  /* has only one definition */
-  if (bitVectnBitsOn (OP_DEFS (IC_RESULT (ic))) > 1)
-    return;
-
-  /* has only one use */
-  if (bitVectnBitsOn (OP_USES (IC_RESULT (ic))) > 1)
-    return;
-
-  /* and the usage immediately follows this iCode */
-  if (!(uic = hTabItemWithKey (iCodehTab,
-                               bitVectFirstBit (OP_USES (IC_RESULT (ic))))))
-    return;
-
-  if (ic->next != uic)
-    return;
-
-  /* if it is a conditional branch then we definitely can */
-  if (uic->op == IFX)
-    goto accuse;
-
-  if (uic->op == JUMPTABLE)
-    return;
-
-#if 0
-  /* if the usage is not is an assignment or an
-     arithmetic / bitwise / shift operation then not */
-  if (POINTER_SET (uic) &&
-      getSize (aggrToPtr (operandType (IC_RESULT (uic)), FALSE)) > 1)
-    return;
-#endif
-
-  if (uic->op != '=' &&
-      !IS_ARITHMETIC_OP (uic) &&
-      !IS_BITWISE_OP (uic) &&
-      uic->op != LEFT_OP &&
-      uic->op != RIGHT_OP)
-    return;
-
-  /* if used in ^ operation then make sure right is not a
-     literl */
-  if (uic->op == '^' && isOperandLiteral (IC_RIGHT (uic)))
-    return;
-
-  /* if shift operation make sure right side is not a literal */
-  if (uic->op == RIGHT_OP &&
-      (isOperandLiteral (IC_RIGHT (uic)) ||
-       getSize (operandType (IC_RESULT (uic))) > 1))
-    return;
-
-  if (uic->op == LEFT_OP &&
-      (isOperandLiteral (IC_RIGHT (uic)) ||
-       getSize (operandType (IC_RESULT (uic))) > 1))
-    return;
-
-#if 0
-  /* make sure that the result of this icode is not on the
-     stack, since acc is used to compute stack offset */
-  if (IS_TRUE_SYMOP (IC_RESULT (uic)) &&
-      OP_SYMBOL (IC_RESULT (uic))->onStack)
-    return;
-#endif
-
-#if 0
-  /* if either one of them in far space then we cannot */
-  if ((IS_TRUE_SYMOP (IC_LEFT (uic)) &&
-       isOperandInFarSpace (IC_LEFT (uic))) ||
-      (IS_TRUE_SYMOP (IC_RIGHT (uic)) &&
-       isOperandInFarSpace (IC_RIGHT (uic))))
-    return;
-#endif
-
-  /* if the usage has only one operand then we can */
-  if (IC_LEFT (uic) == NULL ||
-      IC_RIGHT (uic) == NULL)
-    goto accuse;
-
-  /* make sure this is on the left side if not
-     a '+' since '+' is commutative */
-  if (ic->op != '+' &&
-      IC_LEFT (uic)->key != IC_RESULT (ic)->key)
-    return;
-
-  // See mcs51 ralloc for reasoning
-#if 0
-  /* if one of them is a literal then we can */
-  if ((IC_LEFT (uic) && IS_OP_LITERAL (IC_LEFT (uic))) ||
-      (IC_RIGHT (uic) && IS_OP_LITERAL (IC_RIGHT (uic))))
-    {
-      goto accuse;
-      return;
-    }
-#endif
-
-/** This is confusing :)  Guess for now */
-  if (IC_LEFT (uic)->key == IC_RESULT (ic)->key &&
-      (IS_ITEMP (IC_RIGHT (uic)) ||
-       (IS_TRUE_SYMOP (IC_RIGHT (uic)))))
-    goto accuse;
-
-  if (IC_RIGHT (uic)->key == IC_RESULT (ic)->key &&
-      (IS_ITEMP (IC_LEFT (uic)) ||
-       (IS_TRUE_SYMOP (IC_LEFT (uic)))))
-    goto accuse;
-  return;
-accuse:
-  OP_SYMBOL (IC_RESULT (ic))->accuse = ACCUSE_A;
-}
-#endif
-
 static void
 packRegsForHLUse (iCode * ic)
 {
@@ -2234,6 +2091,9 @@ packRegsForIYUse (iCode * lic, operand * op, eBBlock * ebp)
   return dic;
 }
 
+#if 0
+// New register allocator can handle A
+
 /** Returns TRUE if this operation can use acc and if it preserves the value.
  */
 static bool
@@ -2275,10 +2135,6 @@ opPreservesA (iCode * uic)
       return FALSE;
     }
 
-
-  /* Disabled all of the old rules as they weren't verified and have
-     caused at least one problem.
-   */
   return FALSE;
 }
 
@@ -2318,7 +2174,7 @@ opCanUseA (iCode * uic)
       return FALSE;
     }
 
-  if (uic->op == BITWISEAND || uic->op == '|' || uic->op == '^')
+  if (IS_BITWISE_OP (uic))
     {
       return TRUE;
     }
@@ -2502,6 +2358,7 @@ packRegsForAccUse2 (iCode * ic)
     return;
   }
 }
+#endif
 
 /** Does some transformations to reduce register pressure.
  */
@@ -2663,11 +2520,14 @@ packRegisters (eBBlock * ebp)
           packRegsForIYUse (ic, IC_RESULT (ic), ebp);
         }
 
+#if 0
+	  // New register allocator handles A.
       if (!DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
           getSize (operandType (IC_RESULT (ic))) == 1)
         {
           packRegsForAccUse2 (ic);
         }
+#endif
     }
 }
 

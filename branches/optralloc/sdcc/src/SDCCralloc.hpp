@@ -63,12 +63,14 @@ typedef short int var_t;
 typedef signed char reg_t;
 
 // Todo: Move this port-dependency somewehere else?
-#define NUM_REGS (TARGET_IS_Z80 ? 4 : (TARGET_IS_GBZ80 ? 2 : 0))
+#define NUM_REGS (TARGET_IS_Z80 ? 5 : (TARGET_IS_GBZ80 ? 3 : 0))
+// Upper bound on NUM_REGS
+#define MAX_NUM_REGS 5
 
 // Assignment at an instruction
 struct i_assignment
 {
-	short int registers[4][2];	// 4 needs to be at least MAX_REGS
+	var_t registers[MAX_NUM_REGS][2];
 	
 	i_assignment(void)
 	{
@@ -166,6 +168,7 @@ struct cfg_node
 	iCode *ic;
 	std::multimap<int, var_t> operands;
 	std::set<var_t> alive;
+	std::set<var_t> dying;
 };
 
 struct con_node
@@ -204,42 +207,43 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 
 	start_ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbs, ebbi->count));
 	//start_ic = joinPushes(start_ic);
-
-	int i;
-	var_t j;
-	for(ic = start_ic, i = 0, j = 0; ic; ic = ic->next, i++)
 	{
-		boost::add_vertex(cfg);
-		key_to_index[ic->key] = i;
-
-		cfg[i].ic = ic;
-
-		for(int j2 = 0; j2 <= operandKey; j2++)
+		int i;
+		var_t j;
+		for(ic = start_ic, i = 0, j = 0; ic; ic = ic->next, i++)
 		{
-			if(bitVectBitValue(ic->rlive, j2))
+			boost::add_vertex(cfg);
+			key_to_index[ic->key] = i;
+
+			cfg[i].ic = ic;
+
+			for(int j2 = 0; j2 <= operandKey; j2++)
 			{
-				symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, j2));
-
-				if(!sym->for_newralloc)
-					continue;
-
-				// Add node to conflict graph:
-				if(sym_to_index.find(std::pair<int, reg_t>(j2, 0)) != sym_to_index.end())
-					continue;
-
-				for(reg_t k = 0; k < sym->nRegs; k++)
+				if(bitVectBitValue(ic->rlive, j2))
 				{
-					boost::add_vertex(con);
-					con[j].v = j2;
-					con[j].byte = k;
-					con[j].name = sym->name;
-					sym_to_index[std::pair<int, reg_t>(j2, k)] = j;
-					for(reg_t l = 0; l < k; l++)
-						boost::add_edge(j - l - 1, j, con);
-					j++;
+					symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, j2));
+
+					if(!sym->for_newralloc)
+						continue;
+
+					// Add node to conflict graph:
+					if(sym_to_index.find(std::pair<int, reg_t>(j2, 0)) != sym_to_index.end())
+						continue;
+
+					for(reg_t k = 0; k < sym->nRegs; k++)
+					{
+						boost::add_vertex(con);
+						con[j].v = j2;
+						con[j].byte = k;
+						con[j].name = sym->name;
+						sym_to_index[std::pair<int, reg_t>(j2, k)] = j;
+						for(reg_t l = 0; l < k; l++)
+							boost::add_edge(j - l - 1, j, con);
+						j++;
+					}
 				}
-			}
-		}		
+			}		
+		}
 	}
 		
 	// Get control flow graph from sdcc.
@@ -312,6 +316,20 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 			//std::cerr << "Non-connected liverange found and spilt:" << con[i].name << "\n";
 			for(unsigned int k = 0; k < boost::num_vertices(cfg) - 1; k++)
 				cfg[k].alive./*insert*/erase(i);
+		}
+	}
+	
+	for(unsigned int i = 0; i < num_vertices(cfg); i++)
+	{
+		cfg[i].dying = cfg[i].alive;
+		
+		typedef boost::graph_traits<cfg_t>::adjacency_iterator adjacency_iter_t;
+		adjacency_iter_t j, j_end;
+		for(boost::tie(j, j_end) = adjacent_vertices(i, cfg); j != j_end; ++j)
+		{
+			std::set<var_t>::const_iterator v, v_end;
+			for(v = cfg[*j].alive.begin(), v_end = cfg[*j].alive.begin(); v != v_end; ++v)
+				cfg[i].dying.erase(*v);
 		}
 	}
 }
@@ -424,6 +442,8 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	alist.push_back(a);
 	
 	unsigned short int i = *(T[t].bag.begin());
+	
+	assignments_introduce_instruction(alist, i, G);
 
 	std::set<var_t>::const_iterator v;
 	for(v = T[t].alive.begin(); v != T[t].alive.end(); ++v)
