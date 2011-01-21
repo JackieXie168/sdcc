@@ -1,5 +1,10 @@
 2011-01-21 Maarten Brock <sourceforge.brock AT dse.nl>
 
+	* sdcc.sln,
+	* [*].vcxproj: added project files for Microsoft Visual C++ Express 2010
+
+2011-01-21 Maarten Brock <sourceforge.brock AT dse.nl>
+
 	* sdas/linksrc/sdld_all.dsp: renamed dldgb.exe to sdldgb.exe
 	* src/avr/gen.c,
 	* src/ds390/gen.c,
