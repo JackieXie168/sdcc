@@ -234,8 +234,8 @@ void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_
 	// Add new bag
 	typename boost::graph_traits<T_t>::vertex_iterator t, s;
 	t = find_bag(neighbours, T);
-	s = add_vertex(T);
-	add_edge(*t, *s, T);
+	s = boost::add_vertex(T);
+	boost::add_edge(*t, *s, T);
 	T[*s].bag = neighbours;
 	T[*s].bag.insert(*v);
 
