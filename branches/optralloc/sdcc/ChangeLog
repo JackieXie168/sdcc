@@ -1,3 +1,8 @@
+2011-01-21 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCtree_dec.hpp:
+	  Added missing boost:: prefix.
+
 2011-01-21 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* sdcc.sln,
