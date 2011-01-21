@@ -17,9 +17,8 @@
 // Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 //
 // An optimal, polynomial-time register allocator.
-// The current version can handle general-purpose registers only.
 //
-// To use this from a port do teh following:
+// To use this from a port do the following:
 //
 // 1) Supply a cost function
 // template <class G_t, class I_t>
@@ -63,9 +62,9 @@ typedef short int var_t;
 typedef signed char reg_t;
 
 // Todo: Move this port-dependency somewehere else?
-#define NUM_REGS (TARGET_IS_Z80 ? 5 : (TARGET_IS_GBZ80 ? 3 : 0))
+#define NUM_REGS (TARGET_IS_Z80 ? (OPTRALLOC_ALL ? 7 : 4) : (TARGET_IS_GBZ80 ? 3 : 0))
 // Upper bound on NUM_REGS
-#define MAX_NUM_REGS 5
+#define MAX_NUM_REGS 7
 
 // Assignment at an instruction
 struct i_assignment
@@ -74,7 +73,7 @@ struct i_assignment
 	
 	i_assignment(void)
 	{
-		for(reg_t r = 0; r < NUM_REGS; r++)
+		for(reg_t r = 0; r < MAX_NUM_REGS; r++)
 			for(unsigned int i = 0; i < 2; i++)
 				registers[r][i] = -1;
 	}
@@ -346,12 +345,13 @@ inline void alive_tree_dec(tree_dec_t &tree_dec, const cfg_t &cfg)
 }
 
 #if 0
+// For debugging.
 void print_assignment(const assignment &a)
 {
-	std::map<unsigned short int, unsigned short int>::const_iterator i;
+	std::set<var_t>::const_iterator i;
 	std::cout << "[";
 	for(i = a.local.begin(); i != a.local.end(); ++i)
-		std::cout << "(" << i->first << ", " << i->second << "), ";
+		std::cout << "(" << int(*i) << ", " << int(a.global[*i]) << "), ";
 	std::cout << "c: " << a.s << "]";
 }
 #endif
@@ -428,11 +428,56 @@ void assignments_introduce_variable(std::list<assignment> &alist, unsigned short
 template <class G_t, class I_t>
 float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
 
+// Rough cost estimate. Port-specific.
+template <class G_t, class I_t>
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+
+struct assignment_rep
+{
+	std::list<assignment>::iterator i;
+	float s;
+
+	bool operator<(const assignment_rep& a) const
+	{
+		return(s < a.s);
+	}
+};
+
+// Ensure that we never get more than z80_opts.max_allocs_per_node assignments at a single node of the tree decomposition.
+// Tries to drop the worst ones first (but never drop the empty assignment, as it's the only one guaranteed to be always valid).
+template <class G_t, class I_t>
+void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, const G_t &G, const I_t &I)
+{
+	unsigned int n;
+	size_t alist_size;
+	std::list<assignment>::iterator ai, an;
+
+	if((alist_size = alist.size()) * NUM_REGS <= z80_opts.max_allocs_per_node)
+		return;
+
+	std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+
+	assignment_rep *arep = new assignment_rep[alist_size];
+
+	for(n = 0, ai = alist.begin(); n < alist_size; ++ai, n++)
+	{
+		arep[n].i = ai;
+		arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I);
+	}
+
+	std::nth_element(arep + 1, arep + z80_opts.max_allocs_per_node / NUM_REGS, arep + alist_size);
+
+	for(n = z80_opts.max_allocs_per_node / NUM_REGS; n < alist_size; n++)
+		alist.erase(arep[n].i);
+		
+	delete[] arep;
+}
+
 // Handle Leaf nodes in the nice tree decomposition
 template <class T_t, class G_t, class I_t>
 void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I)
 {
-	//std::cout << "Leaf:\n";
+	//std::cout << "Leaf (" << t << "):\n"; std::cout.flush();
 
 	assignment a;
 	std::list<assignment> &alist = T[t].assignments;
@@ -447,7 +492,10 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 
 	std::set<var_t>::const_iterator v;
 	for(v = T[t].alive.begin(); v != T[t].alive.end(); ++v)
+	{
+		drop_worst_assignments(alist, i, G, I);	// Horrible. We have to drop assignments, since there are too many, but we do not yet know a partial cost.
 		assignments_introduce_variable(alist, i, *v, I);
+	}
 
 	// Summation of costs and early removal of assignments.
 	std::list<assignment>::iterator ai;
@@ -465,46 +513,6 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	std::cout << "\n";*/
 }
 
-struct assignment_rep
-{
-	std::list<assignment>::iterator i;
-	float s;
-
-	bool operator<(const assignment_rep& a) const
-	{
-		return(s < a.s);
-	}
-};
-
-// Ensure that we never get more than z80_opts.max_allocs_per_node assignments at a single node of the tree decomposition.
-// Tries to drop the worst ones first (but never drop the empty assignment, as it's the only one guaranteed to be always valid).
-void drop_worst_assignments(std::list<assignment> &alist)
-{
-	unsigned int i;
-	size_t alist_size;
-	std::list<assignment>::iterator ai, an;
-
-	if((alist_size = alist.size()) * NUM_REGS <= z80_opts.max_allocs_per_node)
-		return;
-
-	//std::cerr << "Too many assignments here:" << z80_opts.max_allocs_per_node << "Dropping some.\n";
-
-	assignment_rep *arep = new assignment_rep[alist_size];
-
-	for(i = 0, ai = alist.begin(); i < alist_size; ++ai, i++)
-	{
-		arep[i].i = ai;
-		arep[i].s = ai->s;
-	}
-
-	std::nth_element(arep + 1, arep + z80_opts.max_allocs_per_node / NUM_REGS, arep + alist_size);
-
-	for(i = z80_opts.max_allocs_per_node / NUM_REGS; i < alist_size; i++)
-		alist.erase(arep[i].i);
-		
-	delete[] arep;
-}
-
 // Handle introduce nodes in the nice tree decomposition
 template <class T_t, class G_t, class I_t>
 void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I)
@@ -514,7 +522,7 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 	std::list<assignment>::iterator ai;
 	boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-	//std::cout << "Introduce:\n";
+	//std::cout << "Introduce (" << t << "):\n"; std::cout.flush();
 
 	std::list<assignment> &alist = T[t].assignments;
 
@@ -533,7 +541,7 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 	std::set<var_t>::const_iterator v;
 	for(v = new_vars.begin(); v != new_vars.end(); ++v)
 	{
-		drop_worst_assignments(alist);
+		drop_worst_assignments(alist, i, G, I);
 		assignments_introduce_variable(alist, i, *v, I);
 	}
 
@@ -574,7 +582,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 	adjacency_iter_t c, c_end;
 	boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-	//std::cout << "Forget: " << t << "\n";
+	//std::cout << "Forget (" << t << "):\n"; std::cout.flush();
 
 	std::list<assignment> &alist = T[t].assignments;
 
@@ -627,7 +635,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 		}
 	}
 
-	/*for(ai = alist1.begin(); ai != alist1.end(); ++ai)
+	/*for(ai = alist.begin(); ai != alist.end(); ++ai)
 		print_assignment(*ai);
 	std::cout << "\n";*/
 }
@@ -640,7 +648,7 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	adjacency_iter_t c, c_end, c2, c3;
 	boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-	//std::cout << "Join:\n";
+	//std::cout << "Join (" << t << ":\n"; std::cout.flush();
 
 	c2 = c;
 	++c;

@@ -17,7 +17,6 @@
 // Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 //
 // An optimal, polynomial-time register allocator.
-// The current version can handle general-purpose registers only.
 
 #include "SDCCralloc.hpp"
 
@@ -25,8 +24,8 @@
 #define REG_B 1
 #define REG_E 2
 #define REG_D 3
-//#define REG_L 4
-//#define REG_H 5
+#define REG_L 4
+#define REG_H 5
 #define REG_A (NUM_REGS - 1)
 
 template <class G_t, class I_t>
@@ -63,18 +62,21 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 
 				// Penalty for not placing 2- and 4-byte variables in register pairs
 				// Todo: Extend this once the register allcoator can use registers other than bc, de:
-				if((size == 2 || size == 4) && (byteregs[1] != byteregs[0] + 1 || byteregs[0] != REG_C && byteregs[0] != REG_E))
+				if((size == 2 || size == 4) && (byteregs[1] != byteregs[0] + 1 || byteregs[0] != REG_C && byteregs[0] != REG_E && byteregs[0] != REG_L))
 					c += 2.0f;
-				if(size == 4 && (byteregs[3] != byteregs[2] + 1 || byteregs[2] != REG_C && byteregs[2] != REG_E))
+				if(size == 4 && (byteregs[3] != byteregs[2] + 1 || byteregs[2] != REG_C && byteregs[2] != REG_E && byteregs[0] != REG_L))
 					c += 2.0f;
 					
 				// Code generator cannot handle variables only partially in A.
-				if(size > 1)
+				if(OPTRALLOC_A && size > 1)
 					for(unsigned short int i = 0; i < size; i++)
 						if(byteregs[i] == REG_A)
 							c += std::numeric_limits<float>::infinity();
-				else if(byteregs[0] == REG_A)
+							
+				if(OPTRALLOC_A && byteregs[0] == REG_A)
 					c -= 0.4;
+				else if(OPTRALLOC_ALL && byteregs[0] == REG_L)
+					c -= 0.1;
 			}
 			// Spilt.
 			else
@@ -195,17 +197,18 @@ float jumptab_cost(const assignment &a, unsigned short int i, const G_t &G, cons
 	return(default_operand_cost(IC_JTCOND(ic), a, i, G, I));
 }
 
-// Return true, iff the operand is placed in A.
+// Return true, iff the operand is placed (partially) in r.
 template <class G_t>
-bool Aoperand(const operand *o, const i_assignment &ia, unsigned short int i, const G_t &G)
+bool operand_in_reg(const operand *o, reg_t r, const i_assignment &ia, unsigned short int i, const G_t &G)
 {
 	if(!o || !IS_SYMOP(o))
 		return(false);
-		
-	std::multimap<int, var_t>::const_iterator oi = G[i].operands.find(OP_SYMBOL_CONST(o)->key);
-	if(oi != G[i].operands.end() && (oi->second == ia.registers[REG_A][1] || oi->second == ia.registers[REG_A][0]))
-		return(true);
-		
+	
+	std::multimap<int, var_t>::const_iterator oi, oi_end;
+	for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+		if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
+			return(true);
+
 	return(false);
 }
 
@@ -224,24 +227,26 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 	
 	if(ia.registers[REG_A][1] < 0)
 		return(true);	// Register A not in use.
-	
+		
+	if(I[ia.registers[REG_A][1]].byte)
+		return(false);
 	//std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
 	
 	// Check if the result of this instruction is placed in A.
-	bool result_in_A = Aoperand(IC_RESULT(ic), ia, i, G);
+	bool result_in_A = operand_in_reg(IC_RESULT(ic), REG_A, ia, i, G);
 
 	// Check if an input of this instruction is placed in A.
 	bool input_in_A;
 	switch(ic->op)
 	{
 	case IFX:
-		input_in_A = Aoperand(IC_COND(ic), ia, i, G);
+		input_in_A = operand_in_reg(IC_COND(ic), REG_A, ia, i, G);
 		break;
 	case JUMPTABLE:
-		input_in_A = Aoperand(IC_JTCOND(ic), ia, i, G);
+		input_in_A = operand_in_reg(IC_JTCOND(ic), REG_A, ia, i, G);
 		break;
 	default:
-		input_in_A = Aoperand(IC_LEFT(ic), ia, i, G) || Aoperand(IC_RIGHT(ic), ia, i, G);
+		input_in_A = operand_in_reg(IC_LEFT(ic), REG_A, ia, i, G) || operand_in_reg(IC_RIGHT(ic), REG_A, ia, i, G);
 		break;
 	}
 	
@@ -287,10 +292,10 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 	
 	// First use of operand in A.
 	if(result_in_A &&
-		!POINTER_GET (ic) &&
+		!POINTER_GET(ic) &&
 		ic->op != '+' &&
 		ic->op != '-' &&
-		!IS_BITWISE_OP (ic) &&
+		!IS_BITWISE_OP(ic) &&
 		ic->op != '=' &&
 		ic->op != EQ_OP &&
 		ic->op != '<' &&
@@ -306,13 +311,122 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 	return(true);
 }
 
+template <class G_t, class I_t>
+bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+	const iCode *ic = G[i].ic;
+
+	// HL always unused on gbz80.
+	if(TARGET_IS_GBZ80)
+		return(true);
+	
+	std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
+	if(iai == a.i_assignments.end())
+	{
+		std::cerr << "ERROR: Instruction assignment not found.\n";
+		return(false);
+	}
+	const i_assignment &ia = iai->second;
+	
+	if(ia.registers[REG_L][1] < 0 && ia.registers[REG_H][1] < 0)
+		return(true);	// Register HL not in use.
+	
+	bool result_in_L = operand_in_reg(IC_RESULT(ic), REG_L, ia, i, G);
+	bool result_in_H = operand_in_reg(IC_RESULT(ic), REG_H, ia, i, G);
+	
+	bool input_in_L, input_in_H;
+	switch(ic->op)
+	{
+	case IFX:
+		input_in_L = operand_in_reg(IC_COND(ic), REG_L, ia, i, G);
+		input_in_H = operand_in_reg(IC_COND(ic), REG_L, ia, i, G);
+		break;
+	case JUMPTABLE:
+		input_in_L = operand_in_reg(IC_JTCOND(ic), REG_L, ia, i, G);
+		input_in_H = operand_in_reg(IC_JTCOND(ic), REG_L, ia, i, G);
+		break;
+	default:
+		input_in_L = operand_in_reg(IC_LEFT(ic), REG_L, ia, i, G) || operand_in_reg(IC_RIGHT(ic), REG_L, ia, i, G);
+		input_in_H = operand_in_reg(IC_LEFT(ic), REG_H, ia, i, G) || operand_in_reg(IC_RIGHT(ic), REG_H, ia, i, G);
+		break;
+	}
+	
+#if 0
+	{
+		std::cout << "Result: ";
+		std::multimap<int, var_t>::const_iterator oi, oi_end;
+		for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(IC_RESULT(ic))->key); oi != oi_end; ++oi)
+			std::cout << oi->second << " ";
+		std::cout << "\n";
+		print_assignment(a);
+		std::cout << "\n";
+	}
+#endif
+
+	// HL overwritten by result.
+	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 &&
+		(ic->op == ADDRESS_OF ||
+		ic->op == '+' ||
+		POINTER_GET(ic) ||
+		ic->op == '=' && !POINTER_SET(ic)))
+		return(true);
+
+	if((IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic))) ||
+		(IC_LEFT(ic) && IS_SYMOP(IC_LEFT(ic)) && isOperandInDirSpace(IC_LEFT (ic))) || 
+		(IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT (ic))))
+        return(false);
+        
+	if(ic->op == JUMPTABLE)
+		return(false);
+
+	// Operations that leave HL alone.
+	if(ic->op == IFX)
+		return(true);
+	if(SKIP_IC2(ic))
+		return(true);
+	/*if(ic->op == CAST)
+		return(true);*/
+	if(ic->op == IPUSH && input_in_H)
+		return(true);
+	if(POINTER_GET(ic) && input_in_L && input_in_H)
+		return(true);
+	if(ic->op == LEFT_OP && isOperandLiteral(IC_RIGHT(ic)))
+		return(true);
+	/*if((ic->op == '=' && !POINTER_SET(ic) && !POINTER_GET(ic)) ||
+		ic->op == UNARYMINUS ||
+		ic->op == RETURN ||
+		ic->op == RIGHT_OP ||
+		ic->op == '-' ||
+		IS_BITWISE_OP(ic) ||
+		ic->op == '>' ||
+		ic->op == '<' ||
+		ic->op == EQ_OP ||
+		(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) == 1))	// 16 bit addition might use add hl, rr
+        return(true);*/
+	if(IS_VALOP(IC_RIGHT(ic)) && ic->op == EQ_OP)
+		return(true);
+	
+	// HL overwritten by result.
+	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 &&
+		(ic->op == CALL) /*||
+		POINTER_SET(ic)*/)
+		return(true);
+	
+	//std::cout << "HL default drop, operation: " << ic->op << "\n";
+	
+	return(false);
+}
+
 // Cost function.
 template <class G_t, class I_t>
 float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
 	const iCode *ic = G[i].ic;
 
-	if(!Ainst_ok(a, i, G, I))
+	if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
+		return(std::numeric_limits<float>::infinity());
+		
+	if(OPTRALLOC_ALL && !HLinst_ok(a, i, G, I))
 		return(std::numeric_limits<float>::infinity());
 
 	switch(ic->op)
@@ -326,6 +440,59 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 	default:
 		return(default_instruction_cost(a, i, G, I));
 	}
+}
+
+template <class I_t>
+bool weird_byte_order(const i_assignment &ia, const I_t &I)
+{
+	for(reg_t n = 0; n < NUM_REGS - 1; n++)
+	{
+		if(ia.registers[n][1] >= 0)
+		{
+			if(n % 2 == 0 && I[ia.registers[n][1]].byte == 1)
+				return(true);
+			else if(n % 2 == 1 && I[ia.registers[n][1]].byte == 0)
+				return(true);
+		}
+		if(ia.registers[n][0] >= 0)
+		{
+			if(n % 2 == 0 && I[ia.registers[n][0]].byte == 1)
+				return(true);
+			else if(n % 2 == 1 && I[ia.registers[n][0]].byte == 0)
+				return(true);
+		}
+	}
+
+	return(false);
+}
+
+template <class G_t, class I_t>
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+	// Can check for Ainst_ok() since A only contains 1-byte variables.
+	if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
+		return(std::numeric_limits<float>::infinity());
+
+	std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
+	if(iai == a.i_assignments.end())
+	{
+		std::cerr << "ERROR: Instruction assignment not found.\n";
+		return(20.0f);
+	}
+	const i_assignment &ia = iai->second;
+
+	float c = 0.0f;
+
+	if(weird_byte_order(ia, I))
+		c += 0.2f;
+
+	if(OPTRALLOC_A && ia.registers[REG_A][1] < 0)
+		c += 0.03f;
+
+	if(OPTRALLOC_ALL && ia.registers[REG_L][1] < 0)
+		c += 0.02f;
+
+	return(c - a.local.size() * 0.01);
 }
 
 template <class T_t, class G_t, class I_t>
@@ -342,20 +509,18 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	for(boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
 		add_edge(boost::source(*e, I), boost::target(*e, I), I2);
 	
-
 	typename boost::graph_traits<T_t>::vertex_iterator t, t_end;
 	boost::tie(t, t_end) = boost::vertices(T);
 	tree_dec_ralloc_nodes(T, *t, G, I2);
 
-	
-	/*std::map<unsigned short int, unsigned short int>::const_iterator i;
-	std::cout << "Winner: ";
-	std::cout << "[";
-	for(i = T[*t].assignments.begin()->global.begin(); i != T[*t].assignments.begin()->global.end(); ++i)
-		std::cout << "(" << i->first << ", " << i->second << "), ";
-	std::cout << "] s: " << T[*t].assignments.begin()->s << "\n";*/
-	
 	const assignment &winner = *(T[*t].assignments.begin());
+	
+	/*std::cout << "Winner: ";
+	for(unsigned int i = 0; i < boost::num_vertices(I); i++)
+	{
+		std::cout << "(" << i << ", " << int(winner.global[i]) << ") "; 
+	}
+	std::cout << "\n";*/
 	
 	// Todo: Make this an assertion
 	if(winner.global.size() != boost::num_vertices(I))
@@ -366,7 +531,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 		symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
 		if(winner.global[v] >= 0)
 		{
-			if(winner.global[v] != REG_A)
+			if(winner.global[v] != REG_A || !OPTRALLOC_A)
 				sym->regs[I[v].byte] = regsZ80 + winner.global[v];
 			else
 			{
@@ -378,13 +543,13 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 			spillThis(sym);
 	}
 	
-	//std::cout << "Applied.\n";
+	//std::cout << "Applied.\n"; std::cout.flush();
 }
 
 void z80_ralloc2_cc(ebbIndex *ebbi)
 {
-	//std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n";
-	//std::cout.flush();
+	//std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
+	//std::cout << "OPTRALLOC_ALL: " << OPTRALLOC_ALL << " OPTRALLOC_A: " << OPTRALLOC_A << "\n";
 
 	cfg_t control_flow_graph;
 
@@ -408,7 +573,11 @@ void z80_ralloc2_cc(ebbIndex *ebbi)
 
 	if(z80_opts.dump_graphs)
 		dump_tree_decomposition(tree_decomposition);
+		
+	//std::cout << "Allocating.\n"; std::cout.flush();
 
 	tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
+	
+	//std::cout << "Allocated.\n"; std::cout.flush();
 }
 

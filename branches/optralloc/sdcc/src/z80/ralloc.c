@@ -112,6 +112,8 @@ static regs _z80_regs[] =
   {REG_GPR, B_IDX, "b", 1},
   {REG_GPR, E_IDX, "e", 1},
   {REG_GPR, D_IDX, "d", 1},
+  {REG_GPR, L_IDX, "l", 1},
+  {REG_GPR, H_IDX, "h", 1},
   {REG_CND, CND_IDX, "c", 1}
 };
 
@@ -217,6 +219,15 @@ nfreeRegsType (int type)
     }
 
   return nFreeRegs (type);
+}
+
+/*-----------------------------------------------------------------*/
+/* useReg - marks a register  as used                              */
+/*-----------------------------------------------------------------*/
+static void
+useReg (regs * reg)
+{
+  reg->isFree = 0;
 }
 
 /*-----------------------------------------------------------------*/
@@ -725,6 +736,22 @@ tryAgain:
   goto tryAgain;
 }
 
+static regs *getRegGprNoSpil()
+{
+  regs *reg;
+
+  /* try for gpr type */
+  if ((reg = allocReg (REG_GPR)))
+    {
+      D (D_ALLOC, ("getRegGprNoSpil: got a reg.\n"));
+      return reg;
+    }
+  assert(0);
+
+  /* just to make the compiler happy */
+  return 0;
+}
+
 /** Symbol has a given register.
  */
 static bool
@@ -889,6 +916,48 @@ willCauseSpill (int nr, int rt)
 
   /* it will cause a spil */
   return 1;
+}
+
+/** The allocator can allocate same registers to result and operand,
+    if this happens make sure they are in the same position as the operand
+    otherwise chaos results.
+*/
+static int
+positionRegs (symbol * result, symbol * opsym)
+{
+  int count = min (result->nRegs, opsym->nRegs);
+  int i, j = 0, shared = 0;
+  int change = 0;
+
+  D (D_ALLOC, ("positionRegs: on result %p opsum %p line %u\n", result, opsym, lineno));
+
+  /* if the result has been spilt then cannot share */
+  if (opsym->isspilt)
+    return 0;
+again:
+  shared = 0;
+  /* first make sure that they actually share */
+  for (i = 0; i < count; i++)
+    {
+      for (j = 0; j < count; j++)
+        {
+          if (result->regs[i] == opsym->regs[j] && i != j)
+            {
+              shared = 1;
+              goto xchgPositions;
+            }
+        }
+    }
+xchgPositions:
+  if (shared)
+    {
+      regs *tmp = result->regs[i];
+      result->regs[i] = result->regs[j];
+      result->regs[j] = tmp;
+      change ++;
+      goto again;
+    }
+  return change ;
 }
 
 /** Try to allocate a pair of registers to the symbol.
@@ -1686,103 +1755,7 @@ isBitwiseOptimizable (iCode * ic)
   return FALSE;
 }
 
-/** Optimisations:
-    Certian assignments involving pointers can be temporarly stored
-    in HL.  Esp.
-genAssign
-    ld  iy,#_Blah
-    ld  bc,(iy)
-genAssign (ptr)
-    ld  hl,bc
-    ld  iy,#_Blah2
-    ld  (iy),(hl)
-*/
-
-static void
-packRegsForHLUse (iCode * ic)
-{
-  iCode *uic;
-
-  /* PENDING: Could do IFX */
-  if (ic->op == IFX)
-    {
-      return;
-    }
-
-  /* has only one definition */
-  if (bitVectnBitsOn (OP_DEFS (IC_RESULT (ic))) > 1)
-    {
-      D (D_HLUSE, ("  + Dropping as has more than one def\n"));
-      return;
-    }
-
-  /* has only one use */
-  if (bitVectnBitsOn (OP_USES (IC_RESULT (ic))) > 1)
-    {
-      D (D_HLUSE, ("  + Dropping as has more than one use\n"));
-      return;
-    }
-
-  /* and the usage immediately follows this iCode */
-  if (!(uic = hTabItemWithKey (iCodehTab,
-                               bitVectFirstBit (OP_USES (IC_RESULT (ic))))))
-    {
-      D (D_HLUSE, ("  + Dropping as usage isn't in this block\n"));
-      return;
-    }
-
-  if (ic->next != uic)
-    {
-      D (D_HLUSE, ("  + Dropping as usage doesn't follow this\n"));
-      return;
-    }
-
-  if (uic->op ==IFX)
-    {
-      return;
-    }
-
-  if (getSize (operandType (IC_RESULT (ic))) != 2 ||
-      (IC_LEFT(uic) && getSize (operandType (IC_LEFT (uic))) != 2) ||
-      (IC_RIGHT(uic) && getSize (operandType (IC_RIGHT (uic))) != 2))
-    {
-      D (D_HLUSE, ("  + Dropping as the result size is not 2\n"));
-      return;
-    }
-
-  if (IS_Z80)
-    {
-      if (ic->op == CAST && uic->op == IPUSH)
-        goto hluse;
-      if (ic->op == ADDRESS_OF && uic->op == IPUSH)
-        goto hluse;
-      if (ic->op == ADDRESS_OF && POINTER_GET (uic) && IS_ITEMP( IC_RESULT (uic)))
-        goto hluse;
-      if (ic->op == CALL && ic->parmBytes == 0 && (uic->op == '-' || uic->op == '+'))
-        goto hluse;
-    }
-  else if (IS_GB)
-    {
-      /* Case of assign a constant to offset in a static array. */
-      if (ic->op == '+' && IS_VALOP (IC_RIGHT (ic)))
-        {
-          if (uic->op == '=' && POINTER_SET (uic))
-            {
-              goto hluse;
-            }
-          else if (uic->op == IPUSH && getSize (operandType (IC_LEFT (uic))) == 2)
-            {
-              goto hluse;
-            }
-        }
-    }
-
-  D (D_HLUSE, ("  + Dropping as it's a bad op\n"));
-  return;
-hluse:
-  OP_SYMBOL (IC_RESULT (ic))->accuse = ACCUSE_SCRATCH;
-}
-
+// HL handled by new register allocator
 static iCode *
 packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
 {
@@ -2091,9 +2064,6 @@ packRegsForIYUse (iCode * lic, operand * op, eBBlock * ebp)
   return dic;
 }
 
-#if 0
-// New register allocator can handle A
-
 /** Returns TRUE if this operation can use acc and if it preserves the value.
  */
 static bool
@@ -2356,7 +2326,6 @@ packRegsForAccUse2 (iCode * ic)
     return;
   }
 }
-#endif
 
 /** Does some transformations to reduce register pressure.
  */
@@ -2499,33 +2468,21 @@ packRegisters (eBBlock * ebp)
          result of that operation is not on stack then we can leave the
          result of this operation in acc:b combination */
 
-      if (!DISABLE_PACK_HL && IS_ITEMP (IC_RESULT (ic)))
-        {
-          /* PENDING */
-          if (IS_GB || IY_RESERVED)
-            {
-              if (0)
-                packRegsForHLUse (ic);
-            }
-          else
-            {
-              packRegsForHLUse3 (ic, IC_RESULT (ic), ebp);
-            }
-        }
+      if (!OPTRALLOC_ALL && !DISABLE_PACK_HL && IS_ITEMP (IC_RESULT (ic)))
+        if (!IS_GB && !IY_RESERVED)
+          packRegsForHLUse3 (ic, IC_RESULT (ic), ebp);
 
       if (!DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
         {
           packRegsForIYUse (ic, IC_RESULT (ic), ebp);
         }
 
-#if 0
 	  // New register allocator handles A.
-      if (!DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
+      if (!OPTRALLOC_A && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
           getSize (operandType (IC_RESULT (ic))) == 1)
         {
           packRegsForAccUse2 (ic);
         }
-#endif
     }
 }
 
@@ -2820,6 +2777,10 @@ z80_ralloc2 (ebbIndex * ebbi)
   z80_ralloc2_cc (ebbi);
 
   RegFix (ebbs, count);
+
+  /* When --max-allocs-per-node is et too low, there can be gaps. */
+  //freeAllRegs ();
+  //fillGaps();
 
   /* New register allcoator here. */
 
