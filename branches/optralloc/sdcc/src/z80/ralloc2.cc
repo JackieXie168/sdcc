@@ -248,12 +248,12 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 	if(!result_in_A && !input_in_A)
 	{
 		// Variable in A is not used by this instruction
-		if(ic->op == '+' && IS_ITEMP(IC_LEFT(ic)) && IS_ITEMP(IC_RESULT(ic)) && IS_OP_LITERAL(IC_RIGHT(ic)) &&
-			ulFromVal(IC_RIGHT(ic)->operand.valOperand) == 1 &&
-			IC_RESULT(ic)->operand.symOperand->key == IC_LEFT(ic)->operand.symOperand->key)
+		if(ic->op == '+' && IS_ITEMP (IC_LEFT (ic)) && IS_ITEMP (IC_RESULT (ic)) && IS_OP_LITERAL (IC_RIGHT (ic)) &&
+			ulFromVal (OP_VALUE (IC_RIGHT (ic))) == 1 &&
+			OP_KEY (IC_RESULT (ic)) == OP_KEY (IC_LEFT (ic)))
 			return(true);
 			
-		if(ic->op == '=' && !POINTER_SET(ic) && isOperandEqual(IC_RESULT(ic), IC_RIGHT(ic)))
+		if(ic->op == '=' && !POINTER_SET (ic) && isOperandEqual (IC_RESULT (ic), IC_RIGHT (ic)))
 			return(true);
 
 		if(ic->op == GOTO || ic->op == LABEL)

@@ -1036,7 +1036,7 @@ aopOp (operand * op, iCode * ic, bool result, bool requires_a)
   if (IS_OP_LITERAL (op))
     {
       op->aop = aop = newAsmop (AOP_LIT);
-      aop->aopu.aop_lit = op->operand.valOperand;
+      aop->aopu.aop_lit = OP_VALUE (op);
       aop->size = getSize (operandType (op));
       return;
     }
@@ -1347,16 +1347,16 @@ isPtr (const char *s)
 }
 
 static void
-adjustPair (const char *pair, int *pold, int new)
+adjustPair (const char *pair, int *pold, int new_val)
 {
   wassert (pair);
 
-  while (*pold < new)
+  while (*pold < new_val)
     {
       emit2 ("inc %s", pair);
       (*pold)++;
     }
-  while (*pold > new)
+  while (*pold > new_val)
     {
       emit2 ("dec %s", pair);
       (*pold)--;

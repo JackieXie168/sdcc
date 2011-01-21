@@ -958,7 +958,7 @@ aopOp (operand * op, iCode * ic, bool result)
   if (IS_OP_LITERAL (op))
     {
       op->aop = aop = newAsmop (AOP_LIT);
-      aop->aopu.aop_lit = op->operand.valOperand;
+      aop->aopu.aop_lit = OP_VALUE (op);
       aop->size = getSize (operandType (op));
       return;
     }
@@ -10289,8 +10289,8 @@ static void
 genPagedPointerGet (operand * left,
                     operand * result,
                     iCode * ic,
-                    iCode *pi,
-                    iCode *ifx)
+                    iCode * pi,
+                    iCode * ifx)
 {
   asmop *aop = NULL;
   regs *preg = NULL;
@@ -10560,7 +10560,7 @@ genCodePointerGet (operand * left,
 /*-----------------------------------------------------------------*/
 static void
 genGenPointerGet (operand * left,
-                  operand * result, iCode * ic, iCode *pi, iCode *ifx)
+                  operand * result, iCode * ic, iCode * pi, iCode * ifx)
 {
   int size, offset;
   char *ifxCond = "a";
@@ -11347,8 +11347,8 @@ genPointerSet (iCode * ic, iCode *pi)
     }
 
   /* special case when cast remat */
-  if (p_type == GPOINTER && IS_SYMOP (result) && OP_SYMBOL(result)->remat &&
-      IS_CAST_ICODE(OP_SYMBOL(result)->rematiCode))
+  if (p_type == GPOINTER && IS_SYMOP (result) && OP_SYMBOL (result)->remat &&
+      IS_CAST_ICODE (OP_SYMBOL (result)->rematiCode))
     {
       result = IC_RIGHT(OP_SYMBOL(result)->rematiCode);
       type = operandType (result);
@@ -11503,8 +11503,8 @@ genAddrOf (iCode * ic)
   if (opIsGptr (IC_RESULT (ic)))
     {
       char buffer[10];
-      SNPRINTF (buffer, sizeof(buffer),
-                "#0x%02x", pointerTypeToGPByte (pointerCode (getSpec (operandType (IC_LEFT (ic)))), NULL, NULL));
+      SNPRINTF (buffer, sizeof(buffer), "#0x%02x",
+                pointerTypeToGPByte (pointerCode (getSpec (operandType (IC_LEFT (ic)))), NULL, NULL));
       aopPut (IC_RESULT (ic), buffer, GPTRSIZE - 1);
     }
 
@@ -11800,13 +11800,16 @@ genCast (iCode * ic)
             }
           else
             {
-              if (SPEC_SCLS (etype) == S_REGISTER) {
-                // let's assume it is a generic pointer
-                p_type = GPOINTER;
-              } else {
-                /* we have to go by the storage class */
-                p_type = PTR_TYPE (SPEC_OCLS (etype));
-              }
+              if (SPEC_SCLS (etype) == S_REGISTER)
+                {
+                  // let's assume it is a generic pointer
+                  p_type = GPOINTER;
+                }
+              else
+                {
+                  /* we have to go by the storage class */
+                  p_type = PTR_TYPE (SPEC_OCLS (etype));
+                }
             }
 
           /* the first two bytes are known */
@@ -11869,17 +11872,18 @@ genCast (iCode * ic)
   /* now depending on the sign of the source && destination */
   size = AOP_SIZE (result) - AOP_SIZE (right);
   /* if unsigned or not an integral type */
-  if (!IS_SPEC (rtype) || SPEC_USIGN (rtype) || AOP_TYPE(right)==AOP_CRY)
+  if (!IS_SPEC (rtype) || SPEC_USIGN (rtype) || AOP_TYPE (right) == AOP_CRY)
     {
       while (size--)
-        aopPut (result, zero, offset++);
+        {
+          aopPut (result, zero, offset++);
+        }
     }
   else
     {
       /* we need to extend the sign :{ */
-      char *l = aopGet (right, AOP_SIZE (right) - 1,
-                        FALSE, FALSE);
-      MOVA (l);
+      MOVA (aopGet (right, AOP_SIZE (right) - 1,
+                    FALSE, FALSE));
       emitcode ("rlc", "a");
       emitcode ("subb", "a,acc");
       while (size--)
