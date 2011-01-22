@@ -342,9 +342,11 @@ void nicify_diffs(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
 
 	boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-	switch(out_degree(t, T))
+	switch(boost::out_degree(t, T))
 	{
 	case 0:
+		if(T[t].bag.size())
+			boost::add_edge(t, boost::add_vertex(T), T);
 		return;
 	case 1:
 		break;
@@ -366,12 +368,12 @@ void nicify_diffs(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
 	if(std::includes(T[t].bag.begin(), T[t].bag.end(), T[c0].bag.begin(), T[c0].bag.end()) || std::includes(T[c0].bag.begin(), T[c0].bag.end(), T[t].bag.begin(), T[t].bag.end()))
 		return;
 
-	typename boost::graph_traits<T_t>::vertex_descriptor d = add_vertex(T);
+	typename boost::graph_traits<T_t>::vertex_descriptor d = boost::add_vertex(T);
 
-	add_edge(d, c0, T);
-	remove_edge(t, c0, T);
+	boost::add_edge(d, c0, T);
+	boost::remove_edge(t, c0, T);
 	std::set_intersection(T[t].bag.begin(), T[t].bag.end(), T[c0].bag.begin(), T[c0].bag.end(),std::inserter(T[d].bag, T[d].bag.begin()));
-	add_edge(t, d, T);
+	boost::add_edge(t, d, T);
 }
 
 // // Ensure that all nodes' bags' sizes differ by at most one to their successors'.
@@ -435,16 +437,32 @@ void nicify_diffs_more(T_t &T, typename boost::graph_traits<T_t>::vertex_descrip
 	nicify_diffs_more(T, t);
 }
 
+// Find the root of an acyclic graph T
+template <class T_t>
+typename boost::graph_traits<T_t>::vertex_descriptor find_root(T_t &T)
+{
+	typename boost::graph_traits<T_t>::vertex_descriptor t;
+	typename boost::graph_traits<T_t>::in_edge_iterator e, e_end;
+	
+	t = *(boost::vertices(T).first);
+	
+	for(boost::tie(e, e_end) = boost::in_edges(t, T); e != e_end; boost::tie(e, e_end) = boost::in_edges(t, T))
+		t = boost::source(*e, T);
+		
+	return(t);
+}
+
 // Transform a tree decomposition into a nice tree decomposition.
-// TODO: Make this function no longer assume that the root is the first vertex.
 template <class T_t>
 void nicify(T_t &T)
 {
-	typename boost::graph_traits<T_t>::vertex_iterator t, t_end;
-	boost::tie(t, t_end) = vertices(T);
+	typename boost::graph_traits<T_t>::vertex_descriptor t;
+	
+	t = find_root(T);
 
-	nicify_joins(T, *t);
-	nicify_diffs(T, *t);
-	nicify_diffs_more(T, *t);
+	nicify_joins(T, t);
+	nicify_diffs(T, t);
+	nicify_diffs_more(T, t);
 }
+
 

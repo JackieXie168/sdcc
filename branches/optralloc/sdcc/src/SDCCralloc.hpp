@@ -485,27 +485,6 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	a.s = 0;
 	a.global.resize(boost::num_vertices(I), -1);
 	alist.push_back(a);
-	
-	unsigned short int i = *(T[t].bag.begin());
-	
-	assignments_introduce_instruction(alist, i, G);
-
-	std::set<var_t>::const_iterator v;
-	for(v = T[t].alive.begin(); v != T[t].alive.end(); ++v)
-	{
-		drop_worst_assignments(alist, i, G, I);	// Horrible. We have to drop assignments, since there are too many, but we do not yet know a partial cost.
-		assignments_introduce_variable(alist, i, *v, I);
-	}
-
-	// Summation of costs and early removal of assignments.
-	std::list<assignment>::iterator ai;
-	for(ai = alist.begin(); ai != alist.end();)
-	{
-		if((ai->s += instruction_cost(*ai, i, G, I)) == std::numeric_limits<float>::infinity())
-			ai = alist.erase(ai);
-		else
-			++ai;
-	}
 
 	/*std::list<assignment>::iterator ai;
 	for(ai = alist.begin(); ai != alist.end(); ++ai)
@@ -698,10 +677,18 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	std::cout << "\n";*/
 }
 
+// Changes the root to improve the assignment removal heuristic.
+template <class T_t>
+typename boost::graph_traits<T_t>::vertex_descriptor re_root(T_t &T)
+{
+}
+
 // Handle nodes in the tree decomposition, by detecting their type and calling the appropriate function. Recurses.
 template <class T_t, class G_t, class I_t>
 void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I)
 {
+	re_root(T);
+
 	typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
 
 	adjacency_iter_t c, c_end;

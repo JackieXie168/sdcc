@@ -509,11 +509,9 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	for(boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
 		add_edge(boost::source(*e, I), boost::target(*e, I), I2);
 	
-	typename boost::graph_traits<T_t>::vertex_iterator t, t_end;
-	boost::tie(t, t_end) = boost::vertices(T);
-	tree_dec_ralloc_nodes(T, *t, G, I2);
+	tree_dec_ralloc_nodes(T, find_root(T), G, I2);
 
-	const assignment &winner = *(T[*t].assignments.begin());
+	const assignment &winner = *(T[find_root(T)].assignments.begin());
 	
 	/*std::cout << "Winner: ";
 	for(unsigned int i = 0; i < boost::num_vertices(I); i++)
