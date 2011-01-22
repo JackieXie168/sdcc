@@ -1,5 +1,11 @@
 2011-01-22 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCCralloc.hpp,
+	  src/z80/main.c:
+	  Disabled forgotten debug message.
+
+2011-01-22 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/Makefile.in,
 	  src/SDCCralloc.hpp,
 	  src/z80/z80.h,

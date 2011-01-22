@@ -455,7 +455,7 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 	if((alist_size = alist.size()) * NUM_REGS <= z80_opts.max_allocs_per_node)
 		return;
 
-	std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+	//std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
 
 	assignment_rep *arep = new assignment_rep[alist_size];
 
