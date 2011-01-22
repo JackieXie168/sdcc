@@ -440,12 +440,10 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="SDCC.lex">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">flex  -osdcclex.c sdcc.lex
-</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">flex  -osdcclex.c sdcc.lex</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">sdccy.h;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">SDCClex.c;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">flex  -osdcclex.c sdcc.lex
-</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">flex  -osdcclex.c sdcc.lex</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">sdccy.h;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SDCClex.c;%(Outputs)</Outputs>
     </CustomBuild>

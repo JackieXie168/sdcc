@@ -1,4 +1,14 @@
-2011-01-21 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2011-01-22 Borut Razem <borut.razem AT gmail.com>
+
+	* all.vcxproj, config.vcxproj, sdas/linksrc/sdld_all.vcxproj,
+	  src/avr/avra.vcxproj, src/ds390/ds390a.vcxproj,
+	  src/hc08/hc08a.vcxproj, src/mcs51/mcs51a.vcxproj,
+	  src/pic14/pic14a.vcxproj, src/pic16/pic16a.vcxproj,
+	  src/src.vcxproj, src/xa51/xa51a.vcxproj, src/yacc.vcxproj,
+	  src/z80/z80a.vcxproj, support/cpp/sdcppa.vcxproj:
+	  fixed Custom Builds
+
+2011-01-22 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCtree_dec.hpp,
 	  src/SDCCralloc.hpp,

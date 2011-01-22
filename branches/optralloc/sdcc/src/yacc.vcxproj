@@ -59,11 +59,9 @@
   <ItemGroup>
     <CustomBuild Include="SDCC.y">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bison  -d -v -o sdccy.c sdcc.y
-</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bison  -d -v -o sdccy.c sdcc.y</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">sdccy.c;sdccy.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bison  -d -v -o sdccy.c sdcc.y
-</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bison  -d -v -o sdccy.c sdcc.y</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">sdccy.c;sdccy.h;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>

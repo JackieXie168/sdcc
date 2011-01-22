@@ -61,13 +61,11 @@
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy %(FullPath) ..\..\bin_vc\sdldz80.exe
 copy %(FullPath) ..\..\bin_vc\sdldgb.exe
-copy %(FullPath) ..\..\bin_vc\sdld6808.exe
-</Command>
+copy %(FullPath) ..\..\bin_vc\sdld6808.exe</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\bin_vc\sdldz80.exe  ..\..\bin_vc\sdldgb.exe ..\..\bin_vc\sdld6808.exe;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy %(FullPath) ..\..\bin_vc\sdldz80.exe
 copy %(FullPath) ..\..\bin_vc\sdldgb.exe
-copy %(FullPath) ..\..\bin_vc\sdld6808.exe
-</Command>
+copy %(FullPath) ..\..\bin_vc\sdld6808.exe</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\bin_vc\sdldz80.exe  ..\..\bin_vc\sdldgb.exe ..\..\bin_vc\sdld6808.exe;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
