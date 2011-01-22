@@ -1,3 +1,8 @@
+2011-01-22 Borut Razem <borut.razem AT gmail.com>
+
+	* src/z80/main.c(598):
+	  fixed error C2065: 'false' : undeclared identifier
+
 2011-01-22 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCtree_dec.hpp:

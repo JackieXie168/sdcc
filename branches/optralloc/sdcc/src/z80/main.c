@@ -595,7 +595,7 @@ _setDefaultOptions (void)
   optimize.loopInvariant = 1;
   optimize.loopInduction = 1;
   z80_opts.max_allocs_per_node = 50000;
-  z80_opts.optralloc_all = false;
+  z80_opts.optralloc_all = FALSE;
 }
 
 /* Mangling format:
