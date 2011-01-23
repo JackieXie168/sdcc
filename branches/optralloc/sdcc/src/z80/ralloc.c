@@ -221,6 +221,7 @@ nfreeRegsType (int type)
   return nFreeRegs (type);
 }
 
+#if 0
 /*-----------------------------------------------------------------*/
 /* useReg - marks a register  as used                              */
 /*-----------------------------------------------------------------*/
@@ -229,6 +230,7 @@ useReg (regs * reg)
 {
   reg->isFree = 0;
 }
+#endif
 
 /*-----------------------------------------------------------------*/
 /* computeSpillable - given a point find the spillable live ranges */
@@ -736,6 +738,7 @@ tryAgain:
   goto tryAgain;
 }
 
+#if 0
 static regs *getRegGprNoSpil()
 {
   regs *reg;
@@ -751,6 +754,7 @@ static regs *getRegGprNoSpil()
   /* just to make the compiler happy */
   return 0;
 }
+#endif
 
 /** Symbol has a given register.
  */
@@ -918,6 +922,7 @@ willCauseSpill (int nr, int rt)
   return 1;
 }
 
+#if 0
 /** The allocator can allocate same registers to result and operand,
     if this happens make sure they are in the same position as the operand
     otherwise chaos results.
@@ -959,6 +964,7 @@ xchgPositions:
     }
   return change ;
 }
+#endif
 
 /** Try to allocate a pair of registers to the symbol.
  */

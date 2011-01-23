@@ -23,6 +23,7 @@ typedef struct
     int reserveIY;
     int max_allocs_per_node;
 	int optralloc_all;
+	int optralloc_hl;
     int dump_graphs;
   }
 Z80_OPTS;
@@ -34,7 +35,7 @@ extern Z80_OPTS z80_opts;
 #define IY_RESERVED (z80_opts.reserveIY)
 #define OPTRALLOC_ALL (z80_opts.optralloc_all)
 #define OPTRALLOC_A (OPTRALLOC_ALL || IS_GB)
-#define OPTRALLOC_HL OPTRALLOC_ALL
+#define OPTRALLOC_HL (z80_opts.optralloc_all || z80_opts.optralloc_hl)
 
 enum
   {

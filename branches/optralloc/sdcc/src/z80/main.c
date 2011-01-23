@@ -41,6 +41,7 @@
 #define OPTION_RESERVE_IY      "--reserve-regs-iy"
 #define OPTION_MAX_ALLOCS_N    "--max-allocs-per-node"
 #define OPTION_OPTRALLOC_ALL   "--optralloc-all"
+#define OPTION_OPTRALLOC_HL    "--optralloc-hl"
 #define OPTION_DUMP_GRAPHS     "--dump-graphs"
 
 static char _z80_defaultRules[] =
@@ -68,6 +69,7 @@ static OPTION _z80_options[] =
     { 0, OPTION_RESERVE_IY,      &z80_opts.reserveIY, "Do not use IY" },
     { 0, OPTION_MAX_ALLOCS_N,    &z80_opts.max_allocs_per_node, "Maximum number of register assignments considered at each node of the tree decomposition", CLAT_INTEGER},
 	{ 0, OPTION_OPTRALLOC_ALL,   &z80_opts.optralloc_all, "Use new register allocator for all registers" },
+	{ 0, OPTION_OPTRALLOC_ALL,   &z80_opts.optralloc_hl, "Use new register allocator for hl" },
     { 0, OPTION_DUMP_GRAPHS,     &z80_opts.dump_graphs, "Dump control flow graph, conflict graph and tree decomposition in register allocator"},
     { 0, NULL }
   };
@@ -595,7 +597,8 @@ _setDefaultOptions (void)
   optimize.loopInvariant = 1;
   optimize.loopInduction = 1;
   z80_opts.max_allocs_per_node = 50000;
-  z80_opts.optralloc_all = FALSE;
+  z80_opts.optralloc_all = 0;
+  z80_opts.optralloc_hl = 0;
 }
 
 /* Mangling format:
