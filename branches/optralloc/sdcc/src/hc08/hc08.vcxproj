@@ -67,7 +67,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>.\$(Configuration)\$(TargetFileName)</OutputFile>
+      <OutputFile>$(Configuration)\$(TargetFileName)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
     <Bscmake>
@@ -96,7 +96,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>.\$(Configuration)\$(TargetFileName)</OutputFile>
+      <OutputFile>$(Configuration)\$(TargetFileName)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
     <Bscmake>

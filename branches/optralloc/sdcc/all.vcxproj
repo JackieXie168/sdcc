@@ -57,6 +57,20 @@
     </Midl>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CustomBuild Include="bin_vc\asranlib.exe">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\asranlib.exe  bin /y &gt; nul</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\asranlib.exe;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\asranlib.exe  bin /y &gt; nul</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\asranlib.exe;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="bin_vc\sdcdb.exe">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\sdcdb.exe  bin /y &gt; nul</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\sdcdb.exe;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\sdcdb.exe  bin /y &gt; nul</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdcdb.exe;%(Outputs)</Outputs>
+    </CustomBuild>
     <None Include="ChangeLog" />
     <CustomBuild Include="bin_vc\makebin.exe">
       <FileType>Document</FileType>
@@ -123,34 +137,16 @@
     </CustomBuild>
     <CustomBuild Include="bin_vc\sdld.exe">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\sdld.exe bin /y &gt; nul
-copy bin_vc\sdldz80.exe bin /y &gt; nul
-copy bin_vc\sdldgb.exe bin /y &gt; nul
-copy bin_vc\sdld6808.exe bin /y &gt; nul</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\sdld.exe bin\sdld.exe /y &gt; nul
+copy bin_vc\sdld.exe bin\sdldz80.exe /y&gt; nul
+copy bin_vc\sdld.exe bin\sdldgb.exe /y &gt; nul
+copy bin_vc\sdld.exe bin\sdld6808.exe /y &gt; nul</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\sdld.exe bin\sdldz80.exe bin\sdldgb.exe bin\sdld6808.exe;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\sdld.exe bin /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdld.exe;%(Outputs)</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="bin_vc\sdld6808.exe">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\sdld6808.exe  bin /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\sdld6808.exe;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\sdld6808.exe  bin /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdld6808.exe;%(Outputs)</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="bin_vc\sdldgb.exe">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\sdldgb.exe  bin /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\sdldgb.exe;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\sdldgb.exe  bin /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdldgb.exe;%(Outputs)</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="bin_vc\sdldz80.exe">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\sdldz80.exe  bin /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\sdldz80.exe;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\sdldz80.exe  bin /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdldz80.exe;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\sdld.exe bin\sdld.exe /y &gt; nul
+copy bin_vc\sdld.exe bin\sdldz80.exe /y&gt; nul
+copy bin_vc\sdld.exe bin\sdldgb.exe /y &gt; nul
+copy bin_vc\sdld.exe bin\sdld6808.exe /y &gt; nul</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdld.exe bin\sdldz80.exe bin\sdldgb.exe bin\sdld6808.exe;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
