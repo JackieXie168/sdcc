@@ -48,6 +48,9 @@
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
+    <CustomBuild>
+      <Outputs>sdccy.c;sdccy.h</Outputs>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
@@ -55,6 +58,9 @@
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
+    <CustomBuild>
+      <Outputs>sdccy.c;sdccy.h</Outputs>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CustomBuild Include="SDCC.y">

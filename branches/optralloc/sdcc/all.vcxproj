@@ -178,10 +178,6 @@ copy bin_vc\sdld6808.exe bin /y &gt; nul</Command>
       <Project>{6e94db45-345e-4697-98da-6c72237d6eca}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="sdas\linksrc\sdld_all.vcxproj">
-      <Project>{3ce01161-244e-453f-aba8-579520e2e158}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="src\src.vcxproj">
       <Project>{f9485499-151b-4886-935c-7d687c4a0549}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
