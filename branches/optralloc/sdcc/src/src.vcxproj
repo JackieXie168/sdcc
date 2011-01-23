@@ -448,6 +448,13 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SDCClex.c;%(Outputs)</Outputs>
     </CustomBuild>
     <None Include="..\support\scripts\sdcc.ico" />
+    <CustomBuild Include="SDCC.y">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bison  -d -v -o sdccy.c sdcc.y</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bison  -d -v -o sdccy.c sdcc.y</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">sdccy.c;sdccy.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">sdccy.c;sdccy.h</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
@@ -516,10 +523,6 @@
     </ProjectReference>
     <ProjectReference Include="xa51\xa51.vcxproj">
       <Project>{a4c9f645-9297-4ad0-b092-cfaf1289984a}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="yacc.vcxproj">
-      <Project>{ea40c4bb-7537-4422-ae03-629a05f3d4c5}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="z80\z80.vcxproj">

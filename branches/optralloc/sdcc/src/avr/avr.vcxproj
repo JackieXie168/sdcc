@@ -134,10 +134,6 @@
       <Project>{2f87ba6f-8ee1-48d0-9817-6ba30bddb3c1}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\yacc.vcxproj">
-      <Project>{ea40c4bb-7537-4422-ae03-629a05f3d4c5}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="avra.vcxproj">
       <Project>{e468bc3e-ee5e-4e38-bb0b-7b8b5ae8b50a}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

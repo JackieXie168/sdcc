@@ -158,10 +158,6 @@
       <Project>{2f87ba6f-8ee1-48d0-9817-6ba30bddb3c1}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\yacc.vcxproj">
-      <Project>{ea40c4bb-7537-4422-ae03-629a05f3d4c5}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="z80a.vcxproj">
       <Project>{02d1ef3d-f584-4f1e-9b45-6cf0dbf76076}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

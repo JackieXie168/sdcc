@@ -10,8 +10,13 @@
 
 	* sdcc.sln, */*.vcxproj: MSVC 2010 project files cleaning
 	* */*.vcxproj.filters: added to svn
-	* debugger/mcs51/simi.c: fixed warning C4273: '_environ' : inconsistent dll linkage
+	* debugger/mcs51/simi.c:
+	  fixed warning C4273: '_environ' : inconsistent dll linkage
 	* Merged from trunk
+	* sdcc.sln, src/avr/avr.vcxproj, src/ds390/ds390.vcxproj,
+	  src/mcs51/mcs51.vcxproj, src/src.vcxproj, src/src.vcxproj.filters,
+	  src/xa51/xa51.vcxproj, src/yacc.vcxproj, src/z80/z80.vcxproj,
+	  src/z80/z80.vcxproj.filters: removed yacc project
 
 2011-01-23 Philipp Klaus Krause <pkk AT spth.de>
 
