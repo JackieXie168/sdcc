@@ -1,3 +1,10 @@
+2011-01-23 Borut Razem <borut.razem AT gmail.com>
+
+	* src/avr/avr.vcxproj, src/ds390/ds390.vcxproj, src/hc08/hc08.vcxproj,
+	  src/mcs51/mcs51.vcxproj, src/pic14/pic14.vcxproj,
+	  src/pic16/pic16.vcxproj, src/xa51/xa51.vcxproj, src/z80/z80.vcxproj:
+	  remove /Zm1000 command line option from all projects
+
 2011-01-22 Borut Razem <borut.razem AT gmail.com>
 
 	* all.vcxproj, config.vcxproj, sdas/linksrc/sdld_all.vcxproj,
