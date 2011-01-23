@@ -56,7 +56,6 @@ pid_t simPid = -1;
 #endif
 static char simibuff[MAX_SIM_BUFF];    /* sim buffer       */
 static char *sbp = simibuff;           /* simulator buffer pointer */
-extern char **environ;
 char simactive = 0;
 
 static memcache_t memCache[NMEM_CACHE];

@@ -2,6 +2,7 @@
 
 	* sdcc.sln, */*.vcxproj: MSVC 2010 project files cleaning
 	* */*.vcxproj.filters: added to svn
+	* debugger/mcs51/simi.c: fixed warning C4273: '_environ' : inconsistent dll linkage
 
 2011-01-23 Philipp Klaus Krause <pkk AT spth.de>
 
