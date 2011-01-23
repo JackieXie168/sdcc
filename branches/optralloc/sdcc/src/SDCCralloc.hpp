@@ -62,7 +62,7 @@ typedef short int var_t;
 typedef signed char reg_t;
 
 // Todo: Move this port-dependency somewehere else?
-#define NUM_REGS (TARGET_IS_Z80 ? (OPTRALLOC_ALL ? 7 : 4) : (TARGET_IS_GBZ80 ? 3 : 0))
+#define NUM_REGS (TARGET_IS_Z80 ? (4 + (OPTRALLOC_A ? 1 : 0) + (OPTRALLOC_HL ? 2 : 0)) : (TARGET_IS_GBZ80 ? 3 : 0))
 // Upper bound on NUM_REGS
 #define MAX_NUM_REGS 7
 
@@ -455,7 +455,7 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 	if((alist_size = alist.size()) * NUM_REGS <= z80_opts.max_allocs_per_node)
 		return;
 
-	//std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+	std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
 
 	assignment_rep *arep = new assignment_rep[alist_size];
 

@@ -1788,7 +1788,7 @@ packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
   if (bitVectnBitsOn (OP_DEFS (op)) > 1)
     return NULL;
 
-  if (getSize (operandType (op)) > 2)
+  if (OPTRALLOC_A ? getSize (operandType (op)) != 2 : getSize (operandType (op)) > 2)
     return NULL;
 
   /* And this is the definition */
