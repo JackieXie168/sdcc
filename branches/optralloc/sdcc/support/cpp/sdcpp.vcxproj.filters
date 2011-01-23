@@ -37,6 +37,9 @@
       <UniqueIdentifier>{39dbfa87-81c8-4124-8311-42545e459a1c}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
+    <Filter Include="Custom Build">
+      <UniqueIdentifier>{8f30d6d7-0e72-4612-b478-b9c5a74ec6cb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="c-incpath.c">
@@ -257,5 +260,13 @@
     <ClInclude Include="auto-host.h">
       <Filter>Header Files\libcpp_h\include</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="auto-host_vc_in.h">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sdcpp.opt">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

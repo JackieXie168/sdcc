@@ -9,6 +9,9 @@
       <UniqueIdentifier>{72ff9e14-dc43-44b3-b62b-b2c627e1029b}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
+    <Filter Include="Custom Build">
+      <UniqueIdentifier>{e572d796-594f-4954-afda-65ca354e9b7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gen.c">
@@ -31,5 +34,10 @@
     <ClInclude Include="ralloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="peeph.def">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

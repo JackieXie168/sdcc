@@ -9,6 +9,9 @@
       <UniqueIdentifier>{11a5d289-5894-4486-bee0-4d6dce084246}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
+    <Filter Include="Custom Build">
+      <UniqueIdentifier>{fa0a3371-90ba-4525-8964-2e8712494a31}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gen.c">
@@ -43,5 +46,10 @@
     <ClInclude Include="..\..\sdcc_vc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="peeph.def">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

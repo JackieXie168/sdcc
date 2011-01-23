@@ -9,6 +9,9 @@
       <UniqueIdentifier>{fc0b3ed3-ef96-43d3-a63c-b8e4551b40f6}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
+    <Filter Include="Custom Build">
+      <UniqueIdentifier>{6c387ed2-8c02-44f4-904c-683998af7386}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="device.c">
@@ -73,5 +76,10 @@
     <ClInclude Include="ralloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="peeph.def">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

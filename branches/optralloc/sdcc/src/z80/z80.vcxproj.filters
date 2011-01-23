@@ -9,6 +9,9 @@
       <UniqueIdentifier>{0cb331ec-ba78-49f3-ba51-cc6e8c09a18c}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
+    <Filter Include="Custom Build">
+      <UniqueIdentifier>{89ad5f5a-fe40-4b1d-81af-ac5fda0e57b3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gen.c">
@@ -55,5 +58,16 @@
     <ClInclude Include="..\SDCCtree_dec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="peeph-gbz80.def">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
+    <CustomBuild Include="peeph-z80.def">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
+    <CustomBuild Include="peeph.def">
+      <Filter>Custom Build</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

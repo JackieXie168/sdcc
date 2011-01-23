@@ -39,13 +39,13 @@
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\bin_vc\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\bin_vc\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\$(Configuration)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">sdcpp</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">sdcpp</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -385,6 +385,12 @@
   <ItemGroup>
     <ClInclude Include="ansidecl.h" />
     <ClInclude Include="auto-host.h" />
+    <CustomBuild Include="auto-host_vc_in.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy auto-host_vc_in.h auto-host.h &gt; nul</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy auto-host_vc_in.h auto-host.h &gt; nul</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">auto-host.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">auto-host.h;%(Outputs)</Outputs>
+    </CustomBuild>
     <ClInclude Include="c-incpath.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="cppdefault.h" />
@@ -416,10 +422,19 @@
     <ClInclude Include="libiberty\obstack.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="sdcppa.vcxproj">
-      <Project>{00e02f15-f0f0-4be1-8210-9b7278c0b2df}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
+    <CustomBuild Include="sdcpp.opt">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">gawk -f opt-gather.awk sdcpp.opt &gt; $(TMP)\genopts.tmp
+gawk -f opt-functions.awk -f optc-gen.awk -v header_name="config.h system.h options.h" $(TMP)\genopts.tmp &gt; options.c
+gawk -f opt-functions.awk -f opth-gen.awk $(TMP)\genopts.tmp &gt; options.h
+del $(TMP)\genopts.tmp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">gawk -f opt-gather.awk sdcpp.opt &gt; $(TMP)\genopts.tmp
+gawk -f opt-functions.awk -f optc-gen.awk -v header_name="config.h system.h options.h" $(TMP)\genopts.tmp &gt; options.c
+gawk -f opt-functions.awk -f opth-gen.awk $(TMP)\genopts.tmp &gt; options.h
+del $(TMP)\genopts.tmp</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">options.c;options.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">options.c;options.h;%(Outputs)</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

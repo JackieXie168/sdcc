@@ -12,6 +12,9 @@
     <Filter Include="Regression Test">
       <UniqueIdentifier>{294f3d1a-92d6-4c47-884a-62ffa390e878}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Custom Build">
+      <UniqueIdentifier>{ffdab0d0-444f-4892-8854-39c4adee434b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cdbFile.c">
@@ -270,10 +273,10 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="SDCC.lex">
-      <Filter>Source Files</Filter>
+      <Filter>Custom Build</Filter>
     </CustomBuild>
     <CustomBuild Include="SDCC.y">
-      <Filter>Source Files</Filter>
+      <Filter>Custom Build</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
