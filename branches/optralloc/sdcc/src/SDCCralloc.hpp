@@ -748,11 +748,11 @@ void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 {
 	typename boost::graph_traits<T_t>::vertex_descriptor s0, s1, s2;
 	typename boost::graph_traits<T_t>::in_edge_iterator e, e_end;
-std::cout << "Re-rooting?\n"; std::cout.flush();	
+
 	boost::tie(e, e_end) = boost::in_edges(t, T);
 	if(e == e_end)
 		return;
-std::cout << "Re-rooting.\n"; std::cout.flush();
+
 	s0 = t;
 	s1 = boost::source(*e, T);
 	
@@ -778,22 +778,20 @@ void good_re_root(T_t &T)
 	adjacency_iter_t c, c_end;
 	
 	t = find_root(T);
-//std::cout << "Current root: " << t << "\n"; std::cout.flush();
-	for(boost::tie(c, c_end) = adjacent_vertices(t, T); c != c_end && !T[*c].alive.size();)
-		boost::tie(c, c_end) = adjacent_vertices(*c, T);
-		
-//std::cout << "Old root: " << t << " size: " << T[*c].alive.size() << "\n";std::cout.flush();
-	
-	t = find_best_root(T, t, T[*c].alive.size(), t, T[*c].alive.size()).first;
+
+	for(boost::tie(c, c_end) = boost::adjacent_vertices(t, T); c != c_end && !T[*c].alive.size();)
+		boost::tie(c, c_end) = boost::adjacent_vertices(*c, T);
+
+	size_t t_s = (c != c_end ? T[*c].alive.size() : 0);
+	t = find_best_root(T, t, t_s, t, t_s).first;
 
 	if(T[t].alive.size())
 	{
 		std::cout << "Error: Invalid root.\n";
 		return;
 	}
-//std::cout << "Best root: " << t << "\n";std::cout.flush();
 
-	//re_root(T, t);
+	re_root(T, t);
 }
 
 // Dump con, with numbered nodes, show live variables at each node.
@@ -810,7 +808,7 @@ void dump_con(const con_t &con)
 			os << " : " << con[i].name << ":" << con[i].byte;
 		name[i] = os.str();
 	}
-	write_graphviz(dump_file, con, boost::make_label_writer(name));
+	boost::write_graphviz(dump_file, con, boost::make_label_writer(name));
 	delete[] name;
 }
 
@@ -829,7 +827,7 @@ void dump_cfg(const cfg_t &cfg)
 			os << *v << " ";
 		name[i] = os.str();
 	}
-	write_graphviz(dump_file, cfg, boost::make_label_writer(name));
+	boost::write_graphviz(dump_file, cfg, boost::make_label_writer(name));
 	delete[] name;
 }
 
@@ -847,6 +845,7 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 			w = tree_dec[i].bag.size();
 		std::ostringstream os;
 		std::set<unsigned int>::const_iterator v1;
+		os << i << " | ";
 		for(v1 = tree_dec[i].bag.begin(); v1 != tree_dec[i].bag.end(); ++v1)
 			os << *v1 << " ";
 		os << ": ";
@@ -855,7 +854,7 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 			os << *v2 << " ";
 		name[i] = os.str();
 	}
-	write_graphviz(dump_file, tree_dec, boost::make_label_writer(name));
+	boost::write_graphviz(dump_file, tree_dec, boost::make_label_writer(name));
 	delete[] name;
 	
 	//std::cout << "Width: " << (w  - 1) << "(" << currFunc->name << ")\n";

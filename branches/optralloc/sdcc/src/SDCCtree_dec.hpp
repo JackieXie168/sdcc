@@ -274,6 +274,7 @@ void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg)
 }
 
 // Ensure that all joins are at proper join nodes: Each node that has two children has the same bag as its children.
+// Complexity: Linear in the number of vertices of T.
 template <class T_t>
 void nicify_joins(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 {
@@ -332,6 +333,7 @@ void nicify_joins(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
 }
 
 // Ensure that all nodes' bags are either a subset or a superset of their successors'.
+// Complexity: Linear in the number of vertices of T.
 template <class T_t>
 void nicify_diffs(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 {
@@ -438,6 +440,7 @@ void nicify_diffs_more(T_t &T, typename boost::graph_traits<T_t>::vertex_descrip
 }
 
 // Find a root of an acyclic graph T
+// Complexity: Linear in the number of vertices of T.
 template <class T_t>
 typename boost::graph_traits<T_t>::vertex_descriptor find_root(T_t &T)
 {

@@ -3,6 +3,13 @@
 	* src/SDCCtree_dec.hpp,
 	  src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc:
+	  Re-rooting of the tree-decomposition.
+
+2011-01-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCtree_dec.hpp,
+	  src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
 	  Fixed MSVC++ compilation problem, preparations for re-rooting the tree decomposition.
 
 2011-01-23 Borut Razem <borut.razem AT gmail.com>
