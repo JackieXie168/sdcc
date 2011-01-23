@@ -230,7 +230,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		
 	if(I[ia.registers[REG_A][1]].byte)
 		return(false);
-	//std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
+	//if(ic->key >= 34 && ic->key <= 42) std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
 	
 	// Check if the result of this instruction is placed in A.
 	bool result_in_A = operand_in_reg(IC_RESULT(ic), REG_A, ia, i, G);
@@ -264,7 +264,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		if(ic->op == GOTO || ic->op == LABEL)
 			return(true);
 			
-		//std::cout << "Not Used: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+		//if(ic->key >= 34 && ic->key <= 42) std::cout << "Not Used: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
 		return(false);
 	}
 	
@@ -275,9 +275,10 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		if(ic->op != IFX &&
 			!((ic->op == RIGHT_OP || ic->op == LEFT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))) &&
 			!(ic->op == '=' && !(IY_RESERVED && POINTER_SET(ic))) &&
-			!IS_BITWISE_OP (ic))
+			!IS_BITWISE_OP (ic) &&
+			!((ic->op == '-' || ic->op == '+' || ic->op == EQ_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
 			{
-				//std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+				//if(ic->key >= 34 && ic->key <= 42) std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
 				return(false);
 			}
 	}
@@ -286,7 +287,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		ic->op != IFX &&
 		ic->op != JUMPTABLE)
 		{
-			//std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+			//if(ic->key >= 34 && ic->key <= 42) std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
 			return(false);
 		}
 	
@@ -301,10 +302,11 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		ic->op != '<' &&
 		ic->op != '>' &&
 		ic->op != CAST &&
+		ic->op != CALL &&
 		ic->op != GETHBIT &&
 		!((ic->op == LEFT_OP || ic->op == RIGHT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
 		{
-			//std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+			//if(ic->key >= 34 && ic->key <= 42) std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
 			return(false);
 		}
 	
@@ -570,6 +572,8 @@ void z80_ralloc2_cc(ebbIndex *ebbi)
 	alive_tree_dec(tree_decomposition, control_flow_graph);
 	
 	good_re_root(tree_decomposition);
+	nicify(tree_decomposition);
+	alive_tree_dec(tree_decomposition, control_flow_graph);
 
 	if(z80_opts.dump_graphs)
 		dump_tree_decomposition(tree_decomposition);

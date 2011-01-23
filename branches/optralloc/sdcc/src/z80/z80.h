@@ -34,8 +34,8 @@ extern Z80_OPTS z80_opts;
 #define IS_Z80 (z80_opts.sub == SUB_Z80)
 #define IY_RESERVED (z80_opts.reserveIY)
 #define OPTRALLOC_ALL (z80_opts.optralloc_all)
-#define OPTRALLOC_A (OPTRALLOC_ALL || IS_GB)
 #define OPTRALLOC_HL (z80_opts.optralloc_all || z80_opts.optralloc_hl)
+#define OPTRALLOC_A (OPTRALLOC_ALL || !OPTRALLOC_HL || IS_GB)
 
 enum
   {

@@ -1957,7 +1957,7 @@ aopPut (asmop * aop, const char *s, int offset)
   s = buffer2;
 
   /* will assign value to value */
-  /* depending on where it is ofcourse */
+  /* depending on where it is of course */
   switch (aop->type)
     {
     case AOP_DUMMY:

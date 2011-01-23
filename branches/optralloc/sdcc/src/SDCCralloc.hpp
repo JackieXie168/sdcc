@@ -286,10 +286,10 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 		for(int j = 0; j <= operandKey; j++)
 			if(bitVectBitValue(isym->clashes, j))
 			{
-				//symbol *jsym = (symbol *)(hTabItemWithKey(liveRanges, j));
+				symbol *jsym = (symbol *)(hTabItemWithKey(liveRanges, j));
 				if(sym_to_index.find(std::pair<int, reg_t>(j, 0)) == sym_to_index.end())
 					continue;
-				for(reg_t k = 0; k < isym->nRegs; k++)
+				for(reg_t k = 0; k < jsym->nRegs; k++)
 					boost::add_edge(i, sym_to_index[std::pair<int, reg_t>(j, k)], con);
 			}
 	}
@@ -455,7 +455,7 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 	if((alist_size = alist.size()) * NUM_REGS <= z80_opts.max_allocs_per_node)
 		return;
 
-	std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+	//std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
 
 	assignment_rep *arep = new assignment_rep[alist_size];
 
@@ -485,11 +485,6 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	a.s = 0;
 	a.global.resize(boost::num_vertices(I), -1);
 	alist.push_back(a);
-
-	/*std::list<assignment>::iterator ai;
-	for(ai = alist.begin(); ai != alist.end(); ++ai)
-		print_assignment(*ai);
-	std::cout << "\n";*/
 }
 
 // Handle introduce nodes in the nice tree decomposition
@@ -533,8 +528,7 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 			++ai;
 	}
 
-	/*std::list<assignment>::iterator ai;
-	for(ai = alist1.begin(); ai != alist1.end(); ++ai)
+	/*for(ai = alist.begin(); ai != alist.end(); ++ai)
 		print_assignment(*ai);
 	std::cout << "\n";*/
 }
@@ -627,7 +621,7 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	adjacency_iter_t c, c_end, c2, c3;
 	boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-	//std::cout << "Join (" << t << ":\n"; std::cout.flush();
+	//std::cout << "Join (" << t << "):\n"; std::cout.flush();
 
 	c2 = c;
 	++c;
