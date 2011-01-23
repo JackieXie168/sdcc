@@ -99,7 +99,7 @@ void thorup_E(std::multimap<unsigned int, unsigned int> &M, const I_t &I)
 	typedef typename boost::graph_traits<I_t>::adjacency_iterator adjacency_iter_t;
 	typedef typename boost::graph_traits<I_t>::vertex_iterator vertex_iter_t;
 	typedef typename boost::property_map<I_t, boost::vertex_index_t>::type index_map;
-	index_map index = get(boost::vertex_index, I);
+	index_map index = boost::get(boost::vertex_index, I);
 
 	std::stack<std::pair<unsigned int, unsigned int> > s;
 
@@ -208,7 +208,7 @@ void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_
 	// Base case: Empty graph. Create an empty bag.
 	if(v == v_end)
 	{
-		add_vertex(T);
+		boost::add_vertex(T);
 		return;
 	}
 
@@ -216,7 +216,7 @@ void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_
 
 	typedef typename boost::graph_traits<G_t>::adjacency_iterator adjacency_iter_t;
 	typedef typename boost::property_map<G_t, boost::vertex_index_t>::type index_map;
-	index_map index = get(boost::vertex_index, G);
+	index_map index = boost::get(boost::vertex_index, G);
 
 	// Get the neigbours
 	adjacency_iter_t n, n_end;
@@ -283,7 +283,7 @@ void nicify_joins(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
 	adjacency_iter_t c, c_end;
 	typename boost::graph_traits<T_t>::vertex_descriptor c0, c1;
 
-	boost::tie(c, c_end) = adjacent_vertices(t, T);
+	boost::tie(c, c_end) = boost::adjacent_vertices(t, T);
 
 	switch(out_degree(t, T))
 	{
@@ -298,13 +298,13 @@ void nicify_joins(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
 		c0 = *c++;
 		c1 = *c;
 		typename boost::graph_traits<T_t>::vertex_descriptor d;
-		d = add_vertex(T);
+		d = boost::add_vertex(T);
 		add_edge(d, c0, T);
 		add_edge(d, c1, T);
-		remove_edge(t, c0, T);
-		remove_edge(t, c1, T);
+		boost::remove_edge(t, c0, T);
+		boost::remove_edge(t, c1, T);
 		T[d].bag = T[t].bag;
-		add_edge(t, d, T);
+		boost::add_edge(t, d, T);
 		nicify_joins(T, t);
 		return;
 	}
@@ -315,20 +315,20 @@ void nicify_joins(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
 	if(T[t].bag != T[c0].bag)
 	{
 		typename boost::graph_traits<T_t>::vertex_descriptor d;
-		d = add_vertex(T);
-		add_edge(d, c0, T);
-		remove_edge(t, c0, T);
+		d = boost::add_vertex(T);
+		boost::add_edge(d, c0, T);
+		boost::remove_edge(t, c0, T);
 		T[d].bag = T[t].bag;
-		add_edge(t, d, T);
+		boost::add_edge(t, d, T);
 	}
 	nicify_joins(T, c1);
 	if(T[t].bag != T[c1].bag)
 	{
-		typename boost::graph_traits<T_t>::vertex_descriptor d = add_vertex(T);
-		add_edge(d, c1, T);
-		remove_edge(t, c1, T);
+		typename boost::graph_traits<T_t>::vertex_descriptor d = boost::add_vertex(T);
+		boost::add_edge(d, c1, T);
+		boost::remove_edge(t, c1, T);
 		T[d].bag = T[t].bag;
-		add_edge(t, d, T);
+		boost::add_edge(t, d, T);
 	}
 }
 
@@ -389,22 +389,21 @@ void nicify_diffs_more(T_t &T, typename boost::graph_traits<T_t>::vertex_descrip
 
 	boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-	switch(out_degree(t, T))
+	switch(boost::out_degree(t, T))
 	{
 	case 0:
 		if(T[t].bag.size() > 1)
 		{
-			typename boost::graph_traits<T_t>::vertex_descriptor d = add_vertex(T);
+			typename boost::graph_traits<T_t>::vertex_descriptor d = boost::add_vertex(T);
 			T[d].bag = T[t].bag;
 			T[d].bag.erase(T[d].bag.begin());
-			add_edge(t, d, T);
+			boost::add_edge(t, d, T);
 			nicify_diffs_more(T, t);
 		}
 		return;
 	case 1:
 		break;
 	case 2:
-		
 		c0 = *c++;
 		c1 = *c;
 		nicify_diffs_more(T, c0);
@@ -428,13 +427,13 @@ void nicify_diffs_more(T_t &T, typename boost::graph_traits<T_t>::vertex_descrip
 	}
 
 	typename boost::graph_traits<T_t>::vertex_descriptor d = add_vertex(T);
-	add_edge(d, c0, T);
-	remove_edge(t, c0, T);
+	boost::add_edge(d, c0, T);
+	boost::remove_edge(t, c0, T);
 	T[d].bag = T[t_size > c0_size ? t : c0].bag;
 	std::set<unsigned int>::iterator i;
 	for(i = T[d].bag.begin(); T[t_size < c0_size ? t : c0].bag.find(*i) != T[t_size < c0_size ? t : c0].bag.end(); ++i);
 	T[d].bag.erase(i);
-	add_edge(t, d, T);
+	boost::add_edge(t, d, T);
 
 	nicify_diffs_more(T, t);
 }

@@ -2468,7 +2468,7 @@ packRegisters (eBBlock * ebp)
          result of that operation is not on stack then we can leave the
          result of this operation in acc:b combination */
 
-      if (!OPTRALLOC_ALL && !DISABLE_PACK_HL && IS_ITEMP (IC_RESULT (ic)))
+      if (!OPTRALLOC_HL && !DISABLE_PACK_HL && IS_ITEMP (IC_RESULT (ic)))
         if (!IS_GB && !IY_RESERVED)
           packRegsForHLUse3 (ic, IC_RESULT (ic), ebp);
 

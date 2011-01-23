@@ -34,6 +34,7 @@ extern Z80_OPTS z80_opts;
 #define IY_RESERVED (z80_opts.reserveIY)
 #define OPTRALLOC_ALL (z80_opts.optralloc_all)
 #define OPTRALLOC_A (OPTRALLOC_ALL || IS_GB)
+#define OPTRALLOC_HL OPTRALLOC_ALL
 
 enum
   {

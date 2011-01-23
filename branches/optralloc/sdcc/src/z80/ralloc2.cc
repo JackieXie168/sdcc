@@ -75,7 +75,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 							
 				if(OPTRALLOC_A && byteregs[0] == REG_A)
 					c -= 0.4;
-				else if(OPTRALLOC_ALL && byteregs[0] == REG_L)
+				else if(OPTRALLOC_HL && byteregs[0] == REG_L)
 					c -= 0.1;
 			}
 			// Spilt.
@@ -426,7 +426,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 	if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
 		return(std::numeric_limits<float>::infinity());
 		
-	if(OPTRALLOC_ALL && !HLinst_ok(a, i, G, I))
+	if(OPTRALLOC_HL && !HLinst_ok(a, i, G, I))
 		return(std::numeric_limits<float>::infinity());
 
 	switch(ic->op)
@@ -489,10 +489,10 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 	if(OPTRALLOC_A && ia.registers[REG_A][1] < 0)
 		c += 0.03f;
 
-	if(OPTRALLOC_ALL && ia.registers[REG_L][1] < 0)
+	if(OPTRALLOC_HL && ia.registers[REG_L][1] < 0)
 		c += 0.02f;
 
-	return(c - a.local.size() * 0.01);
+	return(c - a.local.size() * 0.02);
 }
 
 template <class T_t, class G_t, class I_t>

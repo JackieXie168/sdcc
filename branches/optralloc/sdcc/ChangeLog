@@ -1,3 +1,11 @@
+2011-01-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/z80.h,
+	  src/SDCCtree_dec.hpp,
+	  src/z80/ralloc.c,
+	  src/z80/ralloc2.cc:
+	  Feature enable macro cleanup.
+
 2011-01-23 Borut Razem <borut.razem AT gmail.com>
 
 	* sdcc.sln, */*.vcxproj: MSVC 2010 project files cleaning
