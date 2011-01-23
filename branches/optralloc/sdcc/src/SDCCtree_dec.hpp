@@ -437,7 +437,7 @@ void nicify_diffs_more(T_t &T, typename boost::graph_traits<T_t>::vertex_descrip
 	nicify_diffs_more(T, t);
 }
 
-// Find the root of an acyclic graph T
+// Find a root of an acyclic graph T
 template <class T_t>
 typename boost::graph_traits<T_t>::vertex_descriptor find_root(T_t &T)
 {

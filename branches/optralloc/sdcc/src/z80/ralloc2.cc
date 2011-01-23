@@ -568,6 +568,8 @@ void z80_ralloc2_cc(ebbIndex *ebbi)
 	nicify(tree_decomposition);
 
 	alive_tree_dec(tree_decomposition, control_flow_graph);
+	
+	//good_re_root(tree_decomposition);
 
 	if(z80_opts.dump_graphs)
 		dump_tree_decomposition(tree_decomposition);

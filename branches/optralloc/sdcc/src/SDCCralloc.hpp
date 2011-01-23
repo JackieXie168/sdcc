@@ -677,18 +677,10 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 	std::cout << "\n";*/
 }
 
-// Changes the root to improve the assignment removal heuristic.
-template <class T_t>
-typename boost::graph_traits<T_t>::vertex_descriptor re_root(T_t &T)
-{
-}
-
 // Handle nodes in the tree decomposition, by detecting their type and calling the appropriate function. Recurses.
 template <class T_t, class G_t, class I_t>
 void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I)
 {
-	re_root(T);
-
 	typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
 
 	adjacency_iter_t c, c_end;
@@ -717,6 +709,91 @@ void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_des
 		std::cerr << "Not nice.\n";
 		break;
 	}
+}
+
+// Find the best root selecting from t_old and the leafs under t.
+template <class T_t>
+std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_best_root(const T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, size_t t_s, typename boost::graph_traits<T_t>::vertex_descriptor t_old, size_t t_old_s)
+{
+	typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
+	adjacency_iter_t c, c_end;
+	typename boost::graph_traits<T_t>::vertex_descriptor c0, c1, t0;
+	size_t t0_s;
+	
+	boost::tie(c, c_end) = adjacent_vertices(t, T);
+
+	switch(out_degree(t, T))
+	{
+	case 0:
+		return(t_s > t_old_s ? std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t>(t, t_s) : std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t>(t_old, t_old_s));
+	case 1:
+		return(find_best_root(T, *c, T[*c].alive.size() ? T[*c].alive.size() : t_s, t_old, t_old_s));
+	case 2:
+		c0 = *c++;
+		c1 = *c;
+		boost::tie(t0, t0_s) = find_best_root(T, c0, T[c0].alive.size() ? T[c0].alive.size() : t_s, t_old, t_old_s);
+		return(find_best_root(T, c1, T[c1].alive.size() ? T[c1].alive.size() : t_s, t0_s > t_old_s ? t0 : t_old, t0_s > t_old_s ? t0_s: t_old_s));
+		break;
+	default:
+		std::cerr << "Not nice.\n";
+		break;
+	}
+	
+	return(std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t>(t_old, t_old_s));
+}
+
+// Change the root to t.
+template <class T_t>
+void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
+{
+	typename boost::graph_traits<T_t>::vertex_descriptor s0, s1, s2;
+	typename boost::graph_traits<T_t>::in_edge_iterator e, e_end;
+std::cout << "Re-rooting?\n"; std::cout.flush();	
+	boost::tie(e, e_end) = boost::in_edges(t, T);
+	if(e == e_end)
+		return;
+std::cout << "Re-rooting.\n"; std::cout.flush();
+	s0 = t;
+	s1 = boost::source(*e, T);
+	
+	for(boost::tie(e, e_end) = boost::in_edges(s1, T); e != e_end; boost::tie(e, e_end) = boost::in_edges(s1, T))
+	{
+		s2 = boost::source(*e, T);
+		boost::remove_edge(s1, s0, T);
+		boost::add_edge(s0, s1, T);
+		s0 = s1;
+		s1 = s2;
+	}
+	boost::remove_edge(s1, s0, T);
+	boost::add_edge(s0, s1, T);
+}
+
+// Change the root to improve the assignment removal heuristic.
+template <class T_t>
+void good_re_root(T_t &T)
+{
+	typename boost::graph_traits<T_t>::vertex_descriptor t;
+	
+	typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
+	adjacency_iter_t c, c_end;
+	
+	t = find_root(T);
+//std::cout << "Current root: " << t << "\n"; std::cout.flush();
+	for(boost::tie(c, c_end) = adjacent_vertices(t, T); c != c_end && !T[*c].alive.size();)
+		boost::tie(c, c_end) = adjacent_vertices(*c, T);
+		
+//std::cout << "Old root: " << t << " size: " << T[*c].alive.size() << "\n";std::cout.flush();
+	
+	t = find_best_root(T, t, T[*c].alive.size(), t, T[*c].alive.size()).first;
+
+	if(T[t].alive.size())
+	{
+		std::cout << "Error: Invalid root.\n";
+		return;
+	}
+//std::cout << "Best root: " << t << "\n";std::cout.flush();
+
+	//re_root(T, t);
 }
 
 // Dump con, with numbered nodes, show live variables at each node.
