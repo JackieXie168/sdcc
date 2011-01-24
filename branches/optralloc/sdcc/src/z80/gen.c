@@ -629,6 +629,7 @@ getPairId (asmop * aop)
             }
         }
     }
+
   return PAIR_INVALID;
 }
 
@@ -1373,6 +1374,7 @@ spillCached (void)
 static bool
 requiresHL (asmop * aop)
 {
+  unsigned int i;
   switch (aop->type)
     {
     case AOP_IY:
@@ -1380,7 +1382,14 @@ requiresHL (asmop * aop)
     case AOP_STK:
     case AOP_EXSTK:
     case AOP_HLREG:
+
       return TRUE;
+    case AOP_REG:
+      for (i = 0; i < aop->size; i++)
+        if (aop->aopu.aop_reg[i]->rIdx == L_IDX || aop->aopu.aop_reg[i]->rIdx == H_IDX)
+          {
+            return TRUE;
+          }
     default:
       return FALSE;
     }
@@ -1516,6 +1525,7 @@ fetchPairLong (PAIR_ID pairId, asmop * aop, iCode *ic, int offset)
         /* we need to get it byte by byte */
         else if (pairId == PAIR_HL && (IS_GB || (IY_RESERVED && aop->type == AOP_HL)) && requiresHL (aop)) {
             aopGet (aop, offset, FALSE);
+
             switch (aop->size - offset) {
             case 1:
                 emit2 ("ld l,!*hl");

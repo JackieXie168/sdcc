@@ -350,6 +350,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	
 	if(ia.registers[REG_L][1] < 0 && ia.registers[REG_H][1] < 0)
 		return(true);	// Register HL not in use.
+
+	//std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 	
 	bool result_in_L = operand_in_reg(IC_RESULT(ic), REG_L, ia, i, G);
 	bool result_in_H = operand_in_reg(IC_RESULT(ic), REG_H, ia, i, G);
@@ -382,13 +384,15 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 		std::cout << "\n";
 	}
 #endif
+	//std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+
 
 	// HL overwritten by result.
-	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 &&
+	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 && !POINTER_SET(ic) &&
 		(ic->op == ADDRESS_OF ||
 		ic->op == '+' ||
 		POINTER_GET(ic) ||
-		ic->op == '=' && !POINTER_SET(ic)))
+		ic->op == '='))
 		return(true);
 
 	if((IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic))) ||
@@ -412,27 +416,33 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 		return(true);
 	if(ic->op == LEFT_OP && isOperandLiteral(IC_RIGHT(ic)))
 		return(true);
-	/*if((ic->op == '=' && !POINTER_SET(ic) && !POINTER_GET(ic)) ||
-		ic->op == UNARYMINUS ||
+
+	if((ic->op == '=' && !POINTER_SET(ic) && !POINTER_GET(ic)) ||
+		/*ic->op == UNARYMINUS ||
 		ic->op == RETURN ||
 		ic->op == RIGHT_OP ||
 		ic->op == '-' ||
 		IS_BITWISE_OP(ic) ||
 		ic->op == '>' ||
 		ic->op == '<' ||
-		ic->op == EQ_OP ||
+		ic->op == EQ_OP ||*/
 		(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) == 1))	// 16 bit addition might use add hl, rr
-        return(true);*/
+        return(true);
+
 	if(IS_VALOP(IC_RIGHT(ic)) && ic->op == EQ_OP)
 		return(true);
 	
+	if(ic->op == '=' && POINTER_SET(ic) && getSize(operandType(IC_RIGHT(ic))) > 1)
+		return(false);
+
 	// HL overwritten by result.
 	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 &&
 		(ic->op == CALL) /*||
-		POINTER_SET(ic)*/)
+		(POINTER_SET(ic) ^ POINTER_GET(ic)*/) //- causes problems when source is an adress on stack (which will be loaded into hl, destroying it))?
+		)
 		return(true);
-	
-	//std::cout << "HL default drop, operation: " << ic->op << "\n";
+
+	//std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
 	
 	return(false);
 }
