@@ -439,7 +439,6 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 &&
 		(ic->op == CALL) /*||
 		(POINTER_SET(ic) ^ POINTER_GET(ic)*/) //- causes problems when source is an adress on stack (which will be loaded into hl, destroying it))?
-		)
 		return(true);
 
 	//std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
