@@ -1,3 +1,8 @@
+2011-01-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/ralloc2.cc:
+	  Fixed bug in handling of register A.
+
 2011-01-24 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCralloc.hpp,

@@ -147,6 +147,15 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 			byteregs[I[v].byte] = a.global[v];
 			size1++;
 		}
+		
+		// Code generator cannot handle variables only partially in A.
+		if(OPTRALLOC_A && size1 > 1)
+			for(unsigned short int i = 0; i < size1; i++)
+				if(byteregs[i] == REG_A)
+					c += std::numeric_limits<float>::infinity();
+							
+		if(OPTRALLOC_A && byteregs[0] == REG_A)
+			c -= 0.4;
 	}
 	
 	if(!size1)
@@ -173,6 +182,15 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 				c -= 2.0f;
 			size2++;
 		}
+		
+		// Code generator cannot handle variables only partially in A.
+		if(OPTRALLOC_A && size2 > 1)
+			for(unsigned short int i = 0; i < size2; i++)
+				if(byteregs[i] == REG_A)
+					c += std::numeric_limits<float>::infinity();
+							
+		if(OPTRALLOC_A && byteregs[0] == REG_A)
+			c -= 0.4;
 	}
 	
 	if(!size2)
