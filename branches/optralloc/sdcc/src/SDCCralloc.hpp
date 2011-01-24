@@ -280,7 +280,7 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 	}
 
 	// Get conflict graph from sdcc
-	for(var_t i = 0; i < num_vertices(con); i++)
+	for(unsigned int i = 0; i < num_vertices(con); i++)
 	{
 		symbol *isym = (symbol *)(hTabItemWithKey(liveRanges, con[i].v));
 		for(int j = 0; j <= operandKey; j++)
@@ -297,11 +297,11 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 	// Check for unconnected live ranges, some might have survived dead code elimination.
 	// Todo: Improve efficiency, e.g. using subgraph or filtered_graph.
 	// Todo: Split live ranges instead?
-	for(int i = boost::num_vertices(con) - 1; i >= 0; i--)
+	for(unsigned int i = boost::num_vertices(con) - 1; i >= 0; i--)
 	{
 		cfg_sym_t cfg2;
 		boost::copy_graph(cfg, cfg2);
-		for(int j = boost::num_vertices(cfg) - 1; j >= 0; j--)
+		for(unsigned int j = boost::num_vertices(cfg) - 1; j >= 0; j--)
 		{
 			if(cfg[j].alive.find(i) == cfg[j].alive.end())
 			{
@@ -452,7 +452,7 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 	size_t alist_size;
 	std::list<assignment>::iterator ai, an;
 
-	if((alist_size = alist.size()) * NUM_REGS <= z80_opts.max_allocs_per_node)
+	if((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(z80_opts.max_allocs_per_node))
 		return;
 
 	//std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";

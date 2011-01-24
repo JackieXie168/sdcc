@@ -74,9 +74,9 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 							c += std::numeric_limits<float>::infinity();
 							
 				if(OPTRALLOC_A && byteregs[0] == REG_A)
-					c -= 0.4;
+					c -= 0.4f;
 				else if(OPTRALLOC_HL && byteregs[0] == REG_L)
-					c -= 0.1;
+					c -= 0.1f;
 			}
 			// Spilt.
 			else
@@ -155,7 +155,7 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 					c += std::numeric_limits<float>::infinity();
 							
 		if(OPTRALLOC_A && byteregs[0] == REG_A)
-			c -= 0.4;
+			c -= 0.4f;
 	}
 	
 	if(!size1)
@@ -190,7 +190,7 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 					c += std::numeric_limits<float>::infinity();
 							
 		if(OPTRALLOC_A && byteregs[0] == REG_A)
-			c -= 0.4;
+			c -= 0.4f;
 	}
 	
 	if(!size2)
@@ -522,7 +522,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 	if(OPTRALLOC_HL && ia.registers[REG_L][1] < 0)
 		c += 0.02f;
 
-	return(c - a.local.size() * 0.02);
+	return(c - a.local.size() * 0.02f);
 }
 
 template <class T_t, class G_t, class I_t>
@@ -554,7 +554,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 	if(winner.global.size() != boost::num_vertices(I))
 		std::cerr << "ERROR: No Assignments at root\n";
 	
-	for(var_t v = 0; v < boost::num_vertices(I); v++)
+	for(unsigned int v = 0; v < boost::num_vertices(I); v++)
 	{
 		symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
 		if(winner.global[v] >= 0)

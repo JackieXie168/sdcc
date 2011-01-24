@@ -22,8 +22,8 @@ typedef struct
     int port_back;
     int reserveIY;
     int max_allocs_per_node;
-	int optralloc_all;
-	int optralloc_hl;
+    int optralloc_all;
+    int optralloc_hl;
     int dump_graphs;
   }
 Z80_OPTS;
