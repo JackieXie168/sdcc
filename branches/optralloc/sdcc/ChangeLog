@@ -1,3 +1,11 @@
+2011-01-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCglobl.h,
+	  src/SDCCralloc.hpp,
+	  src/z80/z80.h,
+	  src/z80/main.c:
+	  Modified fix for MSVC 2010 warnings, changed handling of --max-allocs-per-node option.
+
 2011-01-24 Borut Razem <borut.razem AT gmail.com>
 
 	* src/SDCCralloc.hpp, src/z80/main.c, src/z80/ralloc2.cc,

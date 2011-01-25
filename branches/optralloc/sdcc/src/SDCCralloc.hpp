@@ -280,7 +280,7 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 	}
 
 	// Get conflict graph from sdcc
-	for(unsigned int i = 0; i < num_vertices(con); i++)
+	for(var_t i = 0; static_cast<boost::graph_traits<cfg_t>::vertices_size_type>(i) < num_vertices(con); i++)
 	{
 		symbol *isym = (symbol *)(hTabItemWithKey(liveRanges, con[i].v));
 		for(int j = 0; j <= operandKey; j++)
@@ -297,11 +297,11 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 	// Check for unconnected live ranges, some might have survived dead code elimination.
 	// Todo: Improve efficiency, e.g. using subgraph or filtered_graph.
 	// Todo: Split live ranges instead?
-	for(unsigned int i = boost::num_vertices(con) - 1; i >= 0; i--)
+	for(var_t i = boost::num_vertices(con) - 1; i >= 0; i--)
 	{
 		cfg_sym_t cfg2;
 		boost::copy_graph(cfg, cfg2);
-		for(unsigned int j = boost::num_vertices(cfg) - 1; j >= 0; j--)
+		for(int j = boost::num_vertices(cfg) - 1; j >= 0; j--)
 		{
 			if(cfg[j].alive.find(i) == cfg[j].alive.end())
 			{
@@ -443,7 +443,7 @@ struct assignment_rep
 	}
 };
 
-// Ensure that we never get more than z80_opts.max_allocs_per_node assignments at a single node of the tree decomposition.
+// Ensure that we never get more than options.max_allocs_per_node assignments at a single node of the tree decomposition.
 // Tries to drop the worst ones first (but never drop the empty assignment, as it's the only one guaranteed to be always valid).
 template <class G_t, class I_t>
 void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, const G_t &G, const I_t &I)
@@ -452,10 +452,10 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 	size_t alist_size;
 	std::list<assignment>::iterator ai, an;
 
-	if((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(z80_opts.max_allocs_per_node))
+	if((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(options.max_allocs_per_node))
 		return;
 
-	//std::cerr << "Too many assignments here:" << alist_size << " > " << z80_opts.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+	//std::cerr << "Too many assignments here:" << alist_size << " > " << options.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
 
 	assignment_rep *arep = new assignment_rep[alist_size];
 
@@ -465,9 +465,9 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 		arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I);
 	}
 
-	std::nth_element(arep + 1, arep + z80_opts.max_allocs_per_node / NUM_REGS, arep + alist_size);
+	std::nth_element(arep + 1, arep + options.max_allocs_per_node / NUM_REGS, arep + alist_size);
 
-	for(n = z80_opts.max_allocs_per_node / NUM_REGS; n < alist_size; n++)
+	for(n = options.max_allocs_per_node / NUM_REGS; n < alist_size; n++)
 		alist.erase(arep[n].i);
 		
 	delete[] arep;
@@ -644,7 +644,7 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 			std::set<unsigned int>::iterator bi;
 			for(bi = T[t].bag.begin(); bi != T[t].bag.end(); ++bi)
 				ai2->s -= instruction_cost(*ai2, *bi, G, I);
-			for(unsigned int i = 0; i < ai2->global.size(); i++)
+			for(size_t i = 0; i < ai2->global.size(); i++)
 				ai2->global[i] = ((ai2->global[i] != -1) ? ai2->global[i] : ai3->global[i]);
 			alist1.push_back(*ai2);
 			++ai2;
@@ -794,7 +794,7 @@ void dump_con(const con_t &con)
 	std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());
 
 	std::string *name = new std::string[num_vertices(con)];
-	for(unsigned int i = 0; i < num_vertices(con); i++)
+	for(var_t i = 0; static_cast<boost::graph_traits<cfg_t>::vertices_size_type>(i) < boost::num_vertices(con); i++)
 	{
 		std::ostringstream os;
 		os << i;
@@ -812,7 +812,7 @@ void dump_cfg(const cfg_t &cfg)
 	std::ofstream dump_file((std::string(dstFileName) + ".dumpcfg" + currFunc->rname + ".dot").c_str());
 
 	std::string *name = new std::string[num_vertices(cfg)];
-	for(unsigned int i = 0; i < num_vertices(cfg); i++)
+	for(unsigned int i = 0; i < boost::num_vertices(cfg); i++)
 	{
 		std::ostringstream os;
 		os << i << ", " << cfg[i].ic->key << ": ";
@@ -833,7 +833,7 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 	unsigned int w = 0;
 
 	std::string *name = new std::string[num_vertices(tree_dec)];
-	for(unsigned int i = 0; i < num_vertices(tree_dec); i++)
+	for(unsigned int i = 0; i < boost::num_vertices(tree_dec); i++)
 	{
 		if(tree_dec[i].bag.size() > w)
 			w = tree_dec[i].bag.size();
