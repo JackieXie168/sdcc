@@ -1374,7 +1374,6 @@ spillCached (void)
 static bool
 requiresHL (asmop * aop)
 {
-  unsigned int i;
   switch (aop->type)
     {
     case AOP_IY:
@@ -1385,11 +1384,14 @@ requiresHL (asmop * aop)
 
       return TRUE;
     case AOP_REG:
-      for (i = 0; i < aop->size; i++)
-        if (aop->aopu.aop_reg[i]->rIdx == L_IDX || aop->aopu.aop_reg[i]->rIdx == H_IDX)
+      {
+        int i;
+        for (i = 0; i < aop->size; i++)
           {
-            return TRUE;
+            if (aop->aopu.aop_reg[i]->rIdx == L_IDX || aop->aopu.aop_reg[i]->rIdx == H_IDX)
+              return TRUE;
           }
+      }
     default:
       return FALSE;
     }

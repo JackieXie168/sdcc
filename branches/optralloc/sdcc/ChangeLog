@@ -1,3 +1,8 @@
+2011-01-25 Borut Razem <borut.razem AT gmail.com>
+
+	* src/z80/gen.c:
+	  removed MSCV 2010 warning C4018: '<' : signed/unsigned mismatch
+
 2011-01-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCralloc.hpp,
