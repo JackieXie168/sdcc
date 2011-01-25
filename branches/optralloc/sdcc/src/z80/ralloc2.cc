@@ -182,12 +182,6 @@ float assign_cost(const assignment &a, unsigned short int i, const G_t &G, const
 				c -= 2.0f;
 			size2++;
 		}
-		
-		// Code generator cannot handle variables only partially in A.
-		if(OPTRALLOC_A && size2 > 1)
-			for(unsigned short int i = 0; i < size2; i++)
-				if(byteregs[i] == REG_A)
-					c += std::numeric_limits<float>::infinity();
 							
 		if(OPTRALLOC_A && byteregs[0] == REG_A)
 			c -= 0.4f;
@@ -245,10 +239,13 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 	
 	if(ia.registers[REG_A][1] < 0)
 		return(true);	// Register A not in use.
-		
+	
+	//if(i == 15) std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
 	if(I[ia.registers[REG_A][1]].byte)
+	{
+		//if(i == 15) std::cout << "Byte: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
 		return(false);
-	//if(ic->key >= 34 && ic->key <= 42) std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
+	}
 	
 	// Check if the result of this instruction is placed in A.
 	bool result_in_A = operand_in_reg(IC_RESULT(ic), REG_A, ia, i, G);
@@ -268,6 +265,10 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		break;
 	}
 	
+	// TODO: Fix this in code generation!
+	if(ic->op == CALL && result_in_A)
+		return(false);
+		
 	if(!result_in_A && !input_in_A)
 	{
 		// Variable in A is not used by this instruction
@@ -276,13 +277,13 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 			OP_KEY (IC_RESULT (ic)) == OP_KEY (IC_LEFT (ic)))
 			return(true);
 			
-		if(ic->op == '=' && !POINTER_SET (ic) && isOperandEqual (IC_RESULT (ic), IC_RIGHT (ic)))
+		if(ic->op == '=' && !POINTER_SET (ic) && isOperandEqual(IC_RESULT(ic), IC_RIGHT(ic)))
 			return(true);
 
 		if(ic->op == GOTO || ic->op == LABEL)
 			return(true);
 			
-		//if(ic->key >= 34 && ic->key <= 42) std::cout << "Not Used: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+		//if(i == 15) std::cout << "Not Used: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
 		return(false);
 	}
 	
@@ -296,7 +297,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 			!IS_BITWISE_OP (ic) &&
 			!((ic->op == '-' || ic->op == '+' || ic->op == EQ_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
 			{
-				//if(ic->key >= 34 && ic->key <= 42) std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
+				//if(i == 15) std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
 				return(false);
 			}
 	}
@@ -305,7 +306,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		ic->op != IFX &&
 		ic->op != JUMPTABLE)
 		{
-			//if(ic->key >= 34 && ic->key <= 42) std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+			//if(i == 15) std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
 			return(false);
 		}
 	
@@ -324,9 +325,11 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		ic->op != GETHBIT &&
 		!((ic->op == LEFT_OP || ic->op == RIGHT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
 		{
-			//if(ic->key >= 34 && ic->key <= 42) std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+			//if(i == 15) std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
 			return(false);
 		}
+		
+	//if(i == 15) std::cout << "Default OK\n";
 	
 	return(true);
 }
@@ -348,10 +351,13 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	}
 	const i_assignment &ia = iai->second;
 	
-	if(ia.registers[REG_L][1] < 0 && ia.registers[REG_H][1] < 0)
+	bool unused_L = (ia.registers[REG_L][1] < 0);
+	bool unused_H = (ia.registers[REG_H][1] < 0);
+	
+	if(unused_L && unused_H)
 		return(true);	// Register HL not in use.
 
-	//std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+	//if(i == 15) std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 	
 	bool result_in_L = operand_in_reg(IC_RESULT(ic), REG_L, ia, i, G);
 	bool result_in_H = operand_in_reg(IC_RESULT(ic), REG_H, ia, i, G);
@@ -372,6 +378,13 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 		input_in_H = operand_in_reg(IC_LEFT(ic), REG_H, ia, i, G) || operand_in_reg(IC_RIGHT(ic), REG_H, ia, i, G);
 		break;
 	}
+	bool input_in_HL = input_in_L || input_in_H;
+	
+	const std::set<var_t> &dying = G[i].dying;
+	bool dying_L = result_in_L || dying.find(ia.registers[REG_L][1]) != dying.end() || dying.find(ia.registers[REG_L][0]) != dying.end();
+	bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
+
+	bool result_only_HL = (result_in_L || unused_L) && (result_in_H || unused_H);
 	
 #if 0
 	{
@@ -386,6 +399,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 #endif
 	//std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
 
+	if(ic->op == RETURN)
+		return(true);
 
 	// HL overwritten by result.
 	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 && !POINTER_SET(ic) &&
@@ -394,14 +409,20 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 		POINTER_GET(ic) ||
 		ic->op == '='))
 		return(true);
-
-	if((IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic))) ||
-		(IC_LEFT(ic) && IS_SYMOP(IC_LEFT(ic)) && isOperandInDirSpace(IC_LEFT (ic))) || 
-		(IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT (ic))))
+//std::cout << "DS?\n";
+	if(IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic)))
+		return(false);
+//std::cout << "DS1\n";
+	if((input_in_HL || !result_only_HL) && IC_LEFT(ic) && IS_SYMOP(IC_LEFT(ic)) && isOperandInDirSpace(IC_LEFT(ic)))
+		return(false);
+//std::cout << "DS2\n";
+	if((input_in_HL || !result_only_HL) && IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT(ic)))
         return(false);
-        
+//std::cout << "!DS\n";
 	if(ic->op == JUMPTABLE)
 		return(false);
+
+//std::cout << "HL2\n";
 
 	// Operations that leave HL alone.
 	if(ic->op == IFX)
@@ -417,23 +438,23 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	if(ic->op == LEFT_OP && isOperandLiteral(IC_RIGHT(ic)))
 		return(true);
 
-	if((ic->op == '=' && !POINTER_SET(ic) && !POINTER_GET(ic)) ||
-		/*ic->op == UNARYMINUS ||
-		ic->op == RETURN ||
+	if((!POINTER_SET(ic) && !POINTER_GET(ic) && (
+		(ic->op == '=' ||
+		/*ic->op == UNARYMINUS ||*/
 		ic->op == RIGHT_OP ||
-		ic->op == '-' ||
+		/*ic->op == '-' ||*/
 		IS_BITWISE_OP(ic) ||
-		ic->op == '>' ||
+		/*ic->op == '>' ||
 		ic->op == '<' ||
 		ic->op == EQ_OP ||*/
-		(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) == 1))	// 16 bit addition might use add hl, rr
+		(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) == 1)))))	// 16 bit addition might use add hl, rr
         return(true);
 
 	if(IS_VALOP(IC_RIGHT(ic)) && ic->op == EQ_OP)
 		return(true);
 	
-	if(ic->op == '=' && POINTER_SET(ic) && getSize(operandType(IC_RIGHT(ic))) > 1)
-		return(false);
+	//if(ic->op == '=' && POINTER_SET(ic) && getSize(operandType(IC_RIGHT(ic))) > 1)
+	//	return(false);
 
 	// HL overwritten by result.
 	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 &&
@@ -457,7 +478,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 		
 	if(OPTRALLOC_HL && !HLinst_ok(a, i, G, I))
 		return(std::numeric_limits<float>::infinity());
-
+		
 	switch(ic->op)
 	{
 	case '=':

@@ -1,5 +1,11 @@
 2011-01-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Improved handling of A and HL.
+
+2011-01-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCglobl.h,
 	  src/SDCCralloc.hpp,
 	  std/SDCCmain.c,

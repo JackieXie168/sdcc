@@ -528,9 +528,13 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 			++ai;
 	}
 
-	/*for(ai = alist.begin(); ai != alist.end(); ++ai)
+	/*float min_s = 10000;
+	for(ai = alist.begin(); ai != alist.end(); ++ai)
+	{
 		print_assignment(*ai);
-	std::cout << "\n";*/
+		min_s = min_s < ai->s ? min_s : ai->s;
+	}
+	std::cout << " min s: " << min_s << " \n";*/
 }
 
 bool assignments_locally_same(const assignment &a1, const assignment &a2)
@@ -608,9 +612,13 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 		}
 	}
 
-	/*for(ai = alist.begin(); ai != alist.end(); ++ai)
+	/*float min_s = 10000;
+	for(ai = alist.begin(); ai != alist.end(); ++ai)
+	{
 		print_assignment(*ai);
-	std::cout << "\n";*/
+		min_s = min_s < ai->s ? min_s : ai->s;
+	}
+	std::cout << " min s: " << min_s << " \n";*/
 }
 
 // Handle join nodes in the nice tree decomposition
