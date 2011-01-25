@@ -2,6 +2,7 @@
 
 	* src/SDCCglobl.h,
 	  src/SDCCralloc.hpp,
+	  std/SDCCmain.c,
 	  src/z80/z80.h,
 	  src/z80/main.c:
 	  Modified fix for MSVC 2010 warnings, changed handling of --max-allocs-per-node option.
