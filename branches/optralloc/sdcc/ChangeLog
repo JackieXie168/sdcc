@@ -2,6 +2,7 @@
 
 	* src/z80/gen.c:
 	  removed MSCV 2010 warning C4018: '<' : signed/unsigned mismatch
+	* src/SDCCsysytem.c, src/SDCCutil.c: removed MSCV 2010 warnings
 
 2011-01-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
