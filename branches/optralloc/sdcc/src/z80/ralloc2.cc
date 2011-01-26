@@ -354,7 +354,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	if(unused_L && unused_H)
 		return(true);	// Register HL not in use.
 
-	//if(i == 15) std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+	//if(ic->key == 95) std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 	
 	bool result_in_L = operand_in_reg(IC_RESULT(ic), REG_L, ia, i, G);
 	bool result_in_H = operand_in_reg(IC_RESULT(ic), REG_H, ia, i, G);
@@ -381,7 +381,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	bool dying_L = result_in_L || dying.find(ia.registers[REG_L][1]) != dying.end() || dying.find(ia.registers[REG_L][0]) != dying.end();
 	bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
 
-	bool result_only_HL = (result_in_L || unused_L) && (result_in_H || unused_H);
+	bool result_only_HL = (result_in_L || unused_L || dying_L) && (result_in_H || unused_H || dying_H);
 	
 #if 0
 	{
@@ -394,13 +394,13 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 		std::cout << "\n";
 	}
 #endif
-	//std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+	//if(ic->key == 95) std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
 
 	if(ic->op == RETURN)
 		return(true);
 
 	// HL overwritten by result.
-	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 && !POINTER_SET(ic) &&
+	if(result_only_HL && !POINTER_SET(ic) &&
 		(ic->op == ADDRESS_OF ||
 		ic->op == '+' ||
 		POINTER_GET(ic) ||
@@ -443,7 +443,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 		/*ic->op == '>' ||
 		ic->op == '<' ||
 		ic->op == EQ_OP ||*/
-		(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) == 1)))))	// 16 bit addition might use add hl, rr
+		(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) == 1) ||
+		(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) <= 2 && result_only_HL) ))))	// 16 bit addition might use add hl, rr
         return(true);
 
 	if(IS_VALOP(IC_RIGHT(ic)) && ic->op == EQ_OP)
@@ -459,7 +460,12 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	if(ic->op == '=' && !POINTER_GET(ic) && !input_in_HL)
 		return(true);
 
-	//std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
+	/*if(ic->key >= 94 && ic->key <= 96)
+	{
+		std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+		std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+		std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
+	}*/
 	
 	return(false);
 }
