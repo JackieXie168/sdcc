@@ -1,3 +1,9 @@
+2011-01-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/peeph-z80.def:
+	  Improved handling of A and HL.
+
 2011-01-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* Makefile.common.in,

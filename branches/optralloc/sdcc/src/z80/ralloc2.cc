@@ -264,10 +264,6 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		input_in_A = operand_in_reg(IC_LEFT(ic), REG_A, ia, i, G) || operand_in_reg(IC_RIGHT(ic), REG_A, ia, i, G);
 		break;
 	}
-	
-	// TODO: Fix this in code generation!
-	//if(ic->op == CALL && result_in_A)
-	//	return(false);
 		
 	if(!result_in_A && !input_in_A)
 	{
@@ -322,6 +318,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 		ic->op != '>' &&
 		ic->op != CAST &&
 		ic->op != CALL &&
+		ic->op != PCALL &&
 		ic->op != GETHBIT &&
 		!((ic->op == LEFT_OP || ic->op == RIGHT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
 		{
@@ -419,8 +416,6 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	if((input_in_HL || !result_only_HL) && IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT(ic)))
         return(false);
 //std::cout << "!DS\n";
-	if(ic->op == JUMPTABLE)
-		return(false);
 
 //std::cout << "HL2\n";
 
@@ -429,8 +424,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 		return(true);
 	if(SKIP_IC2(ic))
 		return(true);
-	/*if(ic->op == CAST)
-		return(true);*/
+	if(ic->op == CAST)
+		return(true);
 	if(ic->op == IPUSH && input_in_H)
 		return(true);
 	if(POINTER_GET(ic) && input_in_L && input_in_H)
@@ -440,6 +435,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
 	if((!POINTER_SET(ic) && !POINTER_GET(ic) && (
 		(ic->op == '=' ||
+		/*ic->op == CAST ||*/	// Makes float regression tests fail?
 		/*ic->op == UNARYMINUS ||*/
 		ic->op == RIGHT_OP ||
 		/*ic->op == '-' ||*/
@@ -457,7 +453,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	//	return(false);
 
 	// HL overwritten by result.
-	if(result_only_HL && ic->op == CALL)
+	if(result_only_HL && (ic->op == CALL || ic->op == PCALL))
 		return(true);
 		
 	if(ic->op == '=' && !POINTER_GET(ic) && !input_in_HL)
