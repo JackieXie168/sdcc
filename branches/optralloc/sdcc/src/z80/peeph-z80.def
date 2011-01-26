@@ -624,6 +624,15 @@ replace restart {
 } if notUsed('a')
 
 replace restart {
+	ld	a, (hl)
+	set	%1, a
+	ld	(hl), a
+} by {
+	; peephole 0zj''' set bit %1 of (hl) directly instead of going through a.
+	set	%1, (hl)
+} if notUsed('a')
+
+replace restart {
 	ld	bc, #%1 + %2
 	ld	l,c
 	ld	h,b

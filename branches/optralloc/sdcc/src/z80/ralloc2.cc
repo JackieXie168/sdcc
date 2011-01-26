@@ -266,8 +266,8 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 	}
 	
 	// TODO: Fix this in code generation!
-	if(ic->op == CALL && result_in_A)
-		return(false);
+	//if(ic->op == CALL && result_in_A)
+	//	return(false);
 		
 	if(!result_in_A && !input_in_A)
 	{
@@ -457,9 +457,10 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 	//	return(false);
 
 	// HL overwritten by result.
-	if(result_in_L && result_in_H && getSize(operandType(IC_RESULT(ic))) == 2 &&
-		(ic->op == CALL) /*||
-		(POINTER_SET(ic) ^ POINTER_GET(ic)*/) //- causes problems when source is an adress on stack (which will be loaded into hl, destroying it))?
+	if(result_only_HL && ic->op == CALL)
+		return(true);
+		
+	if(ic->op == '=' && !POINTER_GET(ic) && !input_in_HL)
 		return(true);
 
 	//std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
