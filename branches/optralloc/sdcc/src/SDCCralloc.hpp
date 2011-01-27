@@ -455,7 +455,7 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 	if((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(options.max_allocs_per_node))
 		return;
 
-	//std::cerr << "Too many assignments here:" << alist_size << " > " << options.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+	//std::cout << "Too many assignments here (" << i << "):" << alist_size << " > " << options.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
 
 	assignment_rep *arep = new assignment_rep[alist_size];
 
@@ -466,6 +466,8 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 	}
 
 	std::nth_element(arep + 1, arep + options.max_allocs_per_node / NUM_REGS, arep + alist_size);
+
+	//std::cout << "nth elem. est. cost: " << arep[options.max_allocs_per_node / NUM_REGS].s << "\n";
 
 	for(n = options.max_allocs_per_node / NUM_REGS; n < alist_size; n++)
 		alist.erase(arep[n].i);

@@ -533,6 +533,13 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 		return(20.0f);
 	}
 	const i_assignment &ia = iai->second;
+	
+	// Can only check for HLinst_ok() in some cases.
+	if(OPTRALLOC_HL &&
+		(ia.registers[REG_L][1] >= 0 && ia.registers[REG_H][1] >= 0) &&
+		!((ia.registers[REG_L][0] >= 0) ^ (ia.registers[REG_H][0] >= 0)) &&
+		!HLinst_ok(a, i, G, I))
+		return(std::numeric_limits<float>::infinity());
 
 	float c = 0.0f;
 
