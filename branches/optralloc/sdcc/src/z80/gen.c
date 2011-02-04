@@ -629,7 +629,6 @@ getPairId (asmop * aop)
             }
         }
     }
-
   return PAIR_INVALID;
 }
 
@@ -1527,7 +1526,6 @@ fetchPairLong (PAIR_ID pairId, asmop * aop, iCode *ic, int offset)
         /* we need to get it byte by byte */
         else if (pairId == PAIR_HL && (IS_GB || (IY_RESERVED && aop->type == AOP_HL)) && requiresHL (aop)) {
             aopGet (aop, offset, FALSE);
-
             switch (aop->size - offset) {
             case 1:
                 emit2 ("ld l,!*hl");
@@ -5831,7 +5829,7 @@ genOr (iCode * ic, iCode * ifx)
             { /* FIXME, always true, shortcut possible */
               emit2 ("or a,%s", aopGet (AOP (right), offset, FALSE));
             }
-          else if(ifx)
+          else if (ifx)
             {
               /* For the flags */
               emit2 ("or a,a");
