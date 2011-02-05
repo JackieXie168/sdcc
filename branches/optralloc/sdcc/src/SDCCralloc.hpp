@@ -309,16 +309,16 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 				boost::remove_vertex(j, cfg2);
 			}
 		}
-		std::vector<int> component(num_vertices(cfg2));
+		std::vector<boost::graph_traits<cfg_t>::vertices_size_type> component(num_vertices(cfg2));
 		if(boost::connected_components(cfg2, &component[0]) > 1)
 		{
 			//std::cerr << "Non-connected liverange found and spilt:" << con[i].name << "\n";
-			for(unsigned int k = 0; k < boost::num_vertices(cfg) - 1; k++)
+			for(boost::graph_traits<cfg_t>::vertices_size_type k = 0; k < boost::num_vertices(cfg) - 1; k++)
 				cfg[k].alive./*insert*/erase(i);
 		}
 	}
 	
-	for(unsigned int i = 0; i < num_vertices(cfg); i++)
+	for(boost::graph_traits<cfg_t>::vertices_size_type i = 0; i < num_vertices(cfg); i++)
 	{
 		cfg[i].dying = cfg[i].alive;
 		
