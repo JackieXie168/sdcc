@@ -138,15 +138,15 @@
     <CustomBuild Include="bin_vc\sdld.exe">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy bin_vc\sdld.exe bin\sdld.exe /y &gt; nul
-copy bin_vc\sdld.exe bin\sdldz80.exe /y&gt; nul
+copy bin_vc\sdld.exe bin\sdldz80.exe /y &gt; nul
 copy bin_vc\sdld.exe bin\sdldgb.exe /y &gt; nul
 copy bin_vc\sdld.exe bin\sdld6808.exe /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\sdld.exe bin\sdldz80.exe bin\sdldgb.exe bin\sdld6808.exe;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bin\sdld.exe;bin\sdldz80.exe;bin\sdldgb.exe;bin\sdld6808.exe;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy bin_vc\sdld.exe bin\sdld.exe /y &gt; nul
-copy bin_vc\sdld.exe bin\sdldz80.exe /y&gt; nul
+copy bin_vc\sdld.exe bin\sdldz80.exe /y &gt; nul
 copy bin_vc\sdld.exe bin\sdldgb.exe /y &gt; nul
 copy bin_vc\sdld.exe bin\sdld6808.exe /y &gt; nul</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdld.exe bin\sdldz80.exe bin\sdldgb.exe bin\sdld6808.exe;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bin\sdld.exe;bin\sdldz80.exe;bin\sdldgb.exe;bin\sdld6808.exe;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

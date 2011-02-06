@@ -1,3 +1,8 @@
+2011-02-06 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* all.vcxproj: fixed missing ;'s
+	* all.vcxproj.filters: added sdld6808, sdldgb, sdldz80
+
 2011-02-05 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCicode.c (setOperandType),
@@ -23,7 +28,7 @@
 
 	* src/z80/ralloc2.cc:
 	  Improved handling of HL.
-	  
+
 2011-01-26 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc2.cc:
