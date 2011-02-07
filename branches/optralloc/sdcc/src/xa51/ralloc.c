@@ -1600,7 +1600,7 @@ packRegsForSupport (iCode * ic, eBBlock * ebp)
       IC_RIGHT (ic)->key = OP_KEY (IC_RIGHT (dic));
       
       remiCodeFromeBBlock (ebp, dic);
-      bitVectUnSetBit(OP_SYMBOL(IC_RESULT(dic))->defs,dic->key);
+      bitVectUnSetBit(OP_DEFS(IC_RESULT(dic)), dic->key);
       hTabDeleteItem (&iCodehTab, dic->key, dic, DELETE_ITEM, NULL);
       change++;
     }
