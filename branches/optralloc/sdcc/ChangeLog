@@ -1,3 +1,10 @@
+2011-02-07 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCtree_dec.hpp,
+	  src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Changed style from Allman to GNU.
+
 2011-02-07 Borut Razem <borut.razem AT gmail.com>
 
 	* Merged from trunk
