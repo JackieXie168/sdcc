@@ -155,6 +155,14 @@ struct assignment
   }
 };
 
+// Cost function. Port-specific.
+template <class G_t, class I_t>
+float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+
+// Rough cost estimate. Port-specific.
+template <class G_t, class I_t>
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar);
+
 struct tree_dec_node
 {
   std::set<unsigned int> bag;
@@ -174,6 +182,7 @@ struct con_node
 {
   int v;
   int byte;
+  int size;
   char *name;
 };
 
@@ -183,7 +192,8 @@ typedef boost::adjacency_matrix<boost::undirectedS, con_node> con2_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_node> cfg_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> cfg_sym_t;
 
-inline void add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
+inline void
+add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
 {
   reg_t k;
   if (o && IS_SYMOP(o) && sym_to_index.find(std::pair<int, reg_t>(OP_SYMBOL_CONST(o)->key, 0)) != sym_to_index.end())
@@ -195,7 +205,8 @@ inline void add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<
 }
 
 // A quick-and-dirty function to get the CFG from sdcc.
-inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
+inline void
+create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
 {
   eBBlock **ebbs = ebbi->bbOrder;
   iCode *start_ic;
@@ -229,11 +240,13 @@ inline void create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
                 if (sym_to_index.find(std::pair<int, reg_t>(j2, 0)) != sym_to_index.end())
                   continue;
 
+				// Other parts of the allocator may rely on the variables corresponding to bytes from the same sdcc variable to have subsequent numbers.
                 for (reg_t k = 0; k < sym->nRegs; k++)
                   {
                     boost::add_vertex(con);
                     con[j].v = j2;
                     con[j].byte = k;
+                    con[j].size = sym->nRegs;
                     con[j].name = sym->name;
                     sym_to_index[std::pair<int, reg_t>(j2, k)] = j;
                     for (reg_t l = 0; l < k; l++)
@@ -344,7 +357,7 @@ inline void alive_tree_dec(tree_dec_t &tree_dec, const cfg_t &cfg)
     }
 }
 
-#if 0
+#if 1
 // For debugging.
 void print_assignment(const assignment &a)
 {
@@ -424,14 +437,6 @@ void assignments_introduce_variable(std::list<assignment> &alist, unsigned short
     }
 }
 
-// Cost function. Port-specific.
-template <class G_t, class I_t>
-float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
-
-// Rough cost estimate. Port-specific.
-template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
-
 struct assignment_rep
 {
   std::list<assignment>::iterator i;
@@ -446,7 +451,7 @@ struct assignment_rep
 // Ensure that we never get more than options.max_allocs_per_node assignments at a single node of the tree decomposition.
 // Tries to drop the worst ones first (but never drop the empty assignment, as it's the only one guaranteed to be always valid).
 template <class G_t, class I_t>
-void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, const G_t &G, const I_t &I)
+void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar)
 {
   unsigned int n;
   size_t alist_size;
@@ -462,7 +467,7 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
   for (n = 0, ai = alist.begin(); n < alist_size; ++ai, n++)
     {
       arep[n].i = ai;
-      arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I);
+      arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I, lastvar);
     }
 
   std::nth_element(arep + 1, arep + options.max_allocs_per_node / NUM_REGS, arep + alist_size);
@@ -515,10 +520,13 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
   assignments_introduce_instruction(alist, i, G);
 
   std::set<var_t>::const_iterator v;
+  var_t lastvar = -1;
   for (v = new_vars.begin(); v != new_vars.end(); ++v)
     {
-      drop_worst_assignments(alist, i, G, I);
+      //std::cout << "New var: " << *v << "\n";
+      drop_worst_assignments(alist, i, G, I, lastvar);
       assignments_introduce_variable(alist, i, *v, I);
+      lastvar = *v;
     }
 
   // Summation of costs and early removal of assignments.
@@ -530,13 +538,14 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
         ++ai;
     }
 
-  /*float min_s = 10000;
+  /*if(t == 44){
+  float min_s = 10000.0f;
   for(ai = alist.begin(); ai != alist.end(); ++ai)
   {
   	print_assignment(*ai);
   	min_s = min_s < ai->s ? min_s : ai->s;
   }
-  std::cout << " min s: " << min_s << " \n";*/
+  std::cout << " min s: " << min_s << " \n";}*/
 }
 
 bool assignments_locally_same(const assignment &a1, const assignment &a2)

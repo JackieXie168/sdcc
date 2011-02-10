@@ -579,8 +579,39 @@ bool weird_byte_order(const i_assignment &ia, const I_t &I)
   return(false);
 }
 
+// Check for gaps, i.e. lower higher bytes of a variable being assigned to regs, while lower byte are not.
+template <class I_t>
+bool local_assignment_insane(const assignment &a, const I_t &I, var_t lastvar)
+{
+  std::set<var_t>::const_iterator v, v_end, v_old;
+  
+  for(v = a.local.begin(), v_end = a.local.end(); v != v_end;)
+    {
+      v_old = v;
+      ++v;
+      if(v == v_end)
+        {
+          if(*v_old != lastvar && I[*v_old].byte != I[*v_old].size - 1)
+            return(true);
+          break;
+        }
+      if(I[*v_old].v == I[*v].v)
+        {
+          if(I[*v_old].byte != I[*v].byte - 1)
+            return(true);
+        }
+      else
+        {
+          if(*v_old != lastvar && I[*v_old].byte != I[*v_old].size - 1 || I[*v].byte)
+            return(true);
+        }
+    }
+	
+  return(false);
+}
+
 template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar)
 {
   // Can check for Ainst_ok() since A only contains 1-byte variables.
   if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
@@ -594,6 +625,9 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
     }
   const i_assignment &ia = iai->second;
 
+  if(local_assignment_insane(a, I, lastvar))
+    return(std::numeric_limits<float>::infinity());
+
   // Can only check for HLinst_ok() in some cases.
   if(OPTRALLOC_HL &&
       (ia.registers[REG_L][1] >= 0 && ia.registers[REG_H][1] >= 0) &&
@@ -601,6 +635,11 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
       !HLinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
+  // The code generator could deal with this for '+' in some cases though.
+  const iCode *ic = G[i].ic;
+  if((ic->op == '|' || ic->op == '&' || ic->op == '^' || ic->op == '+' || ic->op == '-') && result_overwrites_operand(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+    
   float c = 0.0f;
 
   if(weird_byte_order(ia, I))
@@ -623,6 +662,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
     {
       I2[i].v = I[i].v;
       I2[i].byte = I[i].byte;
+      I2[i].size = I[i].size;
       I2[i].name = I[i].name;
     }
   typename boost::graph_traits<I_t>::edge_iterator e, e_end;
