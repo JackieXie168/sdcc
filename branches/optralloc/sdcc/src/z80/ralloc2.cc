@@ -556,30 +556,19 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 }
 
 template <class I_t>
-bool weird_byte_order(const i_assignment &ia, const I_t &I)
+float weird_byte_order(const assignment &a, const I_t &I)
 {
-  for(reg_t n = 0; n < NUM_REGS - 1; n++)
-    {
-      if(ia.registers[n][1] >= 0)
-        {
-          if(n % 2 == 0 && I[ia.registers[n][1]].byte == 1)
-            return(true);
-          else if(n % 2 == 1 && I[ia.registers[n][1]].byte == 0)
-            return(true);
-        }
-      if(ia.registers[n][0] >= 0)
-        {
-          if(n % 2 == 0 && I[ia.registers[n][0]].byte == 1)
-            return(true);
-          else if(n % 2 == 1 && I[ia.registers[n][0]].byte == 0)
-            return(true);
-        }
-    }
+  float c = 0.0f;
+  
+  std::set<var_t>::const_iterator vi, vi_end;
+  for(vi = a.local.begin(), vi_end = a.local.end(); vi != vi_end; ++vi)
+    if(a.global[*vi] % 2 != I[*vi].byte % 2)
+      c += 8.0f;
 
-  return(false);
+  return(c);
 }
 
-// Check for gaps, i.e. lower higher bytes of a variable being assigned to regs, while lower byte are not.
+// Check for gaps, i.e. higher bytes of a variable being assigned to regs, while lower byte are not.
 template <class I_t>
 bool local_assignment_insane(const assignment &a, const I_t &I, var_t lastvar)
 {
@@ -621,7 +610,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   if(iai == a.i_assignments.end())
     {
       std::cerr << "ERROR: Instruction assignment not found.\n";
-      return(20.0f);
+      return(250.0f);
     }
   const i_assignment &ia = iai->second;
 
@@ -642,8 +631,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
     
   float c = 0.0f;
 
-  if(weird_byte_order(ia, I))
-    c += 0.2f;
+  c += weird_byte_order(a, I);
 
   if(OPTRALLOC_A && ia.registers[REG_A][1] < 0)
     c += 0.03f;
@@ -651,7 +639,20 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   if(OPTRALLOC_HL && ia.registers[REG_L][1] < 0)
     c += 0.02f;
 
-  return(c - a.local.size() * 0.02f);
+  // An artifical ordering of assignments.
+  if(ia.registers[REG_E][1] < 0)
+    c += 0.0001;
+  if(ia.registers[REG_D][1] < 0)
+    c += 0.00001;
+
+  if(a.marked)
+    c -= 0.5f;
+
+  std::set<var_t>::const_iterator v, v_end;
+  for(v = a.local.begin(), v_end = a.local.end(); v != v_end; ++v)
+    c -= *v * 0.01f;
+
+  return(c - a.local.size() * 0.2f);
 }
 
 template <class T_t, class G_t, class I_t>
@@ -669,7 +670,8 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
   for(boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
     add_edge(boost::source(*e, I), boost::target(*e, I), I2);
 
-  tree_dec_ralloc_nodes(T, find_root(T), G, I2);
+  const assignment ac;
+  tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac);
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
 
@@ -700,8 +702,6 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
       else
         spillThis(sym);
     }
-
-  //std::cout << "Applied.\n"; std::cout.flush();
 }
 
 void z80_ralloc2_cc(ebbIndex *ebbi)
@@ -736,10 +736,6 @@ void z80_ralloc2_cc(ebbIndex *ebbi)
   if(z80_opts.dump_graphs)
     dump_tree_decomposition(tree_decomposition);
 
-  //std::cout << "Allocating.\n"; std::cout.flush();
-
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
-
-  //std::cout << "Allocated.\n"; std::cout.flush();
 }
 

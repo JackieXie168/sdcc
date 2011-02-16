@@ -3643,7 +3643,7 @@ genPlusIncr (iCode * ic)
           fetchLitPair (getPairId (AOP (IC_RESULT (ic))), AOP (IC_LEFT (ic)), icount);
           return TRUE;
         }
-      if (isPair (AOP (IC_LEFT (ic))) && resultId == PAIR_HL && icount > 2)
+      if (isPair (AOP (IC_LEFT (ic))) && resultId == PAIR_HL && icount > 3)
         {
           if (getPairId (AOP (IC_LEFT (ic))) == PAIR_HL)
             {
@@ -3667,7 +3667,7 @@ genPlusIncr (iCode * ic)
       /* Inc a pair */
       if (!sameRegs (AOP (IC_LEFT (ic)), AOP (IC_RESULT (ic))))
         {
-          if (icount > 2)
+          if (icount > 3)
             return FALSE;
           movLeft2ResultLong (IC_LEFT (ic), 0, IC_RESULT (ic), 0, 0, 2);
         }

@@ -1,3 +1,15 @@
+2011-02-16 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Improved heuristics wrt. junction nodes.
+	* src/version.awk,
+	  src/src.dsp,
+	  support/scripts/resource.rc:
+	  Merge from trunk. 
+	* src/z80/gen.c:
+	  Improved addition by increment.
+
 2011-02-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCralloc.hpp,
