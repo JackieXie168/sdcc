@@ -491,7 +491,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   if((!POINTER_SET(ic) && !POINTER_GET(ic) && (
         (ic->op == '=' ||
-         ic->op == CAST ||	// Makes float regression tests fail?
+         ic->op == CAST ||
          /*ic->op == UNARYMINUS ||*/
          ic->op == RIGHT_OP ||
          /*ic->op == '-' ||*/
