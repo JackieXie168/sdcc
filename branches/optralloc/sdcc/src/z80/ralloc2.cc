@@ -416,6 +416,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   bool result_in_L = operand_in_reg(IC_RESULT(ic), REG_L, ia, i, G);
   bool result_in_H = operand_in_reg(IC_RESULT(ic), REG_H, ia, i, G);
+  bool result_in_HL = result_in_L || result_in_H;
 
   bool input_in_L, input_in_H;
   switch(ic->op)
@@ -461,7 +462,6 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||
        ic->op == '+' ||
-       POINTER_GET(ic) ||
        ic->op == '='))
     return(true);
 //std::cout << "DS?\n";
@@ -482,18 +482,16 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(true);
   if(SKIP_IC2(ic))
     return(true);
-  if(ic->op == CAST)
-    return(true);
   if(ic->op == IPUSH && input_in_H)
     return(true);
-  if(POINTER_GET(ic) && input_in_L && input_in_H)
+  if(POINTER_GET(ic) && input_in_L && input_in_H && (getSize(operandType(IC_RESULT(ic))) == 1 || !result_in_HL))
     return(true);
   if(ic->op == LEFT_OP && isOperandLiteral(IC_RIGHT(ic)))
     return(true);
 
   if((!POINTER_SET(ic) && !POINTER_GET(ic) && (
         (ic->op == '=' ||
-         /*ic->op == CAST ||*/	// Makes float regression tests fail?
+         ic->op == CAST ||	// Makes float regression tests fail?
          /*ic->op == UNARYMINUS ||*/
          ic->op == RIGHT_OP ||
          /*ic->op == '-' ||*/
