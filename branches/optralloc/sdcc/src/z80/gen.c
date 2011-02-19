@@ -3365,7 +3365,7 @@ genFunction (iCode * ic)
   sym = OP_SYMBOL (IC_LEFT (ic));
 
   _G.omitFramePtr = options.omitFramePtr;
-  if (IS_Z80 && !stackParm && !sym->stack)
+  if (IS_Z80 && !IY_RESERVED && !stackParm && !sym->stack)
     {
       /* When the conflicts between AOP_EXSTK && AOP_HLREG are fixed, */
       /* the above !sym->stack condition can be removed. -- EEP       */
@@ -3375,6 +3375,8 @@ genFunction (iCode * ic)
     }
   else if (sym->stack && IS_GB && sym->stack > -INT8MIN)
     emit2 ("!enterxl", sym->stack);
+  else if (sym->stack && IY_RESERVED && sym->stack > -INT8MIN)
+    emit2 ("!enterx", sym->stack);
   else if (sym->stack)
     {
       if ((optimize.codeSize && sym->stack <= 8) || sym->stack <= 4)
