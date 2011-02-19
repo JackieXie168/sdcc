@@ -3,6 +3,8 @@
 	* src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc:
 	  Liverange fix.
+	* src/z80/peep.c:
+	  Fix for --reserve-regs-iy.
 
 2011-02-19 Maarten Brock <sourceforge.brock AT dse.nl>
 
