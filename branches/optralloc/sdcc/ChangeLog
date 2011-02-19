@@ -6,6 +6,8 @@
 	* src/z80/peep.c,
 	  src/z80/gen.c:
 	  Fixes for --reserve-regs-iy.
+	* support/regression/tests/bug-3184920.c:
+	  Merge from trunk.
 
 2011-02-19 Maarten Brock <sourceforge.brock AT dse.nl>
 
