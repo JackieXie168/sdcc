@@ -515,7 +515,7 @@
 
 	* src/ds390/main.c, src/Makefile.in, src/SDCCbuild_cmd.c,
 	  src/SDCCbuild_cmd.h, src/SDCCmain.c, src/src.dsp, src/z80/main.c:
-	  support/Util/BuildCmed.[ch] moved / renamed to src/SDCCbuild_cmd.[ch]
+	  support/Util/BuildCmd.[ch] moved / renamed to src/SDCCbuild_cmd.[ch]
 
 2010-12-19 Maarten Brock <sourceforge.brock AT dse.nl>
 
