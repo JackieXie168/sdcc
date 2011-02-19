@@ -1140,9 +1140,9 @@ aopOp (operand * op, iCode * ic, bool result, bool requires_a)
               aop->aopu.aop_str[1] = _pairs[PAIR_IY].h;
             }
           else
-              {
-                  wassertl (0, "Marked as being allocated into A or HL but is actually in neither");
-              }
+            {
+              wassertl (0, "Marked as being allocated into A or HL but is actually in neither");
+            }
           return;
         }
 

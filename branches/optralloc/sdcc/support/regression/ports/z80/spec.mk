@@ -3,7 +3,7 @@
 
 RRZ80 = $(SDCC_EXTRA_DIR)/emu/rrz80/rrz80$(EXEEXT)
 
-SDCCFLAGS +=-mz80 --nostdinc --less-pedantic --profile -DREENTRANT= -I$(top_srcdir)
+SDCCFLAGS +=-mz80 --nostdinc --optralloc-all --reserve-regs-iy --less-pedantic --profile -DREENTRANT= -I$(top_srcdir)
 LINKFLAGS = --nostdlib
 LINKFLAGS += z80.lib
 LIBDIR = $(top_builddir)/device/lib/build/z80

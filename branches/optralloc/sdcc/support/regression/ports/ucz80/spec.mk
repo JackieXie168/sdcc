@@ -32,7 +32,7 @@ else
   AS_Z80 = $(AS_Z80C)
 endif
 
-SDCCFLAGS +=-mz80 --less-pedantic --profile -DREENTRANT=
+SDCCFLAGS +=-mz80 --optralloc-all --reserve-regs-iy --less-pedantic --profile -DREENTRANT=
 #SDCCFLAGS +=--less-pedantic -DREENTRANT=__reentrant
 LINKFLAGS += z80.lib
 
