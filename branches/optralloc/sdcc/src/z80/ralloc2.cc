@@ -412,7 +412,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(unused_L && unused_H)
     return(true);	// Register HL not in use.
 
-  //if(ic->key == 95) std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+  //if(ic->key == 25) std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 
   bool result_in_L = operand_in_reg(IC_RESULT(ic), REG_L, ia, i, G);
   bool result_in_H = operand_in_reg(IC_RESULT(ic), REG_H, ia, i, G);
@@ -437,6 +437,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   bool input_in_HL = input_in_L || input_in_H;
 
   const std::set<var_t> &dying = G[i].dying;
+  
   bool dying_L = result_in_L || dying.find(ia.registers[REG_L][1]) != dying.end() || dying.find(ia.registers[REG_L][0]) != dying.end();
   bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
 
@@ -452,8 +453,11 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     print_assignment(a);
     std::cout << "\n";
   }
+
+  if(ic->key == 25) std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+  if(ic->key == 25) std::cout << "Unsued L: " << unused_L << ", unused H: " << unused_H << "\n";
+  if(ic->key == 25) std::cout << "Dying L: " << dying_L << ", dying H: " << dying_H << "\n";
 #endif
-  //if(ic->key == 95) std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
 
   if(ic->op == RETURN)
     return(true);
@@ -467,18 +471,15 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
        ic->op == '+' ||
        ic->op == '='))
     return(true);
-//std::cout << "DS?\n";
+
   if(IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic)))
     return(false);
-//std::cout << "DS1\n";
+
   if((input_in_HL || !result_only_HL) && IC_LEFT(ic) && IS_SYMOP(IC_LEFT(ic)) && isOperandInDirSpace(IC_LEFT(ic)))
     return(false);
-//std::cout << "DS2\n";
+
   if((input_in_HL || !result_only_HL) && IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT(ic)))
     return(false);
-//std::cout << "!DS\n";
-
-//std::cout << "HL2\n";
 
   // Operations that leave HL alone.
   if(ic->op == IFX)
@@ -708,7 +709,6 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 void z80_ralloc2_cc(ebbIndex *ebbi)
 {
   //std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
-  //std::cout << "OPTRALLOC_ALL: " << OPTRALLOC_ALL << " OPTRALLOC_A: " << OPTRALLOC_A << "\n";
 
   cfg_t control_flow_graph;
 

@@ -336,13 +336,12 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
   for (boost::graph_traits<cfg_t>::vertices_size_type i = 0; i < num_vertices(cfg); i++)
     {
       cfg[i].dying = cfg[i].alive;
-
       typedef boost::graph_traits<cfg_t>::adjacency_iterator adjacency_iter_t;
       adjacency_iter_t j, j_end;
       for (boost::tie(j, j_end) = adjacent_vertices(i, cfg); j != j_end; ++j)
         {
           std::set<var_t>::const_iterator v, v_end;
-          for (v = cfg[*j].alive.begin(), v_end = cfg[*j].alive.begin(); v != v_end; ++v)
+          for (v = cfg[*j].alive.begin(), v_end = cfg[*j].alive.end(); v != v_end; ++v)
             cfg[i].dying.erase(*v);
         }
     }

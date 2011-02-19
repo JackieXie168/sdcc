@@ -1,3 +1,9 @@
+2011-01-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Liverange fix.
+
 2011-02-19 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* debugger/mcs51/cmd.c,
