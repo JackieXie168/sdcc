@@ -465,6 +465,9 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if((IS_GB || IY_RESERVED) && (IS_TRUE_SYMOP(IC_LEFT(ic)) || IS_TRUE_SYMOP(IC_RIGHT(ic))))
     return(false);
 
+  if(options.omitFramePtr)	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
+	return(false);
+
   // HL overwritten by result.
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||

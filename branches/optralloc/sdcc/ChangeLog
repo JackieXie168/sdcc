@@ -1,8 +1,9 @@
 2011-01-20 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/main.c,
-	  src/z80/gen.c:
-	  Fixed for --fomit-frame-pointer.
+	  src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Fixes for --fomit-frame-pointer.
 
 2011-01-19 Philipp Klaus Krause <pkk AT spth.de>
 
