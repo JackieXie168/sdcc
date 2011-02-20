@@ -1795,7 +1795,6 @@ aopGet (asmop * aop, int offset, bool bit16)
     case AOP_SFR:
       if( IS_GB )
       {
-        // wassert (IS_GB);
         emit2 ("ldh a,(%s+%d)", aop->aopu.aop_dir, offset);
         SNPRINTF (buffer, sizeof(buffer), "a");
 
@@ -3382,7 +3381,8 @@ genFunction (iCode * ic)
       if ((optimize.codeSize && sym->stack <= 8) || sym->stack <= 4)
         {
           int stack = sym->stack;
-          emit2 ("!enter");
+          if(!_G.omitFramePtr)
+            emit2 ("!enter");
           while (stack > 1)
             {
               emit2 ("push af");
@@ -3394,7 +3394,7 @@ genFunction (iCode * ic)
       else
         emit2 ("!enterx", sym->stack);
     }
-  else
+  else if(!_G.omitFramePtr)
     emit2 ("!enter");
 
   _G.stack.offset = sym->stack;

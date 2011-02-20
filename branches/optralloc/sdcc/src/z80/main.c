@@ -561,6 +561,9 @@ _setValues(void)
 
   sprintf (buffer, "-b_CODE=0x%04X -b_DATA=0x%04X", options.code_loc, options.data_loc);
   setMainValue ("z80bases", buffer);
+
+  if(IS_Z80 && options.omitFramePtr)
+    z80_port.stack.call_overhead = 2;
 }
 
 static void

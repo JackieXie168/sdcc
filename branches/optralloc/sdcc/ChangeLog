@@ -1,4 +1,10 @@
-2011-01-18 Philipp Klaus Krause <pkk AT spth.de>
+2011-01-20 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/main.c,
+	  src/z80/gen.c:
+	  Fixed for --fomit-frame-pointer.
+
+2011-01-19 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc:
