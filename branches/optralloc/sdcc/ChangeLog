@@ -1,3 +1,10 @@
+2011-02-22 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/gen.c,
+	  src/z80/peeph-z80.def:
+	  Improvements for --optralloc-all.
+
 2011-01-20 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/main.c,

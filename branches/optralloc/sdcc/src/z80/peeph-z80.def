@@ -1957,6 +1957,22 @@ replace restart {
 } if labelRefCountChange(%3 -1), labelRefCountChange(%4 +1)
 
 replace restart {
+	ld	a, #<(%1)
+	add	a, l
+	ld	l, a
+	ld	a, #>(%2)
+	adc	a, h
+	ld	h, a
+	push	bc
+} by {
+	push	bc
+	ld	bc, #%1%2
+	add	hl, bc
+	; peephole 91a used 16 bit addition by moving push bc
+	ld	a, h
+}
+
+replace restart {
 	pop	af
 	push	hl
 } by {
@@ -2234,9 +2250,9 @@ replace restart {
 	ld	a, (bc)
 } if notUsed('hl')
 
+// These ex-generating rules should be among the last ones since ex counts as a read from both hl and de for notUsed().
 barrier
 
-// These ex-generating rules should be among the last ones since ex counts as a read from both hl and de for notUsed().
 replace restart {
 	ld	d,h
 	ld	e,l
@@ -2261,21 +2277,14 @@ replace restart {
 	ex	de,hl
 } if notUsed('de')
 
-// Do all jump optimizations before replacing by ret.
+barrier
 
+// Should be one of the last ones. Opens the code to further peephole optimization.
 replace restart {
-	jp	%5
+%1:
 } by {
-	ret
-	; peephole z11 replaced jump by return.
-} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
-
-replace restart {
-	jp	%1,%5
-} by {
-	ret	%1
-	; peephole z11a replaced jump by return.
-} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
+	; peephole z12 removed unused label %1.
+} if labelRefCount(%1 0)
 
 // Ensure that all rules above see only jp, not jr.
 barrier
@@ -2402,14 +2411,21 @@ replace {
 
 barrier
 
-// Should be one of the last ones. Opens the code to further peephole optimization.
-replace restart {
-%1:
-} by {
-	; peephole z12 removed unused label %1.
-} if labelRefCount(%1 0)
+// Do all jump optimizations before replacing by ret.
 
-barrier
+replace restart {
+	jp	%5
+} by {
+	ret
+	; peephole z11 replaced jump by return.
+} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
+
+replace restart {
+	jp	%1,%5
+} by {
+	ret	%1
+	; peephole z11a replaced jump by return.
+} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
 
 replace {
 	jp	%5

@@ -4365,7 +4365,7 @@ genMultOneChar (iCode * ic)
   if (bitVectBitValue (ic->rMask, B_IDX) &&
     !(getPairId (AOP (IC_RESULT (ic))) == PAIR_BC))
     {
-      emit2 ("ld a, b");
+      emit2 ("push bc");
       savedB = TRUE;
     }
   if (isPairInUse (PAIR_DE, ic) &&
@@ -4399,7 +4399,7 @@ genMultOneChar (iCode * ic)
     }
   if (savedB)
     {
-      emit2 ("ld b, a");
+      emit2 ("pop bc");
     }
 
   if(AOP (IC_RESULT (ic))->type != AOP_HL)

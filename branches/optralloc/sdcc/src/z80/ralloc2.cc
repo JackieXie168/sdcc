@@ -349,6 +349,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
           !((ic->op == RIGHT_OP || ic->op == LEFT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))) &&
           !(ic->op == '=' && !(IY_RESERVED && POINTER_SET(ic))) &&
           !IS_BITWISE_OP (ic) &&
+          !(ic->op == '*' && IS_ITEMP(IC_LEFT(ic)) && IS_ITEMP(IC_RIGHT(ic))) &&
           !((ic->op == '-' || ic->op == '+' || ic->op == EQ_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
         {
           //if(i == 15) std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
@@ -414,8 +415,12 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   //if(ic->key == 25) std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 
-  bool result_in_L = operand_in_reg(IC_RESULT(ic), REG_L, ia, i, G);
-  bool result_in_H = operand_in_reg(IC_RESULT(ic), REG_H, ia, i, G);
+  const operand *left = IC_LEFT(ic);
+  const operand *right = IC_RIGHT(ic);
+  const operand *result = IC_RESULT(ic);
+
+  bool result_in_L = operand_in_reg(result, REG_L, ia, i, G);
+  bool result_in_H = operand_in_reg(result, REG_H, ia, i, G);
   bool result_in_HL = result_in_L || result_in_H;
 
   bool input_in_L, input_in_H;
@@ -430,8 +435,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
       input_in_H = operand_in_reg(IC_JTCOND(ic), REG_L, ia, i, G);
       break;
     default:
-      input_in_L = operand_in_reg(IC_LEFT(ic), REG_L, ia, i, G) || operand_in_reg(IC_RIGHT(ic), REG_L, ia, i, G);
-      input_in_H = operand_in_reg(IC_LEFT(ic), REG_H, ia, i, G) || operand_in_reg(IC_RIGHT(ic), REG_H, ia, i, G);
+      input_in_L = operand_in_reg(left, REG_L, ia, i, G) || operand_in_reg(right, REG_L, ia, i, G);
+      input_in_H = operand_in_reg(left, REG_H, ia, i, G) || operand_in_reg(right, REG_H, ia, i, G);
       break;
     }
   bool input_in_HL = input_in_L || input_in_H;
@@ -462,7 +467,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(ic->op == RETURN)
     return(true);
 
-  if((IS_GB || IY_RESERVED) && (IS_TRUE_SYMOP(IC_LEFT(ic)) || IS_TRUE_SYMOP(IC_RIGHT(ic))))
+  if((IS_GB || IY_RESERVED) && (IS_TRUE_SYMOP(left) || IS_TRUE_SYMOP(right)))
     return(false);
 
   if(options.omitFramePtr)	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
@@ -472,16 +477,17 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||
        ic->op == '+' ||
+       ic->op == '*' ||
        ic->op == '='))
     return(true);
 
-  if(IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic)))
+  if(IC_RESULT(ic) && IS_SYMOP(result) && isOperandInDirSpace(IC_RESULT(ic)))
     return(false);
 
-  if((input_in_HL || !result_only_HL) && IC_LEFT(ic) && IS_SYMOP(IC_LEFT(ic)) && isOperandInDirSpace(IC_LEFT(ic)))
+  if((input_in_HL || !result_only_HL) && left && IS_SYMOP(left) && isOperandInDirSpace(IC_LEFT(ic)))
     return(false);
 
-  if((input_in_HL || !result_only_HL) && IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT(ic)))
+  if((input_in_HL || !result_only_HL) && right && IS_SYMOP(right) && isOperandInDirSpace(IC_RIGHT(ic)))
     return(false);
 
   // Operations that leave HL alone.
@@ -489,7 +495,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(true);
   if(SKIP_IC2(ic))
     return(true);
-  if(ic->op == IPUSH && input_in_H)
+  if(ic->op == IPUSH && input_in_H && (getSize(operandType(IC_LEFT(ic))) <= 2 || I[ia.registers[REG_L][1]].byte == 2 && I[ia.registers[REG_H][1]].byte == 3))
     return(true);
   if(POINTER_GET(ic) && input_in_L && input_in_H && (getSize(operandType(IC_RESULT(ic))) == 1 || !result_in_HL))
     return(true);
@@ -510,7 +516,10 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
          (ic->op == '+' && getSize(operandType(IC_RESULT(ic))) <= 2 && result_only_HL) ))))	// 16 bit addition might use add hl, rr
     return(true);
 
-  if(IS_VALOP(IC_RIGHT(ic)) && ic->op == EQ_OP)
+  if((ic->op == '<' || ic->op == '>') && (IS_ITEMP(left) || IS_OP_LITERAL(left) || IS_ITEMP(right) || IS_OP_LITERAL(right)))	// Todo: Fix for large stack.
+    return(true);
+    
+  if(IS_VALOP(right) && ic->op == EQ_OP)
     return(true);
 
   //if(ic->op == '=' && POINTER_SET(ic) && getSize(operandType(IC_RIGHT(ic))) > 1)
