@@ -1192,7 +1192,7 @@ replace restart {
 } by {
 	; peephole 42 removed loads by exploiting commutativity of addition.
 	add	a,%2
-} if notVolatile(%1), notUsed(%1), operandsNotRelated(%2 '(bc)' '(de)'), canAssign('b' %2)
+} if notVolatile(%1), notUsed(%1), canAssign('b' %2)
 // canAssign('b' %2) is true, iff add a,%2 is possible.
 
 replace restart {
@@ -1737,6 +1737,41 @@ replace restart {
 	add	hl, %2
 	; peephole 78 removed addition and loads exploiting commutativity of addition.
 } if notUsed('de')
+
+replace restart {
+	ld	c, l
+	ld	b, h
+	ld	hl, #0x0001
+	add	hl, bc
+} by {
+	ld	c, l
+	ld	b, h
+	inc	hl
+	; peephole 78' replaced addition by increment.
+}
+
+replace restart {
+	ld	e, l
+	ld	d, h
+	ld	hl, #0x0001
+	add	hl, de
+} by {
+	ld	e, l
+	ld	d, h
+	inc	hl
+	; peephole 78'' replaced addition by increment.
+}
+
+replace restart {	
+	ld      sp,hl
+	ld      hl,#0x0002
+	add     hl,sp
+} by {
+	ld	sp, hl
+	inc	hl
+	inc	hl
+	; peephole 78''' replaced addition by increment.
+}
 
 replace restart {
 	ex	de, hl
