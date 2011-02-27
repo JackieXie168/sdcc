@@ -620,28 +620,30 @@ replace restart {
 } if notUsed('a')
 
 replace restart {
-	ld	a,b
-	bit	%1,a
+	ld	a,%1
+	bit	%2,a
 } by {
-	; peephole 0zj' tested bit %1 of b directly instead of going through a.
-	bit	%1,b
-} if notUsed('a')
-
-replace restart {
-	ld	a,d
-	bit	%1,a
-} by {
-	; peephole 0zj'' tested bit %1 of d directly instead of going through a.
-	bit	%1,d
-} if notUsed('a')
+	; peephole 0zj' tested bit %2 of %1 directly instead of going through a.
+	bit	%2,%1
+} if notUsed('a'), canAssign('b' %1)
 
 replace restart {
 	ld	a, %1
 	set	%2, a
 	ld	%1, a
 } by {
-	; peephole 0zj''' set bit %1 of (hl) directly instead of going through a.
+	; peephole 0zj''' set bit %2 of %1 directly instead of going through a.
 	set	%2, %1
+} if notUsed('a'), canAssign('b' %1)
+// canAssign('b' %1) is true, iff set b, %1 is possible.
+
+replace restart {
+	ld	a, %1
+	res	%2, a
+	ld	%1, a
+} by {
+	; peephole 0zj'''' reset bit %2 of %1 directly instead of going through a.
+	res	%2, %1
 } if notUsed('a'), canAssign('b' %1)
 // canAssign('b' %1) is true, iff set b, %1 is possible.
 

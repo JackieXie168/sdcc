@@ -601,6 +601,7 @@ _setDefaultOptions (void)
   optimize.loopInduction = 1;
   z80_opts.optralloc_all = 0;
   z80_opts.optralloc_hl = 0;
+  z80_opts.dump_graphs = 0;
 }
 
 /* Mangling format:

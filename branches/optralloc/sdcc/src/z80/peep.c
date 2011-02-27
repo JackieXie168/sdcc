@@ -94,11 +94,11 @@ isReturned(const char *what)
         NOTUSEDERROR();
       spec = &(sym->etype->select.s);
       if(spec->noun == V_VOID)
-         size = 0;
+        size = 0;
       else if(spec->noun == V_CHAR || spec->noun == V_BOOL)
-         size = 1;
+        size = 1;
       else if(spec->noun == V_INT && !(spec->b_long))
-         size = 2;
+        size = 2;
       else
         size = 4;
 

@@ -119,7 +119,7 @@ assign_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
   const operand *right = IC_RIGHT(ic);
   const operand *result = IC_RESULT(ic);
 
-  if(!right || !IS_SYMOP(right) || !result || !IS_SYMOP(result))
+  if(!right || !IS_SYMOP(right) || !result || !IS_SYMOP(result) || POINTER_GET(ic) || POINTER_SET(ic))
     return(default_instruction_cost(a, i, G, I));
 
   reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
@@ -557,6 +557,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   switch(ic->op)
     {
     case '=':
+    case CAST:
       return(assign_cost(a, i, G, I));
     case IFX:
       return(ifx_cost(a, i, G, I));

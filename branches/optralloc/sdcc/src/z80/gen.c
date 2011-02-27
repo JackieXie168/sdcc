@@ -5666,19 +5666,19 @@ genAnd (iCode * ic, iCode * ifx)
         {
           if (AOP_TYPE (right) == AOP_LIT)
             {
-              if ((bytelit = (int) ((lit >> (offset * 8)) & 0x0FFL)) == 0x0FF)
+              bytelit = (lit >> (offset * 8)) & 0x0FFL;
+              if (bytelit == 0x0FF)
                 continue;
+              else if (bytelit == 0)
+                aopPut (AOP (result), "!zero", offset);
               else
                 {
-                  if (bytelit == 0)
-                    aopPut (AOP (result), "!zero", offset);
+                  _moveA (aopGet (AOP (left), offset, FALSE));
+                  if (isLiteralBit (~bytelit & 0x0FFL) >= 0)
+                    emit2 ("res %d, a", isLiteralBit (~bytelit & 0x0FFL));
                   else
-                    {
-                      _moveA (aopGet (AOP (left), offset, FALSE));
-                      emit2 ("and a,%s",
-                                aopGet (AOP (right), offset, FALSE));
-                      aopPut (AOP (left), "a", offset);
-                    }
+                    emit2 ("and a,%s",  aopGet (AOP (right), offset, FALSE));
+                  aopPut (AOP (left), "a", offset);
                 }
 
             }
@@ -5862,7 +5862,7 @@ genOr (iCode * ic, iCode * ifx)
               else
                 {
                   _moveA (aopGet (AOP (left), offset, FALSE));
-                  if(isLiteralBit(bytelit) >= 0)
+                  if (isLiteralBit(bytelit) >= 0)
                     emit2 ("set %d, a", isLiteralBit(bytelit));
                   else
                     emit2 ("or a, %s", aopGet (AOP (right), offset, FALSE));
