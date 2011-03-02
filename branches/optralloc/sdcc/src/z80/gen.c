@@ -3548,19 +3548,6 @@ genRet (iCode * ic)
 
   aopDump("IC_LEFT", AOP(IC_LEFT(ic)));
 
-  #if 0
-  if ((size == 2) && ((l = aopGetWord (AOP (IC_LEFT (ic)), 0))))
-    {
-      if (IS_GB)
-        {
-          emit2 ("ld de,%s", l);
-        }
-      else
-        {
-          emit2 ("ld hl,%s", l);
-        }
-    }
-  #endif
   if (size==2)
     {
       fetchPair(IS_GB ? PAIR_DE : PAIR_HL, AOP (IC_LEFT (ic)));

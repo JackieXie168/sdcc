@@ -194,6 +194,126 @@ assign_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
 }
 
 template <class G_t, class I_t> static float
+return_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  float c = 0.0f;
+
+  const iCode *ic = G[i].ic;
+  
+  const operand *left = IC_LEFT(ic);
+  
+  if(!left || !IS_SYMOP(left))
+    return(default_instruction_cost(a, i, G, I));
+
+  reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
+  
+  std::multimap<int, var_t>::const_iterator oi, oi_end;
+
+  int size = 0;
+  
+  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(left)->key);
+  if(oi != oi_end)
+    {
+      var_t v = oi->second;
+
+      if(a.local.find(v) == a.local.end())
+        return(default_instruction_cost(a, i, G, I));
+
+      c += 1.0f;
+      byteregs[I[v].byte] = a.global[v];
+      size = 1;
+
+      while(++oi != oi_end)
+        {
+          v = oi->second;
+          c += (a.local.find(v) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
+          byteregs[I[v].byte] = a.global[v];
+          size++;
+        }
+
+      // Code generator cannot handle variables only partially in A.
+      if(OPTRALLOC_A && size > 1)
+        for(unsigned short int i = 0; i < size; i++)
+          if(byteregs[i] == REG_A)
+            c += std::numeric_limits<float>::infinity();
+
+      if(OPTRALLOC_A && byteregs[0] == REG_A)
+        c -= 0.4f;
+        
+      if(byteregs[0] == REG_L)
+        c -= 1.0f;
+      if(byteregs[1] == REG_H)
+        c -= 1.0f;
+      if(byteregs[2] == REG_E)
+        c -= 1.0f;
+      if(byteregs[3] == REG_D)
+        c -= 1.0f;
+    }
+    
+  return(c);
+}
+
+template <class G_t, class I_t> static float
+call_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  float c = 0.0f;
+
+  const iCode *ic = G[i].ic;
+  
+  const operand *result = IC_RESULT(ic);
+  
+  if(!result || !IS_SYMOP(result))
+    return(default_instruction_cost(a, i, G, I));
+
+  reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
+  
+  std::multimap<int, var_t>::const_iterator oi, oi_end;
+
+  int size = 0;
+  
+  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(result)->key);
+  if(oi != oi_end)
+    {
+      var_t v = oi->second;
+
+      if(a.local.find(v) == a.local.end())
+        return(default_instruction_cost(a, i, G, I));
+
+      c += 1.0f;
+      byteregs[I[v].byte] = a.global[v];
+      size = 1;
+
+      while(++oi != oi_end)
+        {
+          v = oi->second;
+          c += (a.local.find(v) != a.local.end() ? 1.0f : std::numeric_limits<float>::infinity());
+          byteregs[I[v].byte] = a.global[v];
+          size++;
+        }
+
+      // Code generator cannot handle variables only partially in A.
+      if(OPTRALLOC_A && size > 1)
+        for(unsigned short int i = 0; i < size; i++)
+          if(byteregs[i] == REG_A)
+            c += std::numeric_limits<float>::infinity();
+
+      if(OPTRALLOC_A && byteregs[0] == REG_A)
+        c -= 0.4f;
+        
+      if(byteregs[0] == REG_L)
+        c -= 1.0f;
+      if(byteregs[1] == REG_H)
+        c -= 1.0f;
+      if(byteregs[2] == REG_E)
+        c -= 1.0f;
+      if(byteregs[3] == REG_D)
+        c -= 1.0f;
+    }
+    
+  return(c);
+}
+
+template <class G_t, class I_t> static float
 ifx_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
@@ -559,6 +679,10 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
     case '=':
     case CAST:
       return(assign_cost(a, i, G, I));
+    case RETURN:
+      return(return_cost(a, i, G, I));
+    case CALL:
+      return(call_cost(a, i, G, I));
     case IFX:
       return(ifx_cost(a, i, G, I));
     case JUMPTABLE:
