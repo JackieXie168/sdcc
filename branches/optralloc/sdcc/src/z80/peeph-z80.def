@@ -1520,6 +1520,18 @@ replace restart {
 }
 
 replace restart {
+	ld	(hl),#0x00
+	inc	hl
+	ld	(hl),#0x00
+} by {
+	xor	a, a
+	; peephole 57 cached zero in a.
+	ld	(hl), a
+	inc	hl
+	ld	(hl), a
+} if notUsed('a')
+
+replace restart {
 	ld	de,#%1 + %2
 	inc	de
 } by {
@@ -1553,6 +1565,26 @@ replace restart {
 	ld	%1,#%2+1
 	add	hl,%1
 	; peephole 62a moved increment of hl to constant.
+} if notUsed(%1)
+
+replace restart {
+	inc	hl
+	ld	%1,#%2
+	add	hl,%1
+} by {
+	ld	%1,#%2+1
+	add	hl,%1
+	; peephole 62b moved increment of hl to constant.
+} if notUsed(%1)
+
+replace restart {
+	dec	hl
+	ld	%1,#%2
+	add	hl,%1
+} by {
+	ld	%1,#%2-1
+	add	hl,%1
+	; peephole 62c moved decrement of hl to constant.
 } if notUsed(%1)
 
 replace restart {
