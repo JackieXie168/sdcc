@@ -1,3 +1,10 @@
+2011-03-02 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCmain.c, doc/sdccman.lyx:
+	  fixed use of SDCC_LIB environment variable:
+	  first search in $SDCC_LIB/<model>
+	  then search in $SDCC_LIB
+
 2011-03-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/ralloc2.cc:
