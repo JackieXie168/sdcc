@@ -1,3 +1,7 @@
+2011-03-06 Borut Razem <borut.razem AT gmail.com>
+
+	* sim/ucsim/cmd.src/Makefile.in: fixed for bison
+
 2011-03-05 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCopt.c:
@@ -10,7 +14,7 @@
 	  sim/ucsim/cmd.src/cmdset.cc, sim/ucsim/cmd.src/cmdlex.l,
 	  sim/ucsim/cmd.src/newcmdposix.cc, sim/ucsim/cmd.src/newcmdwin32.cc,
 	  sim/ucsim/cmd.src/cmdpars.y, sim/ucsim/configure.in:
-	  use bison instead unsupported bison++
+	  use bison instead of unsupported bison++
 	* sim/ucsim/cmd.src/flex_lexer.h, sim/ucsim/cmd.src/cmdpars.cc,
 	  sim/ucsim/cmd.src/cmdpars.h, sim/ucsim/cmd.src/FlexLexer.h,
 	  sim/ucsim/cmd.src/cmdlex.cc: deleted
