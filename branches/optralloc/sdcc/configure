@@ -4702,6 +4702,7 @@ $as_echo "$bor_cv_c_ggdb" >&6; }
 
   if test "$bor_cv_c_ggdb" = "yes"; then
     CFLAGS="-ggdb ${CFLAGS}"
+    CXXFLAGS="-ggdb ${CXXFLAGS}"
   fi
 
   ac_test_CFLAGS=${CFLAGS+set}
@@ -4740,6 +4741,7 @@ $as_echo "$bor_cv_c_pipe" >&6; }
 
   if test "$bor_cv_c_pipe" = "yes"; then
     CFLAGS="-pipe ${CFLAGS}"
+    CXXFLAGS="-pipe ${CXXFLAGS}"
   fi
 
   WALL_FLAG="-Wall"
@@ -4779,6 +4781,7 @@ $as_echo "$bor_cv_c_compiler_sunpro" >&6; }
   if test "$bor_cv_c_compiler_sunpro" = "yes"; then
     C99_FLAG="-xc99"
     CFLAGS="-xO2 ${C99_FLAG} ${CFLAGS}"
+    CXXFLAGS="-xO2 ${C99_FLAG} ${CXXFLAGS}"
     WALL_FLAG=
     MAKEDEP="$CC ${C99_FLAG} -xM1"
   fi

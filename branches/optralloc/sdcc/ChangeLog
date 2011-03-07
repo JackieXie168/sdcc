@@ -1,3 +1,7 @@
+2011-03-07 Borut Razem <borut.razem AT gmail.com>
+
+	* configure, configure.in, src/Makefile.in: CXXFLAGS fixes
+
 2011-03-06 Borut Razem <borut.razem AT gmail.com>
 
 	* sim/ucsim/cmd.src/Makefile.in:

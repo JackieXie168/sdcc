@@ -5,7 +5,7 @@
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
 top_builddir	= @top_builddir@
-VPATH =           @srcdir@
+VPATH           = @srcdir@
 
 include $(top_builddir)/Makefile.common
 
@@ -18,7 +18,7 @@ PORT_LIBS	= $(PORTS:%=%/port.a)
 LIBS		= -lm @LIBS@
 
 CFLAGS          = @CFLAGS@ @WALL_FLAG@
-CXXFLAGS          = @CFLAGS@ @WALL_FLAG@
+CXXFLAGS        = @CXXFLAGS@ @WALL_FLAG@
 CPPFLAGS	+= -I$(srcdir) -O2
 LDFLAGS		= @LDFLAGS@
 

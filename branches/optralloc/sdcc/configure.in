@@ -375,11 +375,13 @@ if test "$ac_cv_c_compiler_gnu" = "yes"; then
   bor_IS_VALID_OPTION(ggdb)
   if test "$bor_cv_c_ggdb" = "yes"; then
     CFLAGS="-ggdb ${CFLAGS}"
+    CXXFLAGS="-ggdb ${CXXFLAGS}"
   fi
 
   bor_IS_VALID_OPTION(pipe)
   if test "$bor_cv_c_pipe" = "yes"; then
     CFLAGS="-pipe ${CFLAGS}"
+    CXXFLAGS="-pipe ${CXXFLAGS}"
   fi
 
   WALL_FLAG="-Wall"
@@ -390,6 +392,7 @@ else
   if test "$bor_cv_c_compiler_sunpro" = "yes"; then
     C99_FLAG="-xc99"
     CFLAGS="-xO2 ${C99_FLAG} ${CFLAGS}"
+    CXXFLAGS="-xO2 ${C99_FLAG} ${CXXFLAGS}"
     WALL_FLAG=
     MAKEDEP="$CC ${C99_FLAG} -xM1"
   fi
