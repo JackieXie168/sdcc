@@ -1,3 +1,9 @@
+2011-03-09 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCopt.c,
+	  support/regression/tests/memory.c:
+	  Completed fix for #3188357.
+
 2011-03-07 Borut Razem <borut.razem AT gmail.com>
 
 	* configure, configure.in, src/Makefile.in: CXXFLAGS fixes
@@ -5,7 +11,7 @@
 2011-03-06 Borut Razem <borut.razem AT gmail.com>
 
 	* sim/ucsim/cmd.src/Makefile.in:
-          fixed for bison, byacc and flex version 2.5.4
+      fixed for bison, byacc and flex version 2.5.4
 
 2011-03-05 Philipp Klaus Krause <pkk AT spth.de>
 
