@@ -1,3 +1,7 @@
+2011-03-13 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCglobl.h: don't incude stdbool.h if compiled with c++
+
 2011-03-13 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc2.cc:

@@ -8,10 +8,12 @@
 #include <setjmp.h>
 #include <stdio.h>
 
-#if !defined _MSC_VER
-#include <stdbool.h>
-#elif !defined __cplusplus
-typedef unsigned char bool;
+#ifndef  __cplusplus
+# if !defined _MSC_VER
+#   include <stdbool.h>
+# elif !defined __cplusplus
+    typedef unsigned char bool;
+# endif
 #endif
 
 #include "SDCCset.h"
