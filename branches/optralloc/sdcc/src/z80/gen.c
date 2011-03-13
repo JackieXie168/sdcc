@@ -3204,7 +3204,7 @@ resultRemat (iCode * ic)
   if (IC_RESULT (ic) && IS_ITEMP (IC_RESULT (ic)))
     {
       symbol *sym = OP_SYMBOL (IC_RESULT (ic));
-      if (sym->remat && !POINTER_SET (ic))
+      if (sym->remat && !POINTER_SET (ic) && sym->isspilt)
         return 1;
     }
 
@@ -7135,9 +7135,9 @@ genGenPointerGet (operand * left,
       freeAsmop (left, NULL, ic);
       goto release;
     }
-
+emitDebug(";fetchPair (pair, AOP (left)); in genGenPointerGet");
   /* For now we always load into IY */
-  /* if this is remateriazable */
+  /* if this is rematerializable */
   fetchPair (pair, AOP (left));
 
   /* if bit then unpack */

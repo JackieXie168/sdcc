@@ -1821,6 +1821,23 @@ packRegisters (eBBlock * ebp)
             OP_SYMBOL (IC_RIGHT (ic))->rematiCode;
         }
 
+      /* if cast to a generic pointer & the pointer being
+         cast is remat, then we can remat this cast as well */
+      if (ic->op == CAST &&
+          IS_SYMOP(IC_RIGHT(ic)) &&
+          OP_SYMBOL(IC_RIGHT(ic))->remat &&
+          bitVectnBitsOn (OP_DEFS (IC_RESULT (ic))) == 1)
+        {
+          sym_link *to_type = operandType(IC_LEFT(ic));
+          sym_link *from_type = operandType(IC_RIGHT(ic));
+          if (IS_GENPTR(to_type) && IS_PTR(from_type))
+            {
+              OP_SYMBOL (IC_RESULT (ic))->remat = 1;
+              OP_SYMBOL (IC_RESULT (ic))->rematiCode = ic;
+              OP_SYMBOL (IC_RESULT (ic))->usl.spillLoc = NULL;
+            }
+        }
+
       /* if this is a +/- operation with a rematerizable
          then mark this as rematerializable as well */
       if ((ic->op == '+' || ic->op == '-') &&
@@ -2070,7 +2087,7 @@ serialRegMark (eBBlock ** ebbs, int count)
                   continue;
                 }
 
-              /* Rematerialization should be handled by new allocator instead, but it's broken. */
+              /* Rematerialization should be handled by the new allocator instead, but it's still too inefficient due to the inexact cost function */
               if (sym->remat)
                 {
                   D (D_ALLOC, ("serialRegAssign: \"remat spill\"\n"));
