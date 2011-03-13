@@ -4,6 +4,8 @@
 	  Preparations for rematerialization support in new allocator.
 	* src/z80/ralloc.c:
 	  Old register allocator cleanup.
+    * src/z80/gen.c:
+      Code reorganization in preparation of more accurate register allocation.
 
 2011-03-09 Philipp Klaus Krause <pkk AT spth.de>
 

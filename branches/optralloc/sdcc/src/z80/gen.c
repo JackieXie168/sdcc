@@ -8541,9 +8541,296 @@ genBuiltIn (iCode *ic)
       }
 }
 
-/*-----------------------------------------------------------------*/
-/* genZ80Code - generate code for Z80 based controllers            */
-/*-----------------------------------------------------------------*/
+/*-------------------------------------------------------------------------------------*/
+/* genZ80Code - generate code for Z80 based controllers for a single iCode instruction */
+/*-------------------------------------------------------------------------------------*/
+void genZ80iCode (iCode * ic)
+{
+  _G.current_iCode = ic;
+
+  /* if the result is marked as
+     spilt and rematerializable or code for
+     this has already been generated then
+     do nothing */
+  if (resultRemat (ic) || ic->generated)
+    return;
+
+  /* depending on the operation */
+  switch (ic->op)
+    {
+    case '!':
+      emitDebug ("; genNot");
+      genNot (ic);
+      break;
+
+    case '~':
+      emitDebug ("; genCpl");
+      genCpl (ic);
+      break;
+
+    case UNARYMINUS:
+      emitDebug ("; genUminus");
+      genUminus (ic);
+      break;
+
+    case IPUSH:
+      emitDebug ("; genIpush");
+      genIpush (ic);
+      break;
+
+    case IPOP:
+      /* IPOP happens only when trying to restore a
+         spilt live range, if there is an ifx statement
+         following this pop then the if statement might
+         be using some of the registers being popped which
+         would destroy the contents of the register so
+         we need to check for this condition and handle it */
+      if (ic->next &&
+          ic->next->op == IFX &&
+          regsInCommon (IC_LEFT (ic), IC_COND (ic->next)))
+        {
+          emitDebug ("; genIfx");
+          genIfx (ic->next, ic);
+        }
+      else
+        {
+          emitDebug ("; genIpop");
+          genIpop (ic);
+        }
+      break;
+
+    case CALL:
+      emitDebug ("; genCall");
+      genCall (ic);
+      break;
+
+    case PCALL:
+      emitDebug ("; genPcall");
+      genPcall (ic);
+      break;
+
+    case FUNCTION:
+      emitDebug ("; genFunction");
+      genFunction (ic);
+      break;
+
+    case ENDFUNCTION:
+      emitDebug ("; genEndFunction");
+      genEndFunction (ic);
+      break;
+
+    case RETURN:
+      emitDebug ("; genRet");
+      genRet (ic);
+      break;
+
+    case LABEL:
+      emitDebug ("; genLabel");
+      genLabel (ic);
+      break;
+
+    case GOTO:
+      emitDebug ("; genGoto");
+      genGoto (ic);
+      break;
+
+    case '+':
+      emitDebug ("; genPlus");
+      genPlus (ic);
+      break;
+
+    case '-':
+      emitDebug ("; genMinus");
+      genMinus (ic);
+      break;
+
+    case '*':
+      emitDebug ("; genMult");
+      genMult (ic);
+      break;
+
+    case '/':
+      emitDebug ("; genDiv");
+      genDiv (ic);
+      break;
+
+    case '%':
+      emitDebug ("; genMod");
+      genMod (ic);
+      break;
+
+    case '>':
+      emitDebug ("; genCmpGt");
+      genCmpGt (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case '<':
+      emitDebug ("; genCmpLt");
+      genCmpLt (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case LE_OP:
+    case GE_OP:
+    case NE_OP:
+
+      /* note these two are xlated by algebraic equivalence
+         during parsing SDCC.y */
+      werror (E_INTERNAL_ERROR, __FILE__, __LINE__,
+              "got '>=' or '<=' shouldn't have come here");
+      break;
+
+    case EQ_OP:
+      emitDebug ("; genCmpEq");
+      genCmpEq (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case AND_OP:
+      emitDebug ("; genAndOp");
+      genAndOp (ic);
+      break;
+
+    case OR_OP:
+      emitDebug ("; genOrOp");
+      genOrOp (ic);
+      break;
+
+    case '^':
+      emitDebug ("; genXor");
+      genXor (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case '|':
+      emitDebug ("; genOr");
+      genOr (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case BITWISEAND:
+      emitDebug ("; genAnd");
+      genAnd (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case INLINEASM:
+      emitDebug ("; genInline");
+      genInline (ic);
+      break;
+
+    case RRC:
+      emitDebug ("; genRRC");
+      genRRC (ic);
+      break;
+
+    case RLC:
+      emitDebug ("; genRLC");
+      genRLC (ic);
+      break;
+
+    case GETHBIT:
+      emitDebug ("; genGetHbit");
+      genGetHbit (ic);
+      break;
+
+    case GETABIT:
+      emitDebug ("; genGetAbit");
+      genGetAbit (ic);
+      break;
+
+    case LEFT_OP:
+      emitDebug ("; genLeftShift");
+      genLeftShift (ic);
+      break;
+
+    case RIGHT_OP:
+      emitDebug ("; genRightShift");
+      genRightShift (ic);
+      break;
+
+    case GET_VALUE_AT_ADDRESS:
+      emitDebug ("; genPointerGet");
+      genPointerGet (ic);
+      break;
+
+    case '=':
+
+      if (POINTER_SET (ic))
+        {
+          emitDebug ("; genAssign (pointer)");
+          genPointerSet (ic);
+        }
+      else
+        {
+          emitDebug ("; genAssign");
+          genAssign (ic);
+        }
+      break;
+
+    case IFX:
+      emitDebug ("; genIfx");
+      genIfx (ic, NULL);
+      break;
+
+    case ADDRESS_OF:
+      emitDebug ("; genAddrOf");
+      genAddrOf (ic);
+      break;
+
+    case JUMPTABLE:
+      emitDebug ("; genJumpTab");
+      genJumpTab (ic);
+      break;
+
+    case CAST:
+      emitDebug ("; genCast");
+      genCast (ic);
+      break;
+
+    case RECEIVE:
+      emitDebug ("; genReceive");
+      genReceive (ic);
+      break;
+
+    case SEND:
+      if (ic->builtinSEND)
+        {
+          emitDebug ("; genBuiltIn");
+          genBuiltIn(ic);
+        }
+      else
+        {
+          emitDebug ("; addSet");
+          addSet (&_G.sendSet, ic);
+        }
+      break;
+
+#if 0
+    case ARRAYINIT:
+      emitDebug ("; genArrayInit");
+      genArrayInit(ic);
+      break;
+#endif
+
+    case DUMMY_READ_VOLATILE:
+      emitDebug ("; genDummyRead");
+      genDummyRead (ic);
+      break;
+
+    case CRITICAL:
+      emitDebug ("; genCritical");
+      genCritical (ic);
+      break;
+
+    case ENDCRITICAL:
+      emitDebug ("; genEndCritical");
+      genEndCritical (ic);
+      break;
+
+    default:
+      ;
+    }
+}
+
+/*-------------------------------------------------------------------------------------*/
+/* genZ80Code - generate code for Z80 based controllers for a block of intructions     */
+/*-------------------------------------------------------------------------------------*/
 void
 genZ80Code (iCode * lic)
 {
@@ -8570,21 +8857,15 @@ genZ80Code (iCode * lic)
       debugFile->writeFunction (currFunc, lic);
     }
 
+  /* Generate Code for all instructions */
   for (ic = lic; ic; ic = ic->next)
     {
-      _G.current_iCode = ic;
-
       if (ic->lineno && cln != ic->lineno)
         {
           if (options.debug)
-            {
-              debugFile->writeCLine (ic);
-            }
+           debugFile->writeCLine (ic);
           if (!options.noCcodeInAsm)
-            {
-              emit2 (";%s:%d: %s", ic->filename, ic->lineno,
-                     printCLine(ic->filename, ic->lineno));
-            }
+            emit2 (";%s:%d: %s", ic->filename, ic->lineno, printCLine(ic->filename, ic->lineno));
           cln = ic->lineno;
         }
       if (options.iCodeInAsm)
@@ -8593,285 +8874,9 @@ genZ80Code (iCode * lic)
           emit2 (";ic:%d: %s", ic->key, iLine);
           dbuf_free(iLine);
         }
-      /* if the result is marked as
-         spilt and rematerializable or code for
-         this has already been generated then
-         do nothing */
-      if (resultRemat (ic) || ic->generated)
-        continue;
-
-      /* depending on the operation */
-      switch (ic->op)
-        {
-        case '!':
-          emitDebug ("; genNot");
-          genNot (ic);
-          break;
-
-        case '~':
-          emitDebug ("; genCpl");
-          genCpl (ic);
-          break;
-
-        case UNARYMINUS:
-          emitDebug ("; genUminus");
-          genUminus (ic);
-          break;
-
-        case IPUSH:
-          emitDebug ("; genIpush");
-          genIpush (ic);
-          break;
-
-        case IPOP:
-          /* IPOP happens only when trying to restore a
-             spilt live range, if there is an ifx statement
-             following this pop then the if statement might
-             be using some of the registers being popped which
-             would destroy the contents of the register so
-             we need to check for this condition and handle it */
-          if (ic->next &&
-              ic->next->op == IFX &&
-              regsInCommon (IC_LEFT (ic), IC_COND (ic->next)))
-            {
-              emitDebug ("; genIfx");
-              genIfx (ic->next, ic);
-            }
-          else
-            {
-              emitDebug ("; genIpop");
-              genIpop (ic);
-            }
-          break;
-
-        case CALL:
-          emitDebug ("; genCall");
-          genCall (ic);
-          break;
-
-        case PCALL:
-          emitDebug ("; genPcall");
-          genPcall (ic);
-          break;
-
-        case FUNCTION:
-          emitDebug ("; genFunction");
-          genFunction (ic);
-          break;
-
-        case ENDFUNCTION:
-          emitDebug ("; genEndFunction");
-          genEndFunction (ic);
-          break;
-
-        case RETURN:
-          emitDebug ("; genRet");
-          genRet (ic);
-          break;
-
-        case LABEL:
-          emitDebug ("; genLabel");
-          genLabel (ic);
-          break;
-
-        case GOTO:
-          emitDebug ("; genGoto");
-          genGoto (ic);
-          break;
-
-        case '+':
-          emitDebug ("; genPlus");
-          genPlus (ic);
-          break;
-
-        case '-':
-          emitDebug ("; genMinus");
-          genMinus (ic);
-          break;
-
-        case '*':
-          emitDebug ("; genMult");
-          genMult (ic);
-          break;
-
-        case '/':
-          emitDebug ("; genDiv");
-          genDiv (ic);
-          break;
-
-        case '%':
-          emitDebug ("; genMod");
-          genMod (ic);
-          break;
-
-        case '>':
-          emitDebug ("; genCmpGt");
-          genCmpGt (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case '<':
-          emitDebug ("; genCmpLt");
-          genCmpLt (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case LE_OP:
-        case GE_OP:
-        case NE_OP:
-
-          /* note these two are xlated by algebraic equivalence
-             during parsing SDCC.y */
-          werror (E_INTERNAL_ERROR, __FILE__, __LINE__,
-                  "got '>=' or '<=' shouldn't have come here");
-          break;
-
-        case EQ_OP:
-          emitDebug ("; genCmpEq");
-          genCmpEq (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case AND_OP:
-          emitDebug ("; genAndOp");
-          genAndOp (ic);
-          break;
-
-        case OR_OP:
-          emitDebug ("; genOrOp");
-          genOrOp (ic);
-          break;
-
-        case '^':
-          emitDebug ("; genXor");
-          genXor (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case '|':
-          emitDebug ("; genOr");
-          genOr (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case BITWISEAND:
-          emitDebug ("; genAnd");
-          genAnd (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case INLINEASM:
-          emitDebug ("; genInline");
-          genInline (ic);
-          break;
-
-        case RRC:
-          emitDebug ("; genRRC");
-          genRRC (ic);
-          break;
-
-        case RLC:
-          emitDebug ("; genRLC");
-          genRLC (ic);
-          break;
-
-        case GETHBIT:
-          emitDebug ("; genGetHbit");
-          genGetHbit (ic);
-          break;
-
-        case GETABIT:
-          emitDebug ("; genGetAbit");
-          genGetAbit (ic);
-          break;
-
-        case LEFT_OP:
-          emitDebug ("; genLeftShift");
-          genLeftShift (ic);
-          break;
-
-        case RIGHT_OP:
-          emitDebug ("; genRightShift");
-          genRightShift (ic);
-          break;
-
-        case GET_VALUE_AT_ADDRESS:
-          emitDebug ("; genPointerGet");
-          genPointerGet (ic);
-          break;
-
-        case '=':
-
-          if (POINTER_SET (ic))
-            {
-              emitDebug ("; genAssign (pointer)");
-              genPointerSet (ic);
-            }
-          else
-            {
-              emitDebug ("; genAssign");
-              genAssign (ic);
-            }
-          break;
-
-        case IFX:
-          emitDebug ("; genIfx");
-          genIfx (ic, NULL);
-          break;
-
-        case ADDRESS_OF:
-          emitDebug ("; genAddrOf");
-          genAddrOf (ic);
-          break;
-
-        case JUMPTABLE:
-          emitDebug ("; genJumpTab");
-          genJumpTab (ic);
-          break;
-
-        case CAST:
-          emitDebug ("; genCast");
-          genCast (ic);
-          break;
-
-        case RECEIVE:
-          emitDebug ("; genReceive");
-          genReceive (ic);
-          break;
-
-        case SEND:
-          if (ic->builtinSEND)
-            {
-              emitDebug ("; genBuiltIn");
-              genBuiltIn(ic);
-            }
-          else
-            {
-              emitDebug ("; addSet");
-              addSet (&_G.sendSet, ic);
-            }
-          break;
-
-#if 0
-        case ARRAYINIT:
-          emitDebug ("; genArrayInit");
-          genArrayInit(ic);
-          break;
-#endif
-
-        case DUMMY_READ_VOLATILE:
-          emitDebug ("; genDummyRead");
-          genDummyRead (ic);
-          break;
-
-        case CRITICAL:
-          emitDebug ("; genCritical");
-          genCritical (ic);
-          break;
-
-        case ENDCRITICAL:
-          emitDebug ("; genEndCritical");
-          genEndCritical (ic);
-          break;
-
-        default:
-          ic = ic;
-        }
+      genZ80iCode (ic);
     }
+
 
   /* now we are ready to call the
      peep hole optimizer */
