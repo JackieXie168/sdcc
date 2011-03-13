@@ -2088,21 +2088,6 @@ serialRegMark (eBBlock ** ebbs, int count)
                 spillThis (sym);
                 printf("Spilt %s due to byte limit.\n", sym->name);
               }
-
-#if 0
-              /* if it shares registers with operands make sure
-                 that they are in the same position */
-              if (IC_LEFT (ic) && IS_SYMOP (IC_LEFT (ic)) &&
-                  OP_SYMBOL (IC_LEFT (ic))->nRegs && ic->op != '=')
-                positionRegs (OP_SYMBOL (IC_RESULT (ic)),
-                              OP_SYMBOL (IC_LEFT (ic)));
-              /* do the same for the right operand */
-              if (IC_RIGHT (ic) && IS_SYMOP (IC_RIGHT (ic)) &&
-                  OP_SYMBOL (IC_RIGHT (ic))->nRegs)
-                positionRegs (OP_SYMBOL (IC_RESULT (ic)),
-                              OP_SYMBOL (IC_RIGHT (ic)));
-#endif
-
             }
         }
     }
