@@ -81,7 +81,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
           // Spilt.
           else
             {
-              c += 4.0f;
+              c += OP_SYMBOL_CONST(o)->remat ? 1.5 : 4.0f;
               while(++oi != oi_end)
                 {
                   v = oi->second;

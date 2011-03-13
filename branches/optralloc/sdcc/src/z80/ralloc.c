@@ -538,67 +538,6 @@ selectSpil (iCode * ic, eBBlock * ebp, symbol * forSym)
       return leastUsedLR (selectS);
     }
 
-#if 0
-  /* get live ranges with spillLocations in direct space */
-  if ((selectS = liveRangesWith (lrcs, directSpilLoc, ebp, ic)))
-    {
-      sym = leastUsedLR (selectS);
-      strcpy (sym->rname, (sym->usl.spillLoc->rname[0] ?
-                           sym->usl.spillLoc->rname :
-                           sym->usl.spillLoc->name));
-      sym->spildir = 1;
-      /* mark it as allocation required */
-      sym->usl.spillLoc->allocreq++;
-      return sym;
-    }
-
-  /* if the symbol is local to the block then */
-  if (forSym->liveTo < ebp->lSeq)
-    {
-
-      /* check if there are any live ranges allocated
-         to registers that are not used in this block */
-      if (!_G.blockSpil && (selectS = liveRangesWith (lrcs, notUsedInBlock, ebp, ic)))
-        {
-          sym = leastUsedLR (selectS);
-          /* if this is not rematerializable */
-          if (!sym->remat)
-            {
-              _G.blockSpil++;
-              wassertl (0, "Attempted to do an unsupported block spill");
-              sym->blockSpil = 1;
-            }
-          return sym;
-        }
-
-      /* check if there are any live ranges that not
-         used in the remainder of the block */
-      if (!_G.blockSpil && (selectS = liveRangesWith (lrcs, notUsedInRemaining, ebp, ic)))
-        {
-          sym = leastUsedLR (selectS);
-          if (sym != forSym)
-            {
-              if (!sym->remat)
-                {
-                  wassertl (0, "Attempted to do an unsupported remain spill");
-                  sym->remainSpil = 1;
-                  _G.blockSpil++;
-                }
-              return sym;
-            }
-        }
-    }
-  /* find live ranges with spillocation && not used as pointers */
-  if ((selectS = liveRangesWith (lrcs, hasSpilLocnoUptr, ebp, ic)))
-    {
-
-      sym = leastUsedLR (selectS);
-      /* mark this as allocation required */
-      sym->usl.spillLoc->allocreq++;
-      return sym;
-    }
-#endif
-
   /* find live ranges with spillocation */
   if ((selectS = liveRangesWith (lrcs, hasSpilLoc, ebp, ic)))
     {
@@ -906,20 +845,6 @@ reassignLR (operand * op)
 
   for (i = 0; i < sym->nRegs; i++)
     sym->regs[i]->isFree = 0;
-}
-
-/** Determines if allocating will cause a spill.
- */
-static int
-willCauseSpill (int nr, int rt)
-{
-  /* first check if there are any avlb registers
-     of te type required */
-  if (nFreeRegs (0) >= nr)
-    return 0;
-
-  /* it will cause a spil */
-  return 1;
 }
 
 #if 0
@@ -2611,8 +2536,6 @@ serialRegMark (eBBlock ** ebbs, int count)
           if (IC_RESULT (ic))
             {
               symbol *sym = OP_SYMBOL (IC_RESULT (ic));
-              bitVect *spillable;
-              int willCS;
 
               D (D_ALLOC, ("serialRegAssign: in loop on result %p\n", sym));
 
@@ -2646,20 +2569,12 @@ serialRegMark (eBBlock ** ebbs, int count)
                   continue;
                 }
 
-              /* if trying to allocate this will cause
-                 a spill and there is nothing to spill
-                 or this one is rematerializable then
-                 spill this one */
-              willCS = willCauseSpill (sym->nRegs, sym->regType);
-              spillable = computeSpillable (ic);
-              if (sym->remat ||
-                  (willCS && bitVectIsZero (spillable)))
+              /* Rematerialization should be handled by new allocator instead, but it's broken. */
+              if (sym->remat)
                 {
-
                   D (D_ALLOC, ("serialRegAssign: \"remat spill\"\n"));
                   spillThis (sym);
                   continue;
-
                 }
 
               if (max_alloc_bytes >= sym->nRegs)
