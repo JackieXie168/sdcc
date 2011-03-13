@@ -676,6 +676,13 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 
   switch(ic->op)
     {
+    // Register assignment doesn't matter for these
+	case GOTO:
+    case INLINEASM:
+      return(0.0f);
+    // Exact cost
+
+    // Inexact cost
     case '=':
     case CAST:
       return(assign_cost(a, i, G, I));
