@@ -1,3 +1,8 @@
+2011-03-14 Borut Razem <borut.razem AT gmail.com>
+
+	* configure, configure.in: don't use C99_FLAG in CXXFLAGS
+	  for SunPro C++ compiler
+
 2011-03-13 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* src/SDCCast.c (processParms): fixed bug 2084206,
@@ -32,7 +37,7 @@
 2011-03-06 Borut Razem <borut.razem AT gmail.com>
 
 	* sim/ucsim/cmd.src/Makefile.in:
-        fixed for bison, byacc and flex version 2.5.4
+          fixed for bison, byacc and flex version 2.5.4
 
 2011-03-05 Philipp Klaus Krause <pkk AT spth.de>
 

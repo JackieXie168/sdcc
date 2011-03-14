@@ -4781,7 +4781,7 @@ $as_echo "$bor_cv_c_compiler_sunpro" >&6; }
   if test "$bor_cv_c_compiler_sunpro" = "yes"; then
     C99_FLAG="-xc99"
     CFLAGS="-xO2 ${C99_FLAG} ${CFLAGS}"
-    CXXFLAGS="-xO2 ${C99_FLAG} ${CXXFLAGS}"
+    CXXFLAGS="-xO2 ${CXXFLAGS}"
     WALL_FLAG=
     MAKEDEP="$CC ${C99_FLAG} -xM1"
   fi
