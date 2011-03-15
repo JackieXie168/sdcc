@@ -1,3 +1,9 @@
+2011-03-15 Borut Razem <borut.razem AT gmail.com>
+
+	* debugger/mcs51/configure.in, debugger/mcs51/configure:
+	  added C99_FLAG to CFLAGS and MAKEDEP for SunPro C compiler
+	* debugger/mcs51/simi.c: include <sys/filio.h> in Solaris
+
 2011-03-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/main.c,
@@ -5,6 +11,11 @@
 	  src/z80/ralloc2.cc,
 	  src/z80/gen.c:
 	  Code reorganization for a more accurate cost function.
+
+2011-03-14 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/SDCCglue.c (pointerTypeToGPByte),
+	* src/ds390/gen.c (genCast): ds390 function pointer is no CPOINTER
 
 2011-03-14 Borut Razem <borut.razem AT gmail.com>
 
@@ -45,7 +56,7 @@
 2011-03-06 Borut Razem <borut.razem AT gmail.com>
 
 	* sim/ucsim/cmd.src/Makefile.in:
-          fixed for bison, byacc and flex version 2.5.4
+	  fixed for bison, byacc and flex version 2.5.4
 
 2011-03-05 Philipp Klaus Krause <pkk AT spth.de>
 
