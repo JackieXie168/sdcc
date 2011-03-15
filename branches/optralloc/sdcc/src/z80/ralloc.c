@@ -393,7 +393,6 @@ deassignLRs (iCode * ic, eBBlock * ebp)
                 }
               else
                 freeReg (sym->regs[i]);
-              //              sym->regs[i] = NULL;
             }
         }
 

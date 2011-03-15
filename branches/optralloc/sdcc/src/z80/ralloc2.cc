@@ -687,11 +687,11 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
           else
             {
               sym->accuse = ACCUSE_A;
-              sym->nRegs = 0;
+              /*sym->nRegs = 0*/;
             }
         }
       else
-        spillThis(sym);
+        sym->isspilt = true;
     }
 }
 
@@ -704,7 +704,11 @@ void assign_operands_for_cost(const assignment &a, unsigned short int i, const G
   else if(ic->key == JUMPTABLE)
     assign_operand_for_cost(IC_JTCOND(ic), a, i, G, I);
   else
-    ;
+    {
+      assign_operand_for_cost(IC_LEFT(ic), a, i, G, I);
+      assign_operand_for_cost(IC_RIGHT(ic), a, i, G, I);
+      assign_operand_for_cost(IC_RESULT(ic), a, i, G, I);
+    }
 }
 
 // Cost function.
@@ -722,10 +726,12 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   switch(ic->op)
     {
     // Register assignment doesn't matter for these
-	case GOTO:
+    case LABEL:
+    case GOTO:
     case INLINEASM:
       return(0.0f);
     // Exact cost
+    //case '!':
     /*case '~':
       regalloc_dry_run_cost = 0;
       assign_operands_for_cost(a, i, G, I);
@@ -886,6 +892,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
       if(winner.global[v] >= 0)
         {
+          sym->isspilt = false;
           if(winner.global[v] != REG_A || !OPTRALLOC_A)
             sym->regs[I[v].byte] = regsZ80 + winner.global[v];
           else
@@ -895,7 +902,10 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
             }
         }
       else
-        spillThis(sym);
+        {
+          //sym->nRegs = 0;
+          spillThis(sym);
+        }
     }
 }
 

@@ -491,54 +491,6 @@ emitDebug (const char *szFormat,...)
     }
 }
 
-unsigned char emit3Cost(enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
-{
-  switch(inst)
-    {
-    case CPL:
-      return(1);
-    case LD:
-      break;
-    default:
-      wassertl(0, "Tried get cost for unknown instruction");
-    }
-  return(0);
-}
-
-static void
-emit3 (enum asminst inst, asmop *op1, asmop *op2)
-{
-  emitDebug(";emit3 start");
-  
-  if(regalloc_dry_run)
-    regalloc_dry_run_cost += emit3Cost(inst, op1, 0, op2, 0);
-  
-  if(!op1)
-    emit2("%s", asminstnames[inst]);
-  else if(!op2)
-    emit2("%s %s", asminstnames[inst], aopGet(op1, 0 , FALSE));
-  else
-    emit2("%s %s, %s", asminstnames[inst], aopGet(op1, 0, FALSE), aopGet(op2, 0, FALSE));
-  emitDebug(";emit3 end");
-}
-
-static void
-emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
-{
-  emitDebug(";emit3_o start");
-  
-  if(regalloc_dry_run)
-    regalloc_dry_run_cost += emit3Cost(inst, op1, offset1, op2, offset2);
-    
-  if(!op1)
-    emit2("%s", asminstnames[inst]);
-  else if(!op2)
-    emit2("%s %s", asminstnames[inst], aopGet(op1, offset1, FALSE));
-  else
-    emit2("%s %s, %s", asminstnames[inst], aopGet(op1, offset1, FALSE), aopGet(op2, offset2, FALSE));
-  emitDebug(";emit3_o end");
-}
-
 /*-----------------------------------------------------------------*/
 /* z80_emitDebuggerSymbol - associate the current code location    */
 /*   with a debugger symbol                                        */
@@ -584,6 +536,106 @@ _emit2 (const char *inst, const char *fmt,...)
   _G.lines.current->isInline = _G.lines.isInline;
   _G.lines.current->ic = _G.current_iCode;
   va_end (ap);
+}
+
+unsigned char ld_cost(asmop *op1, asmop *op2)
+{
+  AOP_TYPE op1type = op1->type;
+  AOP_TYPE op2type = op2->type;
+  
+  /* Costs are symmetric */
+  if(op2type == AOP_ACC || op2type == AOP_REG)
+    {
+      op2type = op1->type;
+      op1type = op2->type;
+    }
+  
+  switch(op1type)
+    {
+    case AOP_ACC:
+    case AOP_REG:
+      switch(op2type)
+        {
+        case AOP_ACC:
+        case AOP_REG:
+          return(1);
+        case AOP_IMMD:
+        case AOP_SIMPLELIT:
+        case AOP_DUMMY:
+          return(2);
+        case AOP_SFR:   /* 2 from in A, (...) */
+          return(3);    
+        case AOP_STK:
+        case AOP_HL:    /* 3 from ld hl, #... */
+          return(4);
+        case AOP_IY:     /* 4 from ld iy, #... */
+        case AOP_EXSTK: /* 4 from ld iy, #... */
+          return(8);
+        default:printf("op3: %d", (int)(op2type));
+          wassert(0);
+          ;
+        }
+    default:
+    printf("op1: %d", (int)(op1type));
+      wassert(0);
+      ;
+    }
+  return(8); // Fallback
+}
+
+unsigned char emit3Cost(enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
+{
+  switch(inst)
+    {
+    case CPL:
+      return(1);
+    case LD:
+      return(ld_cost(op1, op2));
+      break;
+    default:
+      wassertl(0, "Tried get cost for unknown instruction");
+    }
+  return(0);
+}
+
+static void
+emit3 (enum asminst inst, asmop *op1, asmop *op2)
+{
+  emitDebug(";emit3 start");
+  
+  if(regalloc_dry_run)
+    {
+      regalloc_dry_run_cost += emit3Cost(inst, op1, 0, op2, 0);
+      return;
+    }
+  
+  if(!op1)
+    emit2("%s", asminstnames[inst]);
+  else if(!op2)
+    emit2("%s %s", asminstnames[inst], aopGet(op1, 0 , FALSE));
+  else
+    emit2("%s %s, %s", asminstnames[inst], aopGet(op1, 0, FALSE), aopGet(op2, 0, FALSE));
+  emitDebug(";emit3 end");
+}
+
+static void
+emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
+{
+  emitDebug(";emit3_o start");
+  
+  if(regalloc_dry_run)
+    {
+      regalloc_dry_run_cost += emit3Cost(inst, op1, offset1, op2, offset2);
+      return;
+    }
+    
+  if(!op1)
+    emit2("%s", asminstnames[inst]);
+  else if(!op2)
+    emit2("%s %s", asminstnames[inst], aopGet(op1, offset1, FALSE));
+  else
+    emit2("%s %s, %s", asminstnames[inst], aopGet(op1, offset1, FALSE), aopGet(op2, offset2, FALSE));
+  emitDebug(";emit3_o end");
 }
 
 static void
@@ -658,7 +710,7 @@ _moveA3(asmop *from, int offset)
 
 /* Load A into aop */
 static void
-moveFromA(asmop *to, int offset)
+_moveFromA(asmop *to, int offset)
 {
     _emitMove3(to, offset, ASMOP_A, 0);
 }
@@ -2350,7 +2402,7 @@ movLeft2Result (operand * left, int offl,
           if (getDataSize (left) == offl + 1)
             {
               emit2 ("ld a,%s", l);
-              moveFromA (AOP (result), offr);
+              _moveFromA (AOP (result), offr);
             }
         }
     }
@@ -2408,13 +2460,13 @@ outAcc (operand * result)
   size = getDataSize (result);
   if (size)
     {
-      aopPut (AOP (result), "a", 0);
+      _moveFromA (AOP (result), 0);
       size--;
       offset = 1;
       /* unsigned or positive */
       while (size--)
         {
-          aopPut (AOP (result), "!zero", offset++);
+          aopPut (AOP (result), "!zero", offset++); // Todo: Cost
         }
     }
 }
@@ -2428,12 +2480,13 @@ outBitC (operand * result)
   if (AOP_TYPE (result) == AOP_CRY)
     {
       if (!IS_OP_RUONLY (result))
-        aopPut (AOP (result), "c", 0);
+        aopPut (AOP (result), "c", 0); // Todo: Cost.
     }
   else
     {
       emit2 ("ld a,!zero");
       emit2 ("rla");
+      regalloc_dry_run_cost += 3;
       outAcc (result);
     }
 }
@@ -2483,9 +2536,10 @@ genNot (const iCode * ic)
     }
   else if(IS_BOOL(operandType(left)))
     {
-      emit2("ld a,%s", aopGet(AOP(left), 0, FALSE));
+      _moveA3(AOP(left), 0);
       emit2("xor a,#0x01");
-      emit2("ld %s,a", aopGet(AOP(result), 0, FALSE));
+      regalloc_dry_run_cost += 2;
+      _moveFromA(AOP(result), 0);
       goto release;
     }
 
@@ -2496,6 +2550,7 @@ genNot (const iCode * ic)
      else A = 0
      So if A = 0, A-1 = 0xFF and C is set, rotate C into reg. */
   emit2 ("sub a,!one");
+  regalloc_dry_run_cost += 2;
   outBitC (result);
 
 release:
@@ -2531,7 +2586,7 @@ genCpl (const iCode *ic)
     {
       _moveA3 (AOP (IC_LEFT (ic)), offset);
       emit3(CPL, 0, 0);
-      moveFromA(AOP (IC_RESULT (ic)), offset++);
+      _moveFromA(AOP (IC_RESULT (ic)), offset++);
     }
 
   /* release the aops */
