@@ -20,6 +20,13 @@
 
 #include "SDCCralloc.hpp"
 
+
+extern "C"
+{
+  bool regalloc_dry_run;
+  unsigned char regalloc_dry_run_size; 
+};
+
 #define REG_C 0
 #define REG_B 1
 #define REG_E 2
@@ -853,6 +860,8 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 void z80_ralloc2_cc(ebbIndex *ebbi)
 {
   //std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
+  
+  reagalloc_dry_run = true;	// Tell code generation to not really generate code yet.
 
   cfg_t control_flow_graph;
 

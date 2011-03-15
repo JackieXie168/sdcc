@@ -1,3 +1,11 @@
+2011-03-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/main.c,
+	  src/z80/gen.h,
+	  src/z80/ralloc2.cc,
+	  src/z80/gen.c:
+	  Code reorganization for a more accurate cost function.
+
 2011-03-14 Borut Razem <borut.razem AT gmail.com>
 
 	* configure, configure.in: don't use C99_FLAG in CXXFLAGS
@@ -22,7 +30,7 @@
 	* src/z80/ralloc.c:
 	  Old register allocator cleanup.
 	* src/z80/gen.c:
-	  Code reorganization in preparation of more accurate register allocation.
+	  Code reorganization for a more accurate cost function.
 
 2011-03-09 Philipp Klaus Krause <pkk AT spth.de>
 
