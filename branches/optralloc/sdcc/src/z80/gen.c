@@ -285,7 +285,7 @@ void z80_init_asmops(void)
 }
 
 static bool
-isLastUse (iCode *ic, operand *op)
+isLastUse (const iCode *ic, operand *op)
 {
   bitVect *uses = bitVectCopy (OP_USES (op));
 
@@ -328,7 +328,7 @@ _getTempPairName(void)
 }
 
 static bool
-isPairInUse (PAIR_ID id, iCode *ic)
+isPairInUse (PAIR_ID id, const iCode *ic)
 {
   if (id == PAIR_DE)
     {
@@ -346,7 +346,7 @@ isPairInUse (PAIR_ID id, iCode *ic)
 }
 
 static bool
-isPairInUseNotInRet(PAIR_ID id, iCode *ic)
+isPairInUseNotInRet(PAIR_ID id, const iCode *ic)
 {
   bitVect *rInUse;
 
@@ -364,7 +364,7 @@ isPairInUseNotInRet(PAIR_ID id, iCode *ic)
 }
 
 static PAIR_ID
-getFreePairId (iCode *ic)
+getFreePairId (const iCode *ic)
 {
   if (!isPairInUse (PAIR_BC, ic))
     {
@@ -454,9 +454,15 @@ _vemit2 (const char *szFormat, va_list ap)
   dbuf_destroy(&dbuf);
 }
 
+extern bool regalloc_dry_run;
+extern unsigned char regalloc_dry_run_cost; 
+
 static void
 emit2 (const char *szFormat,...)
 {
+  if(regalloc_dry_run)
+    return;
+
   va_list ap;
 
   va_start (ap, szFormat);
@@ -469,6 +475,8 @@ emit2 (const char *szFormat,...)
 static void
 emitDebug (const char *szFormat,...)
 {
+  if(regalloc_dry_run)
+    return;
   if (!options.verboseAsm)
     return;
   if (!DISABLE_DEBUG)
@@ -483,13 +491,27 @@ emitDebug (const char *szFormat,...)
     }
 }
 
-extern bool regalloc_dry_run;
-extern unsigned char regalloc_dry_run_size; 
+unsigned char emit3Cost(enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
+{
+  switch(inst)
+    {
+    case CPL:
+      return(1);
+    case LD:
+      break;
+    default:
+      wassertl(0, "Tried get cost for unknown instruction");
+    }
+  return(0);
+}
 
 static void
 emit3 (enum asminst inst, asmop *op1, asmop *op2)
 {
   emitDebug(";emit3 start");
+  
+  if(regalloc_dry_run)
+    regalloc_dry_run_cost += emit3Cost(inst, op1, 0, op2, 0);
   
   if(!op1)
     emit2("%s", asminstnames[inst]);
@@ -504,6 +526,10 @@ static void
 emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
 {
   emitDebug(";emit3_o start");
+  
+  if(regalloc_dry_run)
+    regalloc_dry_run_cost += emit3Cost(inst, op1, offset1, op2, offset2);
+    
   if(!op1)
     emit2("%s", asminstnames[inst]);
   else if(!op2)
@@ -855,7 +881,7 @@ newAsmop (short type)
 /* aopForSym - for a true symbol                                   */
 /*-----------------------------------------------------------------*/
 static asmop *
-aopForSym (iCode * ic, symbol * sym, bool result, bool requires_a)
+aopForSym (const iCode * ic, symbol * sym, bool result, bool requires_a)
 {
   asmop *aop;
   memmap *space;
@@ -1101,7 +1127,7 @@ sameRegs (asmop * aop1, asmop * aop2)
 /* aopOp - allocates an asmop for an operand  :                    */
 /*-----------------------------------------------------------------*/
 static void
-aopOp (operand * op, iCode * ic, bool result, bool requires_a)
+aopOp (operand *op, const iCode *ic, bool result, bool requires_a)
 {
   asmop *aop;
   symbol *sym;
@@ -1260,7 +1286,7 @@ aopOp (operand * op, iCode * ic, bool result, bool requires_a)
 /* freeAsmop - free up the asmop given to an operand               */
 /*----------------------------------------------------------------*/
 static void
-freeAsmop (operand * op, asmop * aaop, iCode * ic)
+freeAsmop (operand *op, asmop *aaop, const iCode *ic)
 {
   asmop *aop;
 
@@ -1557,7 +1583,7 @@ adjusted:
 }
 
 static PAIR_ID
-makeFreePairId (iCode *ic, bool *pisUsed)
+makeFreePairId (const iCode *ic, bool *pisUsed)
 {
   *pisUsed = FALSE;
 
@@ -1585,7 +1611,7 @@ makeFreePairId (iCode *ic, bool *pisUsed)
 }
 
 static void
-fetchPairLong (PAIR_ID pairId, asmop *aop, iCode *ic, int offset)
+fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
 {
     emitDebug(";fetchPairLong");
 
@@ -2441,7 +2467,7 @@ _toBoolean (operand * oper)
 /* genNot - generate code for ! operation                          */
 /*-----------------------------------------------------------------*/
 static void
-genNot (iCode * ic)
+genNot (const iCode * ic)
 {
   operand *left = IC_LEFT(ic);
   operand *result = IC_RESULT(ic);
@@ -2482,7 +2508,7 @@ release:
 /* genCpl - generate code for complement                           */
 /*-----------------------------------------------------------------*/
 static void
-genCpl (iCode * ic)
+genCpl (const iCode *ic)
 {
   int offset = 0;
   int size;
@@ -2514,7 +2540,7 @@ genCpl (iCode * ic)
 }
 
 static void
-_gbz80_emitAddSubLongLong (iCode *ic, asmop *left, asmop *right, bool isAdd)
+_gbz80_emitAddSubLongLong (const iCode *ic, asmop *left, asmop *right, bool isAdd)
 {
   /* Logic:
        ld de,right.lw
@@ -2561,7 +2587,7 @@ _gbz80_emitAddSubLongLong (iCode *ic, asmop *left, asmop *right, bool isAdd)
 }
 
 static void
-_gbz80_emitAddSubLong (iCode *ic, bool isAdd)
+_gbz80_emitAddSubLong (const iCode *ic, bool isAdd)
 {
   _gbz80_emitAddSubLongLong (ic, AOP (IC_LEFT (ic)), AOP (IC_RIGHT (ic)), isAdd);
 }
@@ -2599,7 +2625,7 @@ genUminusFloat (operand * op, operand * result)
 /* genUminus - unary minus code generation                         */
 /*-----------------------------------------------------------------*/
 static void
-genUminus (iCode * ic)
+genUminus (const iCode *ic)
 {
   int offset, size;
   sym_link *optype, *rtype;
@@ -2728,7 +2754,7 @@ _restoreRegsAfterCall(void)
 }
 
 static void
-_saveRegsForCall(iCode *ic, int sendSetSize)
+_saveRegsForCall(const iCode *ic, int sendSetSize)
 {
   /* Rules:
       o Stack parameters are pushed before this function enters
@@ -2787,7 +2813,7 @@ _saveRegsForCall(iCode *ic, int sendSetSize)
 /* genIpush - genrate code for pushing this gets a little complex  */
 /*-----------------------------------------------------------------*/
 static void
-genIpush (iCode * ic)
+genIpush (const iCode * ic)
 {
   int size, offset = 0;
   const char *l;
@@ -2894,7 +2920,7 @@ release:
 /* genIpop - recover the registers: can happen only for spilling   */
 /*-----------------------------------------------------------------*/
 static void
-genIpop (iCode * ic)
+genIpop (const iCode * ic)
 {
   int size, offset;
 
@@ -2998,7 +3024,7 @@ _opUsesPair (operand * op, iCode * ic, PAIR_ID pairId)
 /** Emit the code for a call statement
  */
 static void
-emitCall (iCode * ic, bool ispcall)
+emitCall (const iCode *ic, bool ispcall)
 {
   bool bInRet, cInRet, dInRet, eInRet;
   sym_link *dtype = operandType (IC_LEFT (ic));
@@ -3253,7 +3279,7 @@ emitCall (iCode * ic, bool ispcall)
 /* genCall - generates a call statement                            */
 /*-----------------------------------------------------------------*/
 static void
-genCall (iCode * ic)
+genCall (const iCode *ic)
 {
   emitCall (ic, FALSE);
 }
@@ -3262,7 +3288,7 @@ genCall (iCode * ic)
 /* genPcall - generates a call by pointer statement                */
 /*-----------------------------------------------------------------*/
 static void
-genPcall (iCode * ic)
+genPcall (const iCode *ic)
 {
   emitCall (ic, TRUE);
 }
@@ -3271,14 +3297,14 @@ genPcall (iCode * ic)
 /* resultRemat - result  is rematerializable                       */
 /*-----------------------------------------------------------------*/
 static int
-resultRemat (iCode * ic)
+resultRemat (const iCode *ic)
 {
   if (SKIP_IC (ic) || ic->op == IFX)
     return 0;
 
   if (IC_RESULT (ic) && IS_ITEMP (IC_RESULT (ic)))
     {
-      symbol *sym = OP_SYMBOL (IC_RESULT (ic));
+      const symbol *sym = OP_SYMBOL_CONST (IC_RESULT (ic));
       if (sym->remat && !POINTER_SET (ic) && sym->isspilt)
         return 1;
     }
@@ -3292,7 +3318,7 @@ extern set *publics;
 /* genFunction - generated code for function entry                 */
 /*-----------------------------------------------------------------*/
 static void
-genFunction (iCode * ic)
+genFunction (const iCode * ic)
 {
   bool stackParm;
 
@@ -3604,7 +3630,7 @@ genEndFunction (iCode * ic)
 /* genRet - generate code for return statement                     */
 /*-----------------------------------------------------------------*/
 static void
-genRet (iCode * ic)
+genRet (const iCode *ic)
 {
     const char *l;
   /* Errk.  This is a hack until I can figure out how
@@ -3661,7 +3687,7 @@ jumpret:
 /* genLabel - generates a label                                    */
 /*-----------------------------------------------------------------*/
 static void
-genLabel (iCode * ic)
+genLabel (const iCode *ic)
 {
   /* special case never generate */
   if (IC_LABEL (ic) == entryLabel)
@@ -3674,7 +3700,7 @@ genLabel (iCode * ic)
 /* genGoto - generates a ljmp                                      */
 /*-----------------------------------------------------------------*/
 static void
-genGoto (iCode * ic)
+genGoto (const iCode *ic)
 {
   emit2 ("jp !tlabel", IC_LABEL (ic)->key + 100);
 }
@@ -3683,7 +3709,7 @@ genGoto (iCode * ic)
 /* genPlusIncr :- does addition with increment if possible         */
 /*-----------------------------------------------------------------*/
 static bool
-genPlusIncr (iCode * ic)
+genPlusIncr (const iCode *ic)
 {
   unsigned int icount;
   unsigned int size = getDataSize (IC_RESULT (ic));
@@ -3879,7 +3905,7 @@ shiftIntoPair (int idx, asmop *aop)
 }
 
 static void
-setupToPreserveCarry (iCode * ic)
+setupToPreserveCarry (const iCode *ic)
 {
   asmop *left   = AOP (IC_LEFT (ic));
   asmop *right  = AOP (IC_RIGHT (ic));
@@ -4204,7 +4230,7 @@ release:
 /* genMinusDec :- does subtraction with deccrement if possible     */
 /*-----------------------------------------------------------------*/
 static bool
-genMinusDec (iCode * ic)
+genMinusDec (const iCode * ic)
 {
   unsigned int icount;
   unsigned int size = getDataSize (IC_RESULT (ic));
@@ -4277,7 +4303,7 @@ genMinusDec (iCode * ic)
 /* genMinus - generates code for subtraction                       */
 /*-----------------------------------------------------------------*/
 static void
-genMinus (iCode * ic)
+genMinus (const iCode * ic)
 {
   int size, offset = 0;
   unsigned long lit = 0L;
@@ -4412,7 +4438,7 @@ release:
 /* genMultChar - generates code for unsigned 8x8 multiplication    */
 /*-----------------------------------------------------------------*/
 static void
-genMultOneChar (iCode * ic)
+genMultOneChar (const iCode * ic)
 {
   symbol *tlbl1, *tlbl2;
   bool savedB = FALSE;
@@ -4505,7 +4531,7 @@ genMultOneChar (iCode * ic)
 /* genMult - generates code for multiplication                     */
 /*-----------------------------------------------------------------*/
 static void
-genMult (iCode * ic)
+genMult (iCode *ic)
 {
   int val;
   int count, i;
@@ -4627,7 +4653,7 @@ genMult (iCode * ic)
 /* genDiv - generates code for division                            */
 /*-----------------------------------------------------------------*/
 static void
-genDiv (iCode * ic)
+genDiv (const iCode *ic)
 {
   /* Shouldn't occur - all done through function calls */
   wassertl (0, "Division is handled through support function calls");
@@ -4637,7 +4663,7 @@ genDiv (iCode * ic)
 /* genMod - generates code for division                            */
 /*-----------------------------------------------------------------*/
 static void
-genMod (iCode * ic)
+genMod (const iCode *ic)
 {
   /* Shouldn't occur - all done through function calls */
   wassert (0);
@@ -4647,7 +4673,7 @@ genMod (iCode * ic)
 /* genIfxJump :- will create a jump depending on the ifx           */
 /*-----------------------------------------------------------------*/
 static void
-genIfxJump (iCode * ic, char *jval)
+genIfxJump (iCode *ic, char *jval)
 {
   symbol *jlbl;
   const char *inst;
@@ -5174,7 +5200,7 @@ release:
 /* genCmpGt :- greater than comparison                             */
 /*-----------------------------------------------------------------*/
 static void
-genCmpGt (iCode * ic, iCode * ifx)
+genCmpGt (iCode *ic, iCode *ifx)
 {
   operand *left, *right, *result;
   sym_link *letype, *retype;
@@ -5206,7 +5232,7 @@ genCmpGt (iCode * ic, iCode * ifx)
 /* genCmpLt - less than comparisons                                */
 /*-----------------------------------------------------------------*/
 static void
-genCmpLt (iCode * ic, iCode * ifx)
+genCmpLt (iCode *ic, iCode *ifx)
 {
   operand *left, *right, *result;
   sym_link *letype, *retype;
@@ -5469,7 +5495,7 @@ release:
 /* ifxForOp - returns the icode containing the ifx for operand     */
 /*-----------------------------------------------------------------*/
 static iCode *
-ifxForOp (operand * op, iCode * ic)
+ifxForOp (operand *op, const iCode *ic)
 {
   /* if true symbol then needs to be assigned */
   if (IS_TRUE_SYMOP (op))
@@ -5491,7 +5517,7 @@ ifxForOp (operand * op, iCode * ic)
 /* genAndOp - for && operation                                     */
 /*-----------------------------------------------------------------*/
 static void
-genAndOp (iCode * ic)
+genAndOp (const iCode *ic)
 {
   operand *left, *right, *result;
   symbol *tlbl;
@@ -5528,7 +5554,7 @@ genAndOp (iCode * ic)
 /* genOrOp - for || operation                                      */
 /*-----------------------------------------------------------------*/
 static void
-genOrOp (iCode * ic)
+genOrOp (const iCode *ic)
 {
   operand *left, *right, *result;
   symbol *tlbl;
@@ -5614,7 +5640,7 @@ jmpTrueOrFalse (iCode * ic, symbol * tlbl)
 /* genAnd  - code for and                                          */
 /*-----------------------------------------------------------------*/
 static void
-genAnd (iCode * ic, iCode * ifx)
+genAnd (const iCode *ic, iCode * ifx)
 {
   operand *left, *right, *result;
   int size, offset = 0;
@@ -5814,7 +5840,7 @@ release:
 /* genOr  - code for or                                            */
 /*-----------------------------------------------------------------*/
 static void
-genOr (iCode * ic, iCode * ifx)
+genOr (const iCode *ic, iCode * ifx)
 {
   operand *left, *right, *result;
   int size, offset = 0;
@@ -5990,7 +6016,7 @@ release:
 /* genXor - code for xclusive or                                   */
 /*-----------------------------------------------------------------*/
 static void
-genXor (iCode * ic, iCode * ifx)
+genXor (const iCode *ic, iCode * ifx)
 {
   operand *left, *right, *result;
   int size, offset = 0;
@@ -6158,7 +6184,7 @@ release:
 /* genInline - write the inline code out                           */
 /*-----------------------------------------------------------------*/
 static void
-genInline (iCode * ic)
+genInline (const iCode *ic)
 {
   char *buffer, *bp, *bp1;
   bool inComment = FALSE;
@@ -6221,7 +6247,7 @@ genInline (iCode * ic)
 /* genRRC - rotate right with carry                                */
 /*-----------------------------------------------------------------*/
 static void
-genRRC (iCode * ic)
+genRRC (const iCode *ic)
 {
   wassert (0);
 }
@@ -6230,7 +6256,7 @@ genRRC (iCode * ic)
 /* genRLC - generate code for rotate left with carry               */
 /*-----------------------------------------------------------------*/
 static void
-genRLC (iCode * ic)
+genRLC (const iCode *ic)
 {
   wassert (0);
 }
@@ -6239,7 +6265,7 @@ genRLC (iCode * ic)
 /* genGetHbit - generates code get highest order bit               */
 /*-----------------------------------------------------------------*/
 static void
-genGetHbit (iCode * ic)
+genGetHbit (const iCode *ic)
 {
   operand *left, *result;
   left = IC_LEFT (ic);
@@ -6249,7 +6275,7 @@ genGetHbit (iCode * ic)
   aopOp (result, ic, FALSE, FALSE);
 
   /* get the highest order byte into a */
-  emit2("ld a,%s", aopGet (AOP (left), AOP_SIZE (left) - 1, FALSE));
+  _moveA3(AOP (left), AOP_SIZE (left) - 1);
 
   if (AOP_TYPE (result) == AOP_CRY)
     {
@@ -6272,7 +6298,7 @@ genGetHbit (iCode * ic)
 /* genGetAbit - generates code get a single bit                    */
 /*-----------------------------------------------------------------*/
 static void
-genGetAbit (iCode * ic)
+genGetAbit (const iCode *ic)
 {
   wassert (0);
 }
@@ -6633,10 +6659,10 @@ genlshOne (operand * result, operand * left, int shCount)
 /* genLeftShiftLiteral - left shifting by known count              */
 /*-----------------------------------------------------------------*/
 static void
-genLeftShiftLiteral (operand * left,
-                     operand * right,
-                     operand * result,
-                     iCode * ic)
+genLeftShiftLiteral (operand *left,
+                     operand *right,
+                     operand *result,
+                     const iCode *ic)
 {
   int shCount = (int) ulFromVal (AOP (right)->aopu.aop_lit);
   int size;
@@ -6682,7 +6708,7 @@ genLeftShiftLiteral (operand * left,
 /* genLeftShift - generates code for left shifting                 */
 /*-----------------------------------------------------------------*/
 static void
-genLeftShift (iCode * ic)
+genLeftShift (const iCode *ic)
 {
   int size, offset;
   const char *l;
@@ -6889,10 +6915,10 @@ genrshTwo (operand * result, operand * left,
 /* genRightShiftLiteral - right shifting by known count              */
 /*-----------------------------------------------------------------*/
 static void
-genRightShiftLiteral (operand * left,
-                      operand * right,
-                      operand * result,
-                      iCode * ic,
+genRightShiftLiteral (operand *left,
+                      operand *right,
+                      operand *result,
+                      const iCode *ic,
                       int sign)
 {
   int shCount = (int) ulFromVal (AOP (right)->aopu.aop_lit);
@@ -6945,7 +6971,7 @@ genRightShiftLiteral (operand * left,
 /* genRightShift - generate code for right shifting                */
 /*-----------------------------------------------------------------*/
 static void
-genRightShift (iCode * ic)
+genRightShift (const iCode *ic)
 {
   operand *right, *left, *result;
   sym_link *retype;
@@ -7160,7 +7186,7 @@ finish:
 /*-----------------------------------------------------------------*/
 static void
 genGenPointerGet (operand * left,
-                  operand * result, iCode * ic)
+                  operand * result, const iCode *ic)
 {
   int size, offset;
   sym_link *retype = getSpec (operandType (result));
@@ -7294,7 +7320,7 @@ release:
 /* genPointerGet - generate code for pointer get                   */
 /*-----------------------------------------------------------------*/
 static void
-genPointerGet (iCode * ic)
+genPointerGet (const iCode *ic)
 {
   operand *left, *result;
   sym_link *type, *etype;
@@ -7669,7 +7695,7 @@ genIfx (iCode * ic, iCode * popIc)
 /* genAddrOf - generates code for address of                       */
 /*-----------------------------------------------------------------*/
 static void
-genAddrOf (iCode * ic)
+genAddrOf (const iCode *ic)
 {
   symbol *sym = OP_SYMBOL (IC_LEFT (ic));
 
@@ -7865,7 +7891,7 @@ release:
 /* genJumpTab - genrates code for jump table                       */
 /*-----------------------------------------------------------------*/
 static void
-genJumpTab (iCode * ic)
+genJumpTab (const iCode *ic)
 {
   symbol *jtab;
   const char *l;
@@ -7898,7 +7924,7 @@ genJumpTab (iCode * ic)
 /* genCast - gen code for casting                                  */
 /*-----------------------------------------------------------------*/
 static void
-genCast (iCode * ic)
+genCast (const iCode *ic)
 {
   operand *result = IC_RESULT (ic);
   sym_link *rtype = operandType (IC_RIGHT (ic));
@@ -8014,7 +8040,7 @@ release:
 /* genReceive - generate code for a receive iCode                  */
 /*-----------------------------------------------------------------*/
 static void
-genReceive (iCode * ic)
+genReceive (const iCode *ic)
 {
   if (isOperandInFarSpace (IC_RESULT (ic)) &&
       (OP_SYMBOL (IC_RESULT (ic))->isspilt ||
@@ -8043,7 +8069,7 @@ genReceive (iCode * ic)
 /* genDummyRead - generate code for dummy read of volatiles        */
 /*-----------------------------------------------------------------*/
 static void
-genDummyRead (iCode * ic)
+genDummyRead (const iCode *ic)
 {
   operand *op;
   int size, offset;
@@ -8089,7 +8115,7 @@ genDummyRead (iCode * ic)
 /* genCritical - generate code for start of a critical sequence    */
 /*-----------------------------------------------------------------*/
 static void
-genCritical (iCode *ic)
+genCritical (const iCode *ic)
 {
   symbol *tlbl = newiTempLabel (NULL);
 
@@ -8127,7 +8153,7 @@ genCritical (iCode *ic)
 /* genEndCritical - generate code for end of a critical sequence   */
 /*-----------------------------------------------------------------*/
 static void
-genEndCritical (iCode *ic)
+genEndCritical (const iCode *ic)
 {
   symbol *tlbl = newiTempLabel (NULL);
 
@@ -8429,7 +8455,7 @@ _swap (PAIR_ID one, PAIR_ID two)
 }
 
 static int
-setupForMemcpy (iCode *ic, int nparams, operand **pparams)
+setupForMemcpy (const iCode *ic, int nparams, operand **pparams)
 {
   PAIR_ID ids[NUM_PAIRS][NUM_PAIRS];
   PAIR_ID dest[3] = {
@@ -8556,7 +8582,7 @@ setupForMemcpy (iCode *ic, int nparams, operand **pparams)
 }
 
 static void
-genBuiltInMemcpy (iCode *ic, int nParams, operand **pparams)
+genBuiltInMemcpy (const iCode *ic, int nParams, operand **pparams)
 {
   operand *from, *to, *count;
 
@@ -8612,7 +8638,7 @@ genBuiltIn (iCode *ic)
 /*-------------------------------------------------------------------------------------*/
 /* genZ80Code - generate code for Z80 based controllers for a single iCode instruction */
 /*-------------------------------------------------------------------------------------*/
-void genZ80iCode (iCode * ic)
+void genZ80iCode (iCode *ic)
 {
   _G.current_iCode = ic;
 

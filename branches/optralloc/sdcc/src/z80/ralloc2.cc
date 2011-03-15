@@ -24,7 +24,8 @@
 extern "C"
 {
   bool regalloc_dry_run;
-  unsigned char regalloc_dry_run_size; 
+  unsigned char regalloc_dry_run_cost;
+  void genZ80iCode (iCode * ic);
 };
 
 #define REG_C 0
@@ -669,11 +670,48 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   return(false);
 }
 
+template <class G_t, class I_t>
+void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  if(!o || !IS_SYMOP(o))
+    return;
+  symbol *sym = OP_SYMBOL(o);
+  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+    {
+      var_t v = oi->second;
+      if(a.global[v] >= 0)
+        { 
+          if(a.global[v] != REG_A || !OPTRALLOC_A)
+            sym->regs[I[v].byte] = regsZ80 + a.global[v];
+          else
+            {
+              sym->accuse = ACCUSE_A;
+              sym->nRegs = 0;
+            }
+        }
+      else
+        spillThis(sym);
+    }
+}
+
+template <class G_t, class I_t>
+void assign_operands_for_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+  if(ic->key == IFX)
+    assign_operand_for_cost(IC_COND(ic), a, i, G, I);
+  else if(ic->key == JUMPTABLE)
+    assign_operand_for_cost(IC_JTCOND(ic), a, i, G, I);
+  else
+    ;
+}
+
 // Cost function.
 template <class G_t, class I_t>
 float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
-  const iCode *ic = G[i].ic;
+  iCode *ic = G[i].ic;
 
   if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
@@ -688,7 +726,11 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
     case INLINEASM:
       return(0.0f);
     // Exact cost
-
+    /*case '~':
+      regalloc_dry_run_cost = 0;
+      assign_operands_for_cost(a, i, G, I);
+      genZ80iCode(ic);
+      return(regalloc_dry_run_cost);*/
     // Inexact cost
     case '=':
     case CAST:
@@ -861,7 +903,7 @@ void z80_ralloc2_cc(ebbIndex *ebbi)
 {
   //std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
   
-  reagalloc_dry_run = true;	// Tell code generation to not really generate code yet.
+  regalloc_dry_run = true;	// Tell code generation to not really generate code yet.
 
   cfg_t control_flow_graph;
 
