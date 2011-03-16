@@ -58,7 +58,7 @@ typedef enum
     AOP_EXSTK,
     /* Is referenced by a pointer in a register pair. */
     AOP_PAIRPTR,
-    /* Read as 0, discard writes */
+    /* Read undefined, discard writes */
     AOP_DUMMY
   }
 AOP_TYPE;

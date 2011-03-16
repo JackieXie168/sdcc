@@ -102,6 +102,36 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
   return(c);
 }
 
+// Chek that the operand is either fully in registers or fully in memory.
+template <class G_t, class I_t>
+bool operand_sane(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  if(!o || !IS_SYMOP(o))
+    return(true);
+  
+  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
+  
+  if(oi == oi_end)
+    return(true);
+  
+  // In registers.
+  if(a.local.find(oi->second) != a.local.end())
+    {
+      while(++oi != oi_end)
+        if(a.local.find(oi->second) == a.local.end())
+          return(false);
+    }
+  else
+    {
+       while(++oi != oi_end)
+        if(a.local.find(oi->second) != a.local.end())
+          return(false);
+    }
+    
+  return(true);
+}
+
 template <class G_t, class I_t> static float
 default_instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
@@ -114,6 +144,13 @@ default_instruction_cost(const assignment &a, unsigned short int i, const G_t &G
   c += default_operand_cost(IC_RIGHT(ic), a, i, G, I);
 
   return(c);
+}
+
+template <class G_t, class I_t> bool
+inst_sane(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+  return(operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_RESULT(ic), a, i, G, I));
 }
 
 // Treat assignment separately to handle coalescing.
@@ -427,15 +464,12 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
     return(true);	// Register A not in use.
 
   //if(i == 15) std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
-  if(I[ia.registers[REG_A][1]].byte)
-    {
-      //if(i == 15) std::cout << "Byte: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
-      return(false);
-    }
+  if(I[ia.registers[REG_A][1]].size > 1)
+    return(false);
 
   // Check if the result of this instruction is placed in A.
   bool result_in_A = operand_in_reg(IC_RESULT(ic), REG_A, ia, i, G);
-
+  
   // Check if an input of this instruction is placed in A.
   bool input_in_A;
   switch(ic->op)
@@ -685,10 +719,7 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
           if(a.global[v] != REG_A || !OPTRALLOC_A)
             sym->regs[I[v].byte] = regsZ80 + a.global[v];
           else
-            {
               sym->accuse = ACCUSE_A;
-              /*sym->nRegs = 0*/;
-            }
         }
       else
         sym->isspilt = true;
@@ -717,6 +748,9 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 {
   iCode *ic = G[i].ic;
 
+  if(!inst_sane(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
   if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
@@ -732,11 +766,13 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
       return(0.0f);
     // Exact cost
     //case '!':
-    /*case '~':
+    //case '~':
+    //case LEFT_OP:
+    //case RIGHT_OP:
       regalloc_dry_run_cost = 0;
       assign_operands_for_cost(a, i, G, I);
       genZ80iCode(ic);
-      return(regalloc_dry_run_cost);*/
+      return(regalloc_dry_run_cost);
     // Inexact cost
     case '=':
     case CAST:
@@ -899,11 +935,13 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
             {
               sym->accuse = ACCUSE_A;
               sym->nRegs = 0;
+              sym->regs[0] = 0;
             }
         }
       else
         {
-          //sym->nRegs = 0;
+          for(unsigned int i = 0; i < sym->nRegs; i++)
+            sym->regs[i] = 0;
           spillThis(sym);
         }
     }
