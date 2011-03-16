@@ -508,11 +508,11 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
   if(input_in_A && (result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end()))
     {
       if(ic->op != IFX &&
-          !((ic->op == RIGHT_OP || ic->op == LEFT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))) &&
-          !(ic->op == '=' && !(IY_RESERVED && POINTER_SET(ic))) &&
-          !IS_BITWISE_OP (ic) &&
-          !(ic->op == '*' && IS_ITEMP(IC_LEFT(ic)) && IS_ITEMP(IC_RIGHT(ic))) &&
-          !((ic->op == '-' || ic->op == '+' || ic->op == EQ_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
+        !((ic->op == RIGHT_OP || ic->op == LEFT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))) &&
+        !(ic->op == '=' && !(IY_RESERVED && POINTER_SET(ic))) &&
+        !IS_BITWISE_OP (ic) &&
+        !(ic->op == '*' && IS_ITEMP(IC_LEFT(ic)) && IS_ITEMP(IC_RIGHT(ic))) &&
+        !((ic->op == '-' || ic->op == '+' || ic->op == EQ_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
         {
           //if(i == 15) std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
           return(false);
@@ -520,8 +520,8 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
     }
   // A is used, and has to be preserved for later use.
   else if(input_in_A &&
-          ic->op != IFX &&
-          ic->op != JUMPTABLE)
+         ic->op != IFX &&
+         ic->op != JUMPTABLE)
     {
       //if(i == 15) std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
       return(false);
@@ -765,14 +765,18 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
     case INLINEASM:
       return(0.0f);
     // Exact cost
-    //case '!':
-    //case '~':
+    /*case '!':
+    case '~':
+    case UNARYMINUS:
+    case GETHBIT:
     //case LEFT_OP:
-    //case RIGHT_OP:
+    case RIGHT_OP:
+    //case '=':
+    case CAST:
       regalloc_dry_run_cost = 0;
       assign_operands_for_cost(a, i, G, I);
       genZ80iCode(ic);
-      return(regalloc_dry_run_cost);
+      return(regalloc_dry_run_cost);*/
     // Inexact cost
     case '=':
     case CAST:
