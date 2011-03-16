@@ -33,7 +33,7 @@ extern Z80_OPTS z80_opts;
 #define IS_Z80 (z80_opts.sub == SUB_Z80)
 #define IY_RESERVED (z80_opts.reserveIY)
 #define OPTRALLOC_ALL (z80_opts.optralloc_all)
-
+#undef OPTRALLOC_ALL
 #define OPTRALLOC_ALL 1
 
 #define OPTRALLOC_HL (z80_opts.optralloc_all || z80_opts.optralloc_hl)
