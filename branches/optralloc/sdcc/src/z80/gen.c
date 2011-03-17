@@ -7856,7 +7856,7 @@ genAddrOf (const iCode *ic)
       else
         {
           emit2 ("ld hl,!hashedstr", sym->rname);
-          regalloc_dry_run_Cost += 3;
+          regalloc_dry_run_cost += 3;
         }
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
     }
