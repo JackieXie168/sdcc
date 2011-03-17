@@ -4,6 +4,8 @@
 	  fixed empty statement warnings
 	* sdas/asxxsrc/asmain.c:
 	  fixed bug #3195019: sdcc generates .rel instead of .o
+	* src/Makefile.in:
+	  removed -O2 from CPPFLAFS, don't use CPPFLAGS when compiling
 
 2011-03-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

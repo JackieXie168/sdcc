@@ -19,7 +19,7 @@ LIBS		= -lm @LIBS@
 
 CFLAGS          = @CFLAGS@ @WALL_FLAG@
 CXXFLAGS        = @CXXFLAGS@ @WALL_FLAG@
-CPPFLAGS	+= -I$(srcdir) -O2
+CPPFLAGS	+= -I$(srcdir)
 LDFLAGS		= @LDFLAGS@
 
 ifdef SDCC_SUB_VERSION
@@ -110,10 +110,10 @@ $(TARGET): $(SLIBOBJS) $(OBJECTS) $(PORT_LIBS)
 	$(CXX) $(LDFLAGS) -o $@ $(SLIBOBJS) $(OBJECTS) $(PORT_LIBS) $(LIBDIRS) $(LIBS)
 
 .c.o:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(SLIBOBJS):%.o:$(SLIB)/%.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 reswords.h: reswords.gperf Makefile
 	gperf -o -k1,2,4 -t -C -N is_reserved_word $< > $@
