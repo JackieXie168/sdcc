@@ -760,26 +760,50 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   switch(ic->op)
     {
     // Register assignment doesn't matter for these
+    /*case FUNCTION:
+    case ENDFUNCTION:
     case LABEL:
     case GOTO:
     case INLINEASM:
       return(0.0f);
     // Exact cost
-    /*case '!':
+    case '!':
     case '~':
     case UNARYMINUS:
+    //case IPUSH:
+    //case IPOP:
+    //case CALL:
+    //case PCALL:
+    //case RETURN:
+    //case '+':
+    case '-':
+    //case '*':
+    //case '>':
+    //case '<':
+    //case EQ_OP:
     case AND_OP:
     case OR_OP:
-    //case GETHBIT:
+    //case '^':
+    //case '|':
+    //case BITWISEAND:
+    case GETHBIT:
     //case LEFT_OP:
     case RIGHT_OP:
+    case GET_VALUE_AT_ADDRESS:
     //case '=':
+    //case IFX:
+    //case ADDRESS_OF:
     case JUMPTABLE:
-    case CAST:*/
+    case CAST:
+    //case RECEIVE:
+    //case SEND:
+    //case DUMMY_READ_VOLATILE:
+    case CRITICAL:
+    case ENDCRITICAL:
       regalloc_dry_run_cost = 0;
       assign_operands_for_cost(a, i, G, I);
       genZ80iCode(ic);
-      return(regalloc_dry_run_cost);
+      return(regalloc_dry_run_cost);*/
     // Inexact cost
     case '=':
     case CAST:
