@@ -418,7 +418,7 @@ isPairInUseNotInRet(PAIR_ID id, const iCode *ic)
 }
 
 static PAIR_ID
-getFreePairId (const iCode *ic)
+getFreePairId (const iCode *ic)	// Todo: Cost
 {
   if (!isPairInUse (PAIR_BC, ic))
     {
@@ -732,6 +732,7 @@ unsigned char op8_cost(asmop *op2)
     case AOP_DUMMY:
       return(1);
     case AOP_IMMD:
+    case AOP_LIT:
     case AOP_SIMPLELIT:
       return(2);
     case AOP_STK:
@@ -1967,10 +1968,12 @@ setupPairFromSP (PAIR_ID id, int offset)
     {
       emit2 ("ld hl,!immedword", offset);
       emit2 ("add hl,sp");
+      regalloc_dry_run_cost += 4;
     }
   else
     {
-          emit2 ("!ldahlsp", offset);
+      emit2 ("!ldahlsp", offset);
+      regalloc_dry_run_cost += 4;	// Todo: More exact cost.
     }
 
   if (_G.preserveCarry)
@@ -3933,8 +3936,7 @@ genRet (const iCode *ic)
         {
           while (size--)
             {
-              const char *l; = aopGet (AOP (IC_LEFT (ic)), offset,
-                          FALSE);
+              const char *l = aopGet (AOP (IC_LEFT (ic)), offset, FALSE);
               if (strcmp (_fReturn[offset], l))
                 emit2 ("ld %s,%s", _fReturn[offset], l);
               offset++;
@@ -3987,8 +3989,6 @@ genPlusIncr (const iCode *ic)
   unsigned int size = getDataSize (IC_RESULT (ic));
   PAIR_ID resultId = getPairId (AOP (IC_RESULT (ic)));
 
-  wassert (!regalloc_dry_run);
-
   /* will try to generate an increment */
   /* if the right side is not a literal
      we cannot */
@@ -4016,6 +4016,7 @@ genPlusIncr (const iCode *ic)
                 {
                   fetchPair (freep, AOP (IC_RIGHT (ic)));
                   emit2 ("add hl,%s", _pairs[freep].name);
+                  regalloc_dry_run_cost += 1;
                   return TRUE;
                 }
             }
@@ -4023,6 +4024,7 @@ genPlusIncr (const iCode *ic)
             {
               fetchPair (resultId, AOP (IC_RIGHT (ic)));
               emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
+              regalloc_dry_run_cost += 1;
               return TRUE;
             }
         }
@@ -4038,6 +4040,7 @@ genPlusIncr (const iCode *ic)
       while (icount--)
         {
           emit2 ("inc %s", getPairName (AOP (IC_RESULT (ic))));
+          regalloc_dry_run_cost += 1;
         }
       return TRUE;
     }
@@ -4062,16 +4065,20 @@ genPlusIncr (const iCode *ic)
     {
       int offset = 0;
       symbol *tlbl = NULL;
-      tlbl = newiTempLabel (NULL);
+      if(!regalloc_dry_run)
+        tlbl = newiTempLabel (NULL);
       while (size--)
         {
-          emit2 ("inc %s", aopGet (AOP (IC_RESULT (ic)), offset++, FALSE));
+          emit3_o (A_INC, AOP (IC_RESULT (ic)), offset++, 0, 0);
           if (size)
             {
-              emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+              if(!regalloc_dry_run)
+                emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+              regalloc_dry_run_cost += 3;
             }
         }
-      AOP_TYPE (IC_LEFT (ic)) == AOP_HL ? emitLabel (tlbl->key + 100) : emitLabelNoSpill (tlbl->key + 100);
+      if(!regalloc_dry_run)	// Todo: Exact cost wrt. Spill.
+        AOP_TYPE (IC_LEFT (ic)) == AOP_HL ? emitLabel (tlbl->key + 100) : emitLabelNoSpill (tlbl->key + 100);
       return TRUE;
     }
 
@@ -4087,7 +4094,7 @@ genPlusIncr (const iCode *ic)
       aopPut3 (AOP (IC_RESULT (ic)), LSB, AOP (IC_LEFT (ic)), LSB);
       while (icount--)
         {
-          emit2 ("inc %s", aopGet (AOP (IC_RESULT (ic)), LSB, FALSE));
+          emit3_o (A_INC, AOP (IC_RESULT (ic)), LSB, 0, 0);
         }
       return TRUE;
     }
@@ -4098,9 +4105,7 @@ genPlusIncr (const iCode *ic)
   if (sameRegs (AOP (IC_LEFT (ic)), AOP (IC_RESULT (ic))))
     {
       while (icount--)
-        {
-          emit2 ("inc %s", aopGet (AOP (IC_LEFT (ic)), 0, FALSE));
-        }
+        emit3 (A_INC, AOP (IC_LEFT (ic)), 0);
       return TRUE;
     }
 
@@ -4232,8 +4237,6 @@ static void
 genPlus (iCode * ic)
 {
   int size, offset = 0;
-  
-  wassert(!regalloc_dry_run);
 
   /* special cases :- */
 
@@ -4295,6 +4298,7 @@ genPlus (iCode * ic)
           char buffer[100];
           sprintf (buffer, "#(%s + %s)", left, right);
           emit2 ("ld %s,%s", getPairName (AOP (IC_RESULT (ic))), buffer);
+          regalloc_dry_run_cost += 3; // Todo: More exact cost.
           goto release;
         }
     }
@@ -4310,23 +4314,27 @@ genPlus (iCode * ic)
       if (left == PAIR_HL && right != PAIR_INVALID)
         {
           emit2 ("add hl,%s", _pairs[right].name);
+          regalloc_dry_run_cost += 1; // Todo: More exact cost.
           goto release;
         }
       else if (right == PAIR_HL && left != PAIR_INVALID)
         {
           emit2 ("add hl,%s", _pairs[left].name);
+          regalloc_dry_run_cost += 1; // Todo: More exact cost.
           goto release;
         }
       else if (right != PAIR_INVALID && right != PAIR_HL)
         {
           fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
           emit2 ("add hl,%s", getPairName (AOP (IC_RIGHT (ic))));
+          regalloc_dry_run_cost += 1; // Todo: More exact cost.
           goto release;
         }
       else if (left != PAIR_INVALID && left != PAIR_HL)
         {
           fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
           emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
+          regalloc_dry_run_cost += 1; // Todo: More exact cost.
           goto release;
         }
       else
@@ -4339,6 +4347,7 @@ genPlus (iCode * ic)
     {
       fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
       emit2 ("add hl,%s", getPairName (AOP (IC_RIGHT (ic))));
+      regalloc_dry_run_cost += 1; // Todo: More exact cost.
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -4348,6 +4357,7 @@ genPlus (iCode * ic)
     {
       fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
       emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
+      regalloc_dry_run_cost += 1; // Todo: More exact cost.
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -4356,6 +4366,7 @@ genPlus (iCode * ic)
   if (isPair (AOP (IC_LEFT (ic))) && isPair (AOP (IC_RIGHT (ic))) && getPairId (AOP (IC_LEFT (ic))) == PAIR_HL)
    {
       emit2 ("add hl,%s", getPairName (AOP (IC_RIGHT (ic))));
+      regalloc_dry_run_cost += 1; // Todo: More exact cost.
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -4364,6 +4375,7 @@ genPlus (iCode * ic)
   if (isPair (AOP (IC_LEFT (ic))) && isPair (AOP (IC_RIGHT (ic))) && getPairId (AOP (IC_RIGHT (ic))) == PAIR_HL)
    {
       emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
+      regalloc_dry_run_cost += 1; // Todo: More exact cost.
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -4419,12 +4431,14 @@ genPlus (iCode * ic)
                 {
                   fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
                   emit2 ("add hl,bc");
+                  regalloc_dry_run_cost += 1;
                 }
               else
                 {
                   fetchPair (PAIR_DE, AOP (IC_LEFT (ic)));
                   fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
                   emit2 ("add hl,de");
+                  regalloc_dry_run_cost += 1;
                 }
               commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
               goto release;
@@ -4447,8 +4461,8 @@ genPlus (iCode * ic)
   if(size == 2)
     {
       _moveA3 (AOP (IC_LEFT (ic)), 0);
-      emit2 ("add a,%s", aopGet (AOP (IC_RIGHT (ic)), 0, FALSE));
-      if(AOP (IC_RESULT (ic))->type == AOP_HL || strcmp (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), aopGet (AOP (IC_LEFT (ic)), 1, FALSE)))
+      emit3 (A_ADD, ASMOP_A, AOP (IC_RIGHT (ic)));
+      if(AOP (IC_RESULT (ic))->type == AOP_HL || !regalloc_dry_run && strcmp (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), aopGet (AOP (IC_LEFT (ic)), 1, FALSE))) // Todo: More exact cost.
         {
           _moveFromA (AOP (IC_RESULT (ic)), 0);
           _moveA3 (AOP (IC_LEFT (ic)), 1);
@@ -4456,8 +4470,8 @@ genPlus (iCode * ic)
       else
         {
           emitDebug ("; Addition result is in same register as operand of next addition.");
-          if(strchr (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), 'c') ||
-             strchr (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), 'b') )
+          if(!regalloc_dry_run && strchr (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), 'c') || // Todo: More exact cost.
+             !regalloc_dry_run && strchr (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), 'b') )
             {
               emit2 ("push de");
               emit2 ("ld e, a");
@@ -4472,16 +4486,19 @@ genPlus (iCode * ic)
             {
               emit2 ("push bc");
               emit2 ("ld c, a");
-              emit2 ("ld a, %s", aopGet (AOP (IC_LEFT (ic)), 1, FALSE));
+              regalloc_dry_run_cost += 2;
+              _moveA3 (AOP (IC_LEFT (ic)), 1);
               emit2 ("ld b, a");
               emit2 ("ld a, c");
-              emit2 ("ld %s, a", aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
+              regalloc_dry_run_cost += 2;
+              _moveFromA (AOP (IC_RESULT (ic)), 0);
               emit2 ("ld a, b");
               emit2 ("pop bc");
+              regalloc_dry_run_cost += 2;
             }
 
         }
-      emit2 ("adc a,%s", aopGet (AOP (IC_RIGHT (ic)), 1, FALSE));
+      emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), 1);
       _moveFromA (AOP (IC_RESULT (ic)), 1);
       goto release;
     }
@@ -4492,12 +4509,12 @@ genPlus (iCode * ic)
       if (offset == 0)
       {
         if(size == 0 && AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT && ulFromVal (AOP (IC_RIGHT (ic))->aopu.aop_lit) == 1)
-          emit2 ("inc a");
+          emit3 (A_INC, ASMOP_A, 0);
         else
-          emit2 ("add a,%s", aopGet (AOP (IC_RIGHT (ic)), offset, FALSE));
+          emit3_o (A_ADD, ASMOP_A, 0, AOP (IC_RIGHT (ic)), offset);
       }
       else
-        emit2 ("adc a,%s", aopGet (AOP (IC_RIGHT (ic)), offset, FALSE));
+        emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), offset);
       _moveFromA (AOP (IC_RESULT (ic)), offset++);
     }
 
@@ -7818,6 +7835,7 @@ genAddrOf (const iCode *ic)
       else
         {
           emit2 ("ld de,!hashedstr", sym->rname);
+          regalloc_dry_run_cost += 3;
           commitPair (AOP (IC_RESULT (ic)), PAIR_DE);
         }
     }
@@ -7831,11 +7849,14 @@ genAddrOf (const iCode *ic)
             emit2 ("ld hl,!immedword", sym->stack + _G.stack.pushed + _G.stack.offset + _G.stack.param_offset);
           else
             emit2 ("ld hl,!immedword", sym->stack + _G.stack.pushed + _G.stack.offset);
+          regalloc_dry_run_cost += 3;
           emit2 ("add hl,sp");
+          regalloc_dry_run_cost += 1;
         }
       else
         {
           emit2 ("ld hl,!hashedstr", sym->rname);
+          regalloc_dry_run_Cost += 3;
         }
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
     }

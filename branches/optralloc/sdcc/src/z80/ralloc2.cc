@@ -760,7 +760,8 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   switch(ic->op)
     {
     // Register assignment doesn't matter for these
-    /*case FUNCTION:
+    /*
+    case FUNCTION:
     case ENDFUNCTION:
     case LABEL:
     case GOTO:
@@ -775,7 +776,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
     //case CALL:
     //case PCALL:
     //case RETURN:
-    //case '+':
+    //case '+': - triggers unrelated bug.
     case '-':
     //case '*':
     //case '>':
@@ -787,12 +788,12 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
     //case '|':
     //case BITWISEAND:
     case GETHBIT:
-    //case LEFT_OP:
+    //case LEFT_OP: - triggers unrelated bug.
     case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
     //case '=':
     //case IFX:
-    //case ADDRESS_OF:
+    case ADDRESS_OF:
     case JUMPTABLE:
     case CAST:
     //case RECEIVE:
