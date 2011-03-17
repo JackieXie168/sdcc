@@ -127,21 +127,17 @@ static builtins _z80_builtins[] = {
     { NULL , NULL, 0, {NULL}}
 };
 
-void z80_init_asmops(void);
-
 static void
 _z80_init (void)
 {
   z80_opts.sub = SUB_Z80;
   asm_addTree (&_asxxxx_z80);
-  z80_init_asmops();
 }
 
 static void
 _gbz80_init (void)
 {
   z80_opts.sub = SUB_GBZ80;
-  z80_init_asmops();
 }
 
 static void

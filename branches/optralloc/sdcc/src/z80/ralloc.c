@@ -2147,6 +2147,8 @@ void RegFix (eBBlock ** ebbs, int count)
       }
 }
 
+void z80_init_asmops(void);
+
 /*-----------------------------------------------------------------*/
 /* New register allocator                                          */
 /* For now do everything except for bc, de the old way.            */
@@ -2176,6 +2178,8 @@ z80_ralloc2 (ebbIndex * ebbi)
       _G.nRegs = Z80_MAX_REGS;
       regsZ80 = _z80_regs;
     }
+    
+  z80_init_asmops();
 
   /* change assignments this will remove some
      live ranges reducing some register pressure */

@@ -768,15 +768,18 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
     /*case '!':
     case '~':
     case UNARYMINUS:
-    case GETHBIT:
+    case AND_OP:
+    case OR_OP:
+    //case GETHBIT:
     //case LEFT_OP:
     case RIGHT_OP:
     //case '=':
-    case CAST:
+    case JUMPTABLE:
+    case CAST:*/
       regalloc_dry_run_cost = 0;
       assign_operands_for_cost(a, i, G, I);
       genZ80iCode(ic);
-      return(regalloc_dry_run_cost);*/
+      return(regalloc_dry_run_cost);
     // Inexact cost
     case '=':
     case CAST:
