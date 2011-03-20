@@ -1288,7 +1288,7 @@ parseCmdLine (int argc, char **argv)
             case 'U':
               {
                 char sOpt = argv[i][1];
-                char *rest;
+                char *rest, *s;
                 struct dbuf_s dbuf;
 
                 if (argv[i][2] == ' ' || argv[i][2] == '\0')
@@ -1311,8 +1311,10 @@ parseCmdLine (int argc, char **argv)
                 if (sOpt == 'Y')
                   sOpt = 'I';
 
+                s = shell_escape (rest);
                 dbuf_init (&dbuf, 256);
-                dbuf_printf (&dbuf, ((sOpt == 'I') ? "-%c\"%s\"" : "-%c%s"), sOpt, rest);
+                dbuf_printf (&dbuf, "-%c%s", sOpt, s);
+                Safe_free (s);
                 addSet (&preArgvSet, dbuf_detach_c_str (&dbuf));
                 if (sOpt == 'I')
                   {
@@ -1500,6 +1502,7 @@ linkEdit (char **envp)
   const char *s;
   struct dbuf_s linkerScriptFileName;
   struct dbuf_s binFileName;
+  char *buf;
 
   dbuf_init (&linkerScriptFileName, PATH_MAX);
   dbuf_init (&binFileName, PATH_MAX);
@@ -1796,16 +1799,16 @@ linkEdit (char **envp)
       buildCmdLine (buffer2, port->linker.cmd, buffer3, dbuf_c_str (&binFileName), (libSet ? joinStrSet (libSet) : NULL),
                     linkOptionsSet);
 
-      buildCmdLine2 (buffer, sizeof (buffer), buffer2);
+      buf = buildMacros (buffer2);
     }
   else
     {
-      buildCmdLine2 (buffer, sizeof (buffer), port->linker.mcmd);
+      buf = buildMacros (port->linker.mcmd);
     }
 
   dbuf_destroy (&linkerScriptFileName);
 
-  system_ret = sdcc_system (buffer);
+  system_ret = sdcc_system (buf);
 
   /* if the binary file name is defined,
      rename the linker output file name to binary file name */
@@ -1845,6 +1848,7 @@ assemble (char **envp)
   else
     {
       char buf[PATH_MAX * 2];
+      char *b;
 
       /* build assembler output filename */
       dbuf_init (&asmName, PATH_MAX);
@@ -1864,15 +1868,16 @@ assemble (char **envp)
         {
           buildCmdLine (buf, port->assembler.cmd, dstFileName, dbuf_c_str (&asmName),
                     options.debug ? port->assembler.debug_opts : port->assembler.plain_opts, asmOptionsSet);
+          b = buf;
         }
       else
         {
-          buildCmdLine2 (buf, sizeof (buf), port->assembler.mcmd);
+          b = buildMacros (port->assembler.mcmd);
         }
 
       dbuf_destroy (&asmName);
 
-      if (sdcc_system (buf))
+      if (sdcc_system (b))
         {
           /* either system() or the assembler itself has reported an error */
           exit (EXIT_FAILURE);
@@ -1887,7 +1892,7 @@ assemble (char **envp)
              http://sourceforge.net/tracker/?func=detail&aid=3018645&group_id=41924&atid=431665
              TODO: This code should be removed when the next gputils version
              after gpasm-0.13.7 beta will be released */
-	  struct dbuf_s outName;
+          struct dbuf_s outName;
           dbuf_init (&outName, PATH_MAX);
           dbuf_printf (&outName, "%s%s", dstFileName, port->linker.rel_ext);
 
@@ -1916,6 +1921,7 @@ preProcess (char **envp)
     {
       const char *s;
       set *inclList = NULL;
+      char *buf;
 
       if (NULL != port->linker.rel_ext)
         {
@@ -2057,11 +2063,11 @@ preProcess (char **envp)
 
       if (options.verbose)
         printf ("sdcc: Calling preprocessor...\n");
-      buildCmdLine2 (buffer, sizeof (buffer), _preCmd);
+      buf = buildMacros (_preCmd);
 
       if (preProcOnly)
         {
-          if (sdcc_system (buffer))
+          if (sdcc_system (buf))
             {
               exit (EXIT_FAILURE);
             }
@@ -2069,7 +2075,7 @@ preProcess (char **envp)
           exit (EXIT_SUCCESS);
         }
 
-      yyin = sdcc_popen (buffer);
+      yyin = sdcc_popen (buf);
       if (yyin == NULL)
         {
           perror ("Preproc file not found");

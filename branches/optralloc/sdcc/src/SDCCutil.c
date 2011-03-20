@@ -58,10 +58,81 @@ populateStringHash (const char **pin)
   return pret;
 }
 
+
+/** shell escape string
+    returns dynamically allocated string, which should be free-ed
+*/
+char *
+shell_escape (const char *str)
+{
+#ifdef _WIN32
+  struct dbuf_s dbuf;
+  bool in_quote = FALSE;
+
+  dbuf_init (&dbuf, 128);
+
+  while (*str)
+    {
+      switch (*str)
+        {
+        case '\\':
+        case '"':
+          if (in_quote)
+            {
+              dbuf_append_char (&dbuf, '"');
+              in_quote = FALSE;
+            }
+          dbuf_append_char (&dbuf, '\\');
+          dbuf_append_char (&dbuf, *str);
+          break;
+
+        case ' ':
+        case '%':
+          if (!in_quote)
+            {
+              dbuf_append_char (&dbuf, '"');
+              in_quote = TRUE;
+            }
+          dbuf_append_char (&dbuf, *str);
+          break;
+
+        default:
+          if (in_quote)
+            {
+              dbuf_append_char (&dbuf, '"');
+              in_quote = FALSE;
+            }
+          dbuf_append_char (&dbuf, *str);
+        }
+
+      ++str;
+    }
+
+  if (in_quote)
+    dbuf_append_char (&dbuf, '"');
+
+  return dbuf_detach_c_str (&dbuf);
+#else
+  struct dbuf_s dbuf;
+
+  dbuf_init (&dbuf, 128);
+
+  while (*str)
+    {
+      if (strchr ("\\\"'$ ", *str))
+        dbuf_append_char (&dbuf, '\\');
+      dbuf_append_char (&dbuf, *str);
+      ++str;
+    }
+
+  return dbuf_detach_c_str (&dbuf);
+#endif
+}
+
 /** Prints elements of the set to the file, each element on new line
 */
 void
-fputStrSet (FILE *fp, set *list)
+fputStrSet (FILE * fp, set * list)
 {
   const char *s;
 
@@ -76,7 +147,7 @@ fputStrSet (FILE *fp, set *list)
     new string set.
 */
 set *
-appendStrSet (set *list, const char *pre, const char *post)
+appendStrSet (set * list, const char *pre, const char *post)
 {
   set *new_list = NULL;
   const char *item;
@@ -92,9 +163,24 @@ appendStrSet (set *list, const char *pre, const char *post)
       if (post != NULL)
         dbuf_append_str (&dbuf, post);
 
-      /* null terminate the buffer */
-      dbuf_c_str (&dbuf);
-      addSet (&new_list, dbuf_detach(&dbuf));
+      addSet (&new_list, dbuf_detach_c_str (&dbuf));
+    }
+
+  return new_list;
+}
+
+/** shell escape each item of string set. The result is in a
+    new string set.
+*/
+set *
+shellEscapeStrSet (set * list)
+{
+  set *new_list = NULL;
+  const char *item;
+
+  for (item = setFirstItem (list); item != NULL; item = setNextItem (list))
+    {
+      addSet (&new_list, shell_escape (item));
     }
 
   return new_list;
@@ -104,7 +190,7 @@ appendStrSet (set *list, const char *pre, const char *post)
     by spaces. The returned string is on the heap.
 */
 const char *
-joinStrSet (set *list)
+joinStrSet (set * list)
 {
   const char *s;
   struct dbuf_s dbuf;
@@ -117,9 +203,7 @@ joinStrSet (set *list)
       dbuf_append_char (&dbuf, ' ');
     }
 
-  s = dbuf_c_str (&dbuf);
-  dbuf_detach (&dbuf);
-  return s;
+  return dbuf_detach_c_str (&dbuf);
 }
 
 /** Split the path string to the directory and file name (including extension) components.
@@ -130,7 +214,7 @@ dbuf_splitPath (const char *path, struct dbuf_s *dir, struct dbuf_s *file)
 {
   const char *p;
   int ret;
-  const char *end = &path[strlen(path)];
+  const char *end = &path[strlen (path)];
 
   for (p = end - 1; p >= path && !IS_DIR_SEPARATOR (*p); --p)
     ;
@@ -166,7 +250,7 @@ int
 dbuf_splitFile (const char *path, struct dbuf_s *file, struct dbuf_s *ext)
 {
   const char *p;
-  const char *end = &path[strlen(path)];
+  const char *end = &path[strlen (path)];
 
   for (p = end - 1; p >= path && !IS_DIR_SEPARATOR (*p) && '.' != *p; --p)
     ;
@@ -243,8 +327,7 @@ getBinPath (const char *prel)
           dbuf_init (&path, 128);
 
           dbuf_splitPath (module, &path, NULL);
-          dbuf_c_str (&path);
-          return dbuf_detach (&path);
+          return dbuf_detach_c_str (&path);
         }
       else
         return NULL;
@@ -263,9 +346,8 @@ getBinPath (const char *prel)
       dbuf_init (&path, 128);
 
       dbuf_splitPath (ret_path, &path, NULL);
-      free ((void *)ret_path);
-      dbuf_c_str (&path);
-      return dbuf_detach (&path);
+      free ((void *) ret_path);
+      return dbuf_detach_c_str (&path);
     }
   else
     return NULL;
@@ -290,6 +372,12 @@ setMainValue (const char *pname, const char *pvalue)
   assert (pname);
 
   shash_add (&_mainValues, pname, pvalue);
+}
+
+char *
+buildMacros (const char *cmd)
+{
+  return eval_macros (_mainValues, cmd);
 }
 
 void
@@ -337,7 +425,7 @@ chomp (char *sz)
 }
 
 hTab *
-getRuntimeVariables(void)
+getRuntimeVariables (void)
 {
   return _mainValues;
 }
@@ -355,7 +443,7 @@ strncpyz (char *dest, const char *src, size_t n)
     {
       fprintf (stderr, "strncpyz prevented buffer overrun!\n");
     }
-    
+
   strncpy (dest, src, n);
   dest[n] = 0;
   return dest;
@@ -528,7 +616,7 @@ get_pragma_token (const char *s, struct pragma_token_s *token)
         }
     }
 
-  return (char *)s;
+  return (char *) s;
 }
 
 const char *
@@ -554,7 +642,7 @@ hexEscape (const char **src)
   char *s;
   unsigned long value;
 
-  ++*src;   /* Skip over the 'x' */
+  ++*src;                       /* Skip over the 'x' */
 
   value = strtol (*src, &s, 16);
 
@@ -572,7 +660,7 @@ hexEscape (const char **src)
     }
   *src = s;
 
-  return (unsigned char)value;
+  return (unsigned char) value;
 }
 
 /*------------------------------------------------------------------*/
@@ -589,7 +677,7 @@ octalEscape (const char **str)
 
   for (digits = 0; digits < 3; ++digits)
     {
-      if (**str >='0' && **str <= '7')
+      if (**str >= '0' && **str <= '7')
         {
           value = value * 8 + (**str - '0');
           ++*str;
@@ -624,7 +712,7 @@ octalEscape (const char **str)
 int
 copyStr (char *dest, const char *src)
 {
-  char *OriginalDest = dest ;
+  char *OriginalDest = dest;
 
   while (*src)
     {
@@ -670,7 +758,7 @@ copyStr (char *dest, const char *src)
               break;
 
             case 'x':
-              *dest++ = hexEscape (&src) ;
+              *dest++ = hexEscape (&src);
               --src;
               break;
 
