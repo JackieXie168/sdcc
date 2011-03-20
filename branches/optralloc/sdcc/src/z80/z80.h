@@ -32,6 +32,12 @@ extern Z80_OPTS z80_opts;
 #define IS_Z80 (z80_opts.sub == SUB_Z80)
 #define IY_RESERVED (z80_opts.reserveIY)
 
+#define OPTRALLOC_EXACT_COST (z80_opts.optralloc_exact_cost)
+
+// For debugging only - remove these lines before merge!
+//#undef OPTRALLOC_EXACT_COST
+//#define OPTRALLOC_EXACT_COST 1
+
 #define OPTRALLOC_HL IS_Z80
 #define OPTRALLOC_A 1
 

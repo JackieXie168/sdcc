@@ -1703,6 +1703,7 @@ requiresHL (const asmop *aop)
         int i;
         for (i = 0; i < aop->size; i++)
           {
+            wassert (aop->aopu.aop_reg[i]);
             if (aop->aopu.aop_reg[i]->rIdx == L_IDX || aop->aopu.aop_reg[i]->rIdx == H_IDX)
               return TRUE;
           }
@@ -1893,17 +1894,17 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
               {
                 if(!regalloc_dry_run)	// Todo: Exact cost!
                   {
-                bool isUsed;
-                PAIR_ID id = makeFreePairId (ic, &isUsed);
-                if (isUsed)
-                  _push (id);
-                /* Can't load into parts, so load into HL then exchange. */
-                emit2 ("ld %s,%s", _pairs[id].l, aopGet (aop, offset, FALSE));
-                emit2 ("ld %s,%s", _pairs[id].h, aopGet (aop, offset + 1, FALSE));
-                emit2 ("push %s", _pairs[id].name);
-                emit2 ("pop iy");
-                if (isUsed)
-                  _pop (id);
+                    bool isUsed;
+                    PAIR_ID id = makeFreePairId (ic, &isUsed);
+                    if (isUsed)
+                      _push (id);
+                    /* Can't load into parts, so load into HL then exchange. */
+                    emit2 ("ld %s,%s", _pairs[id].l, aopGet (aop, offset, FALSE));
+                    emit2 ("ld %s,%s", _pairs[id].h, aopGet (aop, offset + 1, FALSE));
+                    emit2 ("push %s", _pairs[id].name);
+                    emit2 ("pop iy");
+                    if (isUsed)
+                      _pop (id);
                   }
               }
           }
@@ -2558,7 +2559,7 @@ commitPair (asmop * aop, PAIR_ID id)
           aopPut (aop, "a", 0);
           aopPut (aop, "d", 1);
         }
-      regalloc_dry_run_cost += 2 + ld_cost(aop, ASMOP_A) + ld_cost(aop, ASMOP_E);
+      regalloc_dry_run_cost += (2 + ld_cost(aop, ASMOP_A) + ld_cost(aop, ASMOP_E));
     }
   else
     {
@@ -4077,8 +4078,10 @@ genPlusIncr (const iCode *ic)
               regalloc_dry_run_cost += 3;
             }
         }
-      if(!regalloc_dry_run)	// Todo: Exact cost wrt. Spill.
+      if (!regalloc_dry_run)
         AOP_TYPE (IC_LEFT (ic)) == AOP_HL ? emitLabel (tlbl->key + 100) : emitLabelNoSpill (tlbl->key + 100);
+      else if (AOP_TYPE (IC_LEFT (ic)) == AOP_HL)
+        spillCached ();
       return TRUE;
     }
 
@@ -4761,7 +4764,7 @@ genMultOneChar (const iCode * ic)
   if (bitVectBitValue (ic->rMask, B_IDX) &&
     !(getPairId (AOP (IC_RESULT (ic))) == PAIR_BC))
     {
-      emit2 ("push bc");
+      _push (PAIR_BC);
       savedB = TRUE;
     }
   if (isPairInUse (PAIR_DE, ic) &&
@@ -4795,13 +4798,13 @@ genMultOneChar (const iCode * ic)
     }
   if (savedB)
     {
-      emit2 ("pop bc");
+      _pop (PAIR_BC);
     }
 
   if(AOP (IC_RESULT (ic))->type != AOP_HL)
     {
     if (AOP_SIZE (IC_RESULT (ic)) == 1)
-      aopPut (AOP (IC_RESULT (ic)), "l", 0);
+      aopPut (AOP (IC_RESULT (ic)), "l", 0);  // todo: Replace!
     else
       commitPair ( AOP (IC_RESULT (ic)), PAIR_HL);
     }
@@ -4810,6 +4813,7 @@ genMultOneChar (const iCode * ic)
     if (AOP_SIZE (IC_RESULT (ic)) == 1)
       {
         emit2("ld a, l");
+        regalloc_dry_run_cost += 1;
         _moveFromA (AOP (IC_RESULT (ic)), 0);
       }
     else
@@ -4821,6 +4825,7 @@ genMultOneChar (const iCode * ic)
           }
         emit2("ld e, l");
         emit2("ld d, h");
+        regalloc_dry_run_cost += 2;
         commitPair ( AOP (IC_RESULT (ic)), PAIR_DE);
         if(isPairInUse (PAIR_DE, ic))
           {
@@ -4887,16 +4892,17 @@ genMult (iCode *ic)
   }
 
   if (byteResult)
-    emit2 ("ld a,%s", aopGet (AOP (IC_LEFT (ic)), LSB, FALSE));
+    _moveA3 (AOP (IC_LEFT (ic)), LSB);
   else if ( AOP_SIZE (IC_LEFT (ic)) == 1 && !SPEC_USIGN (getSpec (operandType ( IC_LEFT (ic)))))
     {
-      emit2 ("ld e,%s", aopGet (AOP (IC_LEFT (ic)), LSB, FALSE));
+      emit3_o (A_LD, ASMOP_E, 0, AOP (IC_LEFT (ic)), LSB);
       if (!byteResult)
         {
           emit2 ("ld a,e");
           emit2 ("rlc a");
           emit2 ("sbc a,a");
           emit2 ("ld d,a");
+          regalloc_dry_run_cost += 5;
         }
     }
   else
@@ -4914,17 +4920,19 @@ genMult (iCode *ic)
             emit2 ("add a,a");
           else
             emit2 ("add hl,hl");
+          regalloc_dry_run_cost += 1;
         }
       if (i & 0x8000U)
         {
           if (active == FALSE)
             {
               if (byteResult)
-                emit2("ld e,a");
+                emit3 (A_LD, ASMOP_E, ASMOP_A);
               else
                 {
                   emit2 ("ld l,e");
                   emit2 ("ld h,d");
+                  regalloc_dry_run_cost += 2;
                 }
             }
           else
@@ -4933,6 +4941,7 @@ genMult (iCode *ic)
                 emit2 ("add a,e");
               else
                 emit2 ("add hl,de");
+              regalloc_dry_run_cost += 1;
             }
           active = TRUE;
         }
@@ -4993,7 +5002,7 @@ genIfxJump (iCode *ic, char *jval)
       jlbl = IC_TRUE (ic);
       if (!strcmp (jval, "a"))
         {
-          emit2 ("or a,a");
+          emit3 (A_OR, ASMOP_A, ASMOP_A);
           inst = "NZ";
         }
       else if (!strcmp (jval, "c"))
@@ -5024,6 +5033,7 @@ genIfxJump (iCode *ic, char *jval)
         {
           /* The buffer contains the bit on A that we should test */
           emit2 ("bit %s,a", jval);
+          regalloc_dry_run_cost += 2;
           inst = "NZ";
         }
     }
@@ -5033,7 +5043,7 @@ genIfxJump (iCode *ic, char *jval)
       jlbl = IC_FALSE (ic);
       if (!strcmp (jval, "a"))
         {
-          emit2 ("or a,a");
+          emit3 (A_OR, ASMOP_A, ASMOP_A);
           inst = "Z";
         }
       else if (!strcmp (jval, "c"))
@@ -5064,11 +5074,15 @@ genIfxJump (iCode *ic, char *jval)
         {
           /* The buffer contains the bit on A that we should test */
           emit2 ("bit %s,a", jval);
+          regalloc_dry_run_cost += 2;
           inst = "Z";
         }
     }
   /* Z80 can do a conditional long jump */
-  emit2 ("jp %s,!tlabel", inst, jlbl->key + 100);
+  if(!regalloc_dry_run)
+    emit2 ("jp %s,!tlabel", inst, jlbl->key + 100);
+  else
+    regalloc_dry_run_cost += 3;
 
   /* mark the icode as generated */
   ic->generated = 1;
@@ -5406,8 +5420,6 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
   int size = max (AOP_SIZE (left), AOP_SIZE (right));
   int offset = 0;
   unsigned long lit = 0L;
-  
-  wassert (!regalloc_dry_run);
 
   /* Swap the left and right if it makes the computation easier */
   if (AOP_TYPE (left) == AOP_LIT)
@@ -5427,15 +5439,13 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
           if (size > 1)
             {
               while (--size)
-                {
-                  emit2 ("or a,%s", aopGet (AOP (left), ++offset, FALSE));
-                }
+                emit3_o (A_OR, ASMOP_A, 0, AOP (left), ++offset);
             }
           else
-            {
-              emit2 ("or a,a");
-            }
-          emit2 ("jp NZ,!tlabel", lbl->key + 100);
+            emit3 (A_OR, ASMOP_A, ASMOP_A);
+          if(!regalloc_dry_run)
+            emit2 ("jp NZ,!tlabel", lbl->key + 100);
+          regalloc_dry_run_cost += 3;
         }
       else
         {
@@ -5443,9 +5453,9 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
             {
               _moveA3 (AOP (left), offset);
               if ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0)
-                emit2 ("or a,a");
+                emit3 (A_OR, ASMOP_A, ASMOP_A);
               else
-                emit2 ("sub a,%s", aopGet (AOP (right), offset, FALSE));
+                emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
               emit2 ("jp NZ,!tlabel", lbl->key + 100);
               offset++;
             }
@@ -5467,13 +5477,17 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
           if (AOP_TYPE (right) == AOP_LIT &&
               ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0))
             {
-              emit2 ("or a,a");
-              emit2 ("jp NZ,!tlabel", lbl->key + 100);
+              emit3 (A_OR, ASMOP_A, ASMOP_A);
+              if (!regalloc_dry_run)
+                emit2 ("jp NZ,!tlabel", lbl->key + 100);
+              regalloc_dry_run_cost += 3;
             }
           else
             {
-              emit2 ("sub a,%s", aopGet (AOP (right), offset, FALSE));
-              emit2 ("jp NZ,!tlabel", lbl->key + 100);
+              emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
+              if (regalloc_dry_run)
+                emit2 ("jp NZ,!tlabel", lbl->key + 100);
+              regalloc_dry_run_cost += 3;
             }
           offset++;
         }
@@ -5494,10 +5508,16 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
       while (size--)
         {
           emit2 ("; direct compare");
-          _emitMove (_pairs[pair].l, aopGet (AOP (left), offset, FALSE));
+          if(!regalloc_dry_run)
+            _emitMove (_pairs[pair].l, aopGet (AOP (left), offset, FALSE));
+          else
+            regalloc_dry_run_cost += ld_cost(ASMOP_E, AOP (left));
           _moveA3 (AOP (right), offset);
           emit2 ("sub a,%s", _pairs[pair].l);
-          emit2 ("jp NZ,!tlabel", lbl->key + 100);
+          regalloc_dry_run_cost += 1;
+          if(!regalloc_dry_run)
+            emit2 ("jp NZ,!tlabel", lbl->key + 100);
+          regalloc_dry_run_cost += 3;
           offset++;
         }
       return pair;
@@ -5511,16 +5531,22 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
 static void
 gencjne (operand * left, operand * right, symbol * lbl)
 {
-  symbol *tlbl = newiTempLabel (NULL);
+  symbol *tlbl;
+  if (!regalloc_dry_run)
+    tlbl = newiTempLabel (NULL);
 
   PAIR_ID pop = gencjneshort (left, right, lbl);
 
   /* PENDING: ?? */
-  emit2 ("ld a,!one");
-  emit2 ("jp !tlabel", tlbl->key + 100);
-  emitLabel (lbl->key + 100);
-  emit2 ("xor a,a");
-  emitLabelNoSpill (tlbl->key + 100);
+  if (!regalloc_dry_run)
+    {
+      emit2 ("ld a,!one");
+      emit2 ("jp !tlabel", tlbl->key + 100);
+      emitLabel (lbl->key + 100);
+      emit2 ("xor a,a");
+      emitLabelNoSpill (tlbl->key + 100);
+    }
+  regalloc_dry_run_cost += 6;
   _pop (pop);
 }
 
@@ -5563,27 +5589,50 @@ genCmpEq (iCode * ic, iCode * ifx)
       else
         {
           PAIR_ID pop;
-          tlbl = newiTempLabel (NULL);
+          if(!regalloc_dry_run)
+             tlbl = newiTempLabel (NULL);
           pop = gencjneshort (left, right, tlbl);
           if (IC_TRUE (ifx))
             {
               if(pop != PAIR_INVALID)
-                emit2 ("pop %s", _pairs[pop].name);
-              emit2 ("jp !tlabel", IC_TRUE (ifx)->key + 100);
-              hl_touched ? emitLabel (tlbl->key + 100) : emitLabelNoSpill (tlbl->key + 100);
+                {
+                  emit2 ("pop %s", _pairs[pop].name);
+                  regalloc_dry_run_cost += 1;
+                }
+              if(!regalloc_dry_run)
+                emit2 ("jp !tlabel", IC_TRUE (ifx)->key + 100);
+              regalloc_dry_run_cost += 3;
+              if(!regalloc_dry_run)
+                hl_touched ? emitLabel (tlbl->key + 100) : emitLabelNoSpill (tlbl->key + 100);
+              else if(hl_touched)
+                spillCached();
               _pop (pop);
             }
           else
             {
               /* PENDING: do this better */
-              symbol *lbl = newiTempLabel (NULL);
+              symbol *lbl;
+              if(!regalloc_dry_run)
+                lbl = newiTempLabel (NULL);
               if(pop != PAIR_INVALID)
-                emit2 ("pop %s", _pairs[pop].name);
-              emit2 ("jp !tlabel", lbl->key + 100);
-              hl_touched ? emitLabel (tlbl->key + 100) : emitLabelNoSpill (tlbl->key + 100);
+                {
+                  emit2 ("pop %s", _pairs[pop].name);
+                  regalloc_dry_run_cost += 1;
+                }
+              if(!regalloc_dry_run)
+                emit2 ("jp !tlabel", lbl->key + 100);
+              regalloc_dry_run_cost += 3;
+              if (!regalloc_dry_run)
+                hl_touched ? emitLabel (tlbl->key + 100) : emitLabelNoSpill (tlbl->key + 100);
+              else if (hl_touched)
+                spillCached();
               _pop (pop);
-              emit2 ("jp !tlabel", IC_FALSE (ifx)->key + 100);
-              emitLabelNoSpill (lbl->key + 100);
+              if(!regalloc_dry_run)
+                {
+                  emit2 ("jp !tlabel", IC_FALSE (ifx)->key + 100);
+                  emitLabelNoSpill (lbl->key + 100);
+                }
+              regalloc_dry_run_cost += 3;
             }
         }
       /* mark the icode as generated */
@@ -5608,17 +5657,13 @@ genCmpEq (iCode * ic, iCode * ifx)
         }
       if (ifx)
         {
-          emitDebug(";5");
           genIfxJump (ifx, "a");
           goto release;
         }
       /* if the result is used in an arithmetic operation
          then put the result in place */
       if (AOP_TYPE (result) != AOP_CRY)
-        {
-          emitDebug(";6");
           outAcc (result);
-        }
       /* leave the result in acc */
     }
 
@@ -5758,17 +5803,27 @@ jmpTrueOrFalse (iCode * ic, symbol * tlbl)
   // This should be changed to a more efficient solution that spills
   // only what and when necessary.
   if (IC_TRUE (ic))
-    {
-      symbol *nlbl = newiTempLabel (NULL);
-      emit2 ("jp !tlabel", nlbl->key + 100);
-      emitLabel (tlbl->key + 100);
-      emit2 ("jp !tlabel", IC_TRUE (ic)->key + 100);
-      emitLabel (nlbl->key + 100);
+    { 
+      if(!regalloc_dry_run)
+        {
+          symbol *nlbl = newiTempLabel (NULL);
+          emit2 ("jp !tlabel", nlbl->key + 100);
+          emitLabel (tlbl->key + 100);
+          emit2 ("jp !tlabel", IC_TRUE (ic)->key + 100);
+          emitLabel (nlbl->key + 100);
+        }
+      else
+        regalloc_dry_run_cost += 6;
     }
   else
     {
-      emit2 ("jp !tlabel", IC_FALSE (ic)->key + 100);
-      emitLabel (tlbl->key + 100);
+      if(!regalloc_dry_run)
+        {
+          emit2 ("jp !tlabel", IC_FALSE (ic)->key + 100);
+          emitLabel (tlbl->key + 100);
+        }
+      else
+        regalloc_dry_run_cost += 3;
     }
   ic->generated = 1;
 }
@@ -5893,7 +5948,7 @@ genAnd (const iCode *ic, iCode * ifx)
               if (bytelit == 0x0FF)
                 continue;
               else if (bytelit == 0)
-                aopPut (AOP (result), "!zero", offset);
+                aopPut3 (AOP (result), offset, ASMOP_ZERO, 0);
               else
                 {
                   _moveA3 (AOP (left), offset);
@@ -5942,7 +5997,7 @@ genAnd (const iCode *ic, iCode * ifx)
                     }
                   else if (bytelit == 0)
                     {
-                      aopPut (AOP (result), "!zero", offset);
+                      aopPut3 (AOP (result), offset, ASMOP_ZERO, 0);
                       continue;
                     }
                 }
@@ -5977,6 +6032,8 @@ genOr (const iCode *ic, iCode * ifx)
   int size, offset = 0;
   unsigned long lit = 0L;
   int bytelit = 0;
+
+  wassert (!regalloc_dry_run);
 
   aopOp ((left = IC_LEFT (ic)), ic, FALSE, FALSE);
   aopOp ((right = IC_RIGHT (ic)), ic, FALSE, FALSE);
@@ -6209,7 +6266,9 @@ genXor (const iCode *ic, iCode * ifx)
       (AOP_TYPE (result) == AOP_CRY) &&
       (AOP_TYPE (left) != AOP_CRY))
     {
-      symbol *tlbl = newiTempLabel (NULL);
+      symbol *tlbl;
+      if(!regalloc_dry_run)
+        tlbl = newiTempLabel (NULL);
       int sizel = AOP_SIZE (left);
 
       if (size)
@@ -6222,7 +6281,9 @@ genXor (const iCode *ic, iCode * ifx)
           _moveA3 (AOP (left), offset);
           emit3_o (A_XOR, ASMOP_A, 0, AOP (right), offset);
           if (ifx)      /* emit jmp only, if it is actually used * */
-            emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+            if(!regalloc_dry_run)
+              emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+            regalloc_dry_run_cost += 3;
           offset++;
         }
       if (ifx)
@@ -7764,8 +7825,6 @@ genIfx (iCode * ic, iCode * popIc)
 {
   operand *cond = IC_COND (ic);
   int isbit = 0;
-  
-  wassert(!regalloc_dry_run);
 
   aopOp (cond, ic, FALSE, TRUE);
 
@@ -7776,9 +7835,14 @@ genIfx (iCode * ic, iCode * popIc)
   /* Special case: Condition is bool */
   else if(IS_BOOL (operandType(cond)))
     {
-      emit2 ("bit 0,%s", aopGet (AOP (cond), 0, FALSE));
-      emit2 ("jp %s,!tlabel", IC_TRUE (ic) ? "NZ" : "Z",
-        (IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key + 100);
+      if(!regalloc_dry_run)
+        {
+          emit2 ("bit 0,%s", aopGet (AOP (cond), 0, FALSE));
+          emit2 ("jp %s,!tlabel", IC_TRUE (ic) ? "NZ" : "Z",
+            (IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key + 100);
+        }
+      regalloc_dry_run_cost += (bit8_cost(AOP (cond)) + 3);
+      
       freeAsmop (cond, NULL, ic);
       ic->generated = 1;
       return;
@@ -9110,6 +9174,9 @@ genZ80Code (iCode * lic)
     {
       debugFile->writeFunction (currFunc, lic);
     }
+
+  for (ic = lic; ic; ic = ic->next)
+    ic->generated = false;
 
   /* Generate Code for all instructions */
   for (ic = lic; ic; ic = ic->next)

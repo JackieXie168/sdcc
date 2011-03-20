@@ -1,5 +1,12 @@
 2011-03-20 Philipp Klaus Krause <pkk AT spth.de>
 
+  * src/z80/z80.h,
+    src/z80/ralloc2.cc,
+    src/z80/gen.c:
+    Code reorganization for a more accurate cost function.
+
+2011-03-20 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/z80.h,
 	  src/z80/main.c:
 	  Register allocator option cleanup.

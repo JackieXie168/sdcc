@@ -719,7 +719,7 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
           if(a.global[v] != REG_A || !OPTRALLOC_A)
             sym->regs[I[v].byte] = regsZ80 + a.global[v];
           else
-              sym->accuse = ACCUSE_A;
+            sym->accuse = ACCUSE_A;
         }
       else
         sym->isspilt = true;
@@ -730,9 +730,10 @@ template <class G_t, class I_t>
 void assign_operands_for_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
-  if(ic->key == IFX)
+
+  if(ic->op == IFX)
     assign_operand_for_cost(IC_COND(ic), a, i, G, I);
-  else if(ic->key == JUMPTABLE)
+  else if(ic->op == JUMPTABLE)
     assign_operand_for_cost(IC_JTCOND(ic), a, i, G, I);
   else
     {
@@ -757,70 +758,98 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   if(OPTRALLOC_HL && !HLinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  switch(ic->op)
+  if(OPTRALLOC_EXACT_COST)
     {
-    // Register assignment doesn't matter for these
-    /*
-    case FUNCTION:
-    case ENDFUNCTION:
-    case LABEL:
-    case GOTO:
-    case INLINEASM:
-      return(0.0f);
-    // Exact cost
-    case '!':
-    case '~':
-    case UNARYMINUS:
-    //case IPUSH:
-    //case IPOP:
-    //case CALL:
-    //case PCALL:
-    //case RETURN:
-    //case '+': - triggers unrelated bug.
-    case '-':
-    //case '*':
-    //case '>':
-    //case '<':
-    //case EQ_OP:
-    case AND_OP:
-    case OR_OP:
-    //case '^':
-    //case '|':
-    //case BITWISEAND:
-    case GETHBIT:
-    //case LEFT_OP: - triggers unrelated bug.
-    case RIGHT_OP:
-    case GET_VALUE_AT_ADDRESS:
-    //case '=':
-    //case IFX:
-    case ADDRESS_OF:
-    case JUMPTABLE:
-    case CAST:
-    //case RECEIVE:
-    //case SEND:
-    //case DUMMY_READ_VOLATILE:
-    case CRITICAL:
-    case ENDCRITICAL:
-      regalloc_dry_run_cost = 0;
-      assign_operands_for_cost(a, i, G, I);
-      genZ80iCode(ic);
-      return(regalloc_dry_run_cost);*/
-    // Inexact cost
-    case '=':
-    case CAST:
-      return(assign_cost(a, i, G, I));
-    case RETURN:
-      return(return_cost(a, i, G, I));
-    case CALL:
-      return(call_cost(a, i, G, I));
-    case IFX:
-      return(ifx_cost(a, i, G, I));
-    case JUMPTABLE:
-      return(jumptab_cost(a, i, G, I));
-    case '|':
-      return(or_cost(a, i, G, I));
-    default:
-      return(default_instruction_cost(a, i, G, I));
+	    switch(ic->op)
+	      {
+        // Register assignment doesn't matter for these
+        case FUNCTION:
+        case ENDFUNCTION:
+        case LABEL:
+        case GOTO:
+        case INLINEASM:
+          return(0.0f);
+        // Exact cost
+        case '!':
+        case '~':
+        case UNARYMINUS:
+        //case IPUSH:
+        //case IPOP:
+        //case CALL:
+        //case PCALL:
+        //case RETURN:
+        //case '+': // triggers unrelated bug?
+        case '-':
+        //case '*':
+        //case '>':
+        //case '<':
+        case EQ_OP:
+        case AND_OP:
+        case OR_OP:
+        case '^':
+        //case '|': - needs extra sanity check.
+		    case BITWISEAND:
+		    case GETHBIT:
+        //case LEFT_OP: //- triggers unrelated bug?
+        case RIGHT_OP:
+        case GET_VALUE_AT_ADDRESS:
+        //case '=':
+        //case IFX: - problem: How to ensure that op is processed before ifx that might not be needed?
+        case ADDRESS_OF:
+        case JUMPTABLE:
+        case CAST:
+        //case RECEIVE:
+        //case SEND:
+        //case DUMMY_READ_VOLATILE:
+        case CRITICAL:
+        case ENDCRITICAL:
+          regalloc_dry_run_cost = 0;
+          assign_operands_for_cost(a, i, G, I);
+          genZ80iCode(ic);
+          return(regalloc_dry_run_cost);
+        // Inexact cost
+        case '=':
+          return(assign_cost(a, i, G, I));
+        case RETURN:
+          return(return_cost(a, i, G, I));
+        case CALL:
+          return(call_cost(a, i, G, I));
+        case IFX:
+          return(ifx_cost(a, i, G, I));
+        case '|':
+          return(or_cost(a, i, G, I));
+        default:
+          return(default_instruction_cost(a, i, G, I));
+        }
+    }
+  else
+    {
+      // Inexact cost function
+      switch(ic->op)
+        {
+        // Register assignment doesn't matter for these
+        case FUNCTION:
+        case ENDFUNCTION:
+        case LABEL:
+        case GOTO:
+        case INLINEASM:
+          return(0.0f);
+            case '=':
+        case CAST:
+          return(assign_cost(a, i, G, I));
+        case RETURN:
+          return(return_cost(a, i, G, I));
+        case CALL:
+          return(call_cost(a, i, G, I));
+        case IFX:
+          return(ifx_cost(a, i, G, I));
+        case JUMPTABLE:
+          return(jumptab_cost(a, i, G, I));
+        case '|':
+          return(or_cost(a, i, G, I));
+        default:
+          return(default_instruction_cost(a, i, G, I));
+        }
     }
 }
 
