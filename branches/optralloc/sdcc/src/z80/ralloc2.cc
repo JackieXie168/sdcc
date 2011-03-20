@@ -277,10 +277,10 @@ return_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
         }
 
       // Code generator cannot handle variables only partially in A.
-      if(OPTRALLOC_A && size > 1)
+      /*if(OPTRALLOC_A && size > 1)
         for(unsigned short int i = 0; i < size; i++)
           if(byteregs[i] == REG_A)
-            c += std::numeric_limits<float>::infinity();
+            c += std::numeric_limits<float>::infinity(); Check moved to Ainst_ok()*/
 
       if(OPTRALLOC_A && byteregs[0] == REG_A)
         c -= 0.4f;
@@ -464,7 +464,9 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
     return(true);	// Register A not in use.
 
   //if(i == 15) std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
-  if(I[ia.registers[REG_A][1]].size > 1)
+
+  // Code generator cannot handle variables that are only partially in A.
+  if(I[ia.registers[REG_A][1]].size > 1 || ia.registers[REG_A][0] >= 0 && I[ia.registers[REG_A][0]].size > 1)
     return(false);
 
   // Check if the result of this instruction is placed in A.
@@ -717,12 +719,18 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
       if(a.global[v] >= 0)
         { 
           if(a.global[v] != REG_A || !OPTRALLOC_A)
-            sym->regs[I[v].byte] = regsZ80 + a.global[v];
+            {
+              sym->regs[I[v].byte] = regsZ80 + a.global[v];
+              sym->accuse = 0;
+            }
           else
             sym->accuse = ACCUSE_A;
         }
       else
-        sym->isspilt = true;
+        {
+          sym->isspilt = true;
+          sym->accuse = 0;
+        }
     }
 }
 
@@ -781,8 +789,8 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         //case '+': // triggers unrelated bug?
         case '-':
         //case '*':
-        //case '>':
-        //case '<':
+        case '>':
+        case '<':
         case EQ_OP:
         case AND_OP:
         case OR_OP:
@@ -790,11 +798,11 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         //case '|': - needs extra sanity check.
 		    case BITWISEAND:
 		    case GETHBIT:
-        //case LEFT_OP: //- triggers unrelated bug?
+        case LEFT_OP:
         case RIGHT_OP:
         case GET_VALUE_AT_ADDRESS:
-        //case '=':
-        //case IFX: - problem: How to ensure that op is processed before ifx that might not be needed?
+        case '=':
+        case IFX:
         case ADDRESS_OF:
         case JUMPTABLE:
         case CAST:
@@ -808,14 +816,10 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
           genZ80iCode(ic);
           return(regalloc_dry_run_cost);
         // Inexact cost
-        case '=':
-          return(assign_cost(a, i, G, I));
         case RETURN:
           return(return_cost(a, i, G, I));
         case CALL:
           return(call_cost(a, i, G, I));
-        case IFX:
-          return(ifx_cost(a, i, G, I));
         case '|':
           return(or_cost(a, i, G, I));
         default:
@@ -834,7 +838,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case GOTO:
         case INLINEASM:
           return(0.0f);
-            case '=':
+        case '=':
         case CAST:
           return(assign_cost(a, i, G, I));
         case RETURN:
@@ -991,7 +995,10 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
         {
           sym->isspilt = false;
           if(winner.global[v] != REG_A || !OPTRALLOC_A)
-            sym->regs[I[v].byte] = regsZ80 + winner.global[v];
+            {
+              sym->regs[I[v].byte] = regsZ80 + winner.global[v];
+              sym->accuse = 0;
+            }
           else
             {
               sym->accuse = ACCUSE_A;
@@ -1003,6 +1010,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
         {
           for(unsigned int i = 0; i < sym->nRegs; i++)
             sym->regs[i] = 0;
+          sym->accuse = 0;
           spillThis(sym);
         }
     }

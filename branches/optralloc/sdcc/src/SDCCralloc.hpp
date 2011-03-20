@@ -56,6 +56,8 @@ extern "C"
 
 #include "z80.h"
 #include "ralloc.h"
+
+iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
 }
 
 typedef short int var_t;
@@ -166,7 +168,7 @@ template <class G_t, class I_t>
 float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar);
 
 struct tree_dec_node
-{
+{iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
   std::set<unsigned int> bag;
   std::set<var_t> alive;
   std::list<assignment> assignments;
@@ -227,6 +229,13 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
         boost::add_vertex(cfg);
         key_to_index[ic->key] = i;
 
+        if(ic->op == '>' || ic->op == '<' || ic->op == EQ_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)
+          {
+            iCode *ifx;
+            if (ifx = ifxForOp (IC_RESULT (ic), ic))
+              ifx->generated = 1;
+          }
+
         cfg[i].ic = ic;
 
         for (int j2 = 0; j2 <= operandKey; j2++)
@@ -242,7 +251,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
                 if (sym_to_index.find(std::pair<int, reg_t>(j2, 0)) != sym_to_index.end())
                   continue;
 
-				// Other parts of the allocator may rely on the variables corresponding to bytes from the same sdcc variable to have subsequent numbers.
+                // Other parts of the allocator may rely on the variables corresponding to bytes from the same sdcc variable to have subsequent numbers.
                 for (reg_t k = 0; k < sym->nRegs; k++)
                   {
                     boost::add_vertex(con);
