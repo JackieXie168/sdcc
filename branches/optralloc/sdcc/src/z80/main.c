@@ -39,8 +39,7 @@
 #define OPTION_ASM             "--asm="
 #define OPTION_NO_STD_CRT0     "--no-std-crt0"
 #define OPTION_RESERVE_IY      "--reserve-regs-iy"
-#define OPTION_OPTRALLOC_ALL   "--optralloc-all"
-#define OPTION_OPTRALLOC_HL    "--optralloc-hl"
+#define OPTION_OPTRALLOC_COST  "--optralloc-exact-cost"
 #define OPTION_DUMP_GRAPHS     "--dump-graphs"
 #define OPTION_MAX_ALLOCS_NODE "--max-allocs-per-node"
 
@@ -68,8 +67,7 @@ static OPTION _z80_options[] =
     { 0, OPTION_NO_STD_CRT0,     &options.no_std_crt0, "For the z80/gbz80 do not link default crt0.rel"},
     { 0, OPTION_RESERVE_IY,      &z80_opts.reserveIY, "Do not use IY" },
     { 0, OPTION_MAX_ALLOCS_NODE, &options.max_allocs_per_node, "Maximum number of register assignments considered at each node of the tree decomposition", CLAT_INTEGER},
-    { 0, OPTION_OPTRALLOC_ALL,   &z80_opts.optralloc_all, "Use new register allocator for all registers" },
-    { 0, OPTION_OPTRALLOC_HL,    &z80_opts.optralloc_hl, "Use new register allocator for HL instead of A" },
+    { 0, OPTION_OPTRALLOC_COST,  &z80_opts.optralloc_exact_cost, "Use exact cost function in new register allocator" },
     { 0, OPTION_DUMP_GRAPHS,     &z80_opts.dump_graphs, "Dump control flow graph, conflict graph and tree decomposition in register allocator"},
     { 0, NULL }
   };
@@ -599,8 +597,7 @@ _setDefaultOptions (void)
   optimize.label4 = 1;
   optimize.loopInvariant = 1;
   optimize.loopInduction = 1;
-  z80_opts.optralloc_all = 0;
-  z80_opts.optralloc_hl = 0;
+  z80_opts.optralloc_exact_cost = 0;
   z80_opts.dump_graphs = 0;
 }
 
