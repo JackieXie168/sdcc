@@ -785,10 +785,10 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         //case IPOP:
         //case CALL:
         //case PCALL:
-        //case RETURN:
+        //case RETURN: // triggers unrelated bug?
         //case '+': // triggers unrelated bug?
         case '-':
-        //case '*':
+        case '*':
         case '>':
         case '<':
         case EQ_OP:
