@@ -760,8 +760,11 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 
   if(OPTRALLOC_EXACT_COST)
     {
-	    switch(ic->op)
-	      {
+      switch(ic->op)
+        {
+        case '|':
+          if(result_overwrites_operand(a, i, G, I))
+            return(std::numeric_limits<float>::infinity());
         // Register assignment doesn't matter for these
         case FUNCTION:
         case ENDFUNCTION:
@@ -773,12 +776,12 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case '!':
         case '~':
         case UNARYMINUS:
-        //case IPUSH: // triggers memory leak?
+        case IPUSH: // triggers memory leak?
         //case IPOP:
-        //case CALL:
-        //case PCALL:
-        //case RETURN: // triggers memory leak?
-        //case '+': // triggers memory leak?
+        case CALL:
+        case PCALL:
+        case RETURN: // triggers memory leak?
+        case '+': // triggers memory leak?
         case '-':
         case '*':
         case '>':
@@ -787,9 +790,9 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case AND_OP:
         case OR_OP:
         case '^':
-        //case '|': - needs extra sanity check.
-		    case BITWISEAND:
-		    case GETHBIT:
+        //case '|': - see above.
+        case BITWISEAND:
+        case GETHBIT:
         case LEFT_OP:
         case RIGHT_OP:
         case GET_VALUE_AT_ADDRESS:
@@ -800,21 +803,12 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case CAST:
         //case RECEIVE:
         //case SEND:
-        //case DUMMY_READ_VOLATILE:
+        case DUMMY_READ_VOLATILE:
         case CRITICAL:
         case ENDCRITICAL:
           assign_operands_for_cost(a, i, G, I);
           return(dryZ80iCode(ic));
-        //case CALL:
-          assign_operands_for_cost(a, i, G, I);
-          return(0);
         // Inexact cost
-        case RETURN:
-          return(return_cost(a, i, G, I));
-        //case CALL:
-        //  return(call_cost(a, i, G, I));
-        case '|':
-          return(or_cost(a, i, G, I));
         default:
           return(default_instruction_cost(a, i, G, I));
         }
@@ -947,7 +941,9 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   for(v = a.local.begin(), v_end = a.local.end(); v != v_end; ++v)
     c -= *v * 0.01f;
 
-  return(c - a.local.size() * 0.2f);
+  c -= a.local.size() * 0.2f;
+
+  return(c);
 }
 
 template <class T_t, class G_t, class I_t>

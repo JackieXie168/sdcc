@@ -334,6 +334,7 @@ void z80_init_asmops(void)
 {
   asmop_a.type = AOP_ACC;
   asmop_a.size = 1;
+  asmop_a.aopu.aop_str[0] = "a";
   
   asmop_d.type = AOP_REG;
   asmop_d.size = 1;
@@ -358,6 +359,9 @@ void z80_init_asmops(void)
 
   _fReturn3 = IS_GB ? _gbz80_return3 : _z80_return3;
 }
+
+bool regalloc_dry_run;
+unsigned char regalloc_dry_run_cost; 
 
 static bool
 isLastUse (const iCode *ic, operand *op)
@@ -424,6 +428,9 @@ static bool
 isPairInUseNotInRet(PAIR_ID id, const iCode *ic)
 {
   bitVect *rInUse;
+  
+  if(regalloc_dry_run) // Todo: Implement this!
+    return 1;
 
   rInUse = bitVectCplAnd (bitVectCopy (ic->rMask), ic->rUsed);
 
@@ -563,9 +570,6 @@ _vemit2 (const char *szFormat, va_list ap)
 
   dbuf_destroy(&dbuf);
 }
-
-bool regalloc_dry_run;
-unsigned char regalloc_dry_run_cost; 
 
 static void
 emit2 (const char *szFormat,...)
@@ -9295,7 +9299,7 @@ unsigned char dryZ80iCode (iCode *ic)
   genZ80iCode(ic);
   
   freeTrace(&_G.lines.trace);
-  //freeTrace(&_G.trace.aops);
+  freeTrace(&_G.trace.aops);
   
   return(regalloc_dry_run_cost);
 }
