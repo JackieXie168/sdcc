@@ -564,8 +564,8 @@ _vemit2 (const char *szFormat, va_list ap)
   dbuf_destroy(&dbuf);
 }
 
-extern bool regalloc_dry_run;
-extern unsigned char regalloc_dry_run_cost; 
+bool regalloc_dry_run;
+unsigned char regalloc_dry_run_cost; 
 
 static void
 emit2 (const char *szFormat,...)
@@ -2525,6 +2525,8 @@ aopPut (asmop *aop, const char *s, int offset)
         }
       else
         {
+          wassert (aop->aopu.aop_str[offset]);
+          wassert (s);
           if (strcmp (aop->aopu.aop_str[offset], s))
             {
               emit2 ("ld %s,%s", aop->aopu.aop_str[offset], s);
@@ -2572,7 +2574,7 @@ static void
 cheapMove (asmop *to, int to_offset, asmop *from, int from_offset)
 {
   /* Todo: Longer list of moves that can be optimized out. */
-  if (to->type == AOP_ACC && from->type == AOP_ACC)
+  if (to->type == AOP_ACC && from->type == AOP_ACC && to_offset == from_offset)
     return;
   if (to->type == AOP_REG && from->type == AOP_REG && to->aopu.aop_reg[to_offset] == from->aopu.aop_reg[from_offset])
     return;
@@ -3376,7 +3378,7 @@ emitCall (const iCode *ic, bool ispcall)
     {
       /* PENDING */
     }
-if(regalloc_dry_run) return;
+
   _saveRegsForCall(ic, _G.sendSet ? elementsInSet(_G.sendSet) : 0);
 
   /* if send set is not empty then assign */
@@ -4929,10 +4931,6 @@ genMultOneChar (const iCode * ic)
           }
       }
     }
-
-  freeAsmop (IC_LEFT (ic), NULL, ic);
-  freeAsmop (IC_RIGHT (ic), NULL, ic);
-  freeAsmop (IC_RESULT (ic), NULL, ic);
 }
 
 /*-----------------------------------------------------------------*/
@@ -4972,7 +4970,7 @@ genMult (iCode *ic)
   if (AOP_TYPE (IC_RIGHT (ic)) != AOP_LIT)
     {
       genMultOneChar (ic);
-      return;
+      goto release;
     }
 
   wassertl (AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT, "Right must be a literal");
@@ -5056,6 +5054,7 @@ genMult (iCode *ic)
   else
     commitPair ( AOP (IC_RESULT (ic)), PAIR_HL);
 
+release:
   freeAsmop (IC_LEFT (ic), NULL, ic);
   freeAsmop (IC_RIGHT (ic), NULL, ic);
   freeAsmop (IC_RESULT (ic), NULL, ic);
@@ -6958,6 +6957,7 @@ genLeftShift (const iCode *ic)
   if (AOP_TYPE (right) == AOP_LIT)
     {
       genLeftShiftLiteral (left, right, result, ic);
+      freeAsmop (right, NULL, ic);
       return;
     }
 
@@ -7227,6 +7227,7 @@ genRightShift (const iCode *ic)
   if (AOP_TYPE (right) == AOP_LIT)
     {
       genRightShiftLiteral (left, right, result, ic, is_signed);
+      freeAsmop (right, NULL, ic);
       return;
     }
 
@@ -7469,7 +7470,7 @@ genGenPointerGet (operand * left,
           regalloc_dry_run_cost += 1;
           aopPut3 (AOP (result), 0, ASMOP_A, 0);
         }
-      freeAsmop (left, NULL, ic);
+
       goto release;
     }
 
@@ -7487,7 +7488,6 @@ genGenPointerGet (operand * left,
           offset++;
         }
 
-      freeAsmop (left, NULL, ic);
       goto release;
     }
 
@@ -7499,7 +7499,6 @@ genGenPointerGet (operand * left,
   if (IS_BITVAR (retype))
     {
       genUnpackBits (result, pair);
-      freeAsmop (left, NULL, ic);
       goto release;
     }
   else if (getPairId (AOP (result)) == PAIR_HL)
@@ -7576,9 +7575,8 @@ genGenPointerGet (operand * left,
         }
     }
 
-  freeAsmop (left, NULL, ic);
-
 release:
+  freeAsmop (left, NULL, ic);
   freeAsmop (result, NULL, ic);
 }
 
@@ -7922,6 +7920,7 @@ genGenPointerSet (operand * right,
     }
 release:
   freeAsmop (right, NULL, ic);
+  freeAsmop (result, NULL, ic);
 }
 
 /*-----------------------------------------------------------------*/
@@ -8821,7 +8820,7 @@ setupForMemcpy (const iCode *ic, int nparams, operand **pparams)
 
   for (i = 0; i < nparams; i++)
     {
-      aopOp (pparams[i], ic, FALSE, FALSE);
+      aopOp (pparams[i], ic, FALSE, FALSE);	// Todo: Free these!
       ids[dest[i]][getPairId (AOP (pparams[i]))] = TRUE;
     }
 
@@ -9272,6 +9271,33 @@ void genZ80iCode (iCode *ic)
     default:
       ;
     }
+}
+
+unsigned char dryZ80iCode (iCode *ic)
+{
+  regalloc_dry_run = true;
+  regalloc_dry_run_cost = 0;
+  
+  /* Hack */
+  if (IS_GB)
+    {
+      _fReturn = _gbz80_return;
+      _fTmp = _gbz80_return;
+    }
+  else
+    {
+      _fReturn = _z80_return;
+      _fTmp = _z80_return;
+    }
+    
+  _G.lines.head = _G.lines.current = NULL;
+  
+  genZ80iCode(ic);
+  
+  freeTrace(&_G.lines.trace);
+  //freeTrace(&_G.trace.aops);
+  
+  return(regalloc_dry_run_cost);
 }
 
 /*-------------------------------------------------------------------------------------*/

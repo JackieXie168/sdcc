@@ -23,9 +23,7 @@
 
 extern "C"
 {
-  bool regalloc_dry_run;
-  unsigned char regalloc_dry_run_cost;
-  void genZ80iCode (iCode * ic);
+  unsigned char dryZ80iCode (iCode * ic);
 };
 
 #define REG_C 0
@@ -275,12 +273,6 @@ return_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
           byteregs[I[v].byte] = a.global[v];
           size++;
         }
-
-      // Code generator cannot handle variables only partially in A.
-      /*if(OPTRALLOC_A && size > 1)
-        for(unsigned short int i = 0; i < size; i++)
-          if(byteregs[i] == REG_A)
-            c += std::numeric_limits<float>::infinity(); Check moved to Ainst_ok()*/
 
       if(OPTRALLOC_A && byteregs[0] == REG_A)
         c -= 0.4f;
@@ -811,15 +803,16 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         //case DUMMY_READ_VOLATILE:
         case CRITICAL:
         case ENDCRITICAL:
-          regalloc_dry_run_cost = 0;
           assign_operands_for_cost(a, i, G, I);
-          genZ80iCode(ic);
-          return(regalloc_dry_run_cost);
+          return(dryZ80iCode(ic));
+        //case CALL:
+          assign_operands_for_cost(a, i, G, I);
+          return(0);
         // Inexact cost
         case RETURN:
           return(return_cost(a, i, G, I));
-        case CALL:
-          return(call_cost(a, i, G, I));
+        //case CALL:
+        //  return(call_cost(a, i, G, I));
         case '|':
           return(or_cost(a, i, G, I));
         default:
@@ -1019,8 +1012,6 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 void z80_ralloc2_cc(ebbIndex *ebbi)
 {
   //std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
-  
-  regalloc_dry_run = true;	// Tell code generation to not really generate code yet.
 
   cfg_t control_flow_graph;
 
