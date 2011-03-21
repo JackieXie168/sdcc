@@ -781,12 +781,12 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case '!':
         case '~':
         case UNARYMINUS:
-        //case IPUSH:
+        //case IPUSH: // triggers memory leak?
         //case IPOP:
         //case CALL:
         //case PCALL:
-        //case RETURN: // triggers unrelated bug?
-        //case '+': // triggers unrelated bug?
+        //case RETURN: // triggers memory leak?
+        //case '+': // triggers memory leak?
         case '-':
         case '*':
         case '>':
