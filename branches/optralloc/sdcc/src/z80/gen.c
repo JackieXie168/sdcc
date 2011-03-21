@@ -3249,8 +3249,7 @@ genIpush (const iCode * ic)
                       emit2 ("push af");
                     }
                 }
-              else
-                regalloc_dry_run_cost += (ld_cost(ASMOP_A, AOP (IC_LEFT (ic))) + 1);
+              regalloc_dry_run_cost += (ld_cost(ASMOP_A, AOP (IC_LEFT (ic))) + 1);
             }
           if (!regalloc_dry_run)
             {
