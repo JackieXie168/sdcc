@@ -516,6 +516,8 @@ getPairId (const asmop *aop)
     {
       if (aop->type == AOP_REG)
         {
+          wassert (aop->aopu.aop_reg[0] && aop->aopu.aop_reg[1]);
+          
           if ((aop->aopu.aop_reg[0]->rIdx == C_IDX) && (aop->aopu.aop_reg[1]->rIdx == B_IDX))
             {
               return PAIR_BC;
@@ -5589,7 +5591,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
           else
             {
               emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
-              if (regalloc_dry_run)
+              if (!regalloc_dry_run)
                 emit2 ("jp NZ,!tlabel", lbl->key + 100);
               regalloc_dry_run_cost += 3;
             }

@@ -100,13 +100,13 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
   return(c);
 }
 
-// Chek that the operand is either fully in registers or fully in memory.
+// Check that the operand is either fully in registers or fully in memory.
 template <class G_t, class I_t>
 bool operand_sane(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   if(!o || !IS_SYMOP(o))
     return(true);
-  
+ 
   std::multimap<int, var_t>::const_iterator oi, oi_end;
   boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
   
@@ -126,7 +126,7 @@ bool operand_sane(const operand *o, const assignment &a, unsigned short int i, c
         if(a.local.find(oi->second) != a.local.end())
           return(false);
     }
-    
+ 
   return(true);
 }
 
@@ -148,7 +148,8 @@ template <class G_t, class I_t> bool
 inst_sane(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
-  return(operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_RESULT(ic), a, i, G, I));
+
+  return(operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_LEFT(ic), a, i, G, I) && operand_sane(IC_RIGHT(ic), a, i, G, I));
 }
 
 // Treat assignment separately to handle coalescing.
@@ -714,14 +715,22 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
             {
               sym->regs[I[v].byte] = regsZ80 + a.global[v];
               sym->accuse = 0;
+              sym->isspilt = false;
+              sym->nRegs = I[v].size;
             }
           else
-            sym->accuse = ACCUSE_A;
+            {
+              sym->accuse = ACCUSE_A;
+              sym->nRegs = 0;
+              sym->regs[I[v].byte] = 0;
+            }
         }
       else
         {
           sym->isspilt = true;
           sym->accuse = 0;
+          sym->nRegs = I[v].size;
+          sym->regs[I[v].byte] = 0;
         }
     }
 }
@@ -730,7 +739,7 @@ template <class G_t, class I_t>
 void assign_operands_for_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
-
+  
   if(ic->op == IFX)
     assign_operand_for_cost(IC_COND(ic), a, i, G, I);
   else if(ic->op == JUMPTABLE)
@@ -982,11 +991,12 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
       if(winner.global[v] >= 0)
         {
-          sym->isspilt = false;
           if(winner.global[v] != REG_A || !OPTRALLOC_A)
             {
               sym->regs[I[v].byte] = regsZ80 + winner.global[v];
               sym->accuse = 0;
+              sym->isspilt = false;
+              sym->nRegs = I[v].size;
             }
           else
             {
@@ -997,9 +1007,10 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
         }
       else
         {
-          for(unsigned int i = 0; i < sym->nRegs; i++)
+          for(unsigned int i = 0; i < I[v].size; i++)
             sym->regs[i] = 0;
           sym->accuse = 0;
+          sym->nRegs = I[v].size;
           spillThis(sym);
         }
     }

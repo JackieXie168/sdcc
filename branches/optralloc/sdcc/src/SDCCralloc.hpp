@@ -570,7 +570,7 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
     }
 
   /*for(ai = alist.begin(); ai != alist.end(); ++ai)
-  	if(t == 3) print_assignment(*ai);
+  	print_assignment(*ai);
   std::cout << "\n";
   
   assignment best;
@@ -653,7 +653,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
     }
 
   /*for(ai = alist.begin(); ai != alist.end(); ++ai)
-  	if(t == 135) print_assignment(*ai);
+  	print_assignment(*ai);
   std::cout << "\n";
   
   assignment best;
