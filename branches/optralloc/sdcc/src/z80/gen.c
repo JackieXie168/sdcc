@@ -1764,7 +1764,7 @@ fetchLitPair (PAIR_ID pairId, asmop *left, int offset)
 
   emitDebug(";fetchLitPair");
 
-  if (isPtr (pair) && !regalloc_dry_run)  // Todo: More exact cost.
+  if (isPtr (pair))
     {
       if (pairId == PAIR_HL || pairId == PAIR_IY)
         {
@@ -1782,7 +1782,7 @@ fetchLitPair (PAIR_ID pairId, asmop *left, int offset)
             (_G.pairs[pairId].last_type == AOP_IY && left->type == AOP_IY) ||
             (_G.pairs[pairId].last_type == AOP_HL && left->type == AOP_HL))
             {
-              if (_G.pairs[pairId].base && !strcmp (_G.pairs[pairId].base, base))
+              if (!regalloc_dry_run && _G.pairs[pairId].base && !strcmp (_G.pairs[pairId].base, base)) // Todo: Exact cost.
                 {
                   if (pairId == PAIR_HL && abs (_G.pairs[pairId].offset - offset) < 3)
                     {
@@ -1811,17 +1811,13 @@ fetchLitPair (PAIR_ID pairId, asmop *left, int offset)
           /* Change lower byte only. */
           if(new_high == old_high)
             {
-              if(!regalloc_dry_run)
-                emit2("ld l, %s", aopGet (left, 0, FALSE));
-              regalloc_dry_run_cost += 2;
+              emit3_o (A_LD, ASMOP_L, 0, left, 0);
               goto adjusted;
             }
           /* Change upper byte only. */
           else if(new_low == old_low)
             {
-              if(!regalloc_dry_run)
-                emit2("ld h, %s", aopGet (left, 1, FALSE));
-              regalloc_dry_run_cost += 2;
+              emit3_o (A_LD, ASMOP_H, 0, left, 1);
               goto adjusted;
             }
         }
@@ -3178,9 +3174,6 @@ genIpush (const iCode * ic)
     }
     _saveRegsForCall(walk, nAddSets);
   }
-  else {
-    /* Already saved by another iPush. */
-  }
 
   /* then do the push */
   aopOp (IC_LEFT (ic), ic, FALSE, FALSE);
@@ -3194,7 +3187,7 @@ genIpush (const iCode * ic)
            _G.stack.pushed += 2;
            emit2 ("push %s", getPairName (AOP (IC_LEFT (ic))));
         }
-      regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 2 : 1;
+      regalloc_dry_run_cost += 1; // Todo: More exact cost
     }
   else
     {
@@ -3241,22 +3234,31 @@ genIpush (const iCode * ic)
           else
             {
               offset--;
-              if (!regalloc_dry_run) // todo: More exact cost!
+              if (AOP (IC_LEFT (ic))->type == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[offset]->rIdx == B_IDX)
                 {
-                  l = aopGet (AOP (IC_LEFT (ic)), offset, FALSE);
-                  if (!strcmp(l, "b"))
-                    emit2 ("push bc");
-                  else if (!strcmp(l, "d"))
-                    emit2 ("push de");
-                  else if (!strcmp(l, "h"))
-                    emit2 ("push hl");
-                  else
-                    {
-                      emit2 ("ld a,%s", l);
-                      emit2 ("push af");
-                    }
+                  emit2 ("push bc");
+                  regalloc_dry_run_cost += 1;
                 }
-              regalloc_dry_run_cost += (ld_cost(ASMOP_A, AOP (IC_LEFT (ic))) + 1);
+              else if (AOP (IC_LEFT (ic))->type == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[offset]->rIdx == D_IDX)
+                {
+                  emit2 ("push de");
+                  regalloc_dry_run_cost += 1;
+                }
+              else
+                {
+                  if (!regalloc_dry_run) // todo: More exact cost!
+                    {
+                      l = aopGet (AOP (IC_LEFT (ic)), offset, FALSE);
+                      if (!strcmp(l, "h"))
+                        emit2 ("push hl");
+                      else
+                        {
+                          emit2 ("ld a,%s", l);
+                          emit2 ("push af");
+                        }
+                    }
+                  regalloc_dry_run_cost += (ld_cost(ASMOP_A, AOP (IC_LEFT (ic))) + 1);
+                }
             }
           if (!regalloc_dry_run)
             {
@@ -4411,7 +4413,7 @@ genPlus (iCode * ic)
           char buffer[100];
           sprintf (buffer, "#(%s + %s)", left, right);
           emit2 ("ld %s,%s", getPairName (AOP (IC_RESULT (ic))), buffer);
-          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 4 : 3;
+          regalloc_dry_run_cost += 3; // Todo: More exact cost.
           goto release;
         }
     }
