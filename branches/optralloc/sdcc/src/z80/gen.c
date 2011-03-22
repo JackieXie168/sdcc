@@ -1495,6 +1495,13 @@ aopOp (operand *op, const iCode *ic, bool result, bool requires_a)
           return;
         }
 
+      if (regalloc_dry_run)	// Todo: Handle dummy iTemp correctly
+        {
+          sym->aop = op->aop = aop = newAsmop (AOP_STK);
+          aop->size = getSize (sym->type);
+          return;
+        }
+        
       if (sym->usl.spillLoc)
         {
           asmop *oldAsmOp = NULL;
@@ -2660,7 +2667,7 @@ movLeft2Result (operand * left, int offl,
   if (!sameRegs (AOP (left), AOP (result)) || (offl != offr))
     {
       if (!sign)
-        aopPut3 (AOP (result), offr, AOP (left), offl);
+        cheapMove (AOP (result), offr, AOP (left), offl);
       else
         {
           if (getDataSize (left) == offl + 1)
@@ -2935,7 +2942,7 @@ genUminusFloat (operand * op, operand * result)
 
   while (size--)
     {
-      aopPut3 (AOP (result), offset,AOP (op), offset);
+      cheapMove (AOP (result), offset,AOP (op), offset);
       offset++;
     }
 }
@@ -4193,11 +4200,9 @@ genPlusIncr (const iCode *ic)
    */
   if (AOP_TYPE (IC_RESULT (ic)) == AOP_REG)
     {
-      aopPut3 (AOP (IC_RESULT (ic)), LSB, AOP (IC_LEFT (ic)), LSB);
+      cheapMove (AOP (IC_RESULT (ic)), LSB, AOP (IC_LEFT (ic)), LSB);
       while (icount--)
-        {
           emit3_o (A_INC, AOP (IC_RESULT (ic)), LSB, 0, 0);
-        }
       return TRUE;
     }
 
@@ -7045,7 +7050,7 @@ genrshOne (operand * result, operand * left, int shCount, int is_signed)
 
   if (AOP (result)->type == AOP_REG)
     {
-      aopPut3 (AOP (result), 0, AOP (left), 0);
+      cheapMove (AOP (result), 0, AOP (left), 0);
       while (shCount--)
         emit3 (is_signed ? A_SRA : A_SRL, AOP (result), 0);
     }
@@ -7172,7 +7177,7 @@ genRightShiftLiteral (operand *left,
       s=ASMOP_ZERO;
     }
     while (size--)
-      aopPut3 (AOP (result), size, s, 0);
+      cheapMove (AOP (result), size, s, 0);
   }
   else
     {
@@ -7256,7 +7261,7 @@ genRightShift (const iCode *ic)
       offset = 0;
       while (size--)
         {
-          aopPut3 (AOP (result), offset, AOP (left), offset);
+          cheapMove (AOP (result), offset, AOP (left), offset);
           offset++;
         }
     }
@@ -7433,7 +7438,7 @@ finish:
         }
       rsize -= offset;
       while (rsize--)
-        aopPut3 (AOP (result), offset++, source, 0);
+        cheapMove (AOP (result), offset++, source, 0);
     }
 }
 
@@ -7473,7 +7478,7 @@ genGenPointerGet (operand * left,
         {
           emit2 ("ld a,!*pair", getPairName (AOP (left)));
           regalloc_dry_run_cost += 1;
-          aopPut3 (AOP (result), 0, ASMOP_A, 0);
+          cheapMove (AOP (result), 0, ASMOP_A, 0);
         }
 
       goto release;
@@ -7534,7 +7539,7 @@ genGenPointerGet (operand * left,
             {
               emit2 ("ld a,!*pair", _pairs[pair].name);
               regalloc_dry_run_cost += 1;
-              aopPut3 (AOP (result), offset++, ASMOP_A, 0);
+              cheapMove (AOP (result), offset++, ASMOP_A, 0);
             }
           if (size)
             {
@@ -8132,10 +8137,10 @@ genAssign (iCode * ic)
               if (fXored)
                 _moveFromA (AOP (result), offset);
               else
-                aopPut3 (AOP (result), offset, ASMOP_ZERO, 0);
+                cheapMove (AOP (result), offset, ASMOP_ZERO, 0);
             }
           else
-            aopPut3 (AOP (result), offset, AOP (right), offset);
+            cheapMove (AOP (result), offset, AOP (right), offset);
           offset++;
         }
     }
@@ -8145,7 +8150,7 @@ genAssign (iCode * ic)
       _moveA3 (AOP (right), 0);
       emit3_o (A_LD, ASMOP_E, 0, AOP (right), 1);
       _moveFromA (AOP (result), 0);
-      aopPut3 (AOP (result), 1, ASMOP_E, 0);
+      cheapMove (AOP (result), 1, ASMOP_E, 0);
     }
   else if (size == 4 && requiresHL (AOP (right)) && requiresHL (AOP (result)) && (IS_GB /*|| IY_RESERVED*/))
     {
