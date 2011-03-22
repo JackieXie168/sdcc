@@ -168,7 +168,7 @@ template <class G_t, class I_t>
 float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar);
 
 struct tree_dec_node
-{iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
+{
   std::set<unsigned int> bag;
   std::set<var_t> alive;
   std::list<assignment> assignments;
@@ -428,7 +428,7 @@ void assignments_introduce_variable(std::list<assignment> &alist, unsigned short
     {
       ai2 = ai;
       ++ai2;
-      a_initalized = false;
+      a_initialized = false;
 
       for (reg_t r = 0; r < NUM_REGS; r++)
         {
