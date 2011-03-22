@@ -687,8 +687,8 @@ ld_cost(asmop *op1, asmop *op2)
         case AOP_LIT:
         case AOP_SIMPLELIT:
           return(2);
-        case AOP_SFR:   /* 2 from in A, (...) */
-          return(3);    
+        case AOP_SFR:   /* 2 from in a, (...) */
+          return((op1type == AOP_ACC || op1type == AOP_DUMMY) ? 2 : 3);
         case AOP_STK:
           return(3);
         case AOP_HL:    /* 3 from ld hl, #... */
@@ -706,6 +706,23 @@ ld_cost(asmop *op1, asmop *op2)
         default:printf("ld_cost op1: AOP_REG, op2: %d", (int)(op2type));
           wassert(0);
         }
+    case AOP_SFR:   /* 2 from out (...), a */
+        switch(op2type)
+        {
+        case AOP_ACC:
+        case AOP_REG:
+        case AOP_HLREG:
+        case AOP_DUMMY:
+          return(2);
+        case AOP_IMMD:
+        case AOP_LIT:
+        case AOP_SIMPLELIT:
+          return(4);
+        case AOP_STK:
+          return(5);
+        default:printf("ld_cost op1: AOP_SFR, op2: %d", (int)(op2type));
+          wassert(0);
+        }
     case AOP_IY:		/* 4 from ld iy, #... */
     case AOP_EXSTK:     /* 4 from ld iy, #... */
       switch(op2type)
@@ -714,6 +731,8 @@ ld_cost(asmop *op1, asmop *op2)
         case AOP_LIT:
         case AOP_SIMPLELIT:
           return(8);
+        case AOP_SFR:   /* 2 from in a, (...) */
+          return(9);
         case AOP_STK:
         case AOP_HL:    /* 3 from ld hl, #... */
           return(10);
@@ -730,6 +749,8 @@ ld_cost(asmop *op1, asmop *op2)
         case AOP_LIT:
         case AOP_SIMPLELIT:
           return(4);
+        case AOP_SFR:   /* 2 from in a, (...) */
+          return(5);
         case AOP_STK:
           return(6);
         case AOP_IY:    /* 4 from ld iy, #... */

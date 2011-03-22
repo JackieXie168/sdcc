@@ -1,3 +1,8 @@
+2011-03-22 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  sfr fixes for accurate cost function.
+
 2011-03-22 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c,
