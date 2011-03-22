@@ -3194,7 +3194,7 @@ genIpush (const iCode * ic)
            _G.stack.pushed += 2;
            emit2 ("push %s", getPairName (AOP (IC_LEFT (ic))));
         }
-      regalloc_dry_run_cost += 1; // Todo: More exact cost.
+      regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 2 : 1;
     }
   else
     {
@@ -3585,7 +3585,7 @@ emitCall (const iCode *ic, bool ispcall)
 
   spillCached ();
   
-  if(regalloc_dry_run)	// Todo: implement remainder of this function for dry runs
+  if(regalloc_dry_run)	// Todo: implement remainder of this function for dry runs (i.e. alternative to z80_rUmaskForOp () below).
     return;
   
   if (IC_RESULT (ic))
@@ -3614,14 +3614,17 @@ emitCall (const iCode *ic, bool ispcall)
         {
           /* Only restore E */
           emit2 ("ld a,d");
+          regalloc_dry_run_cost += 1;
           _pop (PAIR_DE);
           emit2 ("ld d,a");
+          regalloc_dry_run_cost += 1;
         }
       else if (eInRet)
         {
           /* Only restore D */
           _pop (PAIR_AF);
           emit2 ("ld d,a");
+          regalloc_dry_run_cost += 1;
         }
       else
         {
@@ -3640,14 +3643,17 @@ emitCall (const iCode *ic, bool ispcall)
         {
           /* Only restore C */
           emit2 ("ld a,b");
+          regalloc_dry_run_cost += 1;
           _pop (PAIR_BC);
           emit2 ("ld b,a");
+          regalloc_dry_run_cost += 1;
         }
       else if (cInRet)
         {
           /* Only restore B */
           _pop (PAIR_AF);
           emit2 ("ld b,a");
+          regalloc_dry_run_cost += 1;
         }
       else
         {
@@ -4405,7 +4411,7 @@ genPlus (iCode * ic)
           char buffer[100];
           sprintf (buffer, "#(%s + %s)", left, right);
           emit2 ("ld %s,%s", getPairName (AOP (IC_RESULT (ic))), buffer);
-          regalloc_dry_run_cost += 3; // Todo: More exact cost.
+          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 4 : 3;
           goto release;
         }
     }
@@ -4421,27 +4427,27 @@ genPlus (iCode * ic)
       if (left == PAIR_HL && right != PAIR_INVALID)
         {
           emit2 ("add hl,%s", _pairs[right].name);
-          regalloc_dry_run_cost += 1; // Todo: More exact cost.
+          regalloc_dry_run_cost += 1;
           goto release;
         }
       else if (right == PAIR_HL && left != PAIR_INVALID)
         {
           emit2 ("add hl,%s", _pairs[left].name);
-          regalloc_dry_run_cost += 1; // Todo: More exact cost.
+          regalloc_dry_run_cost += 1;
           goto release;
         }
       else if (right != PAIR_INVALID && right != PAIR_HL)
         {
           fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
           emit2 ("add hl,%s", getPairName (AOP (IC_RIGHT (ic))));
-          regalloc_dry_run_cost += 1; // Todo: More exact cost.
+          regalloc_dry_run_cost += 1;
           goto release;
         }
       else if (left != PAIR_INVALID && left != PAIR_HL)
         {
           fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
           emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
-          regalloc_dry_run_cost += 1; // Todo: More exact cost.
+          regalloc_dry_run_cost += 1;
           goto release;
         }
       else
@@ -4454,7 +4460,7 @@ genPlus (iCode * ic)
     {
       fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
       emit2 ("add hl,%s", getPairName (AOP (IC_RIGHT (ic))));
-      regalloc_dry_run_cost += 1; // Todo: More exact cost.
+      regalloc_dry_run_cost += 1;
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -4464,7 +4470,7 @@ genPlus (iCode * ic)
     {
       fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
       emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
-      regalloc_dry_run_cost += 1; // Todo: More exact cost.
+      regalloc_dry_run_cost += 1;
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -4473,7 +4479,7 @@ genPlus (iCode * ic)
   if (isPair (AOP (IC_LEFT (ic))) && isPair (AOP (IC_RIGHT (ic))) && getPairId (AOP (IC_LEFT (ic))) == PAIR_HL)
    {
       emit2 ("add hl,%s", getPairName (AOP (IC_RIGHT (ic))));
-      regalloc_dry_run_cost += 1; // Todo: More exact cost.
+      regalloc_dry_run_cost += 1;
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -4482,7 +4488,7 @@ genPlus (iCode * ic)
   if (isPair (AOP (IC_LEFT (ic))) && isPair (AOP (IC_RIGHT (ic))) && getPairId (AOP (IC_RIGHT (ic))) == PAIR_HL)
    {
       emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
-      regalloc_dry_run_cost += 1; // Todo: More exact cost.
+      regalloc_dry_run_cost += 1;
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
@@ -7656,7 +7662,7 @@ genPackBits (sym_link * etype,
           litval <<= bstr;
           litval &= (~mask) & 0xff;
           emit2 ("ld a,!*pair", _pairs[pair].name);
-          regalloc_dry_run_cost += 1; // todo: More exact cost.
+          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
           if ((mask|litval)!=0xff)
             {
               emit2 ("and a,!immedbyte", mask);
@@ -7668,7 +7674,7 @@ genPackBits (sym_link * etype,
               regalloc_dry_run_cost += 1;
             }
           emit2 ("ld !*pair,a", _pairs[pair].name);
-          regalloc_dry_run_cost += 1; // todo: More exact cost.
+          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
           return;
         }
       else
@@ -7695,14 +7701,14 @@ genPackBits (sym_link * etype,
           emit2 ("ld %s,a", _pairs[extraPair].l);
           regalloc_dry_run_cost += 1;
           emit2 ("ld a,!*pair", _pairs[pair].name);
-          regalloc_dry_run_cost += 1; // todo: More exact cost.
+          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
 
           emit2 ("and a,!immedbyte", mask);
           regalloc_dry_run_cost += 2;
           emit2 ("or a,%s", _pairs[extraPair].l);
           regalloc_dry_run_cost += 1;
           emit2 ("ld !*pair,a", _pairs[pair].name);
-          regalloc_dry_run_cost += 1; // todo: More exact cost.
+          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
           if (needPopExtra)
             _pop (extraPair);
           return;
@@ -7715,11 +7721,11 @@ genPackBits (sym_link * etype,
     {
       _moveA3 (AOP (right), offset++);
       emit2 ("ld !*pair,a", _pairs[pair].name);
-      regalloc_dry_run_cost += 1; // todo: More exact cost.
+      regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
       if (rlen>8)
         {
           emit2 ("inc %s", _pairs[pair].name);
-          regalloc_dry_run_cost += 1; // todo: More exact cost.
+          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 2 : 1;
           _G.pairs[pair].offset++;
         }
     }
@@ -7767,7 +7773,7 @@ genPackBits (sym_link * etype,
           emit2 ("ld %s,a", _pairs[extraPair].l);
           regalloc_dry_run_cost += 1;
           emit2 ("ld a,!*pair", _pairs[pair].name);
-          regalloc_dry_run_cost += 1; // todo: More exact cost.
+          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
 
           emit2 ("and a,!immedbyte", mask);
           regalloc_dry_run_cost += 2;
@@ -7778,7 +7784,7 @@ genPackBits (sym_link * etype,
 
         }
       emit2 ("ld !*pair,a", _pairs[pair].name);
-      regalloc_dry_run_cost += 1; // todo: More exact cost.
+      regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
     }
 }
 
