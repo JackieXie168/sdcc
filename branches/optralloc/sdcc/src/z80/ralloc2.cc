@@ -1007,7 +1007,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
         }
       else
         {
-          for(unsigned int i = 0; i < I[v].size; i++)
+          for(int i = 0; i < I[v].size; i++)
             sym->regs[i] = 0;
           sym->accuse = 0;
           sym->nRegs = I[v].size;

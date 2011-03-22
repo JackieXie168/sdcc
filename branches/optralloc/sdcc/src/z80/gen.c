@@ -7509,9 +7509,12 @@ genGenPointerGet (operand * left,
       goto release;
     }
 
-  /* For now we always load into IY */
+  /* For now we always load into temp pair */
   /* if this is rematerializable */
-  fetchPair (pair, AOP (left));
+  if(!IS_GB && (getPairId (AOP (left)) == PAIR_BC || getPairId (AOP (left)) == PAIR_DE) && AOP_TYPE (result) == AOP_STK)
+    pair = getPairId (AOP (left));
+  else
+    fetchPair (pair, AOP (left));
 
   /* if bit then unpack */
   if (IS_BITVAR (retype))
@@ -7529,7 +7532,7 @@ genGenPointerGet (operand * left,
       regalloc_dry_run_cost += 4;
       spillPair (PAIR_HL);
     }
-  else if (getPairId (AOP (left)) == PAIR_HL && !isLastUse (ic, left))
+  else if (getPairId (AOP (left)) == PAIR_HL || (!IS_GB && (getPairId (AOP (left)) == PAIR_BC || getPairId (AOP (left)) == PAIR_DE) && AOP_TYPE (result) == AOP_STK))
     {
       size = AOP_SIZE (result);
       offset = 0;
@@ -7557,11 +7560,12 @@ genGenPointerGet (operand * left,
             }
         }
       /* Fixup HL back down */
-      for (size = AOP_SIZE (result)-1; size; size--)
-        {
-          emit2 ("dec %s", _pairs[pair].name);
-          regalloc_dry_run_cost += 1;
-        }
+      if (!isLastUse (ic, left))
+        for (size = AOP_SIZE (result)-1; size; size--)
+          {
+            emit2 ("dec %s", _pairs[pair].name);
+            regalloc_dry_run_cost += 1;
+          }
     }
   else
     {

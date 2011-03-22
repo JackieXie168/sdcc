@@ -1,6 +1,8 @@
 2011-03-22 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/z80/gen.c:
+	* src/z80/gen.c,
+	  src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
 	  Code reorganization for a more accurate cost function.
 
 2011-03-21 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>

@@ -380,22 +380,19 @@ void print_assignment(const assignment &a)
 #endif
 
 template <class I_t>
-bool assignment_ok_conflict(const assignment &a, const I_t &I)
+bool assignment_conflict(const assignment &a, const I_t &I, var_t v, reg_t r)
 {
-  std::set<var_t>::const_iterator i, j;
+  std::set<var_t>::const_iterator i, i_end;
 
-  for (i = a.local.begin(); i != a.local.end(); ++i)
-    for (j = i, ++j; j != a.local.end(); ++j)
-      {
-        // Different registers - always OK.
-        if (a.global[*i] != a.global[*j])
-          continue;
-
-        // Same registers - check for conflict.
-        if (boost::edge(*i, *j, I).second)
-          return(false);
-      }
-  return(true);
+  for (i = a.local.begin(), i_end = a.local.end(); i != i_end; ++i)
+    {
+      if (a.global[*i] != r)
+        continue;
+      if (boost::edge(*i, v, I).second)
+        return(true);
+    }
+    
+  return(false);
 }
 
 template<class G_t>
@@ -424,21 +421,28 @@ template <class I_t>
 void assignments_introduce_variable(std::list<assignment> &alist, unsigned short int i, short int v, const I_t &I)
 {
   std::list<assignment>::iterator ai, ai_end, ai2;
+  bool a_initialized;
+  assignment a;
 
   for (ai = alist.begin(), ai_end = alist.end(); ai != ai_end; ai = ai2)
     {
       ai2 = ai;
       ++ai2;
+      a_initalized = false;
 
-      assignment a = *ai;
-      ai->marked = true;
-      a.marked = false;
-      a.local.insert(v);
       for (reg_t r = 0; r < NUM_REGS; r++)
         {
-          a.global[v] = r;
-          if (assignment_ok_conflict(a, I))
+          if (!assignment_conflict(*ai, I, v, r))
             {
+              if(!a_initialized)
+                {
+                  a = *ai;
+                  ai->marked = true;
+                  a.marked = false;
+                  a.local.insert(v);
+                }
+              a.global[v] = r;
+              
               std::map<int, i_assignment>::iterator ia_i = a.i_assignments.find(i);
               i_assignment ia = ia_i->second;
               ia_i->second.add_var(v, r);
