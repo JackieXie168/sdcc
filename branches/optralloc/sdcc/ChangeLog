@@ -1,3 +1,10 @@
+2011-03-23 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCralloc.hpp,
+	  src/SDCCicode.h,
+	  src/z80/ralloc2.cc:
+	  Make sdcc the best compiler for the Z80.
+
 2011-03-22 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:

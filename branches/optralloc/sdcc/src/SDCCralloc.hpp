@@ -126,7 +126,7 @@ struct assignment
   float s;
 
   std::set<var_t> local;	// Entries: var
-  std::vector<reg_t> global;	// Entries: gloabal[var] = reg (-1 if no reg assigned)
+  std::vector<reg_t> global;	// Entries: global[var] = reg (-1 if no reg assigned)
 
   std::map<int, i_assignment> i_assignments;
 

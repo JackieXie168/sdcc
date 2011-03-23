@@ -570,7 +570,9 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(unused_L && unused_H)
     return(true);	// Register HL not in use.
 
-  //if(ic->key == 25) std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+#if 0
+  std::cout << "HLinst_ok: at (" << i << ", " << ic->key << ")\nL = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+#endif
 
   const operand *left = IC_LEFT(ic);
   const operand *right = IC_RIGHT(ic);
@@ -606,19 +608,10 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   bool result_only_HL = (result_in_L || unused_L || dying_L) && (result_in_H || unused_H || dying_H);
 
 #if 0
-  {
-    std::cout << "Result: ";
-    std::multimap<int, var_t>::const_iterator oi, oi_end;
-    for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(IC_RESULT(ic))->key); oi != oi_end; ++oi)
-      std::cout << oi->second << " ";
-    std::cout << "\n";
-    print_assignment(a);
-    std::cout << "\n";
-  }
-
-  if(ic->key == 25) std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
-  if(ic->key == 25) std::cout << "Unsued L: " << unused_L << ", unused H: " << unused_H << "\n";
-  if(ic->key == 25) std::cout << "Dying L: " << dying_L << ", dying H: " << dying_H << "\n";
+  std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+  std::cout << "Unsued L: " << unused_L << ", unused H: " << unused_H << "\n";
+  std::cout << "Dying L: " << dying_L << ", dying H: " << dying_H << "\n";
+  std::cout << "Result only HL: " << result_only_HL << "\n";
 #endif
 
   if(ic->op == RETURN)
@@ -630,9 +623,13 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(options.omitFramePtr)	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
 	return(false);
 
+  if(result_only_HL && ic->op == PCALL)
+    return(true);
+    
   // HL overwritten by result.
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||
+       ic->op == GET_VALUE_AT_ADDRESS ||
        ic->op == '+' ||
        ic->op == '*' ||
        ic->op == '='))
@@ -689,14 +686,35 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(ic->op == '=' && !POINTER_GET(ic) && !input_in_HL)
     return(true);
 
-  /*if(ic->key >= 94 && ic->key <= 96)
-  {
-  	std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
-  	std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
-  	std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
-  }*/
+#if 0
+  std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+  std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+  std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
+#endif
 
   return(false);
+}
+
+template <class G_t, class I_t>
+void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  iCode *ic = G[i].ic;
+  
+  ic->rSurv = newBitVect(NUM_REGS);
+  
+  std::set<var_t>::const_iterator v, v_end;
+  for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
+    if(G[i].dying.find(*v) == G[i].dying.end())
+      if(!(IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && OP_SYMBOL_CONST(IC_RESULT(ic))->key == I[*v].v))
+        ic->rSurv = bitVectSetBit(ic->rSurv, a.global[*v]);
+}
+
+template<class G_t>
+void unset_surviving_regs(unsigned short int i, const G_t &G)
+{
+  iCode *ic = G[i].ic;
+  
+  freeBitVect(ic->rSurv);
 }
 
 template <class G_t, class I_t>
@@ -757,6 +775,7 @@ template <class G_t, class I_t>
 float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   iCode *ic = G[i].ic;
+  float c;
 
   if(!inst_sane(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
@@ -816,7 +835,10 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case CRITICAL:
         case ENDCRITICAL:
           assign_operands_for_cost(a, i, G, I);
-          return(dryZ80iCode(ic));
+          set_surviving_regs(a, i, G, I);
+          c = dryZ80iCode(ic);
+          unset_surviving_regs(i, G);
+          return(c);
         // Inexact cost
         default:
           return(default_instruction_cost(a, i, G, I));
@@ -1014,6 +1036,9 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
           spillThis(sym);
         }
     }
+    
+  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+    set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
 }
 
 void z80_ralloc2_cc(ebbIndex *ebbi)

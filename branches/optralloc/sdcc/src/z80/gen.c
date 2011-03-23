@@ -314,8 +314,10 @@ static const char *aopNames[] = {
   "AOP_DUMMY"
 };
 
-struct asmop asmop_a, asmop_d, asmop_e, asmop_h, asmop_l, asmop_zero, asmop_one;
+struct asmop asmop_a, asmop_b, asmop_c, asmop_d, asmop_e, asmop_h, asmop_l, asmop_zero, asmop_one;
 struct asmop *const ASMOP_A = &asmop_a;
+struct asmop *const ASMOP_B = &asmop_b;
+struct asmop *const ASMOP_C = &asmop_c;
 struct asmop *const ASMOP_D = &asmop_d;
 struct asmop *const ASMOP_E = &asmop_e;
 struct asmop *const ASMOP_H = &asmop_h;
@@ -336,6 +338,12 @@ void z80_init_asmops(void)
   asmop_a.size = 1;
   asmop_a.aopu.aop_str[0] = "a";
   
+  asmop_b.type = AOP_REG;
+  asmop_b.size = 1;
+  asmop_b.aopu.aop_reg[0] = regsZ80 + B_IDX;
+  asmop_c.type = AOP_REG;
+  asmop_c.size = 1;
+  asmop_c.aopu.aop_reg[0] = regsZ80 + C_IDX;
   asmop_d.type = AOP_REG;
   asmop_d.size = 1;
   asmop_d.aopu.aop_reg[0] = regsZ80 + D_IDX;
@@ -442,6 +450,41 @@ isPairInUseNotInRet(PAIR_ID id, const iCode *ic)
     {
       wassertl (0, "Only implemented for DE");
       return TRUE;
+    }
+}
+
+static bool
+isPairDead(PAIR_ID id, const iCode *ic)
+{
+  if (id == PAIR_DE)
+    {
+      return !(bitVectBitValue (ic->rSurv, D_IDX) || bitVectBitValue(ic->rSurv, E_IDX));
+    }
+  else if (id == PAIR_BC)
+    {
+      return !(bitVectBitValue (ic->rSurv, B_IDX) || bitVectBitValue(ic->rSurv, C_IDX));
+    }
+  else
+    {
+      wassertl (0, "Only implemented for DE and BC");
+      return TRUE;
+    }
+}
+
+static PAIR_ID
+getDeadPairId (const iCode *ic)
+{
+  if (isPairDead (PAIR_BC, ic))
+    {
+      return PAIR_BC;
+    }
+  else if (IS_Z80 && isPairDead (PAIR_DE, ic))
+    {
+      return PAIR_DE;
+    }
+  else
+    {
+      return PAIR_INVALID;
     }
 }
 
@@ -3118,14 +3161,12 @@ _saveRegsForCall(const iCode *ic, int sendSetSize)
       o ...
   */
   
-  if(regalloc_dry_run)	// Todo: Implement!
-    return;
-  
   if (_G.saves.saved == FALSE) {
     bool deInUse, bcInUse;
     bool deSending;
     bool bcInRet = FALSE, deInRet = FALSE;
-    bitVect *rInUse;
+    bool push_bc, push_de;
+    /*bitVect *rInUse;
 
     rInUse = bitVectCplAnd (bitVectCopy (ic->rMask),
                             z80_rUmaskForOp (IC_RESULT(ic)));
@@ -3137,11 +3178,17 @@ _saveRegsForCall(const iCode *ic, int sendSetSize)
 
     emitDebug ("; _saveRegsForCall: sendSetSize: %u deInUse: %u bcInUse: %u deSending: %u", sendSetSize, deInUse, bcInUse, deSending);
 
-    if (bcInUse && bcInRet == FALSE) {
+    push_bc = bcInUse && !bcInRet;
+    push_de = deInUse && !deInRet;*/
+    
+    push_bc = bitVectBitValue (ic->rSurv, B_IDX) || bitVectBitValue (ic->rSurv, C_IDX);
+    push_de = bitVectBitValue (ic->rSurv, D_IDX) || bitVectBitValue (ic->rSurv, E_IDX);
+
+    if (push_bc) {
       _push(PAIR_BC);
       _G.stack.pushedBC = TRUE;
     }
-    if (deInUse && deInRet == FALSE) {
+    if (push_de) {
       _push(PAIR_DE);
       _G.stack.pushedDE = TRUE;
     }
@@ -3498,12 +3545,36 @@ emitCall (const iCode *ic, bool ispcall)
           symbol *rlbl;
           if (!regalloc_dry_run)
             rlbl = newiTempLabel (NULL);
-          spillPair (PAIR_HL);
-          if (!regalloc_dry_run)
+          // At least one of BC, DE, HL is free now, so use it to push the return address.
+          if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG ||
+              AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != B_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != C_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx != B_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx != C_IDX)
             {
-              emit2 ("ld hl,!immed!tlabel", (rlbl->key + 100));
-              emit2 ("push hl");
-              _G.stack.pushed += 2;
+              if (!regalloc_dry_run)
+                {
+                  emit2 ("ld bc,!immed!tlabel", (rlbl->key + 100));
+                  emit2 ("push bc");
+                  _G.stack.pushed += 2;
+                }
+            }
+          else if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG ||
+              AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != D_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != E_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx != D_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx != E_IDX)
+            {
+              if (!regalloc_dry_run)
+                {
+                  emit2 ("ld de,!immed!tlabel", (rlbl->key + 100));
+                  emit2 ("push de");
+                  _G.stack.pushed += 2;
+                }
+            }
+          else
+            {
+              spillPair (PAIR_HL);
+              if (!regalloc_dry_run)
+                {
+                  emit2 ("ld hl,!immed!tlabel", (rlbl->key + 100));
+                  emit2 ("push hl");
+                  _G.stack.pushed += 2;
+                }
             }
           regalloc_dry_run_cost += 4;
 
@@ -3607,9 +3678,6 @@ emitCall (const iCode *ic, bool ispcall)
     }
 
   spillCached ();
-  
-  if(regalloc_dry_run)	// Todo: implement remainder of this function for dry runs (i.e. alternative to z80_rUmaskForOp () below).
-    return;
   
   if (IC_RESULT (ic))
     {
@@ -4147,7 +4215,7 @@ genPlusIncr (const iCode *ic)
         {
           if (getPairId (AOP (IC_LEFT (ic))) == PAIR_HL)
             {
-              PAIR_ID freep = getFreePairId (ic);
+              PAIR_ID freep = getDeadPairId (ic);
               if (freep != PAIR_INVALID)
                 {
                   fetchPair (freep, AOP (IC_RIGHT (ic)));
@@ -4500,22 +4568,59 @@ genPlus (iCode * ic)
     }
 
   if (isPair (AOP (IC_LEFT (ic))) && isPair (AOP (IC_RIGHT (ic))) && getPairId (AOP (IC_LEFT (ic))) == PAIR_HL)
-   {
+    {
       emit2 ("add hl,%s", getPairName (AOP (IC_RIGHT (ic))));
       regalloc_dry_run_cost += 1;
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
-   }
+    }
 
   if (isPair (AOP (IC_LEFT (ic))) && isPair (AOP (IC_RIGHT (ic))) && getPairId (AOP (IC_RIGHT (ic))) == PAIR_HL)
-   {
+    {
       emit2 ("add hl,%s", getPairName (AOP (IC_LEFT (ic))));
       regalloc_dry_run_cost += 1;
       spillPair (PAIR_HL);
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
-   }
+    }
+   
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
+    AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue(ic->rSurv, B_IDX))
+    {
+      fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
+      cheapMove (ASMOP_B, 0, AOP (IC_RIGHT (ic)), 1);
+      emit2 ("add hl, bc");
+      regalloc_dry_run_cost += 1;
+      goto release;
+    }
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
+    AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue(ic->rSurv, B_IDX))
+    {
+      fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
+      cheapMove (ASMOP_B, 0, AOP (IC_LEFT (ic)), 1);
+      emit2 ("add hl, bc");
+      regalloc_dry_run_cost += 1;
+      goto release;
+    }
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
+    AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue(ic->rSurv, D_IDX))
+    {
+      fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
+      cheapMove (ASMOP_D, 0, AOP (IC_RIGHT (ic)), 1);
+      emit2 ("add hl, de");
+      regalloc_dry_run_cost += 1;
+      goto release;
+    }
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
+    AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue(ic->rSurv, D_IDX))
+    {
+      fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
+      cheapMove (ASMOP_D, 0, AOP (IC_LEFT (ic)), 1);
+      emit2 ("add hl, de");
+      regalloc_dry_run_cost += 1;
+      goto release;
+    }
 
   /* Special case:
      ld hl,sp+n trashes C so we can't afford to do it during an
@@ -7893,7 +7998,7 @@ genGenPointerSet (operand * right,
             {
               if(!regalloc_dry_run)
                 emit2 ("ld !*pair,%s", _pairs[PAIR_HL].name, aopGet (AOP (right), offset, FALSE));
-              regalloc_dry_run_cost += 3; // Todo: More exact cost here!
+              regalloc_dry_run_cost += ld_cost(ASMOP_A, AOP (right));
             }
           else
             {
