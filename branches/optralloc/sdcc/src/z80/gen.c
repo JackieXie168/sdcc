@@ -327,8 +327,8 @@ struct asmop *const ASMOP_ONE = &asmop_one;
 
 static asmop *_z80_return3[] =
   {&asmop_l, &asmop_h, &asmop_e, &asmop_d};
-static asmop *_gbz80_return3[] =
-  {&asmop_e, &asmop_d, &asmop_l, &asmop_h};
+//static asmop *_gbz80_return3[] =
+//  {&asmop_e, &asmop_d, &asmop_l, &asmop_h};
 
 static asmop **_fReturn3;
 
@@ -365,7 +365,7 @@ void z80_init_asmops(void)
   asmop_one.aopu.aop_simplelit = 1;
   asmop_one.size = 1;
 
-  _fReturn3 = IS_GB ? _gbz80_return3 : _z80_return3;
+  _fReturn3 = /*IS_GB ? _gbz80_return3 :*/ _z80_return3;
 }
 
 bool regalloc_dry_run;
@@ -428,27 +428,6 @@ isPairInUse (PAIR_ID id, const iCode *ic)
   else
     {
       wassertl (0, "Only implemented for DE and BC");
-      return TRUE;
-    }
-}
-
-static bool
-isPairInUseNotInRet(PAIR_ID id, const iCode *ic)
-{
-  bitVect *rInUse;
-  
-  if(regalloc_dry_run) // Todo: Implement this!
-    return 1;
-
-  rInUse = bitVectCplAnd (bitVectCopy (ic->rMask), ic->rUsed);
-
-  if (id == PAIR_DE)
-    {
-      return bitVectBitValue (rInUse, D_IDX) || bitVectBitValue(rInUse, E_IDX);
-    }
-  else
-    {
-      wassertl (0, "Only implemented for DE");
       return TRUE;
     }
 }
@@ -796,6 +775,8 @@ ld_cost(asmop *op1, asmop *op2)
           return(5);
         case AOP_STK:
           return(6);
+        case AOP_HL:
+          return(7);
         case AOP_IY:    /* 4 from ld iy, #... */
         case AOP_EXSTK:
           return(10);
@@ -805,6 +786,28 @@ ld_cost(asmop *op1, asmop *op2)
           if(op2->aopu.aop_pairId == PAIR_IY || op2->aopu.aop_pairId == PAIR_IX)
             return(6);
         default:printf("ld_cost op1: AOP_STK, op2: %d", (int)(op2type));
+          wassert(0);
+        }
+    case AOP_HL:    /* 3 from ld hl, #... */
+      switch(op2type)
+        {
+        case AOP_ACC:
+        case AOP_REG:
+        case AOP_HLREG:
+        case AOP_DUMMY:
+          return(4);
+        case AOP_IMMD:
+        case AOP_LIT:
+        case AOP_SIMPLELIT:
+          return(5);
+        case AOP_STK:
+          return(7);
+        case AOP_HL:
+          return(6);
+        case AOP_IY:    /* 4 from ld iy, #... */
+        case AOP_EXSTK:
+          return(11);
+        default:printf("ld_cost op1: AOP_HL, op2: %d", (int)(op2type));
           wassert(0);
         }
     default:
@@ -829,6 +832,8 @@ unsigned char op8_cost(asmop *op2)
       return(2);
     case AOP_STK:
       return(3);
+    case AOP_HL:
+      return(4);
     case AOP_IY:    /* 4 from ld iy, #... */
     case AOP_EXSTK: /* 4 from ld iy, #... */
       return(7);
@@ -855,6 +860,8 @@ unsigned char bit8_cost(asmop *op1)
       return(2);
     case AOP_STK:
       return(4);
+    case AOP_HL:
+      return(5);
     case AOP_IY:    /* 4 from ld iy, #... */
       return(8);
     default:
@@ -2795,7 +2802,7 @@ outAcc (operand * result)
       offset = 1;
       /* unsigned or positive */
       while (size--)
-          aopPut3 (AOP (result), offset++, ASMOP_ZERO, 0);
+        aopPut3 (AOP (result), offset++, ASMOP_ZERO, 0);
     }
 }
 
@@ -3094,11 +3101,26 @@ assignResultValue (operand * oper)
     {
       /* We do it the hard way here. */
       _push (PAIR_HL);
-      cheapMove (AOP (oper), 0, _fReturn3[0], 0);
-      cheapMove (AOP (oper), 1, _fReturn3[1], 0);
+      aopPut (AOP (oper), _fReturn[0], 0);
+      aopPut (AOP (oper), _fReturn[1], 1);
       _pop (PAIR_DE);
-      cheapMove (AOP (oper), 2, _fReturn3[0], 0);
-      cheapMove (AOP (oper), 3, _fReturn3[1], 0);
+      aopPut (AOP (oper), _fReturn[0], 2);
+      aopPut (AOP (oper), _fReturn[1], 3);
+    }
+  else if (IS_GB)
+    {
+      if ((AOP_TYPE (oper) == AOP_REG) && (AOP_SIZE (oper) == 4) &&
+          !strcmp (AOP (oper)->aopu.aop_reg[size-1]->name, _fReturn[size-2]))
+        {
+          size--;
+          _emitMove ("a", _fReturn[size-1]);
+          _emitMove (_fReturn[size-1], _fReturn[size]);
+          _emitMove (_fReturn[size], "a");
+          aopPut (AOP (oper), _fReturn[size], size-1);
+          size--;
+        }
+      while(size--)
+        aopPut (AOP (oper), _fReturn[size], size);
     }
   else
     {
@@ -4144,7 +4166,10 @@ genRet (const iCode *ic)
         {
           while (size--)
             {
-              cheapMove (_fReturn3[offset], 0, AOP (IC_LEFT (ic)), offset);
+              if(!IS_GB)
+                cheapMove (_fReturn3[offset], 0, AOP (IC_LEFT (ic)), offset);
+              else
+                emit2 ("ld %s,%s", _fReturn[offset], aopGet (AOP (IC_LEFT (ic)), offset, FALSE));
               offset++;
             }
         }
@@ -4998,20 +5023,17 @@ genMultOneChar (const iCode * ic)
       return;
     }
 
-  /* Save b into a if b is in use. */
-  if (bitVectBitValue (ic->rMask, B_IDX) &&
-    !(getPairId (AOP (IC_RESULT (ic))) == PAIR_BC))
+  if (!isPairDead (PAIR_DE, ic))
+    {
+      _push (PAIR_DE);
+      _G.stack.pushedDE = TRUE;
+    }
+  if (bitVectBitValue (ic->rSurv, B_IDX))
     {
       _push (PAIR_BC);
       savedB = TRUE;
     }
-  if (isPairInUse (PAIR_DE, ic) &&
-    !(getPairId (AOP (IC_RESULT (ic))) == PAIR_DE))
-  {
-    _push (PAIR_DE);
-    _G.stack.pushedDE = TRUE;
-  }
-
+    
   cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
   cheapMove (ASMOP_H, 0, AOP (IC_LEFT (ic)), LSB);
 
@@ -5034,14 +5056,14 @@ genMultOneChar (const iCode * ic)
 
   spillPair(PAIR_HL);
 
-  if (IS_Z80 && _G.stack.pushedDE)
-    {
-      _pop (PAIR_DE);
-      _G.stack.pushedDE = FALSE;
-    }
   if (savedB)
     {
       _pop (PAIR_BC);
+    }
+  if (_G.stack.pushedDE)
+    {
+      _pop (PAIR_DE);
+      _G.stack.pushedDE = FALSE;
     }
 
   if(AOP (IC_RESULT (ic))->type != AOP_HL)
@@ -5061,7 +5083,7 @@ genMultOneChar (const iCode * ic)
       }
     else
       {
-        if(isPairInUse (PAIR_DE, ic))
+        if(!isPairDead (PAIR_DE, ic))
           {
             _push (PAIR_DE);
             _G.stack.pushedDE = TRUE;
@@ -5070,7 +5092,7 @@ genMultOneChar (const iCode * ic)
         emit2("ld d, h");
         regalloc_dry_run_cost += 2;
         commitPair ( AOP (IC_RESULT (ic)), PAIR_DE);
-        if(isPairInUse (PAIR_DE, ic))
+        if(!isPairDead (PAIR_DE, ic))
           {
             _pop (PAIR_DE);
             _G.stack.pushedDE = FALSE;
@@ -5125,7 +5147,7 @@ genMult (iCode *ic)
   //  wassertl (val > 0, "Multiply must be positive");
   wassertl (val != 1, "Can't multiply by 1");
 
-  if (IS_Z80 && isPairInUseNotInRet (PAIR_DE, ic)) {
+  if (IS_Z80 && !isPairDead (PAIR_DE, ic)) {
     _push (PAIR_DE);
     _G.stack.pushedDE = TRUE;
   }
@@ -8061,7 +8083,7 @@ genGenPointerSet (operand * right,
             {
               if(!regalloc_dry_run)
                 emit2 ("ld !*pair,%s", _pairs[pairId].name, aopGet (AOP (right), offset, FALSE));
-              regalloc_dry_run_cost += 3; // Todo: More exact cost here!   
+              regalloc_dry_run_cost += ld_cost(ASMOP_A, AOP (right));
             }
           else
             {
@@ -9105,7 +9127,10 @@ genBuiltInMemcpy (const iCode *ic, int nParams, operand **pparams)
   _saveRegsForCall (ic, 0);
 
   if (setupForMemcpy (ic, nParams, pparams))
-    emit2 ("ldir");
+    {
+      emit2 ("ldir");
+      regalloc_dry_run_cost += 2;
+    }
 
   freeAsmop (count, NULL, ic->next->next);
   freeAsmop (to, NULL, ic->next);
