@@ -3988,6 +3988,8 @@ genEndFunction (iCode * ic)
 {
   symbol *sym = OP_SYMBOL (IC_LEFT (ic));
 
+  wassert (!regalloc_dry_run);
+
   if (IFFUNC_ISNAKED(sym->type))
     {
       emitDebug("; naked function: no epilogue.");
@@ -5894,7 +5896,7 @@ genCmpEq (iCode * ic, iCode * ifx)
     {
       emitDebug(";4");
 
-      gencjne (left, right, newiTempLabel (NULL));
+      gencjne (left, right, regalloc_dry_run ? 0 : newiTempLabel (NULL));
       if (AOP_TYPE (result) == AOP_CRY && AOP_SIZE (result))
         {
           wassert (0);
@@ -5963,11 +5965,15 @@ genAndOp (const iCode *ic)
     }
   else
     {
-      tlbl = newiTempLabel (NULL);
+      if (!regalloc_dry_run)
+        tlbl = newiTempLabel (NULL);
       _toBoolean (left);
-      emit2 ("jp Z,!tlabel", tlbl->key + 100);
+      if (!regalloc_dry_run)
+        emit2 ("jp Z,!tlabel", tlbl->key + 100);
+      regalloc_dry_run_cost += 3;
       _toBoolean (right);
-      emitLabelNoSpill (tlbl->key + 100);
+      if (!regalloc_dry_run)
+        emitLabelNoSpill (tlbl->key + 100);
       outBitAcc (result);
     }
 
@@ -6000,11 +6006,15 @@ genOrOp (const iCode *ic)
     }
   else
     {
-      tlbl = newiTempLabel (NULL);
+      if (!regalloc_dry_run)
+        tlbl = newiTempLabel (NULL);
       _toBoolean (left);
-      emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+      if (!regalloc_dry_run)
+        emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+      regalloc_dry_run_cost += 3;
       _toBoolean (right);
-      emitLabelNoSpill (tlbl->key + 100);
+      if (!regalloc_dry_run)
+        emitLabelNoSpill (tlbl->key + 100);
       outBitAcc (result);
     }
 
@@ -6136,7 +6146,9 @@ genAnd (const iCode *ic, iCode * ifx)
       (AOP_TYPE (result) == AOP_CRY) &&
       (AOP_TYPE (left) != AOP_CRY))
     {
-      symbol *tlbl = newiTempLabel (NULL);
+      symbol *tlbl;
+      if (!regalloc_dry_run)
+        tlbl = newiTempLabel (NULL);
       int sizel = AOP_SIZE (left);
       if (size)
         {
@@ -6341,7 +6353,7 @@ genOr (const iCode *ic, iCode * ifx)
       (AOP_TYPE (left) != AOP_CRY))
     {
       symbol *tlbl;
-      if(!regalloc_dry_run)
+      if (!regalloc_dry_run)
         tlbl = newiTempLabel (NULL);
       int sizel = AOP_SIZE (left);
 
@@ -6518,7 +6530,7 @@ genXor (const iCode *ic, iCode * ifx)
       (AOP_TYPE (left) != AOP_CRY))
     {
       symbol *tlbl;
-      if(!regalloc_dry_run)
+      if (!regalloc_dry_run)
         tlbl = newiTempLabel (NULL);
       int sizel = AOP_SIZE (left);
 
