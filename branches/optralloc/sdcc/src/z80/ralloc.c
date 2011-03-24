@@ -103,6 +103,10 @@ static regs _gbz80_regs[] =
 {
   {REG_GPR, C_IDX, "c", 1},
   {REG_GPR, B_IDX, "b", 1},
+  {REG_GPR, E_IDX, "e", 1},
+  {REG_GPR, D_IDX, "d", 1},
+  {REG_GPR, L_IDX, "l", 1},
+  {REG_GPR, H_IDX, "h", 1},
   {REG_CND, CND_IDX, "c", 1}
 };
 
@@ -442,8 +446,9 @@ verifyRegsAssigned (operand *op, iCode * ic)
   if (!sym->nRegs) return;
   if (sym->regs[0]) return;
 
-  werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT,
-            sym->prereqv ? sym->prereqv->name : sym->name);
+  // Don't warn, since this is not used by default
+  //werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT,
+  //          sym->prereqv ? sym->prereqv->name : sym->name);
   spillThis (sym);
 }
 
@@ -2125,6 +2130,8 @@ void RegFix (eBBlock ** ebbs, int count)
 
         for (ic = ebbs[i]->sch; ic; ic = ic->next)
           {
+            deassignLRs (ic, ebbs[i]);
+
             if (SKIP_IC2 (ic))
               continue;
 

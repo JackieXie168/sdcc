@@ -327,8 +327,8 @@ struct asmop *const ASMOP_ONE = &asmop_one;
 
 static asmop *_z80_return3[] =
   {&asmop_l, &asmop_h, &asmop_e, &asmop_d};
-//static asmop *_gbz80_return3[] =
-//  {&asmop_e, &asmop_d, &asmop_l, &asmop_h};
+static asmop *_gbz80_return3[] =
+  {&asmop_e, &asmop_d, &asmop_l, &asmop_h};
 
 static asmop **_fReturn3;
 
@@ -365,7 +365,7 @@ void z80_init_asmops(void)
   asmop_one.aopu.aop_simplelit = 1;
   asmop_one.size = 1;
 
-  _fReturn3 = /*IS_GB ? _gbz80_return3 :*/ _z80_return3;
+  _fReturn3 = IS_GB ? _gbz80_return3 : _z80_return3;
 }
 
 bool regalloc_dry_run;
@@ -2681,7 +2681,7 @@ commitPair (asmop * aop, PAIR_ID id)
           aopPut (aop, "a", 0);
           aopPut (aop, "d", 1);
         }
-      regalloc_dry_run_cost += (2 + ld_cost(aop, ASMOP_A) + ld_cost(aop, ASMOP_E));
+      regalloc_dry_run_cost += (2 + ld_cost(aop, ASMOP_A) + ld_cost(aop, ASMOP_D));
     }
   else
     {
@@ -3106,21 +3106,6 @@ assignResultValue (operand * oper)
       _pop (PAIR_DE);
       aopPut (AOP (oper), _fReturn[0], 2);
       aopPut (AOP (oper), _fReturn[1], 3);
-    }
-  else if (IS_GB)
-    {
-      if ((AOP_TYPE (oper) == AOP_REG) && (AOP_SIZE (oper) == 4) &&
-          !strcmp (AOP (oper)->aopu.aop_reg[size-1]->name, _fReturn[size-2]))
-        {
-          size--;
-          _emitMove ("a", _fReturn[size-1]);
-          _emitMove (_fReturn[size-1], _fReturn[size]);
-          _emitMove (_fReturn[size], "a");
-          aopPut (AOP (oper), _fReturn[size], size-1);
-          size--;
-        }
-      while(size--)
-        aopPut (AOP (oper), _fReturn[size], size);
     }
   else
     {
@@ -4166,10 +4151,7 @@ genRet (const iCode *ic)
         {
           while (size--)
             {
-              if(!IS_GB)
-                cheapMove (_fReturn3[offset], 0, AOP (IC_LEFT (ic)), offset);
-              else
-                emit2 ("ld %s,%s", _fReturn[offset], aopGet (AOP (IC_LEFT (ic)), offset, FALSE));
+              emit2 ("ld %s,%s", _fReturn[offset], aopGet (AOP (IC_LEFT (ic)), offset, FALSE));
               offset++;
             }
         }
@@ -8389,7 +8371,7 @@ genJumpTab (const iCode *ic)
   /* get the condition into accumulator */
   if (!IS_GB)
     emit2 ("push de");
-  emit3 (A_LD, ASMOP_E, AOP (IC_JTCOND (ic)));
+  cheapMove (ASMOP_E, 0, AOP (IC_JTCOND (ic)), 0);
   if(!regalloc_dry_run)
     {
       emit2 ("ld d,!zero");

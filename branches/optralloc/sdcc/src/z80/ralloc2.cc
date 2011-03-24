@@ -1033,7 +1033,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
             sym->regs[i] = 0;
           sym->accuse = 0;
           sym->nRegs = I[v].size;
-          spillThis(sym);
+          //spillThis(sym); Leave it to regFix, which can do some spillocation compaction. Todo: Use Thorup instead.
         }
     }
     
