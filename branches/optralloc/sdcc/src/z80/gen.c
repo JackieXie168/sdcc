@@ -4151,7 +4151,7 @@ genRet (const iCode *ic)
         {
           while (size--)
             {
-              emit2 ("ld %s,%s", _fReturn[offset], aopGet (AOP (IC_LEFT (ic)), offset, FALSE));
+              cheapMove (_fReturn3[offset], 0, AOP (IC_LEFT (ic)), offset);
               offset++;
             }
         }
