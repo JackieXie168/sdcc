@@ -782,9 +782,6 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     ic->op == '+')) // todo: More instructions that can write iy.
     return(true);
 
-  if(ic->op == PCALL || ic->op == CALL || ic->op == JUMPTABLE)	// todo: relax?
-    return(false);
-
   if(SKIP_IC2(ic))
     return(true);
 
@@ -799,6 +796,9 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   if(ic->op == IPUSH)	// todo: More instructions that can use IY.
     return(true);
+
+  //if(input_in_IY && ic->op == '=' && ) not yet implemented when result is not a pair.
+  //  return(true);
 
 #if 0
   if(ic->key >=39 && ic->key <= 44)
@@ -1138,12 +1138,12 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
 
-  std::cout << "Winner: ";
+  /*std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
   {
   	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
   }
-  std::cout << "\n";
+  std::cout << "\n";*/
 
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))

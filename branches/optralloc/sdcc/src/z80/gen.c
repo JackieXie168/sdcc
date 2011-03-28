@@ -252,6 +252,7 @@ static struct
     int offset;
     int pushedBC;
     int pushedDE;
+    int pushedIY;
   } stack;
 
   struct
@@ -443,9 +444,17 @@ isPairDead(PAIR_ID id, const iCode *ic)
     {
       return !(bitVectBitValue (ic->rSurv, B_IDX) || bitVectBitValue(ic->rSurv, C_IDX));
     }
+  else if (id == PAIR_HL)
+    {
+      return !(bitVectBitValue (ic->rSurv, H_IDX) || bitVectBitValue(ic->rSurv, L_IDX));
+    }
+  else if (id == PAIR_IY)
+    {
+      return !(bitVectBitValue (ic->rSurv, IYH_IDX) || bitVectBitValue(ic->rSurv, IYL_IDX));
+    }
   else
     {
-      wassertl (0, "Only implemented for DE and BC");
+      wassertl (0, "Only implemented for DE, BC, HL and IY");
       return TRUE;
     }
 }
@@ -1123,14 +1132,14 @@ void
 genPairPush (asmop * aop)
 {
   emit2 ("push %s", getPairName (aop));
-  regalloc_dry_run_cost += 1;
+  regalloc_dry_run_cost += 1;	// Todo: exact cost.
 }
 
 static void
 _push (PAIR_ID pairId)
 {
   emit2 ("push %s", _pairs[pairId].name);
-  regalloc_dry_run_cost += 1;
+  regalloc_dry_run_cost += (pairId == PAIR_IX || pairId == PAIR_IY? 2 : 1);
   _G.stack.pushed += 2;
 }
 
@@ -1140,7 +1149,7 @@ _pop (PAIR_ID pairId)
   if (pairId != PAIR_INVALID)
     {
       emit2 ("pop %s", _pairs[pairId].name);
-      regalloc_dry_run_cost += 1;
+      regalloc_dry_run_cost += (pairId == PAIR_IX || pairId == PAIR_IY? 2 : 1);
       _G.stack.pushed -= 2;
       spillPair (pairId);
     }
@@ -2017,7 +2026,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
           {
             emit2("push %s", _pairs[getPairId(aop)].name);
             emit2("pop %s", _pairs[pairId].name);
-            regalloc_dry_run_cost += 2;
+            regalloc_dry_run_cost += (pairId == PAIR_IY ? 2 : 1) + (getPairId(aop) == PAIR_IY ? 2 : 1);
           }
         else
           {
@@ -3137,6 +3146,11 @@ _restoreRegsAfterCall(void)
       _pop ( PAIR_BC);
       _G.stack.pushedBC = FALSE;
     }
+  if (_G.stack.pushedIY)
+    {
+      _pop ( PAIR_IY);
+      _G.stack.pushedIY = FALSE;
+    }
   _G.saves.saved = FALSE;
 }
 
@@ -3169,7 +3183,7 @@ _saveRegsForCall(const iCode *ic, int sendSetSize)
     bool deInUse, bcInUse;
     bool deSending;
     bool bcInRet = FALSE, deInRet = FALSE;
-    bool push_bc, push_de;
+    bool push_bc, push_de, push_iy;
     /*bitVect *rInUse;
 
     rInUse = bitVectCplAnd (bitVectCopy (ic->rMask),
@@ -3187,6 +3201,7 @@ _saveRegsForCall(const iCode *ic, int sendSetSize)
     
     push_bc = bitVectBitValue (ic->rSurv, B_IDX) || bitVectBitValue (ic->rSurv, C_IDX);
     push_de = bitVectBitValue (ic->rSurv, D_IDX) || bitVectBitValue (ic->rSurv, E_IDX);
+    push_iy = bitVectBitValue (ic->rSurv, IYH_IDX) || bitVectBitValue (ic->rSurv, IYL_IDX);
 
     if (push_bc) {
       _push(PAIR_BC);
@@ -3195,6 +3210,10 @@ _saveRegsForCall(const iCode *ic, int sendSetSize)
     if (push_de) {
       _push(PAIR_DE);
       _G.stack.pushedDE = TRUE;
+    }
+    if (push_iy) {
+      _push(PAIR_IY);
+      _G.stack.pushedIY = TRUE;
     }
 
     if(!regalloc_dry_run)
@@ -3752,6 +3771,12 @@ emitCall (const iCode *ic, bool ispcall)
         }
       _G.stack.pushedBC = FALSE;
     }
+
+  if (_G.stack.pushedIY)
+    {
+      _pop (PAIR_IY);
+      _G.stack.pushedIY = FALSE;
+    }
 }
 
 /*-----------------------------------------------------------------*/
@@ -3823,10 +3848,12 @@ genFunction (const iCode * ic)
     {
       sprintf (buffer, "%s_start", sym->rname);
       emit2 ("!labeldef", buffer);
-      _G.lines.current->isLabel = 1;
+      if(!regalloc_dry_run)
+        _G.lines.current->isLabel = 1;
     }
   emit2 ("!functionlabeldef", sym->rname);
-  _G.lines.current->isLabel = 1;
+  if(!regalloc_dry_run)
+    _G.lines.current->isLabel = 1;
 
   ftype = operandType (IC_LEFT (ic));
 
@@ -4506,7 +4533,7 @@ genPlus (iCode * ic)
           char buffer[100];
           sprintf (buffer, "#(%s + %s)", left, right);
           emit2 ("ld %s,%s", getPairName (AOP (IC_RESULT (ic))), buffer);
-          regalloc_dry_run_cost += 3; // Todo: More exact cost.
+          regalloc_dry_run_cost += (getPairId(AOP (IC_RESULT (ic))) == PAIR_IY ? 4 : 3);
           goto release;
         }
     }
@@ -4599,7 +4626,7 @@ genPlus (iCode * ic)
       commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
       goto release;
     }
-   
+
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
     AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue(ic->rSurv, B_IDX))
     {
@@ -4609,6 +4636,7 @@ genPlus (iCode * ic)
       regalloc_dry_run_cost += 1;
       goto release;
     }
+
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
     AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue(ic->rSurv, B_IDX))
     {
@@ -4618,6 +4646,7 @@ genPlus (iCode * ic)
       regalloc_dry_run_cost += 1;
       goto release;
     }
+
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
     AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue(ic->rSurv, D_IDX))
     {
@@ -4627,6 +4656,7 @@ genPlus (iCode * ic)
       regalloc_dry_run_cost += 1;
       goto release;
     }
+
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
     AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue(ic->rSurv, D_IDX))
     {
@@ -4718,7 +4748,10 @@ genPlus (iCode * ic)
     {
       _moveA3 (AOP (IC_LEFT (ic)), 0);
       emit3 (A_ADD, ASMOP_A, AOP (IC_RIGHT (ic)));
-      if(AOP (IC_RESULT (ic))->type == AOP_HL || !regalloc_dry_run && strcmp (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), aopGet (AOP (IC_LEFT (ic)), 1, FALSE))) // Todo: More exact cost.
+      if(AOP (IC_RESULT (ic))->type == AOP_HL ||
+        AOP_TYPE (IC_RESULT (ic)) != AOP_REG && AOP_TYPE (IC_RESULT (ic)) != AOP_HLREG ||
+        AOP_TYPE (IC_LEFT (ic)) != AOP_REG && AOP_TYPE (IC_LEFT (ic)) != AOP_HLREG ||
+        AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] != AOP (IC_LEFT (ic))->aopu.aop_reg[1] || !regalloc_dry_run && strcmp (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), aopGet (AOP (IC_LEFT (ic)), 1, FALSE))) // Todo: More exact cost.
         {
           _moveFromA (AOP (IC_RESULT (ic)), 0);
           _moveA3 (AOP (IC_LEFT (ic)), 1);
@@ -9451,7 +9484,7 @@ unsigned char dryZ80iCode (iCode *ic)
 {
   regalloc_dry_run = true;
   regalloc_dry_run_cost = 0;
-  
+
   /* Hack */
   if (IS_GB)
     {
@@ -9474,12 +9507,26 @@ unsigned char dryZ80iCode (iCode *ic)
   return(regalloc_dry_run_cost);
 }
 
+#if 0
+void
+dryZ80Code (iCode * lic)
+{
+  iCode *ic;
+
+  for (ic = lic; ic; ic = ic->next)
+    if(ic->op != FUNCTION && ic->op != ENDFUNCTION && ic->op != LABEL && ic->op != GOTO && ic->op != INLINEASM)
+      printf("; iCode %d total cost: %d\n", ic->key, (int)(dryZ80iCode (ic)));
+}
+#endif
+
 /*-------------------------------------------------------------------------------------*/
 /* genZ80Code - generate code for Z80 based controllers for a block of intructions     */
 /*-------------------------------------------------------------------------------------*/
 void
 genZ80Code (iCode * lic)
 {
+  //dryZ80Code(lic);
+
   iCode *ic;
   int cln = 0;
   regalloc_dry_run = false;
@@ -9526,7 +9573,8 @@ genZ80Code (iCode * lic)
         }
       regalloc_dry_run_cost = 0;
       genZ80iCode (ic);
-      emitDebug("; iCode total cost: %d", (int)(regalloc_dry_run_cost));
+      //printf("; iCode %d total cost: %d\n", ic->key, (int)(regalloc_dry_run_cost));
+      emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));
     }
 
 
