@@ -40,6 +40,7 @@ extern Z80_OPTS z80_opts;
 
 #define OPTRALLOC_HL IS_Z80
 #define OPTRALLOC_A 1
+#define OPTRALLOC_IY 0
 
 enum
   {

@@ -32,6 +32,8 @@ extern "C"
 #define REG_D 3
 #define REG_L 4
 #define REG_H 5
+#define REG_IYL 6
+#define REG_IYH 7
 #define REG_A (NUM_REGS - 1)
 
 template <class G_t, class I_t>
@@ -83,6 +85,8 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
                 c -= 0.4f;
               else if(OPTRALLOC_HL && byteregs[0] == REG_L)
                 c -= 0.1f;
+              else if(OPTRALLOC_IY && byteregs[0] == REG_IYL || byteregs[0] == REG_IYH)
+                c += 0.1f;
             }
           // Spilt.
           else
@@ -200,6 +204,8 @@ assign_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
 
       if(OPTRALLOC_A && byteregs[0] == REG_A)
         c -= 0.4f;
+      else if(OPTRALLOC_IY && byteregs[0] == REG_IYL || byteregs[0] == REG_IYH)
+        c += 0.1f;
     }
 
   if(!size1)
@@ -229,6 +235,8 @@ assign_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
 
       if(OPTRALLOC_A && byteregs[0] == REG_A)
         c -= 0.4f;
+      else if(OPTRALLOC_IY && byteregs[0] == REG_IYL || byteregs[0] == REG_IYH)
+        c += 0.1f;
     }
 
   if(!size2)
@@ -696,6 +704,111 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 }
 
 template <class G_t, class I_t>
+bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+
+  // IY always unused on gbz80.
+  if(TARGET_IS_GBZ80)
+    return(true);
+
+  std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
+  if(iai == a.i_assignments.end())
+    {
+      std::cerr << "ERROR: Instruction assignment not found.\n";
+      return(false);
+    }
+  const i_assignment &ia = iai->second;
+
+  bool unused_IYL = (ia.registers[REG_IYL][1] < 0);
+  bool unused_IYH = (ia.registers[REG_IYH][1] < 0);
+
+  const operand *left = IC_LEFT(ic);
+  const operand *right = IC_RIGHT(ic);
+  const operand *result = IC_RESULT(ic);
+
+  bool result_in_IYL = operand_in_reg(result, REG_IYL, ia, i, G);
+  bool result_in_IYH = operand_in_reg(result, REG_IYH, ia, i, G);
+  bool result_in_IY = result_in_IYL || result_in_IYH;
+
+  bool input_in_IYL, input_in_IYH;
+  switch(ic->op)
+    {
+    case IFX:
+      input_in_IYL = operand_in_reg(IC_COND(ic), REG_IYL, ia, i, G);
+      input_in_IYH = operand_in_reg(IC_COND(ic), REG_IYL, ia, i, G);
+      break;
+    case JUMPTABLE:
+      input_in_IYL = operand_in_reg(IC_JTCOND(ic), REG_IYL, ia, i, G);
+      input_in_IYH = operand_in_reg(IC_JTCOND(ic), REG_IYL, ia, i, G);
+      break;
+    default:
+      input_in_IYL = operand_in_reg(left, REG_IYL, ia, i, G) || operand_in_reg(right, REG_IYL, ia, i, G);
+      input_in_IYH = operand_in_reg(left, REG_IYH, ia, i, G) || operand_in_reg(right, REG_IYH, ia, i, G);
+      break;
+    }
+  bool input_in_IY = input_in_IYL || input_in_IYH;
+
+  const std::set<var_t> &dying = G[i].dying;
+  
+  bool dying_IYL = result_in_IYL || dying.find(ia.registers[REG_IYL][1]) != dying.end() || dying.find(ia.registers[REG_IYL][0]) != dying.end();
+  bool dying_IYH = result_in_IYH || dying.find(ia.registers[REG_IYH][1]) != dying.end() || dying.find(ia.registers[REG_IYH][0]) != dying.end();
+
+  bool result_only_IY = (result_in_IYL || unused_IYL || dying_IYL) && (result_in_IYH || unused_IYH || dying_IYH);
+
+  if(unused_IYL && unused_IYH)
+    return(true);	// Register IY not in use.
+
+  // Code generator cannot handle variables that are only partially in IY.
+  if(unused_IYL ^ unused_IYH)
+    return(false);
+  if(!unused_IYL && I[ia.registers[REG_IYL][1]].size != 2 || !unused_IYH && I[ia.registers[REG_IYH][1]].size != 2 ||
+    ia.registers[REG_IYL][0] >= 0 && I[ia.registers[REG_IYL][0]].size != 2 || ia.registers[REG_IYH][0] >= 0 && I[ia.registers[REG_IYH][0]].size != 2)
+    return(false);
+  if(ia.registers[REG_IYL][1] >= 0 && (ia.registers[REG_IYH][1] <= 0 || I[ia.registers[REG_IYL][1]].v != I[ia.registers[REG_IYH][1]].v))
+    return(false);
+  if(ia.registers[REG_IYL][0] >= 0 && (ia.registers[REG_IYH][0] <= 0 || I[ia.registers[REG_IYL][0]].v != I[ia.registers[REG_IYH][0]].v))
+    return(false);
+  if(I[ia.registers[REG_IYL][1]].byte != 0 || I[ia.registers[REG_IYH][1]].byte != 1)
+    return(false);
+
+#if 0
+  if(ic->key >=39 && ic->key <= 44)
+    std::cout << "IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
+#endif
+
+  if(result_in_IY &&
+    (ic->op == '=' ||
+    ic->op == '+')) // todo: More instructions that can write iy.
+    return(true);
+
+  if(ic->op == PCALL || ic->op == CALL || ic->op == JUMPTABLE)	// todo: relax?
+    return(false);
+
+  if(SKIP_IC2(ic))
+    return(true);
+
+  if(ic->op == IFX)	// todo: relax?
+    return(false);
+
+  if(!result_in_IY && !input_in_IY &&
+    !(IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic))) &&
+    !(IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT(ic))) &&
+    !(IC_LEFT(ic) && IS_SYMOP(IC_LEFT(ic)) && isOperandInDirSpace(IC_LEFT(ic))))
+    return(true);
+
+  if(ic->op == IPUSH)	// todo: More instructions that can use IY.
+    return(true);
+
+#if 0
+  if(ic->key >=39 && ic->key <= 44)
+    std::cout << "Default drop.\n";
+#endif
+
+  return(false);
+}
+
+template <class G_t, class I_t>
 void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   iCode *ic = G[i].ic;
@@ -729,16 +842,22 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
       var_t v = oi->second;
       if(a.global[v] >= 0)
         { 
-          if(a.global[v] != REG_A || !OPTRALLOC_A)
+          if((a.global[v] != REG_A || !OPTRALLOC_A) && (a.global[v] != REG_IYL && a.global[v] != REG_IYH || !OPTRALLOC_IY))
             {
               sym->regs[I[v].byte] = regsZ80 + a.global[v];
               sym->accuse = 0;
               sym->isspilt = false;
               sym->nRegs = I[v].size;
             }
-          else
+          else if(a.global[v] == REG_A)
             {
               sym->accuse = ACCUSE_A;
+              sym->nRegs = 0;
+              sym->regs[I[v].byte] = 0;
+            }
+          else
+            {
+              sym->accuse = ACCUSE_IY;
               sym->nRegs = 0;
               sym->regs[I[v].byte] = 0;
             }
@@ -786,6 +905,9 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   if(OPTRALLOC_HL && !HLinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
+  if(OPTRALLOC_IY && !IYinst_ok(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
   if(OPTRALLOC_EXACT_COST)
     {
       switch(ic->op)
@@ -804,12 +926,12 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case '!':
         case '~':
         case UNARYMINUS:
-        case IPUSH: // triggers memory leak?
+        case IPUSH:
         //case IPOP:
         case CALL:
         case PCALL:
-        case RETURN: // triggers memory leak?
-        case '+': // triggers memory leak?
+        case RETURN:
+        case '+':
         case '-':
         case '*':
         case '>':
@@ -830,7 +952,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case JUMPTABLE:
         case CAST:
         //case RECEIVE:
-        case SEND:
+        //case SEND:	// todo: Make builtins work
         case DUMMY_READ_VOLATILE:
         case CRITICAL:
         case ENDCRITICAL:
@@ -944,6 +1066,21 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
       !HLinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
+  // Code generator cannot handle variables that are only partially in IY.
+  if(OPTRALLOC_IY &&
+    (ia.registers[REG_IYL][1] >= 0 && (I[ia.registers[REG_IYL][1]].size != 2 || I[ia.registers[REG_IYL][1]].byte != 0) ||
+    ia.registers[REG_IYH][1] >= 0 && (I[ia.registers[REG_IYH][1]].size != 2 || I[ia.registers[REG_IYH][1]].byte != 1) ||
+    ia.registers[REG_IYL][0] >= 0 && (I[ia.registers[REG_IYL][0]].size != 2 || I[ia.registers[REG_IYL][0]].byte != 0) ||
+    ia.registers[REG_IYH][0] >= 0 && (I[ia.registers[REG_IYH][0]].size != 2 || I[ia.registers[REG_IYH][0]].byte != 1)))
+    return(std::numeric_limits<float>::infinity());
+
+  // Can only check for IYinst_ok() in some cases.
+  if(OPTRALLOC_IY &&
+      (ia.registers[REG_IYL][1] >= 0 && ia.registers[REG_IYH][1] >= 0) &&
+      !((ia.registers[REG_IYL][0] >= 0) ^ (ia.registers[REG_IYH][0] >= 0)) &&
+      !IYinst_ok(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
   // The code generator could deal with this for '+' in some cases though.
   const iCode *ic = G[i].ic;
   if((ic->op == '|' || ic->op == '&' || ic->op == '^' || ic->op == '+' || ic->op == '-') && result_overwrites_operand(a, i, G, I))
@@ -958,6 +1095,10 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 
   if(OPTRALLOC_HL && ia.registers[REG_L][1] < 0)
     c += 0.02f;
+
+  // Using IY is rarely a good choice, so discard the IY-users first when in doubt.
+  if(OPTRALLOC_IY && (ia.registers[REG_IYL][1] >= 0 || ia.registers[REG_IYH][1] >= 0))
+    c += 32.0f;
 
   // An artifical ordering of assignments.
   if(ia.registers[REG_E][1] < 0)
@@ -997,34 +1138,43 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
 
-  /*std::cout << "Winner: ";
+  std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
   {
   	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
   }
-  std::cout << "\n";*/
+  std::cout << "\n";
 
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))
-    std::cerr << "ERROR: No Assignments at root\n";
+    {
+      std::cerr << "ERROR: No Assignments at root\n";
+      exit(-1);
+    }
 
   for(unsigned int v = 0; v < boost::num_vertices(I); v++)
     {
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
       if(winner.global[v] >= 0)
         {
-          if(winner.global[v] != REG_A || !OPTRALLOC_A)
+          if((winner.global[v] != REG_A || !OPTRALLOC_A) && (winner.global[v] != REG_IYL && winner.global[v] != REG_IYH || !OPTRALLOC_IY))
             {
               sym->regs[I[v].byte] = regsZ80 + winner.global[v];
               sym->accuse = 0;
               sym->isspilt = false;
               sym->nRegs = I[v].size;
             }
-          else
+          else if(winner.global[v] == REG_A)
             {
               sym->accuse = ACCUSE_A;
               sym->nRegs = 0;
               sym->regs[0] = 0;
+            }
+          else
+            {
+              sym->accuse = ACCUSE_IY;
+              sym->nRegs = 0;
+              sym->regs[I[v].byte] = 0;
             }
         }
       else

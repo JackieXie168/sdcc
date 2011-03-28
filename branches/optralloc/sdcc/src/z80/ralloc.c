@@ -1495,7 +1495,7 @@ packRegsForIYUse (iCode * lic, operand * op, eBBlock * ebp)
     }
 
   D (D_PACK_IY, ("Succeeded IY!\n"));
-//printf("Packing %s in IY\n", OP_SYMBOL(op)->name);
+
   OP_SYMBOL (op)->accuse = ACCUSE_IY;
   return dic;
 }
@@ -1925,7 +1925,7 @@ packRegisters (eBBlock * ebp)
         if (!IS_GB && !IY_RESERVED)
           packRegsForHLUse3 (ic, IC_RESULT (ic), ebp);
 
-      if (!DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
+      if (/*!OPTRALLOC_IY &&*/ !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
         {
           packRegsForIYUse (ic, IC_RESULT (ic), ebp);
         }

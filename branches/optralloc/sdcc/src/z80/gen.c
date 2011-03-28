@@ -531,43 +531,6 @@ _add_line (const char *buffer)
   _G.lines.current->isComment = (*buffer == ';');
 }
 
-static PAIR_ID
-getPairId (const asmop *aop)
-{
-  if (aop->size == 2)
-    {
-      if (aop->type == AOP_REG)
-        {
-          wassert (aop->aopu.aop_reg[0] && aop->aopu.aop_reg[1]);
-          
-          if ((aop->aopu.aop_reg[0]->rIdx == C_IDX) && (aop->aopu.aop_reg[1]->rIdx == B_IDX))
-            {
-              return PAIR_BC;
-            }
-          if ((aop->aopu.aop_reg[0]->rIdx == E_IDX) && (aop->aopu.aop_reg[1]->rIdx == D_IDX))
-            {
-              return PAIR_DE;
-            }
-          if ((aop->aopu.aop_reg[0]->rIdx == L_IDX) && (aop->aopu.aop_reg[1]->rIdx == H_IDX))
-            {
-              return PAIR_HL;
-            }
-        }
-      else if (aop->type == AOP_STR || aop->type == AOP_HLREG)
-        {
-          int i;
-          for (i = 0; i < NUM_PAIRS; i++)
-            {
-              if (!strcmp (aop->aopu.aop_str[0], _pairs[i].l) && !strcmp (aop->aopu.aop_str[1], _pairs[i].h))
-                {
-                  return i;
-                }
-            }
-        }
-    }
-  return PAIR_INVALID;
-}
-
 static void
 _vemit2 (const char *szFormat, va_list ap)
 {
@@ -596,21 +559,6 @@ _vemit2 (const char *szFormat, va_list ap)
 }
 
 static void
-emit2 (const char *szFormat,...)
-{
-  if(regalloc_dry_run)
-    return;
-
-  va_list ap;
-
-  va_start (ap, szFormat);
-
-  _vemit2 (szFormat, ap);
-
-  va_end (ap);
-}
-
-static void
 emitDebug (const char *szFormat,...)
 {
   if(regalloc_dry_run)
@@ -627,6 +575,56 @@ emitDebug (const char *szFormat,...)
 
       va_end (ap);
     }
+}
+
+static PAIR_ID
+getPairId (const asmop *aop)
+{
+  if (aop->size == 2)
+    {
+      if (aop->type == AOP_REG)
+        {
+          wassert (aop->aopu.aop_reg[0] && aop->aopu.aop_reg[1]);
+          
+          if ((aop->aopu.aop_reg[0]->rIdx == C_IDX) && (aop->aopu.aop_reg[1]->rIdx == B_IDX))
+            {
+              return PAIR_BC;
+            }
+          if ((aop->aopu.aop_reg[0]->rIdx == E_IDX) && (aop->aopu.aop_reg[1]->rIdx == D_IDX))
+            {
+              return PAIR_DE;
+            }
+          if ((aop->aopu.aop_reg[0]->rIdx == L_IDX) && (aop->aopu.aop_reg[1]->rIdx == H_IDX))
+            {
+              return PAIR_HL;
+            }
+        }
+      else if (aop->type == AOP_STR || aop->type == AOP_HLREG)
+        {
+          int i;
+          for (i = 0; i < NUM_PAIRS; i++)
+            {
+              if (!strcmp (aop->aopu.aop_str[0], _pairs[i].l) && !strcmp (aop->aopu.aop_str[1], _pairs[i].h))
+                return i;
+            }
+        }
+    }
+  return PAIR_INVALID;
+}
+
+static void
+emit2 (const char *szFormat,...)
+{
+  if(regalloc_dry_run)
+    return;
+
+  va_list ap;
+
+  va_start (ap, szFormat);
+
+  _vemit2 (szFormat, ap);
+
+  va_end (ap);
 }
 
 /*-----------------------------------------------------------------*/
@@ -676,6 +674,7 @@ _emit2 (const char *inst, const char *fmt,...)
   va_end (ap);
 }
 
+// Todo: Handle IY (when used as AOP_HLREG or AOP_REG) correctly.
 unsigned char
 ld_cost(asmop *op1, asmop *op2)
 {
@@ -1043,9 +1042,7 @@ getPairName (asmop * aop)
       for (i = 0; i < NUM_PAIRS; i++)
         {
           if (strcmp(aop->aopu.aop_str[0], _pairs[i].l) == 0)
-            {
-              return _pairs[i].name;
-            }
+            return _pairs[i].name;
         }
     }
   wassertl (0, "Tried to get the pair name of something that isn't a pair");
@@ -2041,7 +2038,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
                     emit2 ("ld %s,%s", _pairs[pairId].l, aopGet (aop, offset, FALSE));
                     emit2 ("ld %s,%s", _pairs[pairId].h, aopGet (aop, offset + 1, FALSE));
                   }
-                regalloc_dry_run_cost += ld_cost(ASMOP_A, aop) * 2;
+                regalloc_dry_run_cost += ld_cost(ASMOP_A, aop) * 2;	// Todo. Exact cost.
               }
           }
         /* PENDING: check? */
@@ -2777,8 +2774,7 @@ movLeft2ResultLong (operand * left, int offl,
             }
           else
             {
-              /* PENDING */
-              emitDebug("Error");
+              fetchPair (PAIR_IY, AOP (left));
             }
         }
       else
@@ -3263,7 +3259,7 @@ genIpush (const iCode * ic)
            _G.stack.pushed += 2;
            emit2 ("push %s", getPairName (AOP (IC_LEFT (ic))));
         }
-      regalloc_dry_run_cost += 1; // Todo: More exact cost
+      regalloc_dry_run_cost += (getPairId (AOP (IC_LEFT (ic))) == PAIR_IY ? 2 : 1);
     }
   else
     {
@@ -4553,6 +4549,17 @@ genPlus (iCode * ic)
         {
           /* Can't do it */
         }
+    }
+
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY)
+    {
+      fetchPair (PAIR_IY, AOP (IC_LEFT (ic)));
+      _push (PAIR_BC);
+      fetchPair (PAIR_BC, AOP (IC_RIGHT (ic)));
+      emit2 ("add iy, bc");
+      regalloc_dry_run_cost += 2;
+      _pop (PAIR_BC);
+      goto release;
     }
 
   if (isPair (AOP (IC_RIGHT (ic))) && AOP_TYPE (IC_LEFT (ic)) == AOP_IMMD && getPairId (AOP (IC_RIGHT (ic))) != PAIR_HL)
@@ -7966,17 +7973,17 @@ genGenPointerSet (operand * right,
     {
       /* Just do it */
       const char *pair = getPairName (AOP (result));
-      if (canAssignToPtr3 (AOP (right)) && isPtr (pair))
+      if (canAssignToPtr3 (AOP (right)) && isPtr (pair))	// Todo: correct cost for pair iy.
         {
           if(!regalloc_dry_run)
             emit2 ("ld !*pair,%s", pair, aopGet (AOP (right), 0, FALSE));
-          regalloc_dry_run_cost += ld_cost(ASMOP_A, AOP (right));
+          regalloc_dry_run_cost += ld_cost(ASMOP_A, AOP (right)) + (getPairId (AOP (result)) != PAIR_IY ? 0 : 2);
         }
       else
         {
           _moveA3 (AOP (right), 0);
           emit2 ("ld !*pair,a", pair);
-          regalloc_dry_run_cost += 1;
+          regalloc_dry_run_cost += (getPairId (AOP (result)) != PAIR_IY ? 1 : 3);
         }
       goto release;
     }
