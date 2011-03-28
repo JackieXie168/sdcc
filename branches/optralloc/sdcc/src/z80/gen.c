@@ -863,6 +863,7 @@ unsigned char bit8_cost(asmop *op1)
     case AOP_HL:
       return(5);
     case AOP_IY:    /* 4 from ld iy, #... */
+    case AOP_EXSTK: /* 4 from ld iy, #... */
       return(8);
     default:
       printf("bit8_cost op1: %d", (int)(op1->type));
@@ -1225,7 +1226,7 @@ aopForSym (const iCode * ic, symbol * sym, bool result, bool requires_a)
       */
       if (IS_Z80 && (_G.omitFramePtr || sym->stack < INT8MIN || sym->stack > (int)(INT8MAX-getSize (sym->type))))
         {
-          emitDebug ("; AOP_EXSTK for %s", sym->rname);
+          emitDebug ("; AOP_EXSTK for %s, _G.omitFramePtr %d, sym->stack %d, size %d", sym->rname, (int)(_G.omitFramePtr), sym->stack, getSize (sym->type));
           sym->aop = aop = newAsmop (AOP_EXSTK);
         }
       else
@@ -3321,16 +3322,12 @@ genIpush (const iCode * ic)
                 }
               else
                 {
-                  if (!regalloc_dry_run) // todo: More exact cost!
+                  if (!regalloc_dry_run && !strcmp(aopGet (AOP (IC_LEFT (ic)), offset, FALSE), "h")) // todo: More exact cost!
+                    emit2 ("push hl");
+                  else
                     {
-                      l = aopGet (AOP (IC_LEFT (ic)), offset, FALSE);
-                      if (!strcmp(l, "h"))
-                        emit2 ("push hl");
-                      else
-                        {
-                          emit2 ("ld a,%s", l);
-                          emit2 ("push af");
-                        }
+                      cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
+                      emit2 ("push af");
                     }
                   regalloc_dry_run_cost += (ld_cost(ASMOP_A, AOP (IC_LEFT (ic))) + 1);
                 }
@@ -3951,13 +3948,15 @@ genFunction (const iCode * ic)
   sym = OP_SYMBOL (IC_LEFT (ic));
 
   _G.omitFramePtr = options.omitFramePtr;
+
   if (IS_Z80 && !IY_RESERVED && !stackParm && !sym->stack)
     {
       /* When the conflicts between AOP_EXSTK && AOP_HLREG are fixed, */
       /* the above !sym->stack condition can be removed. -- EEP       */
       if (sym->stack)
         emit2 ("!ldaspsp", -sym->stack);
-      _G.omitFramePtr = TRUE;
+      if(!regalloc_dry_run)
+        _G.omitFramePtr = TRUE;
     }
   else if (sym->stack && IS_GB && sym->stack > -INT8MIN)
     emit2 ("!enterxl", sym->stack);
@@ -6164,7 +6163,7 @@ genAnd (const iCode *ic, iCode * ifx)
         {
           if ((bytelit = ((lit >> (offset * 8)) & 0x0FFL)) != 0x0L)
             {
-              _moveA3 (AOP (left), offset);
+              cheapMove (ASMOP_A, 0, AOP (left), offset);
               if (bytelit != 0x0FFL)
                 emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
               else
@@ -6215,7 +6214,7 @@ genAnd (const iCode *ic, iCode * ifx)
                 aopPut3 (AOP (result), offset, ASMOP_ZERO, 0);
               else
                 {
-                  _moveA3 (AOP (left), offset);
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
                   if (isLiteralBit (~bytelit & 0x0FFL) >= 0)
                     {
                       emit2 ("res %d, a", isLiteralBit (~bytelit & 0x0FFL));
@@ -6235,7 +6234,7 @@ genAnd (const iCode *ic, iCode * ifx)
                 }
               else
                 {
-                  _moveA3 (AOP (left), offset);
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
                   _moveFromA (AOP (left), offset);
                 }
@@ -6274,7 +6273,7 @@ genAnd (const iCode *ic, iCode * ifx)
                 emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
               else
                 {
-                  _moveA3 (AOP (left), offset);
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
                 }
               _moveFromA (AOP (result), offset);
@@ -7664,12 +7663,13 @@ genGenPointerGet (operand * left,
       genUnpackBits (result, pair);
       goto release;
     }
-  else if (getPairId (AOP (result)) == PAIR_HL)
+  else if (getPairId (AOP (result)) == PAIR_HL || size == 2 && AOP_TYPE (result) == AOP_REG && (AOP (result)->aopu.aop_reg[0] == regsZ80 + L_IDX || AOP (result)->aopu.aop_reg[0] == regsZ80 + H_IDX))
     {
       wassertl (size == 2, "HL must be of size 2");
       emit2 ("ld a,!*hl");
       emit2 ("inc hl");
-      emit2 ("ld h,!*hl");
+      if(!regalloc_dry_run)
+        aopPut (AOP (result), "!*hl", 1);
       emit2 ("ld l,a");
       regalloc_dry_run_cost += 4;
       spillPair (PAIR_HL);
@@ -9406,7 +9406,7 @@ void genZ80iCode (iCode *ic)
           emitDebug ("; genBuiltIn");
           genBuiltIn(ic);
         }
-      else
+      else if(!regalloc_dry_run)
         {
           emitDebug ("; addSet");
           addSet (&_G.sendSet, ic);

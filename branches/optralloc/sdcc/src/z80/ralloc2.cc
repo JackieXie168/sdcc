@@ -830,7 +830,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case JUMPTABLE:
         case CAST:
         //case RECEIVE:
-        //case SEND:
+        case SEND:
         case DUMMY_READ_VOLATILE:
         case CRITICAL:
         case ENDCRITICAL:
@@ -1034,6 +1034,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
           sym->accuse = 0;
           sym->nRegs = I[v].size;
           //spillThis(sym); Leave it to regFix, which can do some spillocation compaction. Todo: Use Thorup instead.
+          sym->isspilt = false;
         }
     }
     

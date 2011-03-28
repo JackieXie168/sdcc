@@ -1495,7 +1495,7 @@ packRegsForIYUse (iCode * lic, operand * op, eBBlock * ebp)
     }
 
   D (D_PACK_IY, ("Succeeded IY!\n"));
-
+//printf("Packing %s in IY\n", OP_SYMBOL(op)->name);
   OP_SYMBOL (op)->accuse = ACCUSE_IY;
   return dic;
 }
