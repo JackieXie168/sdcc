@@ -40,6 +40,20 @@ replace restart {
 // Should probably check for notVolatile(%2), too, but gives many false positives and no regression tests fail.
 
 replace restart {
+	ld	%1, (iy)
+} by {
+	ld	%1, 0 (iy)
+	; peephole 0a'' made 0 offset explicit.
+}
+
+replace restart {
+	ld	(iy), %1
+} by {
+	ld	0 (iy), %1
+	; peephole 0a''' made 0 offset explicit.
+}
+
+replace restart {
 	ld	%1, %2
 	ld	%3, %1
 } by {
@@ -1286,6 +1300,15 @@ replace restart {
 } if notUsed('a')
 
 replace restart {
+	ld	a, %1 (iy)
+	inc	a
+	ld	%1 (iy),a
+} by {
+	inc	%1 (iy)
+	; peephole 42e incremented in %1 (iy) instead of a.
+} if notUsed('a')
+
+replace restart {
 	ld	%1,a
 	ld	a,%2
 	add	a,%1
@@ -1587,6 +1610,27 @@ replace restart {
 	add	hl,%1
 	; peephole 62c moved decrement of hl to constant.
 } if notUsed(%1)
+
+replace restart {
+	inc	iy
+	ld	%1, %2 (iy)
+} by {
+	ld	%1, %2+1 (iy)
+	; peephole 62d moved decrement of iy to offset.
+} if notUsed('iy')
+
+replace restart {
+	push	hl
+	pop	iy
+	pop	hl
+	inc	iy
+} by {
+	inc	hl
+	push	hl
+	pop	iy
+	pop	hl
+	; peephole 62e incremented in hl instead of iy.
+}
 
 replace restart {
 	ld	bc,#%1
