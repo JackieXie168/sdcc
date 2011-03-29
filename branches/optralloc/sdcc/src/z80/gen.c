@@ -93,6 +93,7 @@
 #include "gen.h"
 #include "SDCCglue.h"
 #include "newalloc.h"
+#include "dbuf_string.h"
 
 /* This is the down and dirty file with all kinds of kludgy & hacky
    stuff. This is what it is all about CODE GENERATION for a specific MCU.
@@ -546,27 +547,27 @@ static void
 _vemit2 (const char *szFormat, va_list ap)
 {
   struct dbuf_s dbuf;
-  char *buffer, *nextbuffer;
+  char *buffer, *p, *nextp;
 
   dbuf_init (&dbuf, INITIAL_INLINEASM);
 
   dbuf_tvprintf (&dbuf, szFormat, ap);
 
-  buffer = (char *) dbuf_c_str (&dbuf);
+  buffer = p = dbuf_detach_c_str (&dbuf);
 
-  _tidyUp (buffer);
+  _tidyUp (p);
 
   /* Decompose multiline macros */
-  while ((nextbuffer = strchr (buffer, '\n')))
+  while ((nextp = strchr (p, '\n')))
     {
-      *nextbuffer = 0;
-      _add_line (buffer);
-      buffer = nextbuffer + 1;
+      *nextp = '\0';
+      _add_line (p);
+      p = nextp + 1;
     }
 
-  _add_line (buffer);
+  _add_line (p);
 
-  dbuf_destroy (&dbuf);
+  Safe_free (buffer);
 }
 
 static void
@@ -649,39 +650,6 @@ z80_emitDebuggerSymbol (const char *debugSym)
   emit2 ("%s !equ .", debugSym);
   emit2 ("!global", debugSym);
   _G.lines.isDebug = 0;
-}
-
-/*-----------------------------------------------------------------*/
-/* emit2 - writes the code into a file : for now it is simple    */
-/*-----------------------------------------------------------------*/
-void
-_emit2 (const char *inst, const char *fmt, ...)
-{
-  va_list ap;
-  char lb[INITIAL_INLINEASM];
-  char *lbp = lb;
-
-  va_start (ap, fmt);
-
-  if (*inst != '\0')
-    {
-      sprintf (lb, "%s\t", inst);
-      vsprintf (lb + (strlen (lb)), fmt, ap);
-    }
-  else
-    vsprintf (lb, fmt, ap);
-
-  while (isspace (*lbp))
-    lbp++;
-
-  if (lbp && *lbp)
-    {
-      _G.lines.current = (_G.lines.current ?
-                          connectLine (_G.lines.current, _newLineNode (lb)) : (_G.lines.head = _newLineNode (lb)));
-    }
-  _G.lines.current->isInline = _G.lines.isInline;
-  _G.lines.current->ic = _G.current_iCode;
-  va_end (ap);
 }
 
 // Todo: Handle IY (when used as AOP_HLREG or AOP_REG) correctly.
@@ -981,7 +949,7 @@ _emitMove3 (asmop * to, int to_offset, asmop * from, int from_offset)
   emit3_o (A_LD, to, to_offset, from, from_offset);
 }
 
-void
+static void
 aopDump (const char *plabel, asmop * aop)
 {
   int i;
@@ -1036,7 +1004,7 @@ _clearCarry (void)
   emit3 (A_XOR, ASMOP_A, ASMOP_A);
 }
 
-const char *
+static const char *
 getPairName (asmop * aop)
 {
   if (aop->type == AOP_REG)
@@ -1068,7 +1036,7 @@ getPairName (asmop * aop)
 }
 
 /** Returns TRUE if the registers used in aop form a pair (BC, DE, HL) */
-bool
+static bool
 isPair (const asmop * aop)
 {
   return (getPairId (aop) != PAIR_INVALID);
@@ -1076,7 +1044,7 @@ isPair (const asmop * aop)
 
 /** Returns TRUE if the registers used in aop cannot be split into high
     and low halves */
-bool
+static bool
 isUnsplitable (const asmop * aop)
 {
   switch (getPairId (aop))
@@ -1090,7 +1058,7 @@ isUnsplitable (const asmop * aop)
   return FALSE;
 }
 
-bool
+static bool
 isPtrPair (const asmop * aop)
 {
   PAIR_ID pairId = getPairId (aop);
@@ -1136,14 +1104,6 @@ spillPairReg (const char *regname)
     }
 }
 
-/** Push a register pair onto the stack */
-void
-genPairPush (asmop * aop)
-{
-  emit2 ("push %s", getPairName (aop));
-  regalloc_dry_run_cost += (getPairId (aop) == PAIR_IY ? 2 : 1);
-}
-
 static void
 _push (PAIR_ID pairId)
 {
@@ -1164,7 +1124,7 @@ _pop (PAIR_ID pairId)
     }
 }
 
-void
+static void
 genMovePairPair (PAIR_ID srcPair, PAIR_ID dstPair)
 {
   switch (dstPair)
@@ -1319,23 +1279,23 @@ aopForSym (const iCode * ic, symbol * sym, bool result, bool requires_a)
 static asmop *
 aopForRemat (symbol * sym)
 {
-  char *s = buffer;
+  struct dbuf_s dbuf;
   iCode *ic = sym->rematiCode;
   asmop *aop = newAsmop (AOP_IMMD);
 
+  dbuf_init (&dbuf, 128);
   while (1)
     {
       /* if plus or minus print the right hand side */
       if (ic->op == '+' || ic->op == '-')
         {
           /* PENDING: for re-target */
-          sprintf (s, "0x%04x %c ", (int) operandLitValue (IC_RIGHT (ic)), ic->op);
-          s += strlen (s);
+          dbuf_init (&dbuf, 128);
           ic = OP_SYMBOL (IC_LEFT (ic))->rematiCode;
           continue;
         }
       /* we reached the end */
-      sprintf (s, "%s", OP_SYMBOL (IC_LEFT (ic))->rname);
+      dbuf_append_str (&dbuf, OP_SYMBOL (IC_LEFT (ic))->rname);
       break;
     }
 
@@ -1346,7 +1306,7 @@ aopForRemat (symbol * sym)
 /*-----------------------------------------------------------------*/
 /* regsInCommon - two operands have some registers in common       */
 /*-----------------------------------------------------------------*/
-bool
+static bool
 regsInCommon (operand * op1, operand * op2)
 {
   symbol *sym1, *sym2;
@@ -1384,7 +1344,7 @@ regsInCommon (operand * op1, operand * op2)
 /*-----------------------------------------------------------------*/
 /* operandsEqu - equivalent                                        */
 /*-----------------------------------------------------------------*/
-bool
+static bool
 operandsEqu (operand * op1, operand * op2)
 {
   symbol *sym1, *sym2;
@@ -1421,7 +1381,7 @@ operandsEqu (operand * op1, operand * op2)
 /*-----------------------------------------------------------------*/
 /* sameRegs - two asmops have the same registers                   */
 /*-----------------------------------------------------------------*/
-bool
+static bool
 sameRegs (asmop * aop1, asmop * aop2)
 {
   int i;
@@ -1659,7 +1619,7 @@ dealloc:
 
 }
 
-bool
+static bool
 isLitWord (const asmop * aop)
 {
   /*    if (aop->size != 2)
@@ -1677,6 +1637,17 @@ isLitWord (const asmop * aop)
 char *
 aopGetLitWordLong (const asmop * aop, int offset, bool with_hash)
 {
+  static struct dbuf_s dbuf = { 0 };
+
+  if (dbuf_is_initialized (&dbuf))
+    {
+      dbuf_set_length (&dbuf, 0);
+    }
+  else
+    {
+      dbuf_init (&dbuf, 129);
+    }
+
   /* depending on type */
   switch (aop->type)
     {
@@ -1686,17 +1657,17 @@ aopGetLitWordLong (const asmop * aop, int offset, bool with_hash)
       /* PENDING: for re-target */
       if (with_hash)
         {
-          tsprintf (buffer, sizeof (buffer), "!hashedstr + %d", aop->aopu.aop_immd, offset);
+          dbuf_tprintf (&dbuf, "!hashedstr + %d", aop->aopu.aop_immd, offset);
         }
       else if (offset == 0)
         {
-          tsprintf (buffer, sizeof (buffer), "%s", aop->aopu.aop_immd);
+          dbuf_tprintf (&dbuf, "%s", aop->aopu.aop_immd);
         }
       else
         {
-          tsprintf (buffer, sizeof (buffer), "%s + %d", aop->aopu.aop_immd, offset);
+          dbuf_tprintf (&dbuf, "%s + %d", aop->aopu.aop_immd, offset);
         }
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
+      break;
 
     case AOP_LIT:
       {
@@ -1721,11 +1692,9 @@ aopGetLitWordLong (const asmop * aop, int offset, bool with_hash)
               }
 
             if (with_hash)
-              tsprintf (buffer, sizeof (buffer), "!immedword", v);
+              dbuf_tprintf (&dbuf, "!immedword", v);
             else
-              tsprintf (buffer, sizeof (buffer), "!constword", v);
-
-            return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
+              dbuf_tprintf (&dbuf, "!constword", v);
           }
         else
           {
@@ -1746,25 +1715,36 @@ aopGetLitWordLong (const asmop * aop, int offset, bool with_hash)
             i = fl.c[offset] | (fl.c[offset + 1] << 8);
 #endif
             if (with_hash)
-              tsprintf (buffer, sizeof (buffer), "!immedword", i);
+              dbuf_tprintf (&dbuf, "!immedword", i);
             else
-              tsprintf (buffer, sizeof (buffer), "!constword", i);
-
-            return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
+              dbuf_tprintf (&dbuf, "!constword", i);
           }
       }
+      break;
+
+    case AOP_HLREG:
+    case AOP_REG:
+    case AOP_STK:
+    case AOP_DIR:
+    case AOP_SFR:
+    case AOP_STR:
+    case AOP_CRY:
+    case AOP_ACC:
+    case AOP_SIMPLELIT:
+    case AOP_EXSTK:
+    case AOP_PAIRPTR:
+    case AOP_DUMMY:
+      break;
+
     default:
-      return NULL;
+      dbuf_destroy (&dbuf);
+      wassertl (0, "aopGetLitWordLong got unsupported aop->type");
+      exit (0);
     }
+  return dbuf_c_str (&dbuf);
 }
 
-char *
-aopGetWord (asmop * aop, int offset)
-{
-  return aopGetLitWordLong (aop, offset, TRUE);
-}
-
-bool
+const bool
 isPtr (const char *s)
 {
   if (!strcmp (s, "hl"))
@@ -1830,11 +1810,10 @@ requiresHL (const asmop * aop)
 static void
 fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
 {
-  const char *l, *base;
   const char *pair = _pairs[pairId].name;
-  l = aopGetLitWordLong (left, offset, FALSE);
-  base = aopGetLitWordLong (left, 0, FALSE);
-  wassert (l && pair && base);
+  char *l = Safe_strdup (aopGetLitWordLong (left, offset, FALSE));
+  const char *base = aopGetLitWordLong (left, 0, FALSE);
+  wassert (pair);
 
   emitDebug (";fetchLitPair");
 
@@ -1903,10 +1882,12 @@ fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
     }
   /* Both a lit on the right and a true symbol on the left */
   emit2 ("ld %s,!hashedstr", pair, l);
+  Safe_free (l);
   regalloc_dry_run_cost += (pairId == PAIR_IX || pairId == PAIR_IY) ? 4 : 3;
   return;
 
 adjusted:
+  Safe_free (l);
   _G.pairs[pairId].last_type = left->type;
   _G.pairs[pairId].base = traceAlloc (&_G.trace.aops, Safe_strdup (base));
   _G.pairs[pairId].offset = offset;
@@ -2131,11 +2112,15 @@ setupPair (PAIR_ID pairId, asmop * aop, int offset)
           }
         else
           {
+            struct dbuf_s dbuf;
+
             /* PENDING: Do this better. */
             if (_G.preserveCarry)
               _push (PAIR_AF);
-            sprintf (buffer, "%d", offset + _G.stack.pushed);
-            emit2 ("ld %s,!hashedstr", _pairs[pairId].name, buffer);
+            dbuf_init (&dbuf, 128);
+            dbuf_printf (&dbuf, "%d", offset + _G.stack.pushed);
+            emit2 ("ld %s,!hashedstr", _pairs[pairId].name, dbuf_c_str (&dbuf));
+            dbuf_destroy (&dbuf);
             emit2 ("add %s,sp", _pairs[pairId].name);
             _G.pairs[pairId].last_type = aop->type;
             _G.pairs[pairId].offset = offset;
@@ -2202,171 +2187,185 @@ emitLabel (int key)
 static const char *
 aopGet (asmop * aop, int offset, bool bit16)
 {
+  static struct dbuf_s dbuf = { 0 };
+
   wassert (!regalloc_dry_run);
+
+  if (dbuf_is_initialized (&dbuf))
+    {
+      /* reuse the dynamically allocated buffer */
+      dbuf_set_length (&dbuf, 0);
+    }
+  else
+    {
+      /* first time: initialize the dynamically allocated buffer */
+      dbuf_init (&dbuf, 128);
+    }
 
   /* offset is greater than size then zero */
   /* PENDING: this seems a bit screwed in some pointer cases. */
   if (offset > (aop->size - 1) && aop->type != AOP_LIT)
     {
-      tsprintf (buffer, sizeof (buffer), "!zero");
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
+      dbuf_tprintf (&dbuf, "!zero");
     }
-
-  /* depending on type */
-  switch (aop->type)
+  else
     {
-    case AOP_DUMMY:
-      //tsprintf (buffer, sizeof(buffer), "!zero");
-      //return traceAlloc(&_G.trace.aops, Safe_strdup(buffer));
-      return ("a");
-
-    case AOP_IMMD:
-      /* PENDING: re-target */
-      if (bit16)
-        tsprintf (buffer, sizeof (buffer), "!immedwords", aop->aopu.aop_immd);
-      else
-        switch (offset)
-          {
-          case 2:
-            tsprintf (buffer, sizeof (buffer), "!bankimmeds", aop->aopu.aop_immd);
-            break;
-          case 1:
-            tsprintf (buffer, sizeof (buffer), "!msbimmeds", aop->aopu.aop_immd);
-            break;
-          case 0:
-            tsprintf (buffer, sizeof (buffer), "!lsbimmeds", aop->aopu.aop_immd);
-            break;
-          default:
-            wassertl (0, "Fetching from beyond the limits of an immediate value.");
-          }
-
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-
-    case AOP_DIR:
-      wassert (IS_GB);
-      emit2 ("ld a,(%s+%d)", aop->aopu.aop_dir, offset);
-      SNPRINTF (buffer, sizeof (buffer), "a");
-
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-
-    case AOP_SFR:
-      if (IS_GB)
+      /* depending on type */
+      switch (aop->type)
         {
-          emit2 ("ldh a,(%s+%d)", aop->aopu.aop_dir, offset);
-          SNPRINTF (buffer, sizeof (buffer), "a");
+        case AOP_DUMMY:
+          //tsprintf (buffer, sizeof(buffer), "!zero");
+          //return traceAlloc(&_G.trace.aops, Safe_strdup(buffer));
+          dbuf_append_char (&dbuf, 'a');
+          break;
 
-          return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-        }
-      else
-        {                       /*.p.t.20030716 handling for i/o port read access for Z80 */
-          if (aop->paged)
-            {                   /* banked mode */
-              /* reg A goes to address bits 15-8 during "in a,(x)" instruction */
-              emit2 ("ld a,!msbimmeds", aop->aopu.aop_dir);
-              emit2 ("in a,(!lsbimmeds)", aop->aopu.aop_dir);
+        case AOP_IMMD:
+          /* PENDING: re-target */
+          if (bit16)
+            dbuf_tprintf (&dbuf, "!immedwords", aop->aopu.aop_immd);
+          else
+            {
+              switch (offset)
+                {
+                case 2:
+                  dbuf_tprintf (&dbuf, "!bankimmeds", aop->aopu.aop_immd);
+                  break;
+                case 1:
+                  dbuf_tprintf (&dbuf, "!msbimmeds", aop->aopu.aop_immd);
+                  break;
+                case 0:
+                  dbuf_tprintf (&dbuf, "!lsbimmeds", aop->aopu.aop_immd);
+                  break;
+                default:
+                  dbuf_destroy (&dbuf);
+                  wassertl (0, "Fetching from beyond the limits of an immediate value.");
+                  exit (0);
+                }
             }
-          else if (z80_opts.port_mode == 180)
-            {                   /* z180 in0/out0 mode */
-              emit2 ("in0 a,(%s)", aop->aopu.aop_dir);
+          break;
+
+        case AOP_DIR:
+          wassert (IS_GB);
+          emit2 ("ld a,(%s+%d)", aop->aopu.aop_dir, offset);
+          dbuf_append_char (&dbuf, 'a');
+          break;
+
+        case AOP_SFR:
+          if (IS_GB)
+            {
+              emit2 ("ldh a,(%s+%d)", aop->aopu.aop_dir, offset);
+              dbuf_append_char (&dbuf, 'a');
             }
           else
-            {                   /* 8 bit mode */
-              emit2 ("in a,(%s)", aop->aopu.aop_dir);
+            {                   /*.p.t.20030716 handling for i/o port read access for Z80 */
+              if (aop->paged)
+                {               /* banked mode */
+                  /* reg A goes to address bits 15-8 during "in a,(x)" instruction */
+                  emit2 ("ld a,!msbimmeds", aop->aopu.aop_dir);
+                  emit2 ("in a,(!lsbimmeds)", aop->aopu.aop_dir);
+                }
+              else if (z80_opts.port_mode == 180)
+                {               /* z180 in0/out0 mode */
+                  emit2 ("in0 a,(%s)", aop->aopu.aop_dir);
+                }
+              else
+                {               /* 8 bit mode */
+                  emit2 ("in a,(%s)", aop->aopu.aop_dir);
+                }
+
+              dbuf_append_char (&dbuf, 'a');
             }
+          break;
 
-          SNPRINTF (buffer, sizeof (buffer), "a");
+        case AOP_REG:
+          dbuf_append_str (&dbuf, aop->aopu.aop_reg[offset]->name);
+          break;
 
-          return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
+        case AOP_HL:
+          dbuf_tprintf (&dbuf, "!*hl");
+          break;
+
+        case AOP_IY:
+          wassert (IS_Z80);
+          setupPair (PAIR_IY, aop, offset);
+          dbuf_tprintf (&dbuf, "!*iyx", offset);
+          break;
+
+        case AOP_EXSTK:
+          wassert (IS_Z80);
+          setupPair (PAIR_IY, aop, offset);
+          dbuf_tprintf (&dbuf, "!*iyx", offset, offset);
+          break;
+
+        case AOP_STK:
+          if (IS_GB)
+            {
+              setupPair (PAIR_HL, aop, offset);
+              dbuf_tprintf (&dbuf, "!*hl");
+            }
+          else
+            {
+              if (aop->aopu.aop_stk >= 0)
+                offset += _G.stack.param_offset;
+              dbuf_tprintf (&dbuf, "!*hl");
+            }
+          break;
+
+        case AOP_CRY:
+          dbuf_destroy (&dbuf);
+          wassertl (0, "Tried to fetch from a bit variable");
+          exit (0);
+
+        case AOP_ACC:
+          if (!offset)
+            {
+              dbuf_append_char (&dbuf, 'a');
+            }
+          else
+            {
+              dbuf_append_char (&dbuf, 'a');
+            }
+          break;
+
+        case AOP_HLREG:
+          dbuf_append_str (&dbuf, aop->aopu.aop_str[offset]);
+          break;
+
+        case AOP_LIT:
+          dbuf_append_str (&dbuf, aopLiteral (aop->aopu.aop_lit, offset));
+          break;
+
+        case AOP_SIMPLELIT:
+          {
+            unsigned long v = aop->aopu.aop_simplelit;
+
+            v >>= (offset * 8);
+            dbuf_tprintf (&dbuf, "!immedbyte", (unsigned int) v & 0xff);
+          }
+          break;
+
+        case AOP_STR:
+          aop->coff = offset;
+          dbuf_append_str (&dbuf, aop->aopu.aop_str[offset]);
+          break;
+
+        case AOP_PAIRPTR:
+          setupPair (aop->aopu.aop_pairId, aop, offset);
+          if (aop->aopu.aop_pairId == PAIR_IX)
+            dbuf_tprintf (&dbuf, "!*ixx", offset);
+          else if (aop->aopu.aop_pairId == PAIR_IY)
+            dbuf_tprintf (&dbuf, "!*iyx", offset);
+          else
+            dbuf_printf (&dbuf, "(%s)", _pairs[aop->aopu.aop_pairId].name);
+          break;
+
+        default:
+          dbuf_destroy (&dbuf);
+          wassertl (0, "aopget got unsupported aop->type");
+          exit (0);
         }
-
-    case AOP_REG:
-      return aop->aopu.aop_reg[offset]->name;
-
-    case AOP_HL:
-      setupPair (PAIR_HL, aop, offset);
-      tsprintf (buffer, sizeof (buffer), "!*hl");
-
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-
-    case AOP_IY:
-      wassert (IS_Z80);
-      setupPair (PAIR_IY, aop, offset);
-      tsprintf (buffer, sizeof (buffer), "!*iyx", offset);
-
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-
-    case AOP_EXSTK:
-      wassert (IS_Z80);
-      setupPair (PAIR_IY, aop, offset);
-      tsprintf (buffer, sizeof (buffer), "!*iyx", offset, offset);
-
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-
-    case AOP_STK:
-      if (IS_GB)
-        {
-          setupPair (PAIR_HL, aop, offset);
-          tsprintf (buffer, sizeof (buffer), "!*hl");
-        }
-      else
-        {
-          if (aop->aopu.aop_stk >= 0)
-            offset += _G.stack.param_offset;
-          tsprintf (buffer, sizeof (buffer), "!*ixx", aop->aopu.aop_stk + offset);
-        }
-
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-
-    case AOP_CRY:
-      wassertl (0, "Tried to fetch from a bit variable");
-
-    case AOP_ACC:
-      if (!offset)
-        {
-          return "a";
-        }
-      else
-        {
-          tsprintf (buffer, sizeof (buffer), "!zero");
-          return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-        }
-
-    case AOP_HLREG:
-      wassert (offset < 2);
-      return aop->aopu.aop_str[offset];
-
-    case AOP_LIT:
-      return aopLiteral (aop->aopu.aop_lit, offset);
-
-    case AOP_SIMPLELIT:
-      {
-        unsigned long v = aop->aopu.aop_simplelit;
-
-        v >>= (offset * 8);
-        tsprintf (buffer, sizeof (buffer), "!immedbyte", (unsigned int) v & 0xff);
-
-        return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-      }
-    case AOP_STR:
-      aop->coff = offset;
-      return aop->aopu.aop_str[offset];
-
-    case AOP_PAIRPTR:
-      setupPair (aop->aopu.aop_pairId, aop, offset);
-      if (aop->aopu.aop_pairId == PAIR_IX)
-        tsprintf (buffer, sizeof (buffer), "!*ixx", offset);
-      else if (aop->aopu.aop_pairId == PAIR_IY)
-        tsprintf (buffer, sizeof (buffer), "!*iyx", offset);
-      else
-        SNPRINTF (buffer, sizeof (buffer), "(%s)", _pairs[aop->aopu.aop_pairId].name);
-
-      return traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
-
-    default:
-      break;
     }
-  wassertl (0, "aopget got unsupported aop->type");
-  exit (0);
+  return dbuf_c_str (&dbuf);
 }
 
 static bool
@@ -2411,7 +2410,7 @@ canAssignToPtr3 (const asmop * aop)
 static void
 aopPut (asmop * aop, const char *s, int offset)
 {
-  char buffer2[256];
+  struct dbuf_s dbuf;
 
   wassert (!regalloc_dry_run);
 
@@ -2422,8 +2421,9 @@ aopPut (asmop * aop, const char *s, int offset)
     }
 
   // PENDING
-  tsprintf (buffer2, sizeof (buffer2), s);
-  s = buffer2;
+  dbuf_init (&dbuf, 128);
+  dbuf_tprintf (&dbuf, s);
+  s = dbuf_c_str (&dbuf);
 
   /* will assign value to value */
   /* depending on where it is of course */
@@ -2578,6 +2578,7 @@ aopPut (asmop * aop, const char *s, int offset)
       else
         {
           /* In bit space but not in C - cant happen */
+          dbuf_destroy (&dbuf);
           wassertl (0, "Tried to write into a bit variable");
         }
       break;
@@ -2597,6 +2598,7 @@ aopPut (asmop * aop, const char *s, int offset)
         break;
       if (offset > 0)
         {
+          dbuf_destroy (&dbuf);
           wassertl (0, "Tried to access past the end of A");
         }
       else
@@ -2628,9 +2630,11 @@ aopPut (asmop * aop, const char *s, int offset)
       break;
 
     default:
+      dbuf_destroy (&dbuf);
       werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "aopPut got unsupported aop->type");
       exit (0);
     }
+  dbuf_destroy (&dbuf);
 }
 
 static void
@@ -2685,9 +2689,7 @@ commitPair (asmop * aop, PAIR_ID id)
         {
           if (!regalloc_dry_run)
             {
-              char *l = aopGetLitWordLong (aop, 0, FALSE);
-              wassert (l);
-              emit2 ("ld (%s),%s", l, _pairs[id].name);
+              emit2 ("ld (%s),%s", aopGetLitWordLong (aop, 0, FALSE), _pairs[id].name);
             }
           regalloc_dry_run_cost += 3;
         }
@@ -2717,7 +2719,7 @@ commitPair (asmop * aop, PAIR_ID id)
 /*-----------------------------------------------------------------*/
 /* getDataSize - get the operand data size                         */
 /*-----------------------------------------------------------------*/
-int
+static int
 getDataSize (operand * op)
 {
   int size;
@@ -2792,7 +2794,7 @@ movLeft2ResultLong (operand * left, int offl, operand * result, int offr, int si
 
 /** Put Acc into a register set
  */
-void
+static void
 outAcc (operand * result)
 {
   int size, offset;
@@ -2810,7 +2812,7 @@ outAcc (operand * result)
 
 /** Take the value in carry and put it into a register
  */
-void
+static void
 outBitC (operand * result)
 {
   /* if the result is bit */
@@ -2831,7 +2833,7 @@ outBitC (operand * result)
 /*-----------------------------------------------------------------*/
 /* toBoolean - emit code for orl a,operator(sizeop)                */
 /*-----------------------------------------------------------------*/
-void
+static void
 _toBoolean (operand * oper)
 {
   int size = AOP_SIZE (oper);
@@ -3230,7 +3232,6 @@ static void
 genIpush (const iCode * ic)
 {
   int size, offset = 0;
-  const char *l;
 
   /* if this is not a parm push : ie. it is spill push
      and spill push is always done on the local stack */
@@ -3320,9 +3321,7 @@ genIpush (const iCode * ic)
         {
           if (AOP (IC_LEFT (ic))->type == AOP_IY)
             {
-              char *l = aopGetLitWordLong (AOP (IC_LEFT (ic)), --offset, FALSE);
-              wassert (l);
-              emit2 ("ld a,(%s)", l);
+              emit2 ("ld a,(%s)", aopGetLitWordLong (AOP (IC_LEFT (ic)), --offset, FALSE));
               emit2 ("push af");
               regalloc_dry_run_cost += 4;
             }
@@ -3853,8 +3852,12 @@ genFunction (const iCode * ic)
   emit2 ("!functionheader", sym->name);
   if (!IS_STATIC (sym->etype))
     {
-      sprintf (buffer, "%s_start", sym->rname);
-      emit2 ("!labeldef", buffer);
+      struct dbuf_s dbuf;
+
+      dbuf_init (&dbuf, 128);
+      dbuf_printf (&dbuf, "%s_start", sym->rname);
+      emit2 ("!labeldef", dbuf_c_str (&dbuf));
+      dbuf_detach (&dbuf);
       if (!regalloc_dry_run)
         _G.lines.current->isLabel = 1;
     }
@@ -4032,8 +4035,12 @@ genEndFunction (iCode * ic)
       emitDebug ("; naked function: no epilogue.");
       if (!IS_STATIC (sym->etype))
         {
-          sprintf (buffer, "%s_end", sym->rname);
-          emit2 ("!labeldef", buffer);
+          struct dbuf_s dbuf;
+
+          dbuf_init (&dbuf, 128);
+          dbuf_printf (&dbuf, "%s_end", sym->rname);
+          emit2 ("!labeldef", dbuf_c_str (&dbuf));
+          dbuf_destroy (&dbuf);
           _G.lines.current->isLabel = 1;
         }
       return;
@@ -4134,8 +4141,12 @@ genEndFunction (iCode * ic)
 
   if (!IS_STATIC (sym->etype))
     {
-      sprintf (buffer, "%s_end", sym->rname);
-      emit2 ("!labeldef", buffer);
+      struct dbuf_s dbuf;
+
+      dbuf_init (&dbuf, 128);
+      dbuf_printf (&dbuf, "%s_end", sym->rname);
+      emit2 ("!labeldef", dbuf_c_str (&dbuf));
+      dbuf_destroy (&dbuf);
       _G.lines.current->isLabel = 1;
     }
 
@@ -4353,7 +4364,7 @@ genPlusIncr (const iCode * ic)
 /*-----------------------------------------------------------------*/
 /* outBitAcc - output a bit in acc                                 */
 /*-----------------------------------------------------------------*/
-void
+static void
 outBitAcc (operand * result)
 {
   symbol *tlbl;
@@ -4377,7 +4388,7 @@ outBitAcc (operand * result)
     }
 }
 
-bool
+static bool
 couldDestroyCarry (asmop * aop)
 {
   if (aop)
@@ -4520,20 +4531,24 @@ genPlus (iCode * ic)
   /* Special case when left and right are constant */
   if (isPair (AOP (IC_RESULT (ic))))
     {
-      char *left, *right;
-      left = aopGetLitWordLong (AOP (IC_LEFT (ic)), 0, FALSE);
-      right = aopGetLitWordLong (AOP (IC_RIGHT (ic)), 0, FALSE);
+      char *left = Safe_strdup (aopGetLitWordLong (AOP (IC_LEFT (ic)), 0, FALSE));
+      const char *right = aopGetLitWordLong (AOP (IC_RIGHT (ic)), 0, FALSE);
 
       if (AOP_TYPE (IC_LEFT (ic)) == AOP_LIT && AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT && left && right)
         {
+          struct dbuf_s dbuf;
+
           /* It's a pair */
           /* PENDING: fix */
-          char buffer[100];
-          sprintf (buffer, "#(%s + %s)", left, right);
-          emit2 ("ld %s,%s", getPairName (AOP (IC_RESULT (ic))), buffer);
+          dbuf_init (&dbuf, 128);
+          dbuf_printf (&dbuf, "#(%s + %s)", left, right);
+          Safe_free (left);
+          emit2 ("ld %s,%s", getPairName (AOP (IC_RESULT (ic))), dbuf_c_str (&dbuf));
+          dbuf_destroy (&dbuf);
           regalloc_dry_run_cost += (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY ? 4 : 3);
           goto release;
         }
+      Safe_free (left);
     }
 
   if ((isPair (AOP (IC_RIGHT (ic))) || isPair (AOP (IC_LEFT (ic)))) && getPairId (AOP (IC_RESULT (ic))) == PAIR_HL)
@@ -4757,9 +4772,11 @@ genPlus (iCode * ic)
   /* Probably something similar has to be done for addition of larger numbers, too. */
   if (size == 2)
     {
+      char *result = Sahe_alloc (aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
+
       _moveA3 (AOP (IC_LEFT (ic)), 0);
       emit3 (A_ADD, ASMOP_A, AOP (IC_RIGHT (ic)));
-      if (AOP (IC_RESULT (ic))->type == AOP_HL || AOP_TYPE (IC_RESULT (ic)) != AOP_REG && AOP_TYPE (IC_RESULT (ic)) != AOP_HLREG || AOP_TYPE (IC_LEFT (ic)) != AOP_REG && AOP_TYPE (IC_LEFT (ic)) != AOP_HLREG || AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] != AOP (IC_LEFT (ic))->aopu.aop_reg[1] || !regalloc_dry_run && strcmp (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), aopGet (AOP (IC_LEFT (ic)), 1, FALSE)))   // Todo: More exact cost.
+      if (AOP (IC_RESULT (ic))->type == AOP_HL || AOP_TYPE (IC_RESULT (ic)) != AOP_REG && AOP_TYPE (IC_RESULT (ic)) != AOP_HLREG || AOP_TYPE (IC_LEFT (ic)) != AOP_REG && AOP_TYPE (IC_LEFT (ic)) != AOP_HLREG || AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] != AOP (IC_LEFT (ic))->aopu.aop_reg[1] || !regalloc_dry_run && strcmp (result, aopGet (AOP (IC_LEFT (ic)), 1, FALSE)))    // Todo: More exact cost.
         {
           _moveFromA (AOP (IC_RESULT (ic)), 0);
           _moveA3 (AOP (IC_LEFT (ic)), 1);
@@ -4767,8 +4784,8 @@ genPlus (iCode * ic)
       else
         {
           emitDebug ("; Addition result is in same register as operand of next addition.");
-          if (!regalloc_dry_run && strchr (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), 'c') ||     // Todo: More exact cost.
-              !regalloc_dry_run && strchr (aopGet (AOP (IC_RESULT (ic)), 0, FALSE), 'b'))
+          if (!regalloc_dry_run && strchr (result, 'c') ||      // Todo: More exact cost.
+              !regalloc_dry_run && strchr (result, 'b'))
             {
               emit2 ("push de");
               emit2 ("ld e, a");
@@ -4795,6 +4812,7 @@ genPlus (iCode * ic)
             }
 
         }
+      Safe_free (result);
       emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), 1);
       _moveFromA (AOP (IC_RESULT (ic)), 1);
       goto release;
@@ -7615,8 +7633,12 @@ genGenPointerGet (operand * left, operand * result, const iCode * ic)
         {
           if (!regalloc_dry_run)        // Todo: More exact cost.
             {
-              tsprintf (buffer, sizeof (buffer), "!*pair", getPairName (AOP (left)));
-              aopPut (AOP (result), buffer, 0);
+              struct dbuf_s dbuf;
+
+              dbuf_init (&dbuf, 128);
+              dbuf_tprintf (&dbuf, "!*pair", getPairName (AOP (left)));
+              aopPut (AOP (result), dbuf_c_str (&dbuf), 0);
+              dbuf_destroy (&dbuf);
             }
           regalloc_dry_run_cost += ld_cost (AOP (result), ASMOP_A);
         }
@@ -7636,10 +7658,15 @@ genGenPointerGet (operand * left, operand * result, const iCode * ic)
       offset = 0;
       while (size--)
         {
-          char at[20];
-          tsprintf (at, sizeof (at), "!*iyx", offset);
           if (!regalloc_dry_run)
-            aopPut (AOP (result), at, offset);
+            {
+              struct dbuf_s dbuf;
+
+              dbuf_init (&dbuf, 128);
+              dbuf_tprintf (&dbuf, "!*iyx", offset);
+              aopPut (AOP (result), dbuf_c_str (&dbuf), offset);
+              dbuf_destroy (&dbuf);
+            }
           regalloc_dry_run_cost += ld_cost (AOP (result), ASMOP_A) + 2; // Todo: More exact cost.
           offset++;
         }
