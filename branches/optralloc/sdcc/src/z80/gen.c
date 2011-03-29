@@ -1132,7 +1132,7 @@ void
 genPairPush (asmop * aop)
 {
   emit2 ("push %s", getPairName (aop));
-  regalloc_dry_run_cost += 1;	// Todo: exact cost.
+  regalloc_dry_run_cost += (getPairId (aop) == PAIR_IY ? 2 : 1);
 }
 
 static void
@@ -2036,7 +2036,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
         else
           {
             /* Operand resides (partially) in the pair */
-            if(!regalloc_dry_run && !strcmp(aopGet (aop, offset + 1, FALSE), _pairs[pairId].l))	// Todo: Exact cost
+            if (!regalloc_dry_run && !strcmp(aopGet (aop, offset + 1, FALSE), _pairs[pairId].l))	// Todo: Exact cost
               {
                 _moveA3 (aop, offset + 1);
                 if(!regalloc_dry_run)
@@ -2046,13 +2046,13 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
                 regalloc_dry_run_cost += 1;
               }
             else
-              {  
+              {
                 if(!regalloc_dry_run)
                   {
                     emit2 ("ld %s,%s", _pairs[pairId].l, aopGet (aop, offset, FALSE));
                     emit2 ("ld %s,%s", _pairs[pairId].h, aopGet (aop, offset + 1, FALSE));
                   }
-                regalloc_dry_run_cost += ld_cost(ASMOP_A, aop) * 2;	// Todo. Exact cost.
+                regalloc_dry_run_cost += ld_cost(ASMOP_A, aop) * 2;	// Todo: Exact cost.                
               }
           }
         /* PENDING: check? */
@@ -2710,12 +2710,23 @@ commitPair (asmop * aop, PAIR_ID id)
         }
       else
         {
-          if(!regalloc_dry_run)
+          switch (id)
             {
-              aopPut (aop, _pairs[id].l, 0);
-              aopPut (aop, _pairs[id].h, 1);
+            case PAIR_BC:
+              cheapMove (aop, 0, ASMOP_C, 0);
+              cheapMove (aop, 1, ASMOP_B, 0);
+              break;
+            case PAIR_DE:
+              cheapMove (aop, 0, ASMOP_E, 0);
+              cheapMove (aop, 1, ASMOP_D, 0);
+              break;
+            case PAIR_HL:
+              cheapMove (aop, 0, ASMOP_L, 0);
+              cheapMove (aop, 1, ASMOP_H, 0);
+              break;
+            default:
+              wassertl (0, "Unknown pair id in commitPair()");
             }
-          regalloc_dry_run_cost += ld_cost (aop, ASMOP_E) * 2;
         }
     }
 }
