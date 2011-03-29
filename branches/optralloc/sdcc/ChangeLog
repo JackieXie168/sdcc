@@ -1,3 +1,7 @@
+2011-03-29 Borut Razem <borut.razem AT gmail.com>
+
+	* Partially merge from trunk
+
 2011-03-29 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/z80.h,
@@ -22,12 +26,108 @@
 	  src/z80/ralloc.c,
 	  Fixes for the exact cost function.
 
+2011-03-28 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* sdas/linksrc/lklex.c,
+	* src/SDCCast.c: small fixes
+
+2011-03-28 Borut Razem <borut.razem AT gmail.com>
+
+	* src/z80/gen.c: fixed bug, introduced during code cleaning
+
+2011-0-28 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.c,
+	  src/SDCCerr.h,
+	  src/SDCCval.c,
+	  src/SDCCval.h,
+	  src/SDCC.y,
+	  src/SDCCglue.c,
+	  src/pic14/glue.c,
+	  src/pic16/glue.c,
+	  src/SDCCast.c:
+	  Support for designated initializers, thanks C. Scott and R. Quattlebaum.
+
+2011-03-27 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* sdas/as6808/m08mch.c,  sdas/as6808/m08pst.c,
+	* sdas/as8051/i51mch.c,  sdas/as8051/i51pst.c,
+	* sdas/asgb/gbmch.c,     sdas/asgb/gbpst.c,
+	* sdas/asz80/z80mch.c,   sdas/asz80/z80pst.c,
+	* sdas/asxxsrc/asdata.c, sdas/asxxsrc/asexpr.c,
+	* sdas/asxxsrc/aslist.c, sdas/asxxsrc/asmain.c,
+	* sdas/asxxsrc/asout.c,  sdas/asxxsrc/asxxxx.h,
+	* sdas/linksrc/aslink.h, sdas/linksrc/lkaomf51.c,
+	* sdas/linksrc/lkar.c,   sdas/linksrc/lkarea.c,
+	* sdas/linksrc/lkdata.c, sdas/linksrc/lkelf.c,
+	* sdas/linksrc/lkeval.c, sdas/linksrc/lkhead.c,
+	* sdas/linksrc/lkihx.c,  sdas/linksrc/lklex.c,
+	* sdas/linksrc/lklib.c,  sdas/linksrc/lklibr.c,
+	* sdas/linksrc/lklist.c, sdas/linksrc/lkmain.c,
+	* sdas/linksrc/lkmem.c,  sdas/linksrc/lkrloc.c,
+	* sdas/linksrc/lksym.c,  sdas/linksrc/lksdcclib.c: first steps towards ASxxxx 5
+
+2011-03-27 Borut Razem <borut.razem AT gmail.com>
+
+	* src/z80/main.c, src/z80/gen.c, src/z80/gen.h,
+	  src/z80/ralloc.c, src/z80/ralloc.h,
+	  src/mcs51/gen.c, src/ds390/gen.c:
+	  dbuf-ized, get rid of global buffer, code cleaning
+	* src/SDCCasm.c, src/SDCCasm.h:
+	  removed tsprintf()
+	* support/Util/dbuf.c, support/Util/dbuf.h:
+	  added dbuf_is_initialized()
+
+2011-03-26 Borut Razem <borut.razem AT gmail.com>
+
+	* src/mcs51/gen.c, src/mcs51/gen.h,
+	  src/mcs51/ralloc.c, src/mcs51/ralloc.h,
+	  src/ds390/gen.c, src/ds390/ralloc.c:
+	  dbuf-ized, get rid of global buffer, code cleaning
+
+2011-05-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCcse.c (boolCast):
+	  Fully reenabled boolCast, and fixed my stupid typo that triggered bug 3223041.
+
+2011-03-25 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/hc08/gen.c: cosmetics
+	* src/hc08/ralloc.c (packRegsForAssign): fixed bug 1477149 & SINHF,
+	  throughout synced with mcs51/ralloc.c
+	* support/regression/tests/float_single.c: enabled SINHF
+
+2011-03-25 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCcse.c (boolCast, cseBBlock):
+	  Reenabled boolCast except for the one case that triggers bug 3223041.
+
 2011-03-24 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc.c,
 	  src/z80/gen.c,
 	  src/z80/ralloc2.cc:
 	  gbz80 fixes.
+
+2011-03-24 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/SDCCsymt.h: added IS_BOOLEAN
+	* src/SDCCast.c (getResultTypeFromType),
+	* src/SDCCicode.c (geniCodeLogic, geniCodeLogicAndOr, ast2iCode),
+	* src/SDCCsymt.c (computeTypeOr, computeType, compareType),
+	* src/SDCCval.c (checkConstantRange): use IS_BOOLEAN
+	* src/SDCCcse.c (boolCast, cseBBlock): disabled boolCast fixed bug 3223041
+	* src/z80/gen.c (_toBoolean): added parameter needflag,
+	  (_castBoolean, genCast): castBoolean factored out of genCast
+	* support/regression/tests/bug3223041.c: modified for hc08 without _Bool
+
+2011-03-24 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCglue.c, src/ds390/gen.c, src/ds390/gen.h,
+	  src/ds390/ralloc.c, src/ds390/ralloc.h, src/SDCCptropt.c,
+	  src/SDCCptropt.h, src/SDCCicode.c, src/SDCCicode.h:
+	  dbuf-ized, get rid of global buffer, code cleaning,
+	  use dbuf_tprintf() instead of tsprintf()
 
 2011-03-23 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
@@ -48,11 +148,34 @@
 	  src/z80/ralloc2.cc:
 	  Code reorganization for a more accurate cost function.
 
+
+2011-03-22 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* support/regression/ports/ds390/spec.mk,
+	* support/regression/ports/hc08/spec.mk,
+	* support/regression/ports/ucz80/spec.mk: fixed output
+
 2011-03-21 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/ralloc2.cc,
 	  src/z80/gen.c:
 	  Code reorganization for a more accurate cost function.
+
+2011-03-21 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCmacro.c: fixed bug, introduced 2011-03-20:
+	  call dbuf_vprintf() instead dbuf_printf() in mvsprintf()
+
+2011-03-21 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/ds390/gen.c (genRet): forgot the _endLazyDPSEvaluation
+	* support/regression/compact-results.py: new, added
+	* support/regression/Makefile.in: print test name and compact results after
+	  running the test for better progress insight with make -j
+
+2011-03-21 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCval.c, src/SDCCval.h, src/SDCCast.c: dbuf-ized
 
 2011-03-20 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -70,8 +193,37 @@
 
 2011-03-20 Borut Razem <borut.razem AT gmail.com>
 
+	* src/SDCCicode.c, src/SDCCicode.h, src/SDCCsymt.c, src/SDCCsymt.h,
+	  src/port.h, src/SDCCast.c, src/SDCCast.h, src/SDCCBBlock.c,
+	  src/SDCCBBlock.h, src/z80/main.c, src/pic16/main.c:
+	  dbuf-ized, get rid of global buffer, code cleaning
+	* src/SDCCmacro.c, src/SDCCmain.c, support/Util/NewAlloc.c,
+	  support/Util/newalloc.h: introduced Safe_strndup()
+
+2011-03-20 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/ds390/gen.c (movc, toCarry): replaced movc with toCarry,
+	  (genNot, genSend, genRet): used toCarry,
+	  (genAnd, genOr, genXor): fixed bug 3223041
+	* src/mcs51/gen.c (toCarry): handle IS_OP_ACCUSE,
+	  (genCmpEq, genAnd, genOr, genXor): fixed bug 3223041
+	* support/regression/tests/bug3223041.c: new, added
+
+2011-03-20 Borut Razem <borut.razem AT gmail.com>
+
 	* src/SDCCmain.c, src/SDCCmacro.c, src/SDCCmacro.h, src/SDCCutil.c,
 	  src/SDCCutil.h: dbuf-ized SDCCmacro.c
+	* src/SDCCutil.c, src/SDCCutil.h, src/SDCCmain.c, src/ds390/main.c, src/z80/main.c:
+	  dbuf-ized buildCmdLine(), moved to SDCCutil
+	* src/SDCCbuild_cmd.[ch]: deleted
+
+2011-03-20 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCmain.c, src/SDCCmacro.c, src/SDCCmacro.h, src/SDCCutil.c,
+	  src/SDCCutil.h: dbuf-ized SDCCmacro.c
+	* src/SDCCutil.c, src/SDCCutil.h, src/SDCCmain.c, src/ds390/main.c, src/z80/main.c:
+	  dbuf-ized buildCmdLine(), moved to SDCCutil
+	* src/SDCCbuild_cmd.[ch]: deleted
 
 2011-03-19 Borut Razem <borut.razem AT gmail.com>
 

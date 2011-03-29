@@ -1693,7 +1693,7 @@ constFold (iCode * ic, set * cseSet)
 }
 
 /* Remove casts to bool from results of logical operations. */
-int
+static int
 boolCast (iCode * ic, set * cseSet)
 {
   iCode *dic = NULL;
@@ -1708,16 +1708,21 @@ boolCast (iCode * ic, set * cseSet)
 
   /* Check that this is a logic op. */
   if (dic->op != '!' &&
-    dic->op != '<' &&
-    dic->op != '>' &&
-    dic->op != EQ_OP &&
-    dic->op != AND_OP &&
-    dic->op != OR_OP &&
-    dic->op != GETHBIT &&
-    dic->op != GETABIT &&
-    !(dic->op == BITWISEAND && (IS_BOOL ( operandType (IC_LEFT (ic))) || IS_BOOL ( operandType (IC_RIGHT (ic)))))
-    )
-    return 0;
+      dic->op != '<' &&
+      dic->op != '>' &&
+//      dic->op != LE_OP && why not these 3 ???
+//      dic->op != GE_OP &&
+      dic->op != EQ_OP &&
+//      dic->op != NE_OP &&
+      dic->op != AND_OP &&
+      dic->op != OR_OP &&
+      dic->op != GETHBIT &&
+      dic->op != GETABIT &&
+      !(dic->op == BITWISEAND && (IS_BOOL ( operandType (IC_LEFT (dic))) || IS_BOOL ( operandType (IC_RIGHT (dic)))))
+     )
+    {
+      return 0;
+    }
 
   /* Replace cast by assignment. */
   ic->op = '=';

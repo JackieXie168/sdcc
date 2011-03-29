@@ -25,6 +25,7 @@
 #define DEBUG_CF(x)             /* puts(x); */
 
 #include "common.h"
+#include "dbuf_string.h"
 
 int currLineno = 0;
 set *astList = NULL;
@@ -617,7 +618,7 @@ setAstFileLine (ast * tree, char *filename, int lineno)
 /* funcOfType :- function of type with name                        */
 /*-----------------------------------------------------------------*/
 symbol *
-funcOfType (char *name, sym_link * type, sym_link * argType, int nArgs, int rent)
+funcOfType (const char *name, sym_link * type, sym_link * argType, int nArgs, int rent)
 {
   symbol *sym;
   /* create the symbol */
@@ -965,6 +966,53 @@ createIvalType (ast * sym, sym_link * type, initList * ilist)
   return decorateType (newNode ('=', sym, iExpr), RESULT_TYPE_NONE);
 }
 
+/*------------------------------------------------------------------*/
+/* moveNestedInit - rewrites an initList node with a nested         */
+/*                  designator to remove one level of nesting.      */
+/*------------------------------------------------------------------*/
+static initList *
+moveNestedInit (initList *src)
+{
+  initList *dst;
+
+  /** Create new initList element */
+  switch (src->type)
+    {
+    case INIT_NODE:
+      dst = newiList(INIT_NODE, src->init.node);
+      break;
+    case INIT_DEEP:
+      dst = newiList(INIT_DEEP, src->init.deep);
+      break;
+    default:
+      return NULL;
+    }
+  dst->filename = src->filename;
+  dst->lineno = src->lineno;
+  /* remove one level of nesting from the designation */
+  dst->designation = src->designation->next;
+
+  dst = newiList(INIT_DEEP, dst);
+  dst->filename = src->filename;
+  dst->lineno = src->lineno;
+  dst->next = src->next;
+  return dst;
+}
+
+/*-----------------------------------------------------------------*/
+/* findStructField - find a specific field in a struct definition  */
+/*-----------------------------------------------------------------*/
+static symbol *
+findStructField (symbol *fields, symbol *target)
+{
+  for ( ; fields; fields = fields->next)
+    {
+      if (strcmp(fields->name, target->name) == 0)
+        return fields;
+    }
+  return NULL; /* not found */
+}
+
 /*-----------------------------------------------------------------*/
 /* createIvalStruct - generates initial value for structures       */
 /*-----------------------------------------------------------------*/
@@ -985,20 +1033,51 @@ createIvalStruct (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
 
   iloop = ilist ? ilist->init.deep : NULL;
 
-  for (sflds = SPEC_STRUCT (type)->fields; sflds; sflds = sflds->next)
+  for (sflds = SPEC_STRUCT (type)->fields; ; sflds = sflds->next)
     {
+      /* skip past unnamed bitfields */
+      if (sflds && IS_BITFIELD (sflds->type) && SPEC_BUNNAMED (sflds->etype))
+        continue;
+
+      /* designated initializer? */
+      if (iloop && iloop->designation)
+        {
+          if (iloop->designation->type != DESIGNATOR_STRUCT)
+            {
+              werrorfl (iloop->filename, iloop->lineno, E_BAD_DESIGNATOR);
+            }
+          else /* find this designated element */
+            {
+              sflds = findStructField(SPEC_STRUCT (type)->fields,
+                                      iloop->designation->designator.tag);
+              if (sflds)
+                {
+                  if (iloop->designation->next)
+                    {
+                      iloop = moveNestedInit(iloop);
+                    }
+                }
+              else
+                {
+                  werrorfl (iloop->filename, iloop->lineno, E_NOT_MEMBER,
+                            iloop->designation->designator.tag->name);
+                  sflds = SPEC_STRUCT (type)->fields; /* fixup */
+                }
+            }
+        }
+
       /* if we have come to end */
+      if (!sflds)
+        break;
       if (!iloop && (!AST_SYMBOL (rootValue)->islocal || SPEC_STAT (etype)))
         break;
 
-      if (!IS_BITFIELD (sflds->type) || !SPEC_BUNNAMED (sflds->etype))
-        {
-          sflds->implicit = 1;
-          lAst = newNode (PTR_OP, newNode ('&', sym, NULL), newAst_VALUE (symbolVal (sflds)));
-          lAst = decorateType (resolveSymbols (lAst), RESULT_TYPE_NONE);
-          rast = decorateType (resolveSymbols (createIval (lAst, sflds->type, iloop, rast, rootValue)), RESULT_TYPE_NONE);
-          iloop = iloop ? iloop->next : NULL;
-        }
+      /* initialize this field */
+      sflds->implicit = 1;
+      lAst = newNode (PTR_OP, newNode ('&', sym, NULL), newAst_VALUE (symbolVal (sflds)));
+      lAst = decorateType (resolveSymbols (lAst), RESULT_TYPE_NONE);
+      rast = decorateType (resolveSymbols (createIval (lAst, sflds->type, iloop, rast, rootValue)), RESULT_TYPE_NONE);
+      iloop = iloop ? iloop->next : NULL;
     }
 
   if (iloop)
@@ -1021,15 +1100,19 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
 {
   ast *rast = NULL;
   initList *iloop;
-  int lcnt = 0, size = 0;
+  int lcnt = 0, size = 0, idx = 0;
   literalList *literalL;
   sym_link *etype = getSpec (type);
 
   /* take care of the special   case  */
   /* array of characters can be init  */
   /* by a string                      */
-  if (IS_CHAR (type->next))
-    if ((rast = createIvalCharPtr (sym, type, decorateType (resolveSymbols (list2expr (ilist)), RESULT_TYPE_NONE), rootValue)))
+  if (IS_CHAR (type->next) &&
+      ilist && ilist->type == INIT_NODE)
+    if ((rast = createIvalCharPtr (sym,
+                                   type,
+                                   decorateType (resolveSymbols (list2expr (ilist)), RESULT_TYPE_NONE),
+                                   rootValue)))
 
       return decorateType (resolveSymbols (rast), RESULT_TYPE_NONE);
 
@@ -1048,7 +1131,7 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
       return NULL;
     }
 
-  if (port->arrayInitializerSuppported && convertIListToConstList (ilist, &literalL, lcnt))
+  if (port->arrayInitializerSuppported && convertIListToConstList (reorderIlist(type,ilist), &literalL, lcnt))
     {
       ast *aSym;
 
@@ -1058,11 +1141,7 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
       rast->values.constlist = literalL;
 
       // Make sure size is set to length of initializer list.
-      while (iloop)
-        {
-          size++;
-          iloop = iloop->next;
-        }
+      size = getNelements (type, ilist);
 
       if (lcnt && size > lcnt)
         {
@@ -1077,20 +1156,32 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
         {
           ast *aSym;
 
-          if (!iloop && (!lcnt || !DCL_ELEM (type) || !AST_SYMBOL (rootValue)->islocal || SPEC_STAT (etype)))
+          if (!iloop && ((lcnt && size >= lcnt) || !DCL_ELEM (type) || !AST_SYMBOL (rootValue)->islocal || SPEC_STAT (etype)))
             {
               break;
             }
 
-          aSym = newNode ('[', sym, newAst_VALUE (valueFromLit ((float) (size++))));
-          aSym = decorateType (resolveSymbols (aSym), RESULT_TYPE_NONE);
-          rast = createIval (aSym, type->next, iloop, rast, rootValue);
-          lcnt--;
-          iloop = (iloop ? iloop->next : NULL);
-
-          /* no of elements given and we    */
-          /* have generated for all of them */
-          if (!lcnt && iloop)
+          if (iloop && iloop->designation)
+            {
+              if (iloop->designation->type != DESIGNATOR_ARRAY)
+                {
+                  werrorfl (iloop->filename, iloop->lineno, E_BAD_DESIGNATOR);
+                }
+              else {
+                idx = iloop->designation->designator.elemno;
+                if (iloop->designation->next)
+                  {
+                    iloop = moveNestedInit(iloop);
+                  }
+              }
+            }
+          /* track array size based on the initializers seen */
+          if (size <= idx)
+            {
+              size = idx + 1;
+            }
+          /* too many initializers? */
+          if (iloop && (lcnt && size > lcnt))
             {
               // is this a better way? at least it won't crash
               char *name = (IS_AST_SYM_VALUE (sym)) ? AST_SYMBOL (sym)->name : "";
@@ -1098,6 +1189,12 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
 
               break;
             }
+
+          aSym = newNode ('[', sym, newAst_VALUE (valueFromLit ((float) (idx))));
+          aSym = decorateType (resolveSymbols (aSym), RESULT_TYPE_NONE);
+          rast = createIval (aSym, type->next, iloop, rast, rootValue);
+          idx++;
+          iloop = (iloop ? iloop->next : NULL);
         }
     }
 
@@ -1405,7 +1502,7 @@ freeStringSymbol (symbol * sym)
 static value *
 stringToSymbol (value * val)
 {
-  char name[SDCC_NAME_MAX + 1];
+  struct dbuf_s dbuf;
   static int charLbl = 0;
   symbol *sym;
   set *sp;
@@ -1425,9 +1522,11 @@ stringToSymbol (value * val)
         }
     }
 
-  SNPRINTF (name, sizeof (name), "_str_%d", charLbl++);
-  sym = newSymbol (name, 0);    /* make it @ level 0 */
-  strncpyz (sym->rname, name, SDCC_NAME_MAX);
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "_str_%d", charLbl++);
+  sym = newSymbol (dbuf_c_str (&dbuf), 0);      /* make it @ level 0 */
+  strncpyz (sym->rname, dbuf_c_str (&dbuf), SDCC_NAME_MAX);
+  dbuf_destroy (&dbuf);
 
   /* copy the type from the value passed */
   sym->type = copyLinkChain (val->type);
@@ -2183,7 +2282,7 @@ RESULT_TYPE
 getResultTypeFromType (sym_link * type)
 {
   /* type = getSpec (type); */
-  if (IS_BIT (type))
+  if (IS_BOOLEAN (type))
     return RESULT_TYPE_BIT;
   if (IS_BITFIELD (type))
     {
@@ -4258,20 +4357,23 @@ decorateType (ast * tree, RESULT_TYPE resultType)
       /*             sizeof         */
       /*----------------------------*/
     case SIZEOF:               /* evaluate wihout code generation */
-      /* change the type to a integer */
       {
+        /* change the type to a integer */
+        struct dbuf_s dbuf;
         int size = getSize (tree->right->ftype);
 
-        SNPRINTF (buffer, sizeof (buffer), "%d", size);
+        dbuf_init (&dbuf, 128);
+        dbuf_printf (&dbuf, "%d", size);
         if (!size && !IS_VOID (tree->right->ftype))
           werrorfl (tree->filename, tree->lineno, E_SIZEOF_INCOMPLETE_TYPE);
-      }
-      tree->type = EX_VALUE;
-      tree->opval.val = constVal (buffer);
-      tree->right = tree->left = NULL;
-      TETYPE (tree) = getSpec (TTYPE (tree) = tree->opval.val->type);
+        tree->type = EX_VALUE;
+        tree->opval.val = constVal (dbuf_c_str (&dbuf));
+        dbuf_destroy (&dbuf);
+        tree->right = tree->left = NULL;
+        TETYPE (tree) = getSpec (TTYPE (tree) = tree->opval.val->type);
 
-      return tree;
+        return tree;
+      }
 
       /*------------------------------------------------------------------*/
       /*----------------------------*/
@@ -4282,6 +4384,8 @@ decorateType (ast * tree, RESULT_TYPE resultType)
       tree->type = EX_VALUE;
       {
         int typeofv = 0;
+        struct dbuf_s dbuf;
+
         if (IS_SPEC (tree->right->ftype))
           {
             switch (SPEC_NOUN (tree->right->ftype))
@@ -4355,8 +4459,10 @@ decorateType (ast * tree, RESULT_TYPE resultType)
                 break;
               }
           }
-        SNPRINTF (buffer, sizeof (buffer), "%d", typeofv);
-        tree->opval.val = constVal (buffer);
+        dbuf_init (&dbuf, 128);
+        dbuf_printf (&dbuf, "%d", typeofv);
+        tree->opval.val = constVal (dbuf_c_str (&dbuf));
+        dbuf_destroy (&dbuf);
         tree->right = tree->left = NULL;
         TETYPE (tree) = getSpec (TTYPE (tree) = tree->opval.val->type);
       }
@@ -4787,19 +4893,23 @@ errorTreeReturn:
 value *
 sizeofOp (sym_link * type)
 {
-  char buff[10];
+  struct dbuf_s dbuf;
+  value *val;
   int size;
 
   /* make sure the type is complete and sane */
   checkTypeSanity (type, "(sizeof)");
 
   /* get the size and convert it to character  */
-  SNPRINTF (buff, sizeof (buff), "%d", size = getSize (type));
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "%d", size = getSize (type));
   if (!size && !IS_VOID (type))
     werror (E_SIZEOF_INCOMPLETE_TYPE);
 
   /* now convert into value  */
-  return constVal (buff);
+  val = constVal (dbuf_c_str (&dbuf));
+  dbuf_destroy (&dbuf);
+  return val;
 }
 
 
@@ -4837,9 +4947,12 @@ backPatchLabels (ast * tree, symbol * trueLabel, symbol * falseLabel)
     {
       static int localLbl = 0;
       symbol *localLabel;
+      struct dbuf_s dbuf;
 
-      SNPRINTF (buffer, sizeof (buffer), "_andif_%d", localLbl++);
-      localLabel = newSymbol (buffer, NestLevel);
+      dbuf_init (&dbuf, 128);
+      dbuf_printf (&dbuf, "_andif_%d", localLbl++);
+      localLabel = newSymbol (dbuf_c_str (&dbuf), NestLevel);
+      dbuf_destroy (&dbuf);
 
       tree->left = backPatchLabels (tree->left, localLabel, falseLabel);
 
@@ -4863,9 +4976,12 @@ backPatchLabels (ast * tree, symbol * trueLabel, symbol * falseLabel)
     {
       static int localLbl = 0;
       symbol *localLabel;
+      struct dbuf_s dbuf;
 
-      SNPRINTF (buffer, sizeof (buffer), "_orif_%d", localLbl++);
-      localLabel = newSymbol (buffer, NestLevel);
+      dbuf_init (&dbuf, 128);
+      dbuf_printf (&dbuf, "_orif_%d", localLbl++);
+      localLabel = newSymbol (dbuf_c_str (&dbuf), NestLevel);
+      dbuf_destroy (&dbuf);
 
       tree->left = backPatchLabels (tree->left, trueLabel, localLabel);
 
@@ -4938,7 +5054,6 @@ ast *
 createLabel (symbol * label, ast * stmnt)
 {
   symbol *csym;
-  char name[SDCC_NAME_MAX + 1];
   ast *rValue;
 
   /* must create fresh symbol if the symbol name  */
@@ -4947,16 +5062,13 @@ createLabel (symbol * label, ast * stmnt)
   if ((csym = findSym (SymbolTab, NULL, label->name)) && (csym->level == label->level))
     label = newSymbol (label->name, label->level);
 
-  /* change the name before putting it in add _ */
-  SNPRINTF (name, sizeof (name), "%s", label->name);
-
   /* put the label in the LabelSymbol table    */
   /* but first check if a label of the same    */
   /* name exists                               */
-  if ((csym = findSym (LabelTab, NULL, name)))
+  if ((csym = findSym (LabelTab, NULL, label->name)))
     werror (E_DUPLICATE_LABEL, label->name);
   else
-    addSym (LabelTab, label, name, label->level, 0, 0);
+    addSym (LabelTab, label, label->name, label->level, 0, 0);
 
   label->isitmp = 1;
   label->islbl = 1;
@@ -4974,7 +5086,7 @@ createLabel (symbol * label, ast * stmnt)
 ast *
 createCase (ast * swStat, ast * caseVal, ast * stmnt)
 {
-  char caseLbl[SDCC_NAME_MAX + 1];
+  struct dbuf_s dbuf;
   ast *rexpr;
   value *val;
 
@@ -5042,9 +5154,11 @@ createCase (ast * swStat, ast * caseVal, ast * stmnt)
     }
 
   /* create the case label   */
-  SNPRINTF (caseLbl, sizeof (caseLbl), "_case_%d_%d", swStat->values.switchVals.swNum, (int) ulFromVal (caseVal->opval.val));
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "_case_%d_%d", swStat->values.switchVals.swNum, (int) ulFromVal (caseVal->opval.val));
 
-  rexpr = createLabel (newSymbol (caseLbl, 0), stmnt);
+  rexpr = createLabel (newSymbol (dbuf_c_str (&dbuf), 0), stmnt);
+  dbuf_destroy (&dbuf);
   rexpr->filename = 0;
   rexpr->lineno = 0;
   return rexpr;
@@ -5056,7 +5170,8 @@ createCase (ast * swStat, ast * caseVal, ast * stmnt)
 ast *
 createDefault (ast * swStat, ast * defaultVal, ast * stmnt)
 {
-  char defLbl[SDCC_NAME_MAX + 1];
+  struct dbuf_s dbuf;
+  ast *ret;
 
   /* if the switch statement does not exist */
   /* then case is out of context            */
@@ -5076,8 +5191,11 @@ createDefault (ast * swStat, ast * defaultVal, ast * stmnt)
   swStat->values.switchVals.swDefault = 1;
 
   /* create the label  */
-  SNPRINTF (defLbl, sizeof (defLbl), "_default_%d", swStat->values.switchVals.swNum);
-  return createLabel (newSymbol (defLbl, 0), stmnt);
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "_default_%d", swStat->values.switchVals.swNum);
+  ret = createLabel (newSymbol (dbuf_c_str (&dbuf), 0), stmnt);
+  dbuf_destroy (&dbuf);
+  return ret;
 }
 
 /*-----------------------------------------------------------------*/
@@ -5089,6 +5207,7 @@ createIf (ast * condAst, ast * ifBody, ast * elseBody)
   static int Lblnum = 0;
   ast *ifTree;
   symbol *ifTrue, *ifFalse, *ifEnd;
+  struct dbuf_s dbuf;
 
   /* if neither exists */
   if (!elseBody && !ifBody)
@@ -5101,19 +5220,25 @@ createIf (ast * condAst, ast * ifBody, ast * elseBody)
     }
 
   /* create the labels */
-  SNPRINTF (buffer, sizeof (buffer), "_iffalse_%d", Lblnum);
-  ifFalse = newSymbol (buffer, NestLevel);
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "_iffalse_%d", Lblnum);
+  ifFalse = newSymbol (dbuf_c_str (&dbuf), NestLevel);
+  dbuf_destroy (&dbuf);
   /* if no else body then end == false */
   if (!elseBody)
     ifEnd = ifFalse;
   else
     {
-      SNPRINTF (buffer, sizeof (buffer), "_ifend_%d", Lblnum);
-      ifEnd = newSymbol (buffer, NestLevel);
+      dbuf_init (&dbuf, 128);
+      dbuf_printf (&dbuf, "_ifend_%d", Lblnum);
+      ifEnd = newSymbol (dbuf_c_str (&dbuf), NestLevel);
+      dbuf_destroy (&dbuf);
     }
 
-  SNPRINTF (buffer, sizeof (buffer), "_iftrue_%d", Lblnum);
-  ifTrue = newSymbol (buffer, NestLevel);
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "_iftrue_%d", Lblnum);
+  ifTrue = newSymbol (dbuf_c_str (&dbuf), NestLevel);
+  dbuf_destroy (&dbuf);
 
   Lblnum++;
 
@@ -5846,10 +5971,12 @@ DEFSETFUNC (resetParmKey)
 static void
 fixupInlineLabel (symbol * sym)
 {
-  char name[SDCC_NAME_MAX + 1];
+  struct dbuf_s dbuf;
 
-  SNPRINTF (name, sizeof (name), "%s_%d", sym->name, inlineState.count);
-  strcpy (sym->name, name);
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "%s_%d", sym->name, inlineState.count);
+  strncpyz (sym->name, dbuf_c_str (&dbuf), SDCC_NAME_MAX);
+  dbuf_destroy (&dbuf);
 }
 
 /*------------------------------------------------------------------*/
@@ -5981,11 +6108,12 @@ fixupInline (ast * tree, int level)
   /* Update SWITCH branches */
   if (tree->type == EX_OP && tree->opval.op == SWITCH)
     {
-      char name[SDCC_NAME_MAX + 1];
+      struct dbuf_s dbuf;
       const char *oldsuff = tree->values.switchVals.swSuffix;
 
-      SNPRINTF (name, sizeof (name), "%s_%d", oldsuff ? oldsuff : "", inlineState.count);
-      tree->values.switchVals.swSuffix = strdup (name);
+      dbuf_init (&dbuf, 128);
+      dbuf_printf (&dbuf, "%s_%d", oldsuff ? oldsuff : "", inlineState.count);
+      tree->values.switchVals.swSuffix = dbuf_detach (&dbuf);
     }
 
   /* Update FOR expression */
