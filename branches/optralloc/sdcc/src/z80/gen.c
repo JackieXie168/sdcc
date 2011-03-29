@@ -4772,7 +4772,7 @@ genPlus (iCode * ic)
   /* Probably something similar has to be done for addition of larger numbers, too. */
   if (size == 2)
     {
-      char *result = Sahe_alloc (aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
+      char *result = Safe_alloc (aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
 
       _moveA3 (AOP (IC_LEFT (ic)), 0);
       emit3 (A_ADD, ASMOP_A, AOP (IC_RIGHT (ic)));
