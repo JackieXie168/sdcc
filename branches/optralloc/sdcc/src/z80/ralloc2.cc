@@ -448,6 +448,33 @@ bool operand_in_reg(const operand *o, reg_t r, const i_assignment &ia, unsigned 
   return(false);
 }
 
+template <class G_t>
+bool operand_is_pair(const operand *o, const assignment &a, unsigned short int i, const G_t &G)
+{
+  if(!o || !IS_SYMOP(o))
+    return(false);
+
+  std::multimap<int, var_t>::const_iterator oi, oi2, oi3, oi_end;
+  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
+  if(oi == oi_end)
+    return(false);
+  oi2 = oi;
+  ++oi2;
+  if(oi2 == oi_end)
+    return(false);
+  oi3 = oi2;
+  ++oi3;
+  if(oi3 != oi_end)
+    return(false);
+
+  if(a.global[oi->second] % 2)
+    return(false);
+  if(a.global[oi->second] + 1 != a.global[oi2->second])
+    return(false);
+
+  return(true);
+}
+
 template <class G_t, class I_t>
 bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
@@ -767,14 +794,19 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(false);
   if(ia.registers[REG_IYL][1] >= 0 && (ia.registers[REG_IYH][1] <= 0 || I[ia.registers[REG_IYL][1]].v != I[ia.registers[REG_IYH][1]].v))
     return(false);
+  if(ia.registers[REG_IYH][1] >= 0 && (ia.registers[REG_IYL][1] <= 0 || I[ia.registers[REG_IYH][1]].v != I[ia.registers[REG_IYL][1]].v))
+    return(false);
   if(ia.registers[REG_IYL][0] >= 0 && (ia.registers[REG_IYH][0] <= 0 || I[ia.registers[REG_IYL][0]].v != I[ia.registers[REG_IYH][0]].v))
+    return(false);
+  if(ia.registers[REG_IYH][0] >= 0 && (ia.registers[REG_IYL][0] <= 0 || I[ia.registers[REG_IYH][0]].v != I[ia.registers[REG_IYL][0]].v))
     return(false);
   if(I[ia.registers[REG_IYL][1]].byte != 0 || I[ia.registers[REG_IYH][1]].byte != 1)
     return(false);
+  if(ia.registers[REG_IYL][0] >= 0 && I[ia.registers[REG_IYL][0]].byte != 0 || ia.registers[REG_IYH][0] >= 0 && I[ia.registers[REG_IYH][0]].byte != 1)
+    return(false);
 
 #if 0
-  if(ic->key >=39 && ic->key <= 44)
-    std::cout << "IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
+  std::cout << "IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
 #endif
 
   if(result_in_IY &&
@@ -785,24 +817,29 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(SKIP_IC2(ic))
     return(true);
 
-  if(ic->op == IFX)	// todo: relax?
-    return(false);
-
   if(!result_in_IY && !input_in_IY &&
-    !(IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && isOperandInDirSpace(IC_RESULT(ic))) &&
-    !(IC_RIGHT(ic) && IS_SYMOP(IC_RIGHT(ic)) && isOperandInDirSpace(IC_RIGHT(ic))) &&
-    !(IC_LEFT(ic) && IS_SYMOP(IC_LEFT(ic)) && isOperandInDirSpace(IC_LEFT(ic))))
+    !(IC_RESULT(ic) && isOperandInDirSpace(IC_RESULT(ic))) &&
+    !(IC_RIGHT(ic) && isOperandInDirSpace(IC_RIGHT(ic))) &&
+    !(IC_LEFT(ic) && isOperandInDirSpace(IC_LEFT(ic))))
+    return(true);
+
+  if(!result_in_IY && !input_in_IY && ic->op == '=' && operand_is_pair(IC_RESULT(ic), a, i, G))	// DirSpace access won't use iy here.
     return(true);
 
   if(ic->op == IPUSH)	// todo: More instructions that can use IY.
     return(true);
 
-  //if(input_in_IY && ic->op == '=' && ) not yet implemented when result is not a pair.
-  //  return(true);
+  if(input_in_IY && !result_in_IY &&
+    (ic->op == '=' && !POINTER_SET(ic) ||
+     ic->op == GET_VALUE_AT_ADDRESS))
+    return(true);
 
 #if 0
-  if(ic->key >=39 && ic->key <= 44)
+  if(ia.registers[REG_IYL][1] == 2)
+ {
     std::cout << "Default drop.\n";
+    std::cout << "result is pair: " << operand_is_pair(IC_RESULT(ic), a, i, G) << "\n";
+}
 #endif
 
   return(false);
@@ -1097,8 +1134,12 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
     c += 0.02f;
 
   // Using IY is rarely a good choice, so discard the IY-users first when in doubt.
-  if(OPTRALLOC_IY && (ia.registers[REG_IYL][1] >= 0 || ia.registers[REG_IYH][1] >= 0))
-    c += 32.0f;
+  std::map<int, i_assignment>::const_iterator mi, mi_end;
+  for(mi = a.i_assignments.begin(), mi_end = a.i_assignments.end(); mi != mi_end; ++mi)
+    {
+      if(OPTRALLOC_IY && (mi->second.registers[REG_IYL][1] >= 0 || mi->second.registers[REG_IYH][1] >= 0))
+        c += 8.0f;
+    }
 
   // An artifical ordering of assignments.
   if(ia.registers[REG_E][1] < 0)
