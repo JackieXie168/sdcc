@@ -1,3 +1,9 @@
+2011-03-29 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/z80.h,
+	  src/z80/gen.c:
+	  Handle IY in the new allocator.
+
 2011-03-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCralloc.hpp,

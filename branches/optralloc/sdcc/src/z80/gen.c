@@ -4580,12 +4580,28 @@ genPlus (iCode * ic)
 
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY)
     {
+      bool save_pair = false;
+      if (getPairId (AOP (IC_RIGHT (ic))) == PAIR_IY)
+        {
+          operand *t = IC_RIGHT (ic);
+          IC_RIGHT (ic) = IC_LEFT (ic);
+          IC_LEFT (ic) = t;
+        }
+      PAIR_ID pair = getPairId (AOP (IC_RIGHT (ic)));
+      if (pair != PAIR_BC && pair != PAIR_DE)
+        {
+          pair = isPairDead (PAIR_DE, ic) ? PAIR_DE : PAIR_BC;
+          if (!isPairDead (pair, ic))
+            save_pair = true;
+        }
       fetchPair (PAIR_IY, AOP (IC_LEFT (ic)));
-      _push (PAIR_BC);
-      fetchPair (PAIR_BC, AOP (IC_RIGHT (ic)));
-      emit2 ("add iy, bc");
+      if (save_pair)
+        _push (pair);
+      fetchPair (pair, AOP (IC_RIGHT (ic)));
+      emit2 ("add iy, %s", _pairs[pair].name);
       regalloc_dry_run_cost += 2;
-      _pop (PAIR_BC);
+      if (save_pair)
+        _pop (pair);
       goto release;
     }
 
@@ -8307,6 +8323,30 @@ genAssign (iCode * ic)
   if (isPair (AOP (result)))
     {
       fetchPairLong (getPairId (AOP (result)), AOP (right), ic, LSB);
+    }
+  else if (getPairId (AOP (right)) == PAIR_IY)
+    {
+      while (size--)
+        {
+          if(size == 0)
+            {
+              emit2 ("push ix");
+              emit2 ("dec sp");
+              emit2 ("pop af");
+              emit2 ("inc sp");
+              regalloc_dry_run_cost += 5;
+              cheapMove (AOP (result), size, ASMOP_A , 0);
+            }
+          else if(size == 1)
+            {
+              emit2 ("push ix");
+              emit2 ("pop af");
+              regalloc_dry_run_cost += 3;
+              cheapMove (AOP (result), size, ASMOP_A , 0);
+            }
+          else
+            cheapMove (AOP (result), size, ASMOP_ZERO, 0);
+        }
     }
   else if ((size > 1) &&
            (AOP_TYPE (result) != AOP_REG) &&
