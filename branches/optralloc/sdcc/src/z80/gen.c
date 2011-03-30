@@ -908,7 +908,11 @@ emit3_o (enum asminst inst, asmop * op1, int offset1, asmop * op2, int offset2)
   else if (!op2)
     emit2 ("%s %s", asminstnames[inst], aopGet (op1, offset1, FALSE));
   else
-    emit2 ("%s %s, %s", asminstnames[inst], aopGet (op1, offset1, FALSE), aopGet (op2, offset2, FALSE));
+    {
+      char *l = Safe_strdup (aopGet (op1, offset1, FALSE));
+      emit2 ("%s %s, %s", asminstnames[inst], l, aopGet (op2, offset2, FALSE));
+      Safe_free (l);
+    }
 
   regalloc_dry_run_cost = cost;
   //emitDebug(";emit3_o cost: %d total so far: %d", (int)emit3Cost(inst, op1, offset1, op2, offset2), (int)cost);
@@ -1299,7 +1303,7 @@ aopForRemat (symbol * sym)
       break;
     }
 
-  aop->aopu.aop_immd = traceAlloc (&_G.trace.aops, Safe_strdup (buffer));
+  aop->aopu.aop_immd = traceAlloc (&_G.trace.aops, dbuf_detach_c_str (&dbuf));
   return aop;
 }
 
@@ -1637,6 +1641,8 @@ isLitWord (const asmop * aop)
 char *
 aopGetLitWordLong (const asmop * aop, int offset, bool with_hash)
 {
+#define REUSE 0
+#if REUSE
   static struct dbuf_s dbuf = { 0 };
 
   if (dbuf_is_initialized (&dbuf))
@@ -1645,8 +1651,13 @@ aopGetLitWordLong (const asmop * aop, int offset, bool with_hash)
     }
   else
     {
-      dbuf_init (&dbuf, 129);
+      dbuf_init (&dbuf, 128);
     }
+#else
+  struct dbuf_s dbuf;
+
+  dbuf_init (&dbuf, 128);
+#endif
 
   /* depending on type */
   switch (aop->type)
@@ -1741,7 +1752,11 @@ aopGetLitWordLong (const asmop * aop, int offset, bool with_hash)
       wassertl (0, "aopGetLitWordLong got unsupported aop->type");
       exit (0);
     }
+#if REUSE
   return dbuf_c_str (&dbuf);
+#else
+  return dbuf_detach_c_str (&dbuf);
+#endif
 }
 
 const bool
@@ -1812,10 +1827,9 @@ fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
 {
   const char *pair = _pairs[pairId].name;
   char *l = Safe_strdup (aopGetLitWordLong (left, offset, FALSE));
-  const char *base = aopGetLitWordLong (left, 0, FALSE);
+  /* TODO borutr: probably is not necesary to make a copy. */
+  char *base = Safe_strdup (aopGetLitWordLong (left, 0, FALSE));
   wassert (pair);
-
-  emitDebug (";fetchLitPair");
 
   if (isPtr (pair))
     {
@@ -1882,11 +1896,13 @@ fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
     }
   /* Both a lit on the right and a true symbol on the left */
   emit2 ("ld %s,!hashedstr", pair, l);
+  Safe_free (base);
   Safe_free (l);
   regalloc_dry_run_cost += (pairId == PAIR_IX || pairId == PAIR_IY) ? 4 : 3;
   return;
 
 adjusted:
+  Safe_free (base);
   Safe_free (l);
   _G.pairs[pairId].last_type = left->type;
   _G.pairs[pairId].base = traceAlloc (&_G.trace.aops, Safe_strdup (base));
@@ -1967,9 +1983,7 @@ fetchPairLong (PAIR_ID pairId, asmop * aop, const iCode * ic, int offset)
         {
           /* Instead of fetching relative to IY, just grab directly
              from the address IY refers to */
-          char *l = aopGetLitWordLong (aop, offset, FALSE);
-          wassert (l);
-          emit2 ("ld %s,(%s)", _pairs[pairId].name, l);
+          emit2 ("ld %s,(%s)", _pairs[pairId].name, aopGetLitWordLong (aop, offset, FALSE));
           regalloc_dry_run_cost += (pairId == PAIR_IY ? 4 : 3);
 
           if (aop->size < 2)
@@ -2187,6 +2201,9 @@ emitLabel (int key)
 static const char *
 aopGet (asmop * aop, int offset, bool bit16)
 {
+#undef REUSE
+#define REUSE 0
+#if REUSE
   static struct dbuf_s dbuf = { 0 };
 
   wassert (!regalloc_dry_run);
@@ -2201,6 +2218,13 @@ aopGet (asmop * aop, int offset, bool bit16)
       /* first time: initialize the dynamically allocated buffer */
       dbuf_init (&dbuf, 128);
     }
+#else
+  struct dbuf_s dbuf;
+
+  wassert (!regalloc_dry_run);
+
+  dbuf_init (&dbuf, 128);
+#endif
 
   /* offset is greater than size then zero */
   /* PENDING: this seems a bit screwed in some pointer cases. */
@@ -2365,7 +2389,11 @@ aopGet (asmop * aop, int offset, bool bit16)
           exit (0);
         }
     }
+#if REUSE
   return dbuf_c_str (&dbuf);
+#else
+  return dbuf_detach_c_str (&dbuf);
+#endif
 }
 
 static bool
