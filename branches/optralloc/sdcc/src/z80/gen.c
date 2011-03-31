@@ -7717,10 +7717,10 @@ genGenPointerGet (operand * left, operand * result, const iCode * ic)
       wassertl (size == 2, "HL must be of size 2");
       emit2 ("ld a,!*hl");
       emit2 ("inc hl");
-      if (!regalloc_dry_run)
+      if(!regalloc_dry_run)
         aopPut (AOP (result), "!*hl", 1);
-      emit2 ("ld l,a");
-      regalloc_dry_run_cost += 4;
+      regalloc_dry_run_cost += 3;
+      cheapMove (AOP (result), 0, ASMOP_A, 0);
       spillPair (PAIR_HL);
     }
   else if (getPairId (AOP (left)) == PAIR_HL
