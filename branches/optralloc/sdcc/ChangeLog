@@ -1,5 +1,10 @@
 2011-03-31 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/peeph-z80.def:
+	  Fix peephole 76' so it doesn't overwrite accumulator during multibyte addition.
+
+2011-03-31 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/gen.c:
 	  Fix for genPointerGet when result is lh.
 
