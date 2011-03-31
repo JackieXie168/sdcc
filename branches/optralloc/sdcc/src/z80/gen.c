@@ -4686,40 +4686,36 @@ genPlus (iCode * ic)
     }
 
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
-      AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue (ic->rSurv, B_IDX))
+    AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue(ic->rSurv, B_IDX))
     {
-      fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
-      cheapMove (ASMOP_B, 0, AOP (IC_RIGHT (ic)), 1);
-      emit2 ("add hl, bc");
-      regalloc_dry_run_cost += 1;
-      goto release;
-    }
-
-  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
-      AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue (ic->rSurv, B_IDX))
-    {
-      fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
-      cheapMove (ASMOP_B, 0, AOP (IC_LEFT (ic)), 1);
+      if (AOP (IC_RIGHT (ic))->aopu.aop_reg[1] && (AOP (IC_RIGHT (ic))->aopu.aop_reg[1]->rIdx == H_IDX || AOP (IC_RIGHT (ic))->aopu.aop_reg[1]->rIdx == L_IDX))
+        {
+          cheapMove (ASMOP_B, 0, AOP (IC_RIGHT (ic)), 1);
+          fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
+        }
+      else
+        {
+          fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
+          cheapMove (ASMOP_B, 0, AOP (IC_RIGHT (ic)), 1);
+        }
       emit2 ("add hl, bc");
       regalloc_dry_run_cost += 1;
       goto release;
     }
 
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
-      AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue (ic->rSurv, D_IDX))
+    AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue(ic->rSurv, D_IDX))
     {
-      fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
-      cheapMove (ASMOP_D, 0, AOP (IC_RIGHT (ic)), 1);
-      emit2 ("add hl, de");
-      regalloc_dry_run_cost += 1;
-      goto release;
-    }
-
-  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
-      AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue (ic->rSurv, D_IDX))
-    {
-      fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
-      cheapMove (ASMOP_D, 0, AOP (IC_LEFT (ic)), 1);
+      if (AOP (IC_RIGHT (ic))->aopu.aop_reg[1] && (AOP (IC_RIGHT (ic))->aopu.aop_reg[1]->rIdx == H_IDX || AOP (IC_RIGHT (ic))->aopu.aop_reg[1]->rIdx == L_IDX))
+        {
+          cheapMove (ASMOP_D, 0, AOP (IC_RIGHT (ic)), 1);
+          fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
+        }
+      else
+        {
+          fetchPair (PAIR_HL, AOP (IC_LEFT (ic)));
+          cheapMove (ASMOP_D, 0, AOP (IC_RIGHT (ic)), 1);
+        }
       emit2 ("add hl, de");
       regalloc_dry_run_cost += 1;
       goto release;
