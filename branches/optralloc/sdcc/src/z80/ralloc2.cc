@@ -661,6 +661,9 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(result_only_HL && ic->op == PCALL)
     return(true);
     
+  if(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) >= 2 && IS_TRUE_SYMOP (result)) // Might use (hl) for result.
+    return(false);
+
   // HL overwritten by result.
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||
@@ -711,12 +714,12 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(IS_VALOP(right) && ic->op == EQ_OP)
     return(true);
 
-  //if(ic->op == '=' && POINTER_SET(ic) && getSize(operandType(IC_RIGHT(ic))) > 1)
-  //	return(false);
-
   // HL overwritten by result.
   if(result_only_HL && (ic->op == CALL || ic->op == PCALL))
     return(true);
+
+  if(ic->op == '=' && POINTER_SET(ic) && !result_only_HL)	// loads result pointer into (hl) first.
+    return(false);
 
   if(ic->op == '=' && !POINTER_GET(ic) && !input_in_HL)
     return(true);
