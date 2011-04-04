@@ -1,5 +1,12 @@
 2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/gen.c:
+	  Fixed broken or when result is sfr.
+	* src/z80/peeph-z80.def:
+	  Fixed broken peephole for combining additions next to pushes.
+
+2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/ralloc2.cc,
 	  src/z80/gen.c:
 	  Allow iy as operand to left shift and decrement.
@@ -71,7 +78,7 @@
 
 	* src/z80/gen.c: fixed bug, introduced during code cleaning
 
-2011-0-28 Philipp Klaus Krause <pkk AT spth.de>
+2011-03-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCerr.c,
 	  src/SDCCerr.h,

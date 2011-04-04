@@ -6514,7 +6514,7 @@ genOr (const iCode * ic, iCode * ifx)
               emit2 ("set %d, a", isLiteralBit (((lit >> (offset * 8)) & 0x0FFL)));
             else
               emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
-            _moveFromA (AOP (result), offset);
+            cheapMove (AOP (result), offset, ASMOP_A, 0);
             /* PENDING: something weird is going on here.  Add exception. */
             if (AOP_TYPE (result) == AOP_ACC)
               break;

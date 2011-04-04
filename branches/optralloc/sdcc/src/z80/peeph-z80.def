@@ -2086,13 +2086,13 @@ replace restart {
 	ld	a, #<(%1)
 	add	a, l
 	ld	l, a
-	ld	a, #>(%2)
+	ld	a, #>(%1)
 	adc	a, h
 	ld	h, a
 	push	bc
 } by {
 	push	bc
-	ld	bc, #%1%2
+	ld	bc, #%1
 	add	hl, bc
 	; peephole 91a used 16 bit addition by moving push bc
 	ld	a, h
@@ -2104,6 +2104,16 @@ replace restart {
 } by {
 	; peephole 92 used ex to move hl onto the stack.
 	ex	(sp),hl
+} if notUsed('a'), notUsed('hl')
+
+replace restart {
+	pop     af
+	ld      hl, #%1
+	push    hl
+} by {
+	ld      hl, #%1
+	; peephole 92' used ex to move hl onto the stack.
+	ex      (sp),hl
 } if notUsed('a'), notUsed('hl')
 
 replace restart {
