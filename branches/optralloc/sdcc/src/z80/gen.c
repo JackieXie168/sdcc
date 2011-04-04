@@ -6903,6 +6903,14 @@ shiftL2Left2Result (operand * left, int offl, operand * result, int offr, int sh
           regalloc_dry_run_cost += 1;
         }
     }
+  else if (getPairId (AOP (result)) == PAIR_IY)
+    {
+      while (shCount--)
+        {
+          emit2 ("add iy, iy");
+          regalloc_dry_run_cost += 2;
+        }
+    }
   else
     {
       int size = 2;

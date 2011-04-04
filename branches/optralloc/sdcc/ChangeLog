@@ -1,5 +1,11 @@
 2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/ralloc2.cc,
+	  src/z80/gen.c:
+	  Allow iy as operand to left shift and decrement.
+
+2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/ralloc2.cc:
 	  Fixed broken caching of values in hl during pointer assignment.
 

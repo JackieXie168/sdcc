@@ -817,6 +817,11 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     ic->op == '+')) // todo: More instructions that can write iy.
     return(true);
 
+  // Todo: Multiplication.
+
+  if(ic->op == LEFT_OP && result_in_IY && input_in_IY && IS_VALOP (IC_RIGHT (ic)) && operandLitValue (IC_RIGHT (ic)) < 8)
+    return(true);
+
   if(SKIP_IC2(ic))
     return(true);
 
