@@ -1294,7 +1294,7 @@ aopForRemat (symbol * sym)
       if (ic->op == '+' || ic->op == '-')
         {
           /* PENDING: for re-target */
-          dbuf_init (&dbuf, 128);
+          dbuf_printf (&dbuf, "0x%04x %c ", (int) operandLitValue (IC_RIGHT (ic)), ic->op);
           ic = OP_SYMBOL (IC_LEFT (ic))->rematiCode;
           continue;
         }
@@ -1838,7 +1838,7 @@ fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
           if (pairId == PAIR_HL && base[0] == '0')      // Ugly workaround
             {
               unsigned int tmpoffset;
-              const char *tmpbase;
+              char *tmpbase;
               if (sscanf (base, "%xd", &tmpoffset) && (tmpbase = strchr (base, '+')))
                 {
                   offset = tmpoffset;
@@ -4796,11 +4796,19 @@ genPlus (iCode * ic)
   /* Probably something similar has to be done for addition of larger numbers, too. */
   if (size == 2)
     {
-      char *result = Safe_alloc (aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
+      char *left1, *result0;
 
       _moveA3 (AOP (IC_LEFT (ic)), 0);
       emit3 (A_ADD, ASMOP_A, AOP (IC_RIGHT (ic)));
-      if (AOP (IC_RESULT (ic))->type == AOP_HL || AOP_TYPE (IC_RESULT (ic)) != AOP_REG && AOP_TYPE (IC_RESULT (ic)) != AOP_HLREG || AOP_TYPE (IC_LEFT (ic)) != AOP_REG && AOP_TYPE (IC_LEFT (ic)) != AOP_HLREG || AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] != AOP (IC_LEFT (ic))->aopu.aop_reg[1] || !regalloc_dry_run && strcmp (result, aopGet (AOP (IC_LEFT (ic)), 1, FALSE)))    // Todo: More exact cost.
+
+      left1 = Safe_strdup (aopGet (AOP (IC_LEFT (ic)), 1, FALSE));
+      result0 = Safe_strdup (aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
+
+      if (AOP (IC_RESULT (ic))->type == AOP_HL ||
+        AOP_TYPE (IC_RESULT (ic)) != AOP_REG && AOP_TYPE (IC_RESULT (ic)) != AOP_HLREG ||
+        AOP_TYPE (IC_LEFT (ic)) != AOP_REG && AOP_TYPE (IC_LEFT (ic)) != AOP_HLREG ||
+        AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] != AOP (IC_LEFT (ic))->aopu.aop_reg[1] ||
+        !regalloc_dry_run && strcmp (result0, left1))    // Todo: More exact cost.
         {
           _moveFromA (AOP (IC_RESULT (ic)), 0);
           _moveA3 (AOP (IC_LEFT (ic)), 1);
@@ -4808,8 +4816,8 @@ genPlus (iCode * ic)
       else
         {
           emitDebug ("; Addition result is in same register as operand of next addition.");
-          if (!regalloc_dry_run && strchr (result, 'c') ||      // Todo: More exact cost.
-              !regalloc_dry_run && strchr (result, 'b'))
+          if (!regalloc_dry_run && strchr (result0, 'c') ||      // Todo: More exact cost.
+              !regalloc_dry_run && strchr (result0, 'b'))
             {
               emit2 ("push de");
               emit2 ("ld e, a");
@@ -4836,7 +4844,8 @@ genPlus (iCode * ic)
             }
 
         }
-      Safe_free (result);
+      Safe_free (result0);
+      Safe_free (left1);
       emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), 1);
       _moveFromA (AOP (IC_RESULT (ic)), 1);
       goto release;
