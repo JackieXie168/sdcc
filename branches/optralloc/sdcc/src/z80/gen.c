@@ -3748,6 +3748,12 @@ emitCall (const iCode * ic, bool ispcall)
       eInRet = FALSE;
     }
 
+  if (_G.stack.pushedIY)
+    {
+      _pop (PAIR_IY);
+      _G.stack.pushedIY = FALSE;
+    }
+
   if (_G.stack.pushedDE)
     {
       if (dInRet && eInRet)
@@ -3804,12 +3810,6 @@ emitCall (const iCode * ic, bool ispcall)
           _pop (PAIR_BC);
         }
       _G.stack.pushedBC = FALSE;
-    }
-
-  if (_G.stack.pushedIY)
-    {
-      _pop (PAIR_IY);
-      _G.stack.pushedIY = FALSE;
     }
 }
 
