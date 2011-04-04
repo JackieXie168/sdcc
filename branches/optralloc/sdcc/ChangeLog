@@ -1,6 +1,11 @@
 2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc2.cc:
+	  Fixed broken caching of values in hl during pointer assignment.
+
+2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc2.cc:
 	  Do not allocate operands to hl when the code generator will use (hl) for the result in addition.
 
 2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
