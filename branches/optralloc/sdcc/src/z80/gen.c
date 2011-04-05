@@ -3189,7 +3189,7 @@ _restoreRegsAfterCall (void)
 }
 
 static void
-_saveRegsForCall (const iCode * ic, int sendSetSize)
+_saveRegsForCall (const iCode * ic, int sendSetSize, bool dontsaveIY)
 {
   /* Rules:
      o Stack parameters are pushed before this function enters
@@ -3236,7 +3236,7 @@ _saveRegsForCall (const iCode * ic, int sendSetSize)
 
       push_bc = bitVectBitValue (ic->rSurv, B_IDX) || bitVectBitValue (ic->rSurv, C_IDX);
       push_de = bitVectBitValue (ic->rSurv, D_IDX) || bitVectBitValue (ic->rSurv, E_IDX);
-      push_iy = bitVectBitValue (ic->rSurv, IYH_IDX) || bitVectBitValue (ic->rSurv, IYL_IDX);
+      push_iy = !dontsaveIY && (bitVectBitValue (ic->rSurv, IYH_IDX) || bitVectBitValue (ic->rSurv, IYL_IDX));
 
       if (push_bc)
         {
@@ -3306,7 +3306,7 @@ genIpush (const iCode * ic)
             }
           walk = walk->next;
         }
-      _saveRegsForCall (walk, nAddSets);
+      _saveRegsForCall (walk, nAddSets, false);
     }
 
   /* then do the push */
@@ -3521,7 +3521,7 @@ emitCall (const iCode * ic, bool ispcall)
       /* PENDING */
     }
 
-  _saveRegsForCall (ic, _G.sendSet ? elementsInSet (_G.sendSet) : 0);
+  _saveRegsForCall (ic, _G.sendSet ? elementsInSet (_G.sendSet) : 0, false);
 
   /* if send set is not empty then assign */
   if (_G.sendSet)
@@ -9130,7 +9130,7 @@ genBuiltInMemcpy (const iCode * ic, int nParams, operand ** pparams)
   from = pparams[1];
   count = pparams[0];
 
-  _saveRegsForCall (ic, 0);
+  _saveRegsForCall (ic, 0, true);
 
   if (setupForMemcpy (ic, nParams, pparams))
     {

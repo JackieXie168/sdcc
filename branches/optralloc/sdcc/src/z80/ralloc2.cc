@@ -955,6 +955,9 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case GOTO:
         case INLINEASM:
           return(0.0f);
+        case '!':
+        case '~':
+        case UNARYMINUS:
         case '+':
         case '-':
         case '^':
@@ -963,9 +966,6 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
           if(result_overwrites_operand(a, i, G, I))
             return(std::numeric_limits<float>::infinity());
         // Exact cost:
-        case '!':
-        case '~':
-        case UNARYMINUS:
         case IPUSH:
         //case IPOP:
         case CALL:
