@@ -1182,7 +1182,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
   for(boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
     add_edge(boost::source(*e, I), boost::target(*e, I), I2);
 
-  const assignment ac;
+  assignment ac;
   tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac);
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
