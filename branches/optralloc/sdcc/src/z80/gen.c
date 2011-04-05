@@ -2734,8 +2734,18 @@ commitPair (asmop * aop, PAIR_ID id)
               cheapMove (aop, 1, ASMOP_D, 0);
               break;
             case PAIR_HL:
-              cheapMove (aop, 0, ASMOP_L, 0);
-              cheapMove (aop, 1, ASMOP_H, 0);
+              if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx ==  H_IDX && aop->aopu.aop_reg[0]->rIdx ==  L_IDX)
+                wassert (0);
+              else if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx ==  H_IDX) // Do not overwrite upper byte.
+                {
+                  cheapMove (aop, 1, ASMOP_H, 0);
+                  cheapMove (aop, 0, ASMOP_L, 0);
+                }
+              else
+                {
+                  cheapMove (aop, 0, ASMOP_L, 0);
+                  cheapMove (aop, 1, ASMOP_H, 0);
+                }
               break;
             default:
               wassertl (0, "Unknown pair id in commitPair()");
@@ -4792,65 +4802,6 @@ genPlus (iCode * ic)
 
   setupToPreserveCarry (ic);
 
-  /* This is ugly, but it fixes the worst code generation bug on Z80. */
-  /* Probably something similar has to be done for addition of larger numbers, too. */
-  if (size == 2)
-    {
-      char *left1, *result0;
-
-      _moveA3 (AOP (IC_LEFT (ic)), 0);
-      emit3 (A_ADD, ASMOP_A, AOP (IC_RIGHT (ic)));
-
-      left1 = Safe_strdup (aopGet (AOP (IC_LEFT (ic)), 1, FALSE));
-      result0 = Safe_strdup (aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
-
-      if (AOP (IC_RESULT (ic))->type == AOP_HL ||
-        AOP_TYPE (IC_RESULT (ic)) != AOP_REG && AOP_TYPE (IC_RESULT (ic)) != AOP_HLREG ||
-        AOP_TYPE (IC_LEFT (ic)) != AOP_REG && AOP_TYPE (IC_LEFT (ic)) != AOP_HLREG ||
-        AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] != AOP (IC_LEFT (ic))->aopu.aop_reg[1] ||
-        !regalloc_dry_run && strcmp (result0, left1))    // Todo: More exact cost.
-        {
-          _moveFromA (AOP (IC_RESULT (ic)), 0);
-          _moveA3 (AOP (IC_LEFT (ic)), 1);
-        }
-      else
-        {
-          emitDebug ("; Addition result is in same register as operand of next addition.");
-          if (!regalloc_dry_run && strchr (result0, 'c') ||      // Todo: More exact cost.
-              !regalloc_dry_run && strchr (result0, 'b'))
-            {
-              emit2 ("push de");
-              emit2 ("ld e, a");
-              emit2 ("ld a, %s", aopGet (AOP (IC_LEFT (ic)), 1, FALSE));
-              emit2 ("ld d, a");
-              emit2 ("ld a, e");
-              emit2 ("ld %s, a", aopGet (AOP (IC_RESULT (ic)), 0, FALSE));
-              emit2 ("ld a, d");
-              emit2 ("pop de");
-            }
-          else
-            {
-              emit2 ("push bc");
-              emit2 ("ld c, a");
-              regalloc_dry_run_cost += 2;
-              _moveA3 (AOP (IC_LEFT (ic)), 1);
-              emit2 ("ld b, a");
-              emit2 ("ld a, c");
-              regalloc_dry_run_cost += 2;
-              _moveFromA (AOP (IC_RESULT (ic)), 0);
-              emit2 ("ld a, b");
-              emit2 ("pop bc");
-              regalloc_dry_run_cost += 2;
-            }
-
-        }
-      Safe_free (result0);
-      Safe_free (left1);
-      emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), 1);
-      _moveFromA (AOP (IC_RESULT (ic)), 1);
-      goto release;
-    }
-
   while (size--)
     {
       _moveA3 (AOP (IC_LEFT (ic)), offset);
@@ -6370,8 +6321,6 @@ genOr (const iCode * ic, iCode * ifx)
   int size, offset = 0;
   unsigned long lit = 0L;
   int bytelit = 0;
-
-  wassert (!regalloc_dry_run);
 
   aopOp ((left = IC_LEFT (ic)), ic, FALSE, FALSE);
   aopOp ((right = IC_RIGHT (ic)), ic, FALSE, FALSE);

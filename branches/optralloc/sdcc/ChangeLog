@@ -1,3 +1,11 @@
+2011-04-05 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc2.cc:
+	  Avoid assignments where the result overwrites operands in subtraction, addition, bitwise and, xor;
+	  get correct cost for bitwise or.
+	* src/z80/gen.c:
+	  Remove workaround for result overwritings operands in addition; fixed commitPair() for swapped bytes in target.
+
 2011-04-04 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:

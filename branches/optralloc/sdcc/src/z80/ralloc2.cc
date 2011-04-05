@@ -424,15 +424,6 @@ result_overwrites_operand(const assignment &a, unsigned short int i, const G_t &
   return(false);
 }
 
-template <class G_t, class I_t> static float
-or_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
-{
-  if(result_overwrites_operand(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
-
-  return(default_instruction_cost(a, i, G, I));
-}
-
 // Return true, iff the operand is placed (partially) in r.
 template <class G_t>
 bool operand_in_reg(const operand *o, reg_t r, const i_assignment &ia, unsigned short int i, const G_t &G)
@@ -957,17 +948,21 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
     {
       switch(ic->op)
         {
-        case '|':
-          if(result_overwrites_operand(a, i, G, I))
-            return(std::numeric_limits<float>::infinity());
-        // Register assignment doesn't matter for these
+        // Register assignment doesn't matter for these:
         case FUNCTION:
         case ENDFUNCTION:
         case LABEL:
         case GOTO:
         case INLINEASM:
           return(0.0f);
-        // Exact cost
+        case '+':
+        case '-':
+        case '^':
+        case '|':
+        case BITWISEAND:
+          if(result_overwrites_operand(a, i, G, I))
+            return(std::numeric_limits<float>::infinity());
+        // Exact cost:
         case '!':
         case '~':
         case UNARYMINUS:
@@ -976,17 +971,17 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case CALL:
         case PCALL:
         case RETURN:
-        case '+':
-        case '-':
+        //case '+': - see above.
+        //case '-': - see above.
         case '*':
         case '>':
         case '<':
         case EQ_OP:
         case AND_OP:
         case OR_OP:
-        case '^':
+        //case '^':
         //case '|': - see above.
-        case BITWISEAND:
+        //case BITWISEAND:
         case GETHBIT:
         case LEFT_OP:
         case RIGHT_OP:
@@ -1006,7 +1001,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
           c = dryZ80iCode(ic);
           unset_surviving_regs(i, G);
           return(c);
-        // Inexact cost
+        // Inexact cost:
         default:
           return(default_instruction_cost(a, i, G, I));
         }
@@ -1035,7 +1030,9 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case JUMPTABLE:
           return(jumptab_cost(a, i, G, I));
         case '|':
-          return(or_cost(a, i, G, I));
+        case '-':
+          if(result_overwrites_operand(a, i, G, I))
+            return(std::numeric_limits<float>::infinity());
         default:
           return(default_instruction_cost(a, i, G, I));
         }
@@ -1126,7 +1123,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
       !IYinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  // The code generator could deal with this for '+' in some cases though.
+  // Avoid overwriting operands.
   const iCode *ic = G[i].ic;
   if((ic->op == '|' || ic->op == '&' || ic->op == '^' || ic->op == '+' || ic->op == '-') && result_overwrites_operand(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
