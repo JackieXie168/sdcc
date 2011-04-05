@@ -41,9 +41,6 @@
     <ClCompile Include="SDCCbitv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SDCCbuild_cmd.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SDCCcflow.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -196,9 +193,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SDCCbitv.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SDCCbuild_cmd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SDCCcflow.h">

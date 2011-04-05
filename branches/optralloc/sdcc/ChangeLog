@@ -1,3 +1,8 @@
+2011-04-05 Borut Razem <borut.razem AT gmail.com>
+
+	* src/src.vcxproj, src/src.vcxproj.filters, src/z80/gen.c:
+	  fixed MSVC 2010 compilation
+
 2011-04-05 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc2.cc:
