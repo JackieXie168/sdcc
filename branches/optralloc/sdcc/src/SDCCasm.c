@@ -119,8 +119,7 @@ dbuf_tvprintf (struct dbuf_s *dbuf, const char *format, va_list ap)
     }
 
   /* Second pass: Expand any macros that we own */
-  dbuf_c_str (&tmpDBuf);
-  sz = noTokens = dbuf_detach (&tmpDBuf);
+  sz = noTokens = dbuf_detach_c_str (&tmpDBuf);
 
   /* recycle tmpDBuf */
   dbuf_init (&tmpDBuf, INITIAL_INLINEASM);
@@ -186,25 +185,6 @@ dbuf_tprintf (struct dbuf_s *dbuf, const char *szFormat, ...)
   va_start (ap, szFormat);
   dbuf_tvprintf (dbuf, szFormat, ap);
   va_end (ap);
-}
-
-void
-tsprintf (char *buffer, size_t len, const char *szFormat, ...)
-{
-  va_list ap;
-  struct dbuf_s dbuf;
-  size_t copyLen;
-
-  dbuf_init (&dbuf, INITIAL_INLINEASM);
-
-  va_start (ap, szFormat);
-  dbuf_tvprintf (&dbuf, szFormat, ap);
-  va_end (ap);
-
-  copyLen = min (len - 1, dbuf_get_length (&dbuf));
-  memcpy (buffer, dbuf_get_buf (&dbuf), copyLen);
-  buffer[copyLen] = '\0';
-  dbuf_destroy (&dbuf);
 }
 
 void

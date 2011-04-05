@@ -1829,8 +1829,9 @@ fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
 {
   const char *pair = _pairs[pairId].name;
   char *l = Safe_strdup (aopGetLitWordLong (left, offset, FALSE));
-  /* TODO borutr: probably is not necesary to make a copy. */
-  char *base = Safe_strdup (aopGetLitWordLong (left, 0, FALSE));
+  char *base_str = Safe_strdup (aopGetLitWordLong (left, 0, FALSE));
+  const char *base = base_str;
+
   wassert (pair);
 
   if (isPtr (pair))
@@ -1840,7 +1841,7 @@ fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
           if (pairId == PAIR_HL && base[0] == '0')      // Ugly workaround
             {
               unsigned int tmpoffset;
-              char *tmpbase;
+              const char *tmpbase;
               if (sscanf (base, "%xd", &tmpoffset) && (tmpbase = strchr (base, '+')))
                 {
                   offset = tmpoffset;
@@ -1898,13 +1899,13 @@ fetchLitPair (PAIR_ID pairId, asmop * left, int offset)
     }
   /* Both a lit on the right and a true symbol on the left */
   emit2 ("ld %s,!hashedstr", pair, l);
-  Safe_free (base);
+  Safe_free (base_str);
   Safe_free (l);
   regalloc_dry_run_cost += (pairId == PAIR_IX || pairId == PAIR_IY) ? 4 : 3;
   return;
 
 adjusted:
-  Safe_free (base);
+  Safe_free (base_str);
   Safe_free (l);
   _G.pairs[pairId].last_type = left->type;
   _G.pairs[pairId].base = traceAlloc (&_G.trace.aops, Safe_strdup (base));
@@ -2736,9 +2737,9 @@ commitPair (asmop * aop, PAIR_ID id)
               cheapMove (aop, 1, ASMOP_D, 0);
               break;
             case PAIR_HL:
-              if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx ==  H_IDX && aop->aopu.aop_reg[0]->rIdx ==  L_IDX)
+              if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx == H_IDX && aop->aopu.aop_reg[0]->rIdx ==  L_IDX)
                 wassert (0);
-              else if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx ==  H_IDX) // Do not overwrite upper byte.
+              else if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx == H_IDX) // Do not overwrite upper byte.
                 {
                   cheapMove (aop, 1, ASMOP_H, 0);
                   cheapMove (aop, 0, ASMOP_L, 0);

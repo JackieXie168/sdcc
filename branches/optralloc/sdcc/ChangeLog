@@ -2,6 +2,9 @@
 
 	* src/src.vcxproj, src/src.vcxproj.filters, src/z80/gen.c:
 	  fixed MSVC 2010 compilation
+	* src/SDCCasm.c, src/SDCCasm.h:
+	  removed tsprintf(), dbuf_tprintf() is used instead
+	* src/z80/gen.c: fixed bug in fetchLitPair()
 
 2011-04-05 Philipp Klaus Krause <pkk AT spth.de>
 

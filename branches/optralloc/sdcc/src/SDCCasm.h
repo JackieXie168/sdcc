@@ -28,7 +28,6 @@
 #include "dbuf.h"
 
 void tfprintf (FILE * fp, const char *szFormat, ...);
-void tsprintf (char *buffer, size_t len, const char *szFormat, ...);
 void dbuf_tprintf (struct dbuf_s *dbuf, const char *szFormat, ...);
 void dbuf_tvprintf (struct dbuf_s *dbuf, const char *szFormat, va_list ap);
 
