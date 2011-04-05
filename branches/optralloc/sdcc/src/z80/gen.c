@@ -3310,7 +3310,7 @@ genIpush (const iCode * ic)
             }
           walk = walk->next;
         }
-      _saveRegsForCall (walk, nAddSets, false);
+      _saveRegsForCall (walk, nAddSets, FALSE);
     }
 
   /* then do the push */
@@ -3525,7 +3525,7 @@ emitCall (const iCode * ic, bool ispcall)
       /* PENDING */
     }
 
-  _saveRegsForCall (ic, _G.sendSet ? elementsInSet (_G.sendSet) : 0, false);
+  _saveRegsForCall (ic, _G.sendSet ? elementsInSet (_G.sendSet) : 0, FALSE);
 
   /* if send set is not empty then assign */
   if (_G.sendSet)
@@ -9144,7 +9144,7 @@ genBuiltInMemcpy (const iCode * ic, int nParams, operand ** pparams)
   from = pparams[1];
   count = pparams[0];
 
-  _saveRegsForCall (ic, 0, true);
+  _saveRegsForCall (ic, 0, TRUE);
 
   if (setupForMemcpy (ic, nParams, pparams))
     {
