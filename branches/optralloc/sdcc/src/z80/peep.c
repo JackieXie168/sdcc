@@ -710,6 +710,11 @@ int z80instructionSize(lineNode *pl)
     return(1);
   if(ISINST(pl->line, "ex"))
     {
+      if(!op2start)
+        {
+          fprintf(stderr, "Warning: z80instructionSize() failed to parse line node %s\n", pl->line);
+          return(4);
+        }
       if(!strncmp(op2start, "ix", 2) || !strncmp(op2start, "iy", 2))
         return(2);
       return(1);

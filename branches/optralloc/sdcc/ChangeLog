@@ -1,3 +1,8 @@
+2011-04-05 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/peep.c:
+	  Give warning instead of crashing when failing to parse ex line node.
+
 2011-04-05 Borut Razem <borut.razem AT gmail.com>
 
 	* src/src.vcxproj, src/src.vcxproj.filters, src/z80/gen.c:
