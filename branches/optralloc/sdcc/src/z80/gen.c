@@ -9501,6 +9501,12 @@ dryZ80iCode (iCode * ic)
   freeTrace (&_G.lines.trace);
   freeTrace (&_G.trace.aops);
 
+  {
+    int pairId;
+    for(pairId = 0; pairId < NUM_PAIRS; pairId++)
+      spillPair (pairId);
+  }
+
   return (regalloc_dry_run_cost);
 }
 
@@ -9597,8 +9603,8 @@ genZ80Code (iCode * lic)
 
   {
     int pairId;
-    for (pairId = 0; pairId < NUM_PAIRS; pairId++)
-      _G.pairs[pairId].base = 0;
+    for(pairId = 0; pairId < NUM_PAIRS; pairId++)
+      spillPair (pairId);
   }
 
   freeTrace (&_G.lines.trace);
