@@ -1,5 +1,17 @@
 2011-04-07 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/port.h,
+	  src/SDCCpeeph.c,
+	  src/z80/main.c,
+	  src/z80/peep.h,
+	  src/z80/peep.c,
+	  src/z80/peeph-z80.def:
+	  Added new peephole function notUsedFrom() to check for variable uses starting from label,
+	  added it as condition in peepholes where appropriate, modified notUsed()
+          peephole function to not rely on first argument being constant or %1.
+
+2011-04-07 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/gen.c:
 	  Fixed SIGSEGV crash due to incorrect register pair cache spilling.
 

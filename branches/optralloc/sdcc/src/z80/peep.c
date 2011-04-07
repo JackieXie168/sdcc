@@ -595,6 +595,21 @@ z80notUsed (const char *what, lineNode *endPl, lineNode *head)
 }
 
 bool
+z80notUsedFrom (const char *what, const char *label, lineNode *head)
+{
+  lineNode *cpl;
+
+  for (cpl = _G.head; cpl; cpl = cpl->next)
+    {
+      if (cpl->isLabel && !strncmp (label, cpl->line, strlen(label)))
+        {
+          return z80notUsed (what, cpl, head);
+        }
+    }
+  return FALSE;
+}
+
+bool
 z80canAssign (const char *op1, const char *op2, const char *exotic)
 {
   const char *dst, *src;

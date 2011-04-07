@@ -790,6 +790,7 @@ PORT z80_port = {
    0,
    z80notUsed,
    z80canAssign,
+   z80notUsedFrom,
    },
   {
    /* Sizes: char, short, int, long, ptr, fptr, gptr, bit, float, max */

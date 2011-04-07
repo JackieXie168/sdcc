@@ -1466,8 +1466,7 @@ replace restart {
 	jp	NZ,%1
 	or	a,%2
 	; peephole 52 shortened or using a (which has just been tested to be #0x00).
-}
-if canAssign('b' %3)
+} if canAssign('b' %3)
 
 replace restart {
 	dec	%1 (%2)
@@ -1478,7 +1477,7 @@ replace restart {
 	dec	%1 (%2)
 	; Peephole 52a removed nonzeroness test.
 	jp	NZ,%3
-}if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %3)
 
 replace restart {
 	dec	%1 (%2)
@@ -1489,7 +1488,7 @@ replace restart {
 	dec	%1 (%2)
 	; Peephole 52a' removed zeroness test.
 	jp	Z,%3
-}if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %3)
 
 replace restart {
 	or	a,%1
@@ -1961,7 +1960,7 @@ replace restart {
 	and	a,#0x01
 	; peephole 85a removed xor by inverting jump condition.
 	jp	Z,%1
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	and	a,#0x01
@@ -1971,7 +1970,7 @@ replace restart {
 	and	a,#0x01
 	; peephole 85b removed xor by inverting jump condition.
 	jp	NZ,%1
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	rlca
@@ -1981,7 +1980,7 @@ replace restart {
 	rlca
 	; peephole 86a jumped by carry instead of bit 0.
 	jp	C,%1
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	rlca
@@ -1991,7 +1990,7 @@ replace restart {
 	rlca
 	; peephole 86b jumped by carry instead of bit 0.
 	jp	NC,%1
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	or	a,a
@@ -2023,7 +2022,7 @@ replace restart {
 } by {
 	; peephole 89a jumped by carry instead of going through bit 0 of a.
 	jp	NC,%1
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	ld	a,#0x00
@@ -2034,7 +2033,7 @@ replace restart {
 } by {
 	; peephole 89b jumped by carry instead of going through bit 0 of a.
 	jp	C,%1
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	sbc	a,%1
@@ -2107,13 +2106,13 @@ replace restart {
 } if notUsed('a'), notUsed('hl')
 
 replace restart {
-	pop     af
-	ld      hl, #%1
-	push    hl
+	pop	af
+	ld	hl, #%1
+	push	hl
 } by {
-	ld      hl, #%1
+	ld	hl, #%1
 	; peephole 92' used ex to move hl onto the stack.
-	ex      (sp),hl
+	ex	(sp),hl
 } if notUsed('a'), notUsed('hl')
 
 replace restart {
@@ -2266,7 +2265,7 @@ replace restart {
 } by {
 	jp	NC,%1
 	; peephole z10b jumped by carry.
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	rla
@@ -2275,7 +2274,7 @@ replace restart {
 } by {
 	jp	C,%1
 	; peephole z10b' jumped by carry.
-} if notUsed('a')
+} if notUsed('a'), notUsedFrom('a' %1)
 
 replace restart {
 	and	a,#0x01
