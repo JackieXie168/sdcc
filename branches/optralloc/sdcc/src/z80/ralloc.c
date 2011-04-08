@@ -1830,16 +1830,12 @@ packRegisters (eBBlock * ebp)
         if (!IS_GB && !IY_RESERVED)
           packRegsForHLUse3 (ic, IC_RESULT (ic), ebp);
 
-      if ( /*!OPTRALLOC_IY && */ !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
-        {
-          packRegsForIYUse (ic, IC_RESULT (ic), ebp);
-        }
+      if (!OPTRALLOC_IY && !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
+        packRegsForIYUse (ic, IC_RESULT (ic), ebp);
 
-      // New register allocator handles A.
-      if (!OPTRALLOC_A && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) && getSize (operandType (IC_RESULT (ic))) == 1)
-        {
-          packRegsForAccUse2 (ic);
-        }
+      if (!OPTRALLOC_A && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
+          getSize (operandType (IC_RESULT (ic))) == 1)
+        packRegsForAccUse2 (ic);
     }
 }
 
