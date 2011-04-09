@@ -1,11 +1,19 @@
 2011-04-09 Borut Razem <borut.razem AT gmail.com>
 
+	* Merge from trunk
+
+2011-04-09 Borut Razem <borut.razem AT gmail.com>
+
 	* src/z80/gen.c, src/z80/ralloc2.cc:
 	  changed with the Philipp's version from his private
 	  sdcc-or-2011-4-8 branch; fixed MSVC 2010 compilation
 	* src/SDCCicode.c: dbuf_detach() replaced with dbuf_destroy()
 	* support/regression/ports/ucz80/spec.mk:
 	  added --optralloc-exact-cost to SDCCFLAGS
+
+2011-04-09 Borut Razem <borut.razem AT gmail.com>
+
+	* sim/ucsim/cmd.src/cmdpars.y: removed warnings
 
 2011-04-08 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -23,12 +31,22 @@
 	  src/z80/peeph-z80.def:
 	  Added new peephole function notUsedFrom() to check for variable uses starting from label,
 	  added it as condition in peepholes where appropriate, modified notUsed()
-          peephole function to not rely on first argument being constant or %1.
+	  peephole function to not rely on first argument being constant or %1.
 
 2011-04-07 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
 	  Fixed SIGSEGV crash due to incorrect register pair cache spilling.
+
+2011-04-07 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* device/lib/mcs51/Makefile.in,
+	* device/lib/mcs51/crtxpopbits.asm, device/lib/mcs51/crtxpopr0.asm: renamed
+	* device/lib/mcs51/crtxpop.asm,
+	* device/lib/mcs51/crtxpush.asm,
+	* device/lib/mcs51/crtxpushr0.asm,
+	* src/mcs51/gen.c (xstackRegisters, saveRegisters, unsaveRegisters,
+	  genSend): fixed for new register order
 
 2011-04-06 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -101,6 +119,16 @@
 	* src/z80/gen.c:
 	  Fix for addition with literal when right operand is partially in hl.
 
+2011-03-31 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/mcs51/ralloc.c (regs8051, serialRegAssign),
+	* src/mcs51/ralloc.h: prefer to use adjacent ascending registers
+
+2011-03-30 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* sdas/linksrc/lklex.c,
+	* src/SDCCast.c: small fixes
+
 2011-03-29 Borut Razem <borut.razem AT gmail.com>
 
 	* Partially merge from trunk
@@ -109,7 +137,7 @@
 
 	* src/z80/z80.h,
 	  src/z80/gen.c,
-          src/z80/ralloc2.cc,
+	  src/z80/ralloc2.cc,
 	  src/z80/peeph-z80.def:
 	  Handle IY in the new allocator.
 
@@ -2147,7 +2175,7 @@
 
 	* src/SDCCmain.c, src/pic/main.c, src/pic16/main.c:
 	  fixed bug #3015137: -c -o not working as expected (caused by fix for
-          #2951083)
+	  #2951083)
 	* device/lib/pic16/libc/string/*, device/lib/pic16/libc/utils/cnvint.S,
 	  device/lib/pic16/libc/utils/cnvfrac.S:
 	  sdcc library license changed to GPL+LE
