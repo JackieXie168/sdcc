@@ -1,3 +1,8 @@
+2011-04-08 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fixed bug that could result in slightly wrong cost function.
+
 2011-04-09 Borut Razem <borut.razem AT gmail.com>
 
 	* Merge from trunk

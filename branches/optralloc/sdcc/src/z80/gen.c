@@ -4326,7 +4326,7 @@ genPlusIncr (const iCode *ic)
       while (icount--)
         {
           emit2 ("inc %s", getPairName (AOP (IC_RESULT (ic))));
-          regalloc_dry_run_cost += (getPairName (AOP (IC_RESULT (ic))) == PAIR_IY ? 2 : 1);
+          regalloc_dry_run_cost += (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY ? 2 : 1);
         }
       return TRUE;
     }
@@ -7698,7 +7698,7 @@ genGenPointerGet (operand * left,
       else
         {
           emit2 ("ld a,!*pair", getPairName (AOP (left)));
-          regalloc_dry_run_cost += (getPairName (AOP (left)) == PAIR_IY ? 3 : 1);
+          regalloc_dry_run_cost += (getPairId (AOP (left)) == PAIR_IY ? 3 : 1);
           cheapMove (AOP (result), 0, ASMOP_A, 0);
         }
 
