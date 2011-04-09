@@ -2706,7 +2706,7 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset)
 
 static void
 commitPair (asmop * aop, PAIR_ID id)
-{emitDebug(";commitPair()");
+{
   /* PENDING: Verify this. */
   if (id == PAIR_HL && requiresHL (aop) && (IS_GB || IY_RESERVED))
     {
@@ -2745,8 +2745,8 @@ commitPair (asmop * aop, PAIR_ID id)
               cheapMove (aop, 1, ASMOP_D, 0);
               break;
             case PAIR_HL:
-              if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx ==  H_IDX && aop->aopu.aop_reg[0]->rIdx ==  L_IDX)
-                wassert (0);
+              if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx == H_IDX && aop->aopu.aop_reg[1]->rIdx ==  L_IDX)
+                wassertl (0, "Failed to assign LH to HL in commitPair()");
               else if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx ==  H_IDX) // Do not overwrite upper byte.
                 {
                   cheapMove (aop, 1, ASMOP_H, 0);
