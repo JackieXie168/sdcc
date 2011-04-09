@@ -643,10 +643,10 @@ getPairId (const asmop *aop)
 static void
 emit2 (const char *szFormat,...)
 {
+  va_list ap;
+
   if(regalloc_dry_run)
     return;
-
-  va_list ap;
 
   va_start (ap, szFormat);
 
@@ -940,11 +940,13 @@ unsigned char emit3Cost(enum asminst inst, asmop *op1, int offset1, asmop *op2, 
 static void
 emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
 {
+  unsigned char cost;
+
   regalloc_dry_run_cost += emit3Cost(inst, op1, offset1, op2, offset2);
   if(regalloc_dry_run)
     return;
 
-  unsigned char cost = regalloc_dry_run_cost;
+  cost = regalloc_dry_run_cost;
   if(!op1)
     emit2("%s", asminstnames[inst]);
   else if(!op2)
@@ -2005,14 +2007,17 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
               break;
             }
         }
-        else if (IS_Z80 && aop->type == AOP_IY) {emitDebug(";fPLY");
+        else if (IS_Z80 && aop->type == AOP_IY) {
+          char *l;
+
+          emitDebug(";fPLY");
           /* Instead of fetching relative to IY, just grab directly
              from the address IY refers to */
-          char *l = aopGetLitWordLong (aop, offset, FALSE);
+          l = aopGetLitWordLong (aop, offset, FALSE);
           wassert (l);
           emit2 ("ld %s,(%s)", _pairs[pairId].name, l);
           regalloc_dry_run_cost += (pairId == PAIR_IY ? 4 : 3);
-       
+
           if (aop->size < 2) {
             emit2("ld %s,!zero", _pairs[pairId].h);
             regalloc_dry_run_cost += 2;
@@ -2430,10 +2435,10 @@ static bool
 canAssignToPtr3 (const asmop *aop)
 {
   if(aop->type == AOP_ACC || aop->type == AOP_REG || aop->type == AOP_HLREG)
-    return(true);
+    return(TRUE);
   if(aop->type == AOP_IMMD || aop->type == AOP_LIT || aop->type == AOP_SIMPLELIT)
-    return(true);
-  return(false);
+    return(TRUE);
+  return(FALSE);
 }
 
 /*-----------------------------------------------------------------*/
@@ -2675,7 +2680,7 @@ aopPut3 (asmop *op1, int offset1, asmop *op2, int offset2)
   unsigned char cost = regalloc_dry_run_cost;
 
   if(!regalloc_dry_run)
-    aopPut (op1, aopGet(op2, offset2, false), offset1);
+    aopPut (op1, aopGet(op2, offset2, FALSE), offset1);
 
   regalloc_dry_run_cost = cost + ld_cost(op1, op2);
 }
@@ -2983,6 +2988,8 @@ genCpl (const iCode *ic)
 static void
 _gbz80_emitAddSubLongLong (const iCode *ic, asmop *left, asmop *right, bool isAdd)
 {
+  const char *first, *later;
+
   wassert (!regalloc_dry_run);
 
   /* Logic:
@@ -2997,8 +3004,8 @@ _gbz80_emitAddSubLongLong (const iCode *ic, asmop *left, asmop *right, bool isAd
        de = hl -de
        store de into result
   */
-  const char *first = isAdd ? "add" : "sub";
-  const char *later = isAdd ? "adc" : "sbc";
+  first = isAdd ? "add" : "sub";
+  later = isAdd ? "adc" : "sbc";
 
   wassertl (IS_GB, "Code is only relevant to the gbz80");
   wassertl (AOP( IC_RESULT (ic))->size == 4, "Only works for four bytes");
@@ -3225,11 +3232,11 @@ _saveRegsForCall(const iCode *ic, int sendSetSize, bool dontsaveIY)
   */
   
   if (_G.saves.saved == FALSE) {
-    bool deInUse, bcInUse;
+    bool push_bc, push_de, push_iy;
+    /*bool deInUse, bcInUse;
     bool deSending;
     bool bcInRet = FALSE, deInRet = FALSE;
-    bool push_bc, push_de, push_iy;
-    /*bitVect *rInUse;
+    bitVect *rInUse;
 
     rInUse = bitVectCplAnd (bitVectCopy (ic->rMask),
                             z80_rUmaskForOp (IC_RESULT(ic)));
@@ -3276,7 +3283,6 @@ static void
 genIpush (const iCode * ic)
 {
   int size, offset = 0;
-  const char *l;
 
   /* if this is not a parm push : ie. it is spill push
      and spill push is always done on the local stack */
@@ -3308,7 +3314,7 @@ genIpush (const iCode * ic)
       }
       walk = walk->next;
     }
-    _saveRegsForCall(walk, nAddSets, false);
+    _saveRegsForCall(walk, nAddSets, FALSE);
   }
 
   /* then do the push */
@@ -3525,7 +3531,7 @@ emitCall (const iCode *ic, bool ispcall)
       /* PENDING */
     }
 
-  _saveRegsForCall(ic, _G.sendSet ? elementsInSet(_G.sendSet) : 0, false);
+  _saveRegsForCall(ic, _G.sendSet ? elementsInSet(_G.sendSet) : 0, FALSE);
 
   /* if send set is not empty then assign */
   if (_G.sendSet)
@@ -4564,17 +4570,21 @@ genPlus (iCode * ic)
 
   /* Special case when left and right are constant */
   if (isPair (AOP (IC_RESULT (ic))))
-    {emitDebug(";gP3");
+    {
       char *left, *right;
+
+      emitDebug(";gP3");
       left = aopGetLitWordLong (AOP (IC_LEFT (ic)), 0, FALSE);
       right = aopGetLitWordLong (AOP (IC_RIGHT (ic)), 0, FALSE);
 
       if (AOP_TYPE(IC_LEFT(ic)) == AOP_LIT && AOP_TYPE(IC_RIGHT(ic)) == AOP_LIT &&
           left && right)
-        {emitDebug(";gP2");
+        {
+          char buffer[100];
+
+          emitDebug(";gP2");
           /* It's a pair */
           /* PENDING: fix */
-          char buffer[100];
           sprintf (buffer, "#(%s + %s)", left, right);
           emit2 ("ld %s,%s", getPairName (AOP (IC_RESULT (ic))), buffer);
           regalloc_dry_run_cost += (getPairId(AOP (IC_RESULT (ic))) == PAIR_IY ? 4 : 3);
@@ -4624,19 +4634,21 @@ genPlus (iCode * ic)
 
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY)
     {
-      bool save_pair = false;
+      bool save_pair = FALSE;
+      PAIR_ID pair;
+
       if (getPairId (AOP (IC_RIGHT (ic))) == PAIR_IY || getPairId (AOP (IC_LEFT (ic))) == PAIR_BC || getPairId (AOP (IC_LEFT (ic))) == PAIR_DE)
         {
           operand *t = IC_RIGHT (ic);
           IC_RIGHT (ic) = IC_LEFT (ic);
           IC_LEFT (ic) = t;
         }
-      PAIR_ID pair = getPairId (AOP (IC_RIGHT (ic)));
+      pair = getPairId (AOP (IC_RIGHT (ic)));
       if (pair != PAIR_BC && pair != PAIR_DE)
         {
           pair = isPairDead (PAIR_DE, ic) ? PAIR_DE : PAIR_BC;
           if (!isPairDead (pair, ic))
-            save_pair = true;
+            save_pair = TRUE;
         }
       fetchPair (PAIR_IY, AOP (IC_LEFT (ic)));
       if (save_pair)
@@ -5827,10 +5839,12 @@ static void
 gencjne (operand * left, operand * right, symbol * lbl)
 {
   symbol *tlbl;
+  PAIR_ID pop;
+
   if (!regalloc_dry_run)
     tlbl = newiTempLabel (NULL);
 
-  PAIR_ID pop = gencjneshort (left, right, lbl);
+  pop = gencjneshort (left, right, lbl);
 
   /* PENDING: ?? */
   if (!regalloc_dry_run)
@@ -6196,9 +6210,11 @@ genAnd (const iCode *ic, iCode * ifx)
       (AOP_TYPE (left) != AOP_CRY))
     {
       symbol *tlbl;
+      int sizel;
+
       if (!regalloc_dry_run)
         tlbl = newiTempLabel (NULL);
-      int sizel = AOP_SIZE (left);
+      sizel = AOP_SIZE (left);
       if (size)
         {
           /* PENDING: Test case for this. */
@@ -6400,9 +6416,11 @@ genOr (const iCode *ic, iCode * ifx)
       (AOP_TYPE (left) != AOP_CRY))
     {
       symbol *tlbl;
+      int sizel;
+
       if (!regalloc_dry_run)
         tlbl = newiTempLabel (NULL);
-      int sizel = AOP_SIZE (left);
+      sizel = AOP_SIZE (left);
 
       if (size)
         {
@@ -6577,9 +6595,11 @@ genXor (const iCode *ic, iCode * ifx)
       (AOP_TYPE (left) != AOP_CRY))
     {
       symbol *tlbl;
+      int sizel;
+
       if (!regalloc_dry_run)
         tlbl = newiTempLabel (NULL);
-      int sizel = AOP_SIZE (left);
+      sizel = AOP_SIZE (left);
 
       if (size)
         {
@@ -9179,7 +9199,7 @@ genBuiltInMemcpy (const iCode *ic, int nParams, operand **pparams)
   from = pparams[1];
   count = pparams[0];
 
-  _saveRegsForCall (ic, 0, true);
+  _saveRegsForCall (ic, 0, TRUE);
 
   if (setupForMemcpy (ic, nParams, pparams))
     {
@@ -9515,7 +9535,7 @@ void genZ80iCode (iCode *ic)
 
 unsigned char dryZ80iCode (iCode *ic)
 {
-  regalloc_dry_run = true;
+  regalloc_dry_run = TRUE;
   regalloc_dry_run_cost = 0;
 
   /* Hack */
@@ -9568,7 +9588,7 @@ genZ80Code (iCode * lic)
 
   iCode *ic;
   int cln = 0;
-  regalloc_dry_run = false;
+  regalloc_dry_run = FALSE;
 
   /* Hack */
   if (IS_GB)
@@ -9591,7 +9611,7 @@ genZ80Code (iCode * lic)
     }
 
   for (ic = lic; ic; ic = ic->next)
-    ic->generated = false;
+    ic->generated = FALSE;
 
   /* Generate Code for all instructions */
   for (ic = lic; ic; ic = ic->next)
