@@ -424,6 +424,15 @@ result_overwrites_operand(const assignment &a, unsigned short int i, const G_t &
   return(false);
 }
 
+template <class G_t, class I_t> static float
+or_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  if(result_overwrites_operand(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
+  return(default_instruction_cost(a, i, G, I));
+}
+
 // Return true, iff the operand is placed (partially) in r.
 template <class G_t>
 bool operand_in_reg(const operand *o, reg_t r, const i_assignment &ia, unsigned short int i, const G_t &G)
@@ -651,10 +660,10 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   if(result_only_HL && ic->op == PCALL)
     return(true);
-    
+
   if(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) >= 2 && IS_TRUE_SYMOP (result)) // Might use (hl) for result.
     return(false);
-
+    
   // HL overwritten by result.
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||
@@ -811,6 +820,9 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   // Todo: Multiplication.
 
   if(ic->op == LEFT_OP && result_in_IY && input_in_IY && IS_VALOP (IC_RIGHT (ic)) && operandLitValue (IC_RIGHT (ic)) < 8)
+    return(true);
+
+  if(ic->op == '-' && result_in_IY && input_in_IY && IS_VALOP (IC_RIGHT (ic)) && operandLitValue (IC_RIGHT (ic)) < 4)
     return(true);
 
   if(SKIP_IC2(ic))
@@ -971,8 +983,8 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case CALL:
         case PCALL:
         case RETURN:
-        //case '+': - see above.
-        //case '-': - see above.
+        //case '+':
+        //case '-':
         case '*':
         case '>':
         case '<':
@@ -1030,9 +1042,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case JUMPTABLE:
           return(jumptab_cost(a, i, G, I));
         case '|':
-        case '-':
-          if(result_overwrites_operand(a, i, G, I))
-            return(std::numeric_limits<float>::infinity());
+          return(or_cost(a, i, G, I));
         default:
           return(default_instruction_cost(a, i, G, I));
         }
@@ -1123,7 +1133,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
       !IYinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  // Avoid overwriting operands.
+  // The code generator could deal with this for '+' in some cases though.
   const iCode *ic = G[i].ic;
   if((ic->op == '|' || ic->op == '&' || ic->op == '^' || ic->op == '+' || ic->op == '-') && result_overwrites_operand(a, i, G, I))
     return(std::numeric_limits<float>::infinity());

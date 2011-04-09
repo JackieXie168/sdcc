@@ -1,3 +1,11 @@
+2011-04-09 Borut Razem <borut.razem AT gmail.com>
+
+	* src/z80/gen.c, src/z80/ralloc2.cc:
+	  changed with the Philipp's version from fhis private sdcc-or-2011-4-8 branch
+	* src/SDCCicode.c: dbuf_detach() replaced with dbuf_destroy()
+	* support/regression/ports/ucz80/spec.mk:
+	  added --optralloc-exact-cost to SDCCFLAGS
+
 2011-04-08 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc.c:

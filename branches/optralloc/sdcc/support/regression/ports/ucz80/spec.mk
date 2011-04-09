@@ -31,7 +31,7 @@ else
   AS_Z80 = $(AS_Z80C)
 endif
 
-SDCCFLAGS += -mz80 --less-pedantic --profile -DREENTRANT=
+SDCCFLAGS += -mz80 --less-pedantic --profile --optralloc-exact-cost -DREENTRANT=
 LINKFLAGS += z80.lib
 
 OBJEXT = .rel
