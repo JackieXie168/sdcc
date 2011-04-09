@@ -6,6 +6,7 @@
 2011-04-09 Borut Razem <borut.razem AT gmail.com>
 
 	* Merge from trunk
+	* support/regression/tests/bug3166208.c: sync with trunk
 
 2011-04-09 Borut Razem <borut.razem AT gmail.com>
 
