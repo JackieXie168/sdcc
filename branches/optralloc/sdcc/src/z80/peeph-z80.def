@@ -54,6 +54,18 @@ replace restart {
 }
 
 replace restart {
+	inc	hl
+} by {
+	; peephole 0a'''' removed dead increment of hl.
+} if notUsed('hl')
+
+replace restart {
+	dec	hl
+} by {
+	; peephole 0a'''' removed dead decrement of hl.
+} if notUsed('hl')
+
+replace restart {
 	ld	%1, %2
 	ld	%3, %1
 } by {

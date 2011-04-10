@@ -1979,9 +1979,8 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
     emitDebug(";fetchPairLong");
 
     /* if this is remateriazable */
-    if (isLitWord (aop)) {
+    if (isLitWord (aop))
       fetchLitPair (pairId, aop, offset);
-    }
     else
       {
         if (getPairId (aop) == pairId)
@@ -1989,7 +1988,8 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
             /* Do nothing */
           }
         /* we need to get it byte by byte */
-        else if (pairId == PAIR_HL && (IS_GB || (IY_RESERVED && aop->type == AOP_HL)) && requiresHL (aop)) {
+        else if (pairId == PAIR_HL && (IS_GB || (IY_RESERVED && aop->type == AOP_HL)) && requiresHL (aop))
+          {
             if (!regalloc_dry_run) // TODO: Fix this to get correct cost!
               aopGet (aop, offset, FALSE);
             switch (aop->size - offset) {
@@ -2011,11 +2011,10 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
               wassertl (0, "Attempted to fetch too much data into HL");
               break;
             }
-        }
+          }
         else if (IS_Z80 && aop->type == AOP_IY) {
           char *l;
 
-          emitDebug(";fPLY");
           /* Instead of fetching relative to IY, just grab directly
              from the address IY refers to */
           l = aopGetLitWordLong (aop, offset, FALSE);
@@ -7670,6 +7669,22 @@ finish:
     }
 }
 
+static void _moveFrom_tpair_(asmop *aop, int offset, PAIR_ID pair)
+{
+  if (!IS_GB && aop->type == AOP_REG)
+    {
+      if(!regalloc_dry_run)
+        aopPut (aop, "!*hl", offset);
+      regalloc_dry_run_cost += ld_cost (aop, ASMOP_A);
+    }
+  else
+    {
+      emit2 ("ld a,!*pair", _pairs[pair].name);
+      regalloc_dry_run_cost += 1;
+      cheapMove (aop, offset, ASMOP_A, 0);
+    }
+}
+
 /*-----------------------------------------------------------------*/
 /* genGenPointerGet -  get value from generic pointer space        */
 /*-----------------------------------------------------------------*/
@@ -7758,21 +7773,104 @@ genGenPointerGet (operand * left,
       size = AOP_SIZE (result);
       offset = 0;
 
+      if (size >= 2 && getPairId (AOP (left)) == PAIR_HL && AOP_TYPE (result) == AOP_REG)
+        {
+          int i, l = -10, h = -10, r;
+          for (i = 0; i < size; i++)
+            {
+              if (AOP (result)->aopu.aop_reg[i]->rIdx == L_IDX)
+                l = i;
+              else if (AOP (result)->aopu.aop_reg[i]->rIdx == H_IDX)
+                h = i;
+            }
+
+          if (l == -10 && h >= 0 && h < size - 1 || h == -10 && l >= 0 && l < size - 1)	// One byte of result somewehere in hl. Just assign it last.
+            {
+              r = (l == -10 ? h : l);
+
+              while (size--)
+                {
+                  if (offset != r)
+                    _moveFrom_tpair_ (AOP (result), offset, pair);
+
+                  if (size)
+                   {
+                     offset++;
+                     emit2 ("inc %s", _pairs[pair].name);
+                     regalloc_dry_run_cost += 1;
+                     _G.pairs[pair].offset++;
+                   }
+                }
+
+              for (size = offset; size != r; size--)
+                {
+                  emit2 ("dec %s", _pairs[pair].name);
+                  regalloc_dry_run_cost += 1;
+                }
+
+              _moveFrom_tpair_ (AOP (result), r, pair);
+
+              /* Fixup HL back down */
+              for (; size; size--)
+                {
+                  emit2 ("dec %s", _pairs[pair].name);
+                  regalloc_dry_run_cost += 1;
+                  _G.pairs[pair].offset--;
+                }
+
+              goto release;
+            }
+          else if (l >= 0 && h >= 0 ) // Two bytes of result somewehere in hl. Assign it last and use a for caching.
+            {
+              while (size--)
+                {
+                  if (offset != l && offset != h)
+                    _moveFrom_tpair_ (AOP (result), offset, pair);
+
+                  if (size)
+                   {
+                     offset++;
+                     emit2 ("inc %s", _pairs[pair].name);
+                     regalloc_dry_run_cost += 1;
+                     _G.pairs[pair].offset++;
+                   }
+                }
+
+              r = (l > h ? l : h);
+              for (size = offset; size != r; size--)
+                {
+                  emit2 ("dec %s", _pairs[pair].name);
+                  regalloc_dry_run_cost += 1;
+                }
+              _moveFrom_tpair_ (ASMOP_A, 0, pair);
+
+              r = (l < h ? l : h);
+              for (size; size != r; size--)
+                {
+                  emit2 ("dec %s", _pairs[pair].name);
+                  regalloc_dry_run_cost += 1;
+                }
+              _moveFrom_tpair_ (AOP (result), r, pair);
+
+              r = (l > h ? l : h);
+              cheapMove (AOP (result), r, ASMOP_A, 0);
+
+              /* Fixup HL back down */
+              for (; size; size--)
+                {
+                  emit2 ("dec %s", _pairs[pair].name);
+                  regalloc_dry_run_cost += 1;
+                  _G.pairs[pair].offset--;
+                }
+
+              goto release;
+            }
+        }
+
       while (size--)
         {
-          /* PENDING: make this better */
-          if (!IS_GB && AOP_TYPE (result) == AOP_REG)
-            {
-              if(!regalloc_dry_run)
-                aopPut (AOP (result), "!*hl", offset++);
-              regalloc_dry_run_cost += ld_cost (AOP (result), ASMOP_A);
-            }
-          else
-            {
-              emit2 ("ld a,!*pair", _pairs[pair].name);
-              regalloc_dry_run_cost += 1;
-              cheapMove (AOP (result), offset++, ASMOP_A, 0);
-            }
+          _moveFrom_tpair_ (AOP (result), offset++, pair);
+
           if (size)
             {
               emit2 ("inc %s", _pairs[pair].name);
@@ -7786,6 +7884,7 @@ genGenPointerGet (operand * left,
           {
             emit2 ("dec %s", _pairs[pair].name);
             regalloc_dry_run_cost += 1;
+            _G.pairs[pair].offset--;
           }
     }
   else
