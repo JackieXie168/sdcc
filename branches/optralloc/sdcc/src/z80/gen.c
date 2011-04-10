@@ -4573,7 +4573,6 @@ genPlus (iCode * ic)
     {
       char *left, *right;
 
-      emitDebug(";gP3");
       left = aopGetLitWordLong (AOP (IC_LEFT (ic)), 0, FALSE);
       right = aopGetLitWordLong (AOP (IC_RIGHT (ic)), 0, FALSE);
 
@@ -4582,7 +4581,6 @@ genPlus (iCode * ic)
         {
           char buffer[100];
 
-          emitDebug(";gP2");
           /* It's a pair */
           /* PENDING: fix */
           sprintf (buffer, "#(%s + %s)", left, right);
@@ -4807,7 +4805,7 @@ genPlus (iCode * ic)
           goto release;
         }
     }
-emitDebug(";gPE");
+
   setupToPreserveCarry (ic);
 
   while (size--)

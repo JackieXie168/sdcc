@@ -1,4 +1,10 @@
+2011-04-10 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Cleaned up some leftover debug messages.
+
 2011-04-09 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/gen.c:
 	  Added warning in commitPair() for lh to hl assignment.
 
