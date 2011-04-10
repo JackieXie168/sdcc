@@ -1,7 +1,8 @@
 2011-04-10 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
-	  Cleaned up some leftover debug messages.
+	  Cleaned up some leftover debug messages,
+	  fixed assignment of lh to hl.
 
 2011-04-09 Philipp Klaus Krause <pkk AT spth.de>
 

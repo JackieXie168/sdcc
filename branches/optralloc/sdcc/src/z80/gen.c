@@ -2746,7 +2746,11 @@ commitPair (asmop * aop, PAIR_ID id)
               break;
             case PAIR_HL:
               if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx == H_IDX && aop->aopu.aop_reg[1]->rIdx ==  L_IDX)
-                wassertl (0, "Failed to assign LH to HL in commitPair()");
+                {
+                  cheapMove (ASMOP_A, 0, ASMOP_L, 0);
+                  cheapMove (aop, 1, ASMOP_H, 0);
+                  cheapMove (aop, 0, ASMOP_A, 0);
+                }
               else if (aop->type == AOP_REG && aop->aopu.aop_reg[0]->rIdx ==  H_IDX) // Do not overwrite upper byte.
                 {
                   cheapMove (aop, 1, ASMOP_H, 0);
