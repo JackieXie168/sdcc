@@ -93,6 +93,7 @@
 #include "gen.h"
 #include "SDCCglue.h"
 #include "newalloc.h"
+#include "dbuf_string.h"
 
 /* This is the down and dirty file with all kinds of kludgy & hacky
    stuff. This is what it is all about CODE GENERATION for a specific MCU.
@@ -1326,6 +1327,8 @@ aopForSym (const iCode * ic, symbol * sym, bool result, bool requires_a)
 static asmop *
 aopForRemat (symbol * sym)
 {
+  iCode *ic = sym->rematiCode;
+  asmop *aop = newAsmop (AOP_IMMD);
   static struct dbuf_s dbuf = { 0 };
 
   if (dbuf_is_initialized (&dbuf))
@@ -1336,9 +1339,6 @@ aopForRemat (symbol * sym)
     {
       dbuf_init (&dbuf, 128);
     }
-
-  iCode *ic = sym->rematiCode;
-  asmop *aop = newAsmop (AOP_IMMD);
 
   /* if plus or minus print the right hand side */
   while (ic->op == '+' || ic->op == '-')
@@ -1700,7 +1700,7 @@ isLitWord (const asmop *aop)
     }
 }
 
-const char *
+static const char *
 aopGetLitWordLong (const asmop *aop, int offset, bool with_hash)
 {
   static struct dbuf_s dbuf = { 0 };
@@ -2271,8 +2271,6 @@ aopGet (asmop * aop, int offset, bool bit16)
       switch (aop->type)
         {
         case AOP_DUMMY:
-          //tsprintf (buffer, sizeof(buffer), "!zero");
-          //return traceAlloc(&_G.trace.aops, Safe_strdup(buffer));
           dbuf_append_char (&dbuf, 'a');
           break;
 
@@ -2287,16 +2285,17 @@ aopGet (asmop * aop, int offset, bool bit16)
                 case 2:
                   dbuf_tprintf (&dbuf, "!bankimmeds", aop->aopu.aop_immd);
                   break;
+
                 case 1:
                   dbuf_tprintf (&dbuf, "!msbimmeds", aop->aopu.aop_immd);
                   break;
+
                 case 0:
                   dbuf_tprintf (&dbuf, "!lsbimmeds", aop->aopu.aop_immd);
                   break;
+
                 default:
-                  dbuf_destroy (&dbuf);
                   wassertl (0, "Fetching from beyond the limits of an immediate value.");
-                  exit (0);
                 }
             }
           break;
@@ -2370,9 +2369,8 @@ aopGet (asmop * aop, int offset, bool bit16)
           break;
 
         case AOP_CRY:
-          dbuf_destroy (&dbuf);
           wassertl (0, "Tried to fetch from a bit variable");
-          exit (0);
+          break;
 
         case AOP_ACC:
           if (!offset)
@@ -2381,7 +2379,7 @@ aopGet (asmop * aop, int offset, bool bit16)
             }
           else
             {
-              dbuf_append_char (&dbuf, 'a');
+              dbuf_tprintf (&dbuf, "!zero");
             }
           break;
 
@@ -3500,7 +3498,7 @@ isInHome (void)
 }
 
 static int
-_opUsesPair (operand * op, iCode * ic, PAIR_ID pairId)
+_opUsesPair (operand * op, const iCode * ic, PAIR_ID pairId)
 {
   int ret = 0;
   asmop *aop;
