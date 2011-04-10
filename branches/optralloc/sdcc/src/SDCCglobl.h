@@ -8,12 +8,19 @@
 #include <setjmp.h>
 #include <stdio.h>
 
-#ifndef  __cplusplus
-# if !defined _MSC_VER
-#   include <stdbool.h>
-# elif !defined __cplusplus
-    typedef unsigned char bool;
+#ifndef __cplusplus
+# ifndef _MSC_VER
+#  include <stdbool.h>
+#  define  TRUE  true
+#  define  FALSE false
+# else
+typedef unsigned char bool;
+#  define  TRUE   1
+#  define  FALSE  0
 # endif
+#else
+#  define  TRUE   true
+#  define  FALSE  false
 #endif
 
 #include "SDCCset.h"
@@ -114,8 +121,6 @@
 
 #define  SMALL_MODEL 0
 #define  LARGE_MODEL 1
-#define  TRUE 1
-#define  FALSE 0
 
 #define MAX_TVAR 6
 #define INITIAL_INLINEASM 4*1024
