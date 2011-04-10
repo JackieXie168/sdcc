@@ -124,7 +124,7 @@ tsprintf (char *buffer, size_t len, const char *szFormat, ...)
    parameter per pair.
    PENDING: What if the parameter is a long?
    Everything is caller saves. i.e. the caller must save any registers
-   that it wants to preserve over the call.
+   that it wants to preserve over the call, except for ix, which is callee saves.
    GB: The return value is returned in DEHL.  DE is normally used as a
    working register pair.  Caller saves allows it to be used for a
    return value.
@@ -769,6 +769,11 @@ ld_cost(asmop *op1, asmop *op2)
           return(4);
         case AOP_STK:
           return(5);
+        case AOP_HL:    /* 3 from ld hl, #... */
+          return(6);
+        case AOP_IY:    /* 4 from ld iy, #... */
+        case AOP_EXSTK: /* 4 from ld iy, #... */
+          return(9);
         default:printf("ld_cost op1: AOP_SFR, op2: %d", (int)(op2type));
           wassert(0);
         }

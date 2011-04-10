@@ -2,7 +2,8 @@
 
 	* src/z80/gen.c:
 	  Cleaned up some leftover debug messages,
-	  fixed assignment of lh to hl.
+	  fixed assignment of lh to hl,
+	  implemented exact cost for EXSTK to SFR assignment.
 
 2011-04-09 Philipp Klaus Krause <pkk AT spth.de>
 
