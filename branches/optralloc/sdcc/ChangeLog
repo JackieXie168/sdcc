@@ -1,3 +1,8 @@
+2011-04-11 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fixed another genPointerGet() bug.
+
 2011-04-10 Borut Razem <borut.razem AT gmail.com>
 
 	* src/z80/gen.c: dbuf-ized
@@ -9,7 +14,7 @@
 	  Cleaned up some leftover debug messages,
 	  fixed assignment of lh to hl,
 	  implemented exact cost for EXSTK to SFR assignment,
-	  fixed genPointerGet bug that made simplefloat regression tests fail.
+	  fixed genPointerGet() bug that made simplefloat regression tests fail.
 
 2011-04-09 Philipp Klaus Krause <pkk AT spth.de>
 

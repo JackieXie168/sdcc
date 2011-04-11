@@ -7809,12 +7809,12 @@ genGenPointerGet (operand * left,
       cheapMove (AOP (result), 0, ASMOP_A, 0);
       spillPair (PAIR_HL);
     }
-  else if (getPairId (AOP (left)) == PAIR_HL || (!IS_GB && (getPairId (AOP (left)) == PAIR_BC || getPairId (AOP (left)) == PAIR_DE) && AOP_TYPE (result) == AOP_STK))
+  else if (pair == PAIR_HL || (!IS_GB && (getPairId (AOP (left)) == PAIR_BC || getPairId (AOP (left)) == PAIR_DE) && AOP_TYPE (result) == AOP_STK))
     {
       size = AOP_SIZE (result);
       offset = 0;
 
-      if (size >= 2 && getPairId (AOP (left)) == PAIR_HL && AOP_TYPE (result) == AOP_REG)
+      if (size >= 2 && pair == PAIR_HL && AOP_TYPE (result) == AOP_REG)
         {
           int i, l = -10, h = -10, r;
           for (i = 0; i < size; i++)
@@ -7851,13 +7851,7 @@ genGenPointerGet (operand * left,
 
               _moveFrom_tpair_ (AOP (result), r, pair);
 
-              /* Fixup HL back down */
-              for (; size; size--)
-                {
-                  emit2 ("dec %s", _pairs[pair].name);
-                  regalloc_dry_run_cost += 1;
-                  _G.pairs[pair].offset--;
-                }
+              // No fixup since result uses HL.
 
               goto release;
             }
@@ -7896,13 +7890,7 @@ genGenPointerGet (operand * left,
               r = (l > h ? l : h);
               cheapMove (AOP (result), r, ASMOP_A, 0);
 
-              /* Fixup HL back down */
-              for (; size; size--)
-                {
-                  emit2 ("dec %s", _pairs[pair].name);
-                  regalloc_dry_run_cost += 1;
-                  _G.pairs[pair].offset--;
-                }
+              // No fixup since result uses HL.
 
               goto release;
             }
@@ -7920,7 +7908,7 @@ genGenPointerGet (operand * left,
             }
         }
       /* Fixup HL back down */
-      if (!isLastUse (ic, left))
+      if (getPairId (AOP (left)) == pair && !isLastUse (ic, left))
         for (size = AOP_SIZE (result)-1; size; size--)
           {
             emit2 ("dec %s", _pairs[pair].name);
