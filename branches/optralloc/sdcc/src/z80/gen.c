@@ -8563,23 +8563,83 @@ genAssign (iCode * ic)
     }
   else
     {
-      while (size--)
+      if (AOP_TYPE (result) == AOP_REG && AOP_TYPE (right) == AOP_REG)
         {
-          /* PENDING: do this check better */
-          if ((IS_GB || IY_RESERVED) && requiresHL (AOP (right)) && requiresHL (AOP (result)))
+          // We need to be able to handle any assignment here, ensuring not to overwrite any parts of the source that we still need.
+        
+          bool assigned[4] = {false, false, false, false};	// This has to be made bigger when sdcc supports variables larger than 4 bytes in registers.
+          int cached_byte = -1;
+
+          while (size--)
             {
-              emit2("push hl");
-              regalloc_dry_run_cost += 1;
-              _moveA3 (AOP (right), offset);
-              _moveFromA (AOP (result), offset);
-              emit2("pop hl");
-              regalloc_dry_run_cost += 1;
-              spillPair (PAIR_HL);
+              int i;
+              
+              // Find lowest byte that can be assigned and needs to be assigned.
+              for (i = 0; i < AOP_SIZE (result); i++)
+                {
+                  int j;
+                  
+                  if (assigned[i])
+                    continue;
+                    
+                  for (j = 0; j < (AOP_SIZE (result) < AOP_SIZE (right) ? AOP_SIZE (result) : AOP_SIZE (right)); j++)
+                    {
+                      if (!assigned[j] && i != j && AOP (result)->aopu.aop_reg[i]->rIdx == AOP (right)->aopu.aop_reg[j]->rIdx)
+                        goto skip_byte; // We can't write this one without overwriting the source.
+                    }
+                  
+                  break; // Found byte that can be written safely.
+                  
+                  skip_byte:;
+                }
+
+              if (i < AOP_SIZE (result))
+                {
+                  cheapMove (AOP (result), i, AOP(right), i); // We can safely assign a byte.
+                  assigned[i] = true;
+                  continue;
+                }
+              
+              // No byte can be assigned safely (i.e. the assignment is a permutation). Cache one in the accumulator.
+ 
+              if (cached_byte != -1)
+                {
+                  // Already one cached. Can happen when the assignment is a permutation consisting of multiple cycles.
+                  cheapMove (AOP (result), cached_byte, ASMOP_A, 0);
+                  cached_byte = -1;
+                  continue;
+                }
+              
+              for (i = 0; i < AOP_SIZE (result); i++)
+                if (!assigned[i])
+                  break;
+              wassertl (i != AOP_SIZE (result), "genAssign error: Trying to cache non-existant byte in accumulator."); 
+              cheapMove (ASMOP_A, 0, AOP (right), i);
+              assigned[i] = true;
+              cached_byte = i;
             }
-          else
-            cheapMove (AOP (result), offset, AOP (right), offset);
-          offset++;
+           
+          if (cached_byte != -1)
+            cheapMove (AOP (result), cached_byte, ASMOP_A, 0);
         }
+      else
+        while (size--)
+          {
+            /* PENDING: do this check better */
+            if ((IS_GB || IY_RESERVED) && requiresHL (AOP (right)) && requiresHL (AOP (result)))
+              {
+                emit2("push hl");
+                regalloc_dry_run_cost += 1;
+                _moveA3 (AOP (right), offset);
+                _moveFromA (AOP (result), offset);
+                emit2("pop hl");
+                regalloc_dry_run_cost += 1;
+                spillPair (PAIR_HL);
+              }
+            else
+              cheapMove (AOP (result), offset, AOP (right), offset);
+            offset++;
+          }
     }
 
 release:

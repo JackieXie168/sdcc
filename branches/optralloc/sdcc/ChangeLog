@@ -1,3 +1,8 @@
+2011-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* arc/z80/gen.c:
+	  Fixed genAssign to be able to handle arbitrary register-to-register assignments.
+
 2011-04-11 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
