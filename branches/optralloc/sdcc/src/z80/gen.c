@@ -7593,7 +7593,7 @@ genUnpackBits (operand * result, int pair)
   if (blen < 8)
     {
       emit2 ("ld a,!*pair", _pairs[pair].name);
-      regalloc_dry_run_cost += 1;
+      regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
       AccRol (8 - bstr);
       emit2 ("and a,!immedbyte", ((unsigned char) -1) >> (8 - blen));
       regalloc_dry_run_cost += 2;
@@ -7787,7 +7787,7 @@ genGenPointerGet (operand * left,
 
   /* For now we always load into temp pair */
   /* if this is rematerializable */
-  if(!IS_GB && (getPairId (AOP (left)) == PAIR_BC || getPairId (AOP (left)) == PAIR_DE) && AOP_TYPE (result) == AOP_STK)
+  if(!IS_GB && (getPairId (AOP (left)) == PAIR_BC || getPairId (AOP (left)) == PAIR_DE) && AOP_TYPE (result) == AOP_STK || getPairId (AOP (left)) == PAIR_IY && SPEC_BLEN (getSpec (operandType (result))) < 8)
     pair = getPairId (AOP (left));
   else
     fetchPair (pair, AOP (left));
@@ -7990,6 +7990,7 @@ genPackBits (sym_link * etype,
              const iCode *ic)
 {
   int offset = 0;       /* source byte offset */
+  int pair_offset = 0;
   int rlen = 0;         /* remaining bit-field length */
   int blen;             /* bit-field length */
   int bstr;             /* bit-field starting bit within byte */
@@ -8011,8 +8012,7 @@ genPackBits (sym_link * etype,
 
       if (AOP_TYPE (right) == AOP_LIT)
         {
-          /* Case with a bit-field length <8 and literal source
-          */
+          /* Case with a bit-field length <8 and literal source */
           litval = (int) ulFromVal (AOP (right)->aopu.aop_lit);
           litval <<= bstr;
           litval &= (~mask) & 0xff;
@@ -8034,8 +8034,7 @@ genPackBits (sym_link * etype,
         }
       else
         {
-          /* Case with a bit-field length <8 and arbitrary source
-          */
+          /* Case with a bit-field length <8 and arbitrary source */
           _moveA3 (AOP (right), 0);
           /* shift and mask source value */
           AccLsh (bstr);
@@ -8045,12 +8044,16 @@ genPackBits (sym_link * etype,
           extraPair = getFreePairId(ic);
           if (extraPair == PAIR_INVALID)
             {
-              extraPair = PAIR_BC;
-              if (getPairId (AOP (right)) != PAIR_BC
-                  || !isLastUse (ic, right))
+              if (pair != PAIR_HL)
+                extraPair = PAIR_HL;
+              else
                 {
-                  _push (extraPair);
-                  needPopExtra = 1;
+                  extraPair = PAIR_BC;
+                  if (getPairId (AOP (right)) != PAIR_BC || !isLastUse (ic, right))
+                    {
+                      _push (extraPair);
+                      needPopExtra = 1;
+                    }
                 }
             }
           emit2 ("ld %s,a", _pairs[extraPair].l);
@@ -8075,14 +8078,24 @@ genPackBits (sym_link * etype,
   for (rlen=blen;rlen>=8;rlen-=8)
     {
       _moveA3 (AOP (right), offset++);
-      emit2 ("ld !*pair,a", _pairs[pair].name);
-      regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
-      if (rlen>8)
+      if (pair == PAIR_IX || pair == PAIR_IY)
+        {
+          emit2 ("ld %d !*pair,a", pair_offset, _pairs[pair].name);
+          regalloc_dry_run_cost += 3;
+        }
+      else
+        {
+          emit2 ("ld !*pair,a", _pairs[pair].name);
+          regalloc_dry_run_cost += 1;
+        }
+      if (rlen > 8 && pair != PAIR_IX && pair != PAIR_IY)
         {
           emit2 ("inc %s", _pairs[pair].name);
-          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 2 : 1;
+          regalloc_dry_run_cost += 1;
           _G.pairs[pair].offset++;
         }
+      else
+        pair_offset++;
     }
 
   /* If there was a partial byte at the end */
@@ -8092,12 +8105,22 @@ genPackBits (sym_link * etype,
 
       if (AOP_TYPE (right) == AOP_LIT)
         {
-          /* Case with partial byte and literal source
-          */
+          /* Case with partial byte and literal source */
           litval = (int) ulFromVal (AOP (right)->aopu.aop_lit);
           litval >>= (blen-rlen);
           litval &= (~mask) & 0xff;
-          emit2 ("ld a,!*pair", _pairs[pair].name);
+          
+          if (pair == PAIR_IX || pair == PAIR_IY)
+            {
+              emit2 ("ld a, %d !*pair", pair_offset, _pairs[pair].name);
+              regalloc_dry_run_cost += 3;
+            }
+          else
+            {
+              emit2 ("ld a, !*pair", _pairs[pair].name);
+              regalloc_dry_run_cost += 1;
+            }
+
           if ((mask|litval)!=0xff)
             emit2 ("and a,!immedbyte", mask);
           if (litval)
@@ -8105,8 +8128,7 @@ genPackBits (sym_link * etype,
         }
       else
         {
-          /* Case with partial byte and arbitrary source
-          */
+          /* Case with partial byte and arbitrary source */
           _moveA3 (AOP (right), offset++);
           emit2 ("and a,!immedbyte", (~mask) & 0xff);
           regalloc_dry_run_cost += 2;
@@ -8114,21 +8136,32 @@ genPackBits (sym_link * etype,
           extraPair = getFreePairId(ic);
           if (extraPair == PAIR_INVALID)
             {
-              extraPair = getPairId (AOP (right));
-              if (!isLastUse (ic, right) || (extraPair == PAIR_INVALID))
-                extraPair = PAIR_BC;
-
-              if (getPairId (AOP (right)) != PAIR_BC
-                  || !isLastUse (ic, right))
+              if (pair != PAIR_HL)
+                extraPair = PAIR_HL;
+              else
                 {
-                  _push (extraPair);
-                  needPopExtra = 1;
+                  extraPair = PAIR_BC;
+                  if (getPairId (AOP (right)) != PAIR_BC || !isLastUse (ic, right))
+                    {
+                      _push (extraPair);
+                      needPopExtra = 1;
+                    }
                 }
             }
+            
           emit2 ("ld %s,a", _pairs[extraPair].l);
           regalloc_dry_run_cost += 1;
-          emit2 ("ld a,!*pair", _pairs[pair].name);
-          regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
+          
+          if (pair == PAIR_IX || pair == PAIR_IY)
+            {
+              emit2 ("ld a, %d !*pair", pair_offset, _pairs[pair].name);
+              regalloc_dry_run_cost += 3;
+            }
+          else
+            {
+              emit2 ("ld a, !*pair", _pairs[pair].name);
+              regalloc_dry_run_cost += 1;
+            }
 
           emit2 ("and a,!immedbyte", mask);
           regalloc_dry_run_cost += 2;
@@ -8138,8 +8171,16 @@ genPackBits (sym_link * etype,
             _pop (extraPair);
 
         }
-      emit2 ("ld !*pair,a", _pairs[pair].name);
-      regalloc_dry_run_cost += (pair == PAIR_IX || pair == PAIR_IY) ? 3 : 1;
+      if (pair == PAIR_IX || pair == PAIR_IY)
+        {
+          emit2 ("ld %d !*pair, a", pair_offset, _pairs[pair].name);
+          regalloc_dry_run_cost += 3;
+        }
+      else
+        {
+          emit2 ("ld !*pair, a", _pairs[pair].name);
+          regalloc_dry_run_cost += 1;
+        }
     }
 }
 
@@ -8251,7 +8292,11 @@ genGenPointerSet (operand * right,
      then we do nothing else we move the value to dptr */
   if (AOP_TYPE (result) != AOP_STR)
     {
-      fetchPair (pairId, AOP (result));
+      if (isBitvar && getPairId( AOP (result)) != PAIR_INVALID &&
+        (getPairId( AOP (result)) != PAIR_IY || SPEC_BLEN (IS_BITVAR (retype) ? retype : letype) < 8 || isLastUse (ic, result))) /* Avoid destroying result by increments */
+        pairId = getPairId( AOP (result));
+      else
+        fetchPair (pairId, AOP (result));
     }
   /* so hl now contains the address */
   freeAsmop (result, NULL, ic);

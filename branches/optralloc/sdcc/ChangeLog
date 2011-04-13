@@ -1,6 +1,11 @@
+2011-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Some optimizations for using a pointer to a bitfield in iy.
+
 2011-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* arc/z80/gen.c:
+	* src/z80/gen.c:
 	  Fixed genAssign to be able to handle arbitrary register-to-register assignments.
 
 2011-04-11 Philipp Klaus Krause <pkk AT spth.de>
