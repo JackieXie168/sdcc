@@ -3374,20 +3374,44 @@ genIpush (const iCode * ic)
         }
       if (size == 4)
         {
-          fetchPairLong (PAIR_HL, AOP (IC_LEFT (ic)), ic, 2);
-          if(!regalloc_dry_run)
+          if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[2]->rIdx == C_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[3]->rIdx == B_IDX)
             {
-              emit2 ("push hl");
-              _G.stack.pushed += 2;
+              emit2 ("push bc");
+              regalloc_dry_run_cost += 1;
             }
-          regalloc_dry_run_cost += 1;
-          fetchPairLong (PAIR_HL, AOP (IC_LEFT (ic)), ic, 0);
-          if(!regalloc_dry_run)
+          else if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[2]->rIdx == E_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[3]->rIdx == D_IDX)
             {
-              emit2 ("push hl");
-              _G.stack.pushed += 2;
+              emit2 ("push de");
+              regalloc_dry_run_cost += 1;
             }
-          regalloc_dry_run_cost += 1;
+          else
+            {
+              fetchPairLong (PAIR_HL, AOP (IC_LEFT (ic)), ic, 2);
+              emit2 ("push hl");
+              regalloc_dry_run_cost += 1;
+            }
+          if (!regalloc_dry_run)
+            _G.stack.pushed += 2;
+          
+          if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx == B_IDX)
+            {
+              emit2 ("push bc");
+              regalloc_dry_run_cost += 1;
+            }
+          else if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx == D_IDX)
+            {
+              emit2 ("push de");
+              regalloc_dry_run_cost += 1;
+            }
+          else
+            {
+              fetchPairLong (PAIR_HL, AOP (IC_LEFT (ic)), ic, 0);
+              emit2 ("push hl");
+              regalloc_dry_run_cost += 1;
+            }
+          if (!regalloc_dry_run)
+            _G.stack.pushed += 2;
+            
           goto release;
         }
       offset = size;

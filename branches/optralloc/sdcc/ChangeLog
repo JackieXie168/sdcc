@@ -1,7 +1,8 @@
 2011-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
-	  Some optimizations for using a pointer to a bitfield in iy.
+	  Some optimizations for using a pointer to a bitfield in iy,
+	  improve pushing of 4-byte parameters.
 
 2011-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
