@@ -761,6 +761,53 @@ hexEscape (const char **src)
 }
 
 /*------------------------------------------------------------------*/
+/* universalEscape - process an hex constant of exactly four digits */
+/* return the hex value, throw a warning for illegal octal          */
+/* adjust src to point at the last proccesed char                   */
+/*------------------------------------------------------------------*/
+
+unsigned char
+universalEscape (const char **str, unsigned int n)
+{
+  int digits;
+  unsigned value = 0;
+  const char *s = *str;
+
+  if (!options.std_c99)
+    {
+      werror (W_UNIVERSAL_C99);
+    }
+
+  ++*str;                       /* Skip over the 'u'  or 'U' */
+
+  for (digits = 0; digits < n; ++digits)
+    {
+      if (**str >= '0' && **str <= '7')
+        {
+          value = (value << 4) + (**str - '0');
+          ++*str;
+        }
+      else if ((**str | 0x20) >= 'a' && (**str | 0x20) <= 'f')
+        {
+          value = (value << 4) + (**str - ('a' + 10));
+          ++*str;
+        }
+      else
+          break;
+    }
+  if (digits != n)
+    {
+      werror (E_INVALID_UNIVERSAL, s);
+    }
+  else if (value > 255)
+    {
+      werror (W_ESC_SEQ_OOR_FOR_CHAR);
+    }
+
+  return value;
+}
+
+/*------------------------------------------------------------------*/
 /* octalEscape - process an octal constant of max three digits      */
 /* return the octal value, throw a warning for illegal octal        */
 /* adjust src to point at the last proccesed char                   */
@@ -856,6 +903,16 @@ copyStr (char *dest, const char *src)
 
             case 'x':
               *dest++ = hexEscape (&src);
+              --src;
+              break;
+
+            case 'u':
+              *dest++ = universalEscape (&src, 4);
+              --src;
+              break;
+
+            case 'U':
+              *dest++ = universalEscape (&src, 8);
               --src;
               break;
 
