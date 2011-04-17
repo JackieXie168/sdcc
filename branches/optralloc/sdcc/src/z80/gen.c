@@ -7639,7 +7639,8 @@ genUnpackBits (operand * result, int pair)
     }
 
   /* TODO: what if pair == PAIR_DE ? */
-  if (getPairId (AOP (result)) == PAIR_HL)
+  if (getPairId (AOP (result)) == PAIR_HL ||
+    AOP_TYPE (result) == AOP_REG && rsize >= 2 && (AOP (result)->aopu.aop_reg[0]->rIdx == L_IDX || AOP (result)->aopu.aop_reg[0]->rIdx == H_IDX))
     {
       wassertl (rsize == 2, "HL must be of size 2");
       emit2 ("ld a,!*hl");

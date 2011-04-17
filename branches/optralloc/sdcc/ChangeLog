@@ -1,3 +1,8 @@
+2011-04-17 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fixed bug in bitfield reading that occoured when reading from (HL) and writing the result to L.
+
 2011-04-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* Merge everything except src/z80/gen.c from trunk.
