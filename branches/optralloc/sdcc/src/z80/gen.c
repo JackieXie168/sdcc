@@ -897,6 +897,9 @@ bit8_cost(asmop *op1)
 static unsigned char
 emit3Cost(enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
 {
+  if (op2 && offset2 >= op2->size)
+    op2 = ASMOP_ZERO;
+
   switch(inst)
     {
     case A_CPL:
@@ -4703,7 +4706,8 @@ genPlus (iCode * ic)
       bool save_pair = FALSE;
       PAIR_ID pair;
 
-      if (getPairId (AOP (IC_RIGHT (ic))) == PAIR_IY || getPairId (AOP (IC_LEFT (ic))) == PAIR_BC || getPairId (AOP (IC_LEFT (ic))) == PAIR_DE)
+      if (getPairId (AOP (IC_RIGHT (ic))) == PAIR_IY || getPairId (AOP (IC_LEFT (ic))) == PAIR_BC || getPairId (AOP (IC_LEFT (ic))) == PAIR_DE ||
+        getPairId (AOP (IC_LEFT (ic))) != PAIR_IY && (AOP_TYPE (IC_RIGHT (ic)) == AOP_IMMD || AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT || AOP_TYPE (IC_RIGHT (ic)) == AOP_SIMPLELIT))
         {
           operand *t = IC_RIGHT (ic);
           IC_RIGHT (ic) = IC_LEFT (ic);
