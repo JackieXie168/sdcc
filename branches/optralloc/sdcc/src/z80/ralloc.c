@@ -1982,8 +1982,8 @@ serialRegMark (eBBlock ** ebbs, int count)
                   continue;
                 }
 
-              /* Rematerialization should be handled by the new allocator instead, but it's still too inefficient due to the inexact cost function */
-              if (sym->remat)
+              /* Rematerialization should be handled by the new allocator instead, but too inefficient when using an inexact cost function */
+              if (/*!OPTRALLOC_EXACT_COST &&*/ sym->remat)
                 {
                   D (D_ALLOC, ("serialRegAssign: \"remat spill\"\n"));
                   spillThis (sym);

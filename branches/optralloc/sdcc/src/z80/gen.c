@@ -825,8 +825,13 @@ ld_cost(asmop *op1, asmop *op2)
         default:printf("ld_cost op1: AOP_HL, op2: %d", (int)(op2type));
           wassert(0);
         }
+    case AOP_LIT:
+    case AOP_SIMPLELIT:
+    case AOP_IMMD:
+      wassertl (0, "Trying to assign a value to a literal");
+      break;
     default:
-    printf("ld_cost op1: %d", (int)(op1type));
+      printf("ld_cost op1: %d", (int)(op1type));
       wassert(0);
     }
   return(8); // Fallback
@@ -1321,7 +1326,7 @@ aopForSym (const iCode * ic, symbol * sym, bool result, bool requires_a)
 }
 
 /*-----------------------------------------------------------------*/
-/* aopForRemat - rematerialzes an object                           */
+/* aopForRemat - rematerializes an object                          */
 /*-----------------------------------------------------------------*/
 /* TODO borutr: why this doesn't work if the buffer is non-static?! */
 static asmop *
@@ -1542,15 +1547,6 @@ aopOp (operand *op, const iCode *ic, bool result, bool requires_a)
      b) has a spill location */
   if (sym->isspilt || sym->nRegs == 0)
     {
-      /* rematerialize it NOW */
-      if (sym->remat)
-        {
-          sym->aop = op->aop = aop =
-            aopForRemat (sym);
-          aop->size = getSize (sym->type);
-          return;
-        }
-
       if (sym->ruonly)
         {
           int i;
@@ -1591,6 +1587,15 @@ aopOp (operand *op, const iCode *ic, bool result, bool requires_a)
             {
               wassertl (0, "Marked as being allocated into A or HL but is actually in neither");
             }
+          return;
+        }
+        
+      /* rematerialize it NOW */
+      if (sym->remat)
+        {
+          sym->aop = op->aop = aop =
+            aopForRemat (sym);
+          aop->size = getSize (sym->type);
           return;
         }
 
