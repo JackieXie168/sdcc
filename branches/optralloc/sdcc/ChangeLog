@@ -1,5 +1,16 @@
 2011-04-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/z80/gen.c,
+	  src/z80/ralloc.c,
+	  src/z80/main.c,
+	  src/z80/z80.h:
+	  Added --optralloc-remat option for handling rematerialization in the new allocator,
+	  fixed cost function bug when reading beyond the size of operands,
+	  removed option for the use of an exact cost function and made the exact cost function the default,
+	  improved code generation for addition.
+
+2011-04-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/gen.c:
 	  Fixed a bug triggered by assigning rematerializeable variables to register A or IY.
 

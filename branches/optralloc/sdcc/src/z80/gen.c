@@ -2712,8 +2712,7 @@ aopPut3 (asmop *op1, int offset1, asmop *op2, int offset2)
 
   if(!regalloc_dry_run)
     aopPut (op1, aopGet(op2, offset2, FALSE), offset1);
-
-  regalloc_dry_run_cost = cost + ld_cost(op1, op2);
+  regalloc_dry_run_cost = cost + ld_cost(op1, offset2 < op2->size ? op2 : ASMOP_ZERO);
 }
 
 // Move, but try not to.
@@ -4783,6 +4782,23 @@ genPlus (iCode * ic)
       regalloc_dry_run_cost += 1;
       goto release;
     }
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
+    AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue(ic->rSurv, B_IDX))
+    {
+      if (AOP (IC_LEFT (ic))->aopu.aop_reg[1] && (AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx == H_IDX || AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx == L_IDX))
+        {
+          cheapMove (ASMOP_B, 0, AOP (IC_LEFT (ic)), 1);
+          fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
+        }
+      else
+        {
+          fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
+          cheapMove (ASMOP_B, 0, AOP (IC_LEFT (ic)), 1);
+        }
+      emit2 ("add hl, bc");
+      regalloc_dry_run_cost += 1;
+      goto release;
+    }
 
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
     AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue(ic->rSurv, D_IDX))
@@ -4801,7 +4817,24 @@ genPlus (iCode * ic)
       regalloc_dry_run_cost += 1;
       goto release;
     }
-
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_LEFT (ic)) == AOP_REG &&
+    AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue(ic->rSurv, D_IDX))
+    {
+      if (AOP (IC_LEFT (ic))->aopu.aop_reg[1] && (AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx == H_IDX || AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx == L_IDX))
+        {
+          cheapMove (ASMOP_D, 0, AOP (IC_LEFT (ic)), 1);
+          fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
+        }
+      else
+        {
+          fetchPair (PAIR_HL, AOP (IC_RIGHT (ic)));
+          cheapMove (ASMOP_D, 0, AOP (IC_LEFT (ic)), 1);
+        }
+      emit2 ("add hl, de");
+      regalloc_dry_run_cost += 1;
+      goto release;
+    }
+    
   /* Special case:
      ld hl,sp+n trashes C so we can't afford to do it during an
      add with stack based variables.  Worst case is:
@@ -4874,12 +4907,10 @@ genPlus (iCode * ic)
           goto release;
         }
     }
-
   setupToPreserveCarry (ic);
-
   while (size--)
     {
-      _moveA3 (AOP (IC_LEFT (ic)), offset);
+      cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
       if (offset == 0)
       {
         if(size == 0 && AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT && ulFromVal (AOP (IC_RIGHT (ic))->aopu.aop_lit) == 1)
@@ -4889,9 +4920,8 @@ genPlus (iCode * ic)
       }
       else
         emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), offset);
-      _moveFromA (AOP (IC_RESULT (ic)), offset++);
+      cheapMove (ASMOP_A, 0, AOP (IC_RESULT (ic)), offset++);
     }
-
 release:
   _G.preserveCarry = FALSE;
   freeAsmop (IC_LEFT (ic), NULL, ic);
@@ -5072,7 +5102,7 @@ genMinus (const iCode * ic)
   /* if literal, add a,#-lit, else normal subb */
   while (size--)
     {
-      _moveA3 (AOP (IC_LEFT (ic)), offset);
+      cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
       if (AOP_TYPE (IC_RIGHT (ic)) != AOP_LIT)
         {
           if (!offset)
@@ -5259,7 +5289,7 @@ genMult (iCode *ic)
   }
 
   if (byteResult)
-    _moveA3 (AOP (IC_LEFT (ic)), LSB);
+    cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), LSB);
   else if ( AOP_SIZE (IC_LEFT (ic)) == 1 && !SPEC_USIGN (getSpec (operandType ( IC_LEFT (ic)))))
     {
       cheapMove (ASMOP_E, 0, AOP (IC_LEFT (ic)), LSB);
@@ -5617,14 +5647,14 @@ genCmp (operand * left, operand * right,
               }
         }
 
-      _moveA3 (AOP (left), offset);
+      cheapMove (ASMOP_A, 0, AOP (left), offset);
       emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
       size--;
       offset++;
 
       while (size--)
         {
-          _moveA3 (AOP (left), offset);
+          cheapMove (ASMOP_A, 0, AOP (left), offset);
           /* Subtract through, propagating the carry */
           emit3_o (A_SBC, ASMOP_A, 0, AOP (right), offset++);
         }
@@ -5807,7 +5837,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
       lit = ulFromVal (AOP (right)->aopu.aop_lit);
       if (lit == 0)
         {
-          _moveA3 (AOP (left), offset);
+          cheapMove (ASMOP_A, 0, AOP (left), offset);
           if (size > 1)
             {
               while (--size)
@@ -5823,7 +5853,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
         {
           while (size--)
             {
-              _moveA3 (AOP (left), offset);
+              cheapMove (ASMOP_A, 0, AOP (left), offset);
               if ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0)
                 emit3 (A_OR, ASMOP_A, ASMOP_A);
               else
@@ -5847,7 +5877,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
     {
       while (size--)
         {
-          _moveA3 (AOP (left), offset);
+          cheapMove (ASMOP_A, 0, AOP (left), offset);
           if (AOP_TYPE (right) == AOP_LIT &&
               ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0))
             {
@@ -5886,7 +5916,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
             _emitMove (_pairs[pair].l, aopGet (AOP (left), offset, FALSE));
           else
             regalloc_dry_run_cost += ld_cost(ASMOP_E, AOP (left));
-          _moveA3 (AOP (right), offset);
+          cheapMove (ASMOP_A, 0, AOP (right), offset);
           emit2 ("sub a,%s", _pairs[pair].l);
           regalloc_dry_run_cost += 1;
           if(!regalloc_dry_run)
@@ -6498,7 +6528,7 @@ genOr (const iCode *ic, iCode * ifx)
         {
           bytelit = (lit >> (offset * 8)) & 0x0FFL;
 
-          _moveA3 (AOP (left), offset);
+          cheapMove (ASMOP_A, 0, AOP (left), offset);
 
           if (bytelit != 0)
             emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
@@ -6536,7 +6566,7 @@ genOr (const iCode *ic, iCode * ifx)
                 continue;
               else
                 {
-                  _moveA3 (AOP (left), offset);
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
                   if (isLiteralBit(bytelit) >= 0)
                     emit2 ("set %d, a", isLiteralBit(bytelit));
                   else
@@ -6550,7 +6580,7 @@ genOr (const iCode *ic, iCode * ifx)
                 emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
               else
                 {
-                  _moveA3 (AOP (left), offset);
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
                   _moveFromA (AOP (result), offset);
                 }

@@ -1199,7 +1199,8 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
   {
   	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
   }
-  std::cout << "\n";*/
+  std::cout << "\n";
+  std::cout << "Cost: " << winner.s << "\n";*/
 
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))
