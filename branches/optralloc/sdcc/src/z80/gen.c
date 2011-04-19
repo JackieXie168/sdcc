@@ -4924,7 +4924,7 @@ genPlus (iCode * ic)
       }
       else
         emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), offset);
-      cheapMove (ASMOP_A, 0, AOP (IC_RESULT (ic)), offset++);
+      cheapMove (AOP (IC_RESULT (ic)), offset++, ASMOP_A, 0);
     }
 release:
   _G.preserveCarry = FALSE;

@@ -1,3 +1,8 @@
+2011-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Fixed result assignment bug in addition.
+
 2011-04-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c,
