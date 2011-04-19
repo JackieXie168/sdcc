@@ -2831,8 +2831,8 @@ movLeft2Result (operand * left, int offl,
         {
           if (getDataSize (left) == offl + 1)
             {
-              _moveA3 (AOP (left), offl);
-              _moveFromA (AOP (result), offr);
+              cheapMove (ASMOP_A, 0, AOP (left), offl);
+              cheapMove (AOP (result), offr, ASMOP_A, 0);
             }
         }
     }
@@ -2888,7 +2888,7 @@ outAcc (operand * result)
   size = getDataSize (result);
   if (size)
     {
-      _moveFromA (AOP (result), 0);
+      cheapMove (AOP (result), 0, ASMOP_A, 0);
       size--;
       offset = 1;
       /* unsigned or positive */
@@ -2927,7 +2927,7 @@ _toBoolean (operand * oper)
   int offset = 0;
   if (size > 1)
     {
-      _moveA3 (AOP (oper), offset++);
+      cheapMove (ASMOP_A, 0, AOP (oper), offset++);
       size--;
       while (size--)
         emit3_o (A_OR, ASMOP_A, 0, AOP (oper), offset++);
@@ -2960,12 +2960,12 @@ genNot (const iCode * ic)
     {
       wassertl (0, "Tried to negate a bit");
     }
-  else if(IS_BOOL(operandType(left)))
+  else if (IS_BOOL (operandType (left)))
     {
-      _moveA3(AOP(left), 0);
-      emit2("xor a,#0x01");
+      cheapMove (ASMOP_A, 0, AOP (left), 0);
+      emit2 ("xor a,#0x01");
       regalloc_dry_run_cost += 2;
-      _moveFromA(AOP(result), 0);
+      cheapMove (AOP (result), 0, ASMOP_A, 0);
       goto release;
     }
 
@@ -3010,9 +3010,9 @@ genCpl (const iCode *ic)
   size = AOP_SIZE (IC_RESULT (ic));
   while (size--)
     {
-      _moveA3 (AOP (IC_LEFT (ic)), offset);
-      emit3(A_CPL, 0, 0);
-      _moveFromA(AOP (IC_RESULT (ic)), offset++);
+      cheapMove (AOP (IC_LEFT (ic)), offset, ASMOP_A, 0);
+      emit3 (A_CPL, 0, 0);
+      cheapMove (AOP (IC_RESULT (ic)), offset++, ASMOP_A, 0);
     }
 
   /* release the aops */
@@ -3091,11 +3091,11 @@ genUminusFloat (operand * op, operand * result)
      first bit then copy the rest in place */
   size = AOP_SIZE (op) - 1;
 
-  _moveA3 (AOP (op), MSB32);
+  cheapMove (ASMOP_A, 0, AOP (op), MSB32);
 
   emit2 ("xor a,!immedbyte", 0x80);
   regalloc_dry_run_cost += 2;
-  _moveFromA (AOP (result), MSB32);
+  cheapMove (AOP (result), MSB32, ASMOP_A, 0);
 
   if (operandsEqu (result, op))
     return;
@@ -3159,7 +3159,7 @@ genUminus (const iCode *ic)
     {
       emit3 (A_LD, ASMOP_A, ASMOP_ZERO);
       emit3_o (A_SBC, ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
-      _moveFromA (AOP (IC_RESULT (ic)), offset++);
+      cheapMove (AOP (IC_RESULT (ic)), offset++, ASMOP_A, 0);
     }
 
   /* if any remaining bytes in the result */
@@ -3169,7 +3169,7 @@ genUminus (const iCode *ic)
       emit3 (A_RLC, ASMOP_A, 0);
       emit3 (A_SBC, ASMOP_A, ASMOP_A);
       while (size--)
-        _moveFromA (AOP (IC_RESULT (ic)), offset++);
+        cheapMove (AOP (IC_RESULT (ic)), offset++, ASMOP_A, 0);
     }
 
 release:
@@ -5086,7 +5086,7 @@ genMinus (const iCode * ic)
               regalloc_dry_run_cost += 5;
 
               if ( AOP_SIZE (IC_RESULT (ic)) > 1)
-                  _moveFromA (AOP (IC_RESULT (ic)), 1);
+                cheapMove (AOP (IC_RESULT (ic)), 1, ASMOP_A, 0);
               aopPut (AOP (IC_RESULT (ic)), "e", 0);
               goto release;
             }
@@ -5131,7 +5131,7 @@ genMinus (const iCode * ic)
           else
             emit2 ("adc a,!immedbyte", (unsigned int) ((lit >> (offset * 8)) & 0x0FFL));
         }
-      _moveFromA (AOP (IC_RESULT (ic)), offset++);
+      cheapMove (AOP (IC_RESULT (ic)), offset++, ASMOP_A, 0);
     }
 
   if (AOP_SIZE (IC_RESULT (ic)) == 3 &&
@@ -5219,7 +5219,7 @@ genMultOneChar (const iCode * ic)
       {
         emit2("ld a, l");
         regalloc_dry_run_cost += 1;
-        _moveFromA (AOP (IC_RESULT (ic)), 0);
+        cheapMove (AOP (IC_RESULT (ic)), 0, ASMOP_A, 0);
       }
     else
       {
@@ -5358,7 +5358,7 @@ genMult (iCode *ic)
     }
 
   if (byteResult)
-    _moveFromA (AOP (IC_RESULT (ic)), 0);
+    cheapMove (AOP (IC_RESULT (ic)), 0, ASMOP_A, 0);
   else
     commitPair ( AOP (IC_RESULT (ic)), PAIR_HL);
 
@@ -5625,7 +5625,7 @@ genCmp (operand * left, operand * right,
               else
                 {
                   /* Just load in the top most bit */
-                  _moveA3 (AOP (left), AOP_SIZE (left) - 1);
+                  cheapMove (ASMOP_A, 0, AOP (left), AOP_SIZE (left) - 1);
                   if (!(AOP_TYPE (result) == AOP_CRY && AOP_SIZE (result)) && ifx)
                     {
                       genIfxJump (ifx, "7");
@@ -6385,7 +6385,7 @@ genAnd (const iCode *ic, iCode * ifx)
                     }
                   else
                     emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
-                  _moveFromA (AOP (left), offset);
+                  cheapMove (AOP (left), offset, ASMOP_A, 0);
                 }
 
             }
@@ -6399,7 +6399,7 @@ genAnd (const iCode *ic, iCode * ifx)
                 {
                   cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
-                  _moveFromA (AOP (left), offset);
+                  cheapMove (AOP (left), offset, ASMOP_A, 0);
                 }
             }
         }
@@ -6439,7 +6439,7 @@ genAnd (const iCode *ic, iCode * ifx)
                   cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
                 }
-              _moveFromA (AOP (result), offset);
+              cheapMove (AOP (result), offset, ASMOP_A, 0);
             }
         }
 
@@ -6575,7 +6575,7 @@ genOr (const iCode *ic, iCode * ifx)
                     emit2 ("set %d, a", isLiteralBit(bytelit));
                   else
                     emit3_o(A_OR, ASMOP_A, 0, AOP (right), offset);
-                  _moveFromA (AOP (result), offset);
+                  cheapMove (AOP (result), offset, ASMOP_A, 0);
                 }
             }
           else
@@ -6586,7 +6586,7 @@ genOr (const iCode *ic, iCode * ifx)
                 {
                   cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
-                  _moveFromA (AOP (result), offset);
+                  cheapMove (AOP (result), offset, ASMOP_A, 0);
                 }
             }
         }
@@ -6613,7 +6613,7 @@ genOr (const iCode *ic, iCode * ifx)
               }
             // This is a bit broken, there will be problems for y_0 = x_0 | z_0, x_0 = y_0 | z_1 as either order of the two byte ors will result in the result destroying the second part of the operand. Currently, we use a workaround in the register allocator to avoid this. See also the comment on the 2-byte addition workaround above.
             if(AOP_TYPE (left) != AOP_ACC)
-              _moveA3 (AOP (left), offset);
+              cheapMove (ASMOP_A, 0, AOP (left), offset);
             if(AOP_TYPE (right) == AOP_LIT && isLiteralBit(((lit >> (offset * 8)) & 0x0FFL)) >= 0)
               emit2 ("set %d, a", isLiteralBit(((lit >> (offset * 8)) & 0x0FFL)));
             else
@@ -6709,7 +6709,7 @@ genXor (const iCode *ic, iCode * ifx)
         }
       while (sizel--)
         {
-          _moveA3 (AOP (left), offset);
+          cheapMove (ASMOP_A, 0, AOP (left), offset);
           emit3_o (A_XOR, ASMOP_A, 0, AOP (right), offset);
           if (ifx)      /* emit jmp only, if it is actually used * */
             if(!regalloc_dry_run)
@@ -6739,9 +6739,9 @@ genXor (const iCode *ic, iCode * ifx)
                 continue;
               else
                 {
-                  _moveA3 (AOP (left), offset);
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_XOR, ASMOP_A, 0, AOP (right), offset);
-                  _moveFromA (AOP (result), offset);
+                  cheapMove (AOP (result), offset, ASMOP_A, 0);
                 }
             }
           else
@@ -6750,10 +6750,9 @@ genXor (const iCode *ic, iCode * ifx)
                 emit3_o (A_XOR, ASMOP_A, 0, AOP (right), offset);
               else
                 {
-                  _moveA3 (AOP (left), offset);
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
                   emit3_o (A_XOR, ASMOP_A, 0, AOP (right), offset);
-
-                  _moveFromA (AOP (result), offset);
+                  cheapMove (AOP (result), offset, ASMOP_A, 0);
                 }
             }
         }
@@ -6784,10 +6783,10 @@ genXor (const iCode *ic, iCode * ifx)
               emit3_o (A_XOR, ASMOP_A, 0, AOP (right), offset);
             else
               {
-                _moveA3 (AOP (left), offset);
+                cheapMove (ASMOP_A, 0, AOP (left), offset);
                 emit3_o (A_XOR, ASMOP_A, 0, AOP (right), offset);
               }
-            _moveFromA (AOP (result), offset);
+            cheapMove (AOP (result), offset, ASMOP_A, 0);
           }
     }
 
@@ -6892,7 +6891,7 @@ genGetHbit (const iCode *ic)
   aopOp (result, ic, FALSE, FALSE);
 
   /* get the highest order byte into a */
-  _moveA3(AOP (left), AOP_SIZE (left) - 1);
+  cheapMove (ASMOP_A, 0, AOP (left), AOP_SIZE (left) - 1);
 
   if (AOP_TYPE (result) == AOP_CRY)
     {
@@ -7160,10 +7159,10 @@ shiftL1Left2Result (operand * left, int offl,
     }
   else
     {
-      _moveA3 (AOP (left), offl);
+      cheapMove (ASMOP_A, 0, AOP (left), offl);
       /* shift left accumulator */
       AccLsh (shCount);
-      _moveFromA (AOP (result), offr);
+      cheapMove (AOP (result), offr, ASMOP_A, 0);
     }
 }
 
@@ -7297,7 +7296,7 @@ genLeftShift (const iCode *ic)
      count in B : Note: we take only the lower order byte since
      shifting more that 32 bits make no sense anyway, ( the largest
      size of an object can be only 32 bits ) */
-  _moveA3 (AOP (right), 0);
+  cheapMove (ASMOP_A, 0, AOP (right), 0);
   emit2 ("inc a");
   regalloc_dry_run_cost += 1;
   freeAsmop (right, NULL, ic);
@@ -7378,10 +7377,10 @@ genrshOne (operand * result, operand * left, int shCount, int is_signed)
     }
   else
     {
-      _moveA3 (AOP (left), 0);
+      cheapMove (ASMOP_A, 0, AOP (left), 0);
       while (shCount--)
         emit3 (is_signed ? A_SRA : A_SRL, ASMOP_A, 0);
-      _moveFromA (AOP (result), 0);
+      cheapMove (AOP (result), 0, ASMOP_A, 0);
     }
 }
 
@@ -7415,17 +7414,15 @@ shiftR1Left2Result (operand * left, int offl,
                     operand * result, int offr,
                     int shCount, int sign)
 {
-  _moveA3 (AOP (left), offl);
+  cheapMove (ASMOP_A, 0, AOP (left), offl);
   if (sign)
     {
       while (shCount--)
         emit3 (sign ? A_SRA : A_SRL, ASMOP_A, 0);
     }
   else
-    {
-      AccRsh (shCount);
-    }
-  _moveFromA (AOP (result), offr);
+    AccRsh (shCount);
+  cheapMove (AOP (result), offr, ASMOP_A, 0);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7451,19 +7448,17 @@ genrshTwo (operand * result, operand * left,
       if (sign)
         {
           /* Sign extend the result */
-          _moveA3 (AOP (result), 0);
+          cheapMove (ASMOP_A, 0, AOP (result), 0);
           emit3 (A_RLC, ASMOP_A, 0);
           emit3 (A_SBC, ASMOP_A, ASMOP_A);
-          _moveFromA (AOP (result), MSB16);
+          cheapMove (AOP (result), MSB16, ASMOP_A, 0);
         }
       else
         aopPut3 (AOP (result), 1, ASMOP_ZERO, 0);
     }
   /*  0 <= shCount <= 7 */
   else
-    {
-      shiftR2Left2Result (left, LSB, result, LSB, shCount, sign);
-    }
+    shiftR2Left2Result (left, LSB, result, LSB, shCount, sign);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7491,7 +7486,7 @@ genRightShiftLiteral (operand *left,
   if (shCount >= (size * 8)) {
     asmop *s;
     if (!SPEC_USIGN(getSpec(operandType(left)))) {
-      _moveA3 (AOP (left), 0);
+      cheapMove (ASMOP_A, 0, AOP (left), 0);
       emit3 (A_RLC, ASMOP_A, 0);
       emit3 (A_SBC, ASMOP_A, ASMOP_A);
       s=ASMOP_A;
@@ -7563,7 +7558,7 @@ genRightShift (const iCode *ic)
       return;
     }
 
-  _moveA3 (AOP (right), 0);
+  cheapMove (ASMOP_A, 0, AOP (right), 0);
   emit2 ("inc a");
   regalloc_dry_run_cost += 1;
   freeAsmop (right, NULL, ic);
@@ -7673,7 +7668,7 @@ genUnpackBits (operand * result, int pair)
             }
           regalloc_dry_run_cost += 7;
         }
-      _moveFromA (AOP (result), offset++);
+      cheapMove (AOP (result), offset++, ASMOP_A, 0);
       goto finish;
     }
 
@@ -7714,7 +7709,7 @@ genUnpackBits (operand * result, int pair)
     {
       emit2 ("ld a,!*pair", _pairs[pair].name);
       regalloc_dry_run_cost += 1;
-      _moveFromA (AOP (result), offset++);
+      cheapMove (AOP (result), offset++, ASMOP_A, 0);
       if (rlen>8)
         {
           emit2 ("inc %s", _pairs[pair].name);
@@ -7742,7 +7737,7 @@ genUnpackBits (operand * result, int pair)
             }
           regalloc_dry_run_cost += 7;
         }
-      _moveFromA (AOP (result), offset++);
+      cheapMove (AOP (result), offset++, ASMOP_A, 0);
     }
 
 finish:
@@ -7999,7 +7994,7 @@ genGenPointerGet (operand * left,
             {
               emit2 ("ld a,!*pair", _pairs[pair].name);
               regalloc_dry_run_cost += 1;
-              _moveFromA (AOP (result), offset++);
+              cheapMove (AOP (result), offset++, ASMOP_A, 0);
             }
           if (size)
             {
@@ -8099,7 +8094,7 @@ genPackBits (sym_link * etype,
       else
         {
           /* Case with a bit-field length <8 and arbitrary source */
-          _moveA3 (AOP (right), 0);
+          cheapMove (AOP (right), 0, ASMOP_A, 0);
           /* shift and mask source value */
           AccLsh (bstr);
           emit2 ("and a,!immedbyte", (~mask) & 0xff);
@@ -8141,7 +8136,7 @@ genPackBits (sym_link * etype,
   /* all except the partial byte at the end                 */
   for (rlen=blen;rlen>=8;rlen-=8)
     {
-      _moveA3 (AOP (right), offset++);
+      cheapMove (ASMOP_A, 0, AOP (right), offset++);
       if (pair == PAIR_IX || pair == PAIR_IY)
         {
           emit2 ("ld %d !*pair,a", pair_offset, _pairs[pair].name);
@@ -8193,7 +8188,7 @@ genPackBits (sym_link * etype,
       else
         {
           /* Case with partial byte and arbitrary source */
-          _moveA3 (AOP (right), offset++);
+          cheapMove (ASMOP_A, 0, AOP (right), offset++);
           emit2 ("and a,!immedbyte", (~mask) & 0xff);
           regalloc_dry_run_cost += 2;
 
@@ -8286,7 +8281,7 @@ genGenPointerSet (operand * right,
         }
       else
         {
-          _moveA3 (AOP (right), 0);
+          cheapMove (ASMOP_A, 0, AOP (right), 0);
           emit2 ("ld !*pair,a", pair);
           regalloc_dry_run_cost += (getPairId (AOP (result)) != PAIR_IY ? 1 : 3);
         }
@@ -8307,7 +8302,7 @@ genGenPointerSet (operand * right,
             }
           else
             {
-              _moveA3 (AOP (right), offset);
+              cheapMove (ASMOP_A, 0, AOP (right), offset);
               emit2 ("ld !*iyx,a", offset);
               regalloc_dry_run_cost += 3;
             }
@@ -8330,7 +8325,7 @@ genGenPointerSet (operand * right,
             }
           else
             {
-              _moveA3 (AOP (right), offset);
+              cheapMove (ASMOP_A, 0, AOP (right), offset);
               emit2 ("ld !*pair,a", _pairs[PAIR_HL].name);
               regalloc_dry_run_cost += 1;
             }
@@ -8385,7 +8380,7 @@ genGenPointerSet (operand * right,
             }
           else
             {
-              _moveA3 (AOP (right), offset);
+              cheapMove (ASMOP_A, 0, AOP (right), offset);
               emit2 ("ld !*pair,a", _pairs[pairId].name);
               regalloc_dry_run_cost += 1;
             }
@@ -8635,9 +8630,9 @@ genAssign (iCode * ic)
   else if (size == 2 && requiresHL (AOP (right)) && requiresHL (AOP (result)) && (IS_GB /*|| IY_RESERVED*/))
     {
       /* Special case.  Load into a and d, then load out. */
-      _moveA3 (AOP (right), 0);
+      cheapMove (ASMOP_A, 0, AOP (right), 0);
       emit3_o (A_LD, ASMOP_E, 0, AOP (right), 1);
-      _moveFromA (AOP (result), 0);
+      cheapMove (AOP (result), 0, ASMOP_A, 0);
       cheapMove (AOP (result), 1, ASMOP_E, 0);
     }
   else if (size == 4 && requiresHL (AOP (right)) && requiresHL (AOP (result)) && (IS_GB /*|| IY_RESERVED*/))
@@ -8736,8 +8731,8 @@ genAssign (iCode * ic)
               {
                 emit2("push hl");
                 regalloc_dry_run_cost += 1;
-                _moveA3 (AOP (right), offset);
-                _moveFromA (AOP (result), offset);
+                cheapMove (ASMOP_A, 0, AOP (right), offset);
+                cheapMove (AOP (result), offset, ASMOP_A, 0);
                 emit2("pop hl");
                 regalloc_dry_run_cost += 1;
                 spillPair (PAIR_HL);
@@ -8846,7 +8841,7 @@ genCast (const iCode *ic)
         }
       while(--size)
         {
-          _moveA3 (AOP (right), size);
+          cheapMove (ASMOP_A, 0, AOP (right), size);
           emit3(A_OR, ASMOP_A, ASMOP_A);
           if(!regalloc_dry_run)
             emit2("jp NZ,!tlabel", tlbl1->key + 100);
@@ -8907,7 +8902,7 @@ genCast (const iCode *ic)
   else
     {
       /* we need to extend the sign :{ */
-      _moveA3 (AOP (right), AOP_SIZE (right) - 1);
+      cheapMove (ASMOP_A, 0, AOP (right), AOP_SIZE (right) - 1);
       emit3 (A_RLA, 0, 0);
       emit3 (A_SBC, ASMOP_A, ASMOP_A);
       while (size--)

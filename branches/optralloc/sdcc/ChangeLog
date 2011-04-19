@@ -1,5 +1,10 @@
 2011-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/z80/gen.c:
+	  Make some cheapMove()s for more optimization potential (moving some optimizations from the peephole optimizer to code generation, where they can be seen by the cost function).
+
+2011-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/peeph-z80.def:
 	  Added some peephole rules to better optimize shifting and dead loads.
 
