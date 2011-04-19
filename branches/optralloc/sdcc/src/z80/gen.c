@@ -8550,10 +8550,7 @@ genAssign (iCode * ic)
 
   /* Dont bother assigning if they are the same */
   if (operandsEqu (IC_RESULT (ic), IC_RIGHT (ic)))
-    {
-      emitDebug ("; (operands are equal %u)", operandsEqu (IC_RESULT (ic), IC_RIGHT (ic)));
-      return;
-    }
+    return;
 
   aopOp (right, ic, FALSE, FALSE);
   aopOp (result, ic, TRUE, FALSE);

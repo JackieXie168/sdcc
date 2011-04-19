@@ -66,6 +66,19 @@ replace restart {
 } if notUsed('hl')
 
 replace restart {
+	ld	%1, %2 (iy)
+} by {
+	; peephole 0a''''' removed dead load from %2 into %1.
+} if notUsed(%1)
+// Should probably check for notVolatile(), but gives many false positives and no regression tests fail.
+
+replace restart {
+	ld	%1, %2 (ix)
+} by {
+	; peephole 0a'''''' removed dead load from %2 into %1.
+} if notUsed(%1)
+
+replace restart {
 	ld	%1, %2
 	ld	%3, %1
 } by {
@@ -418,6 +431,32 @@ replace restart {
 	ld	%3,(hl)
 } if notVolatile(%3)
 // Don't check for volatile since ix points to the stack.
+
+replace restart {
+	ld	e, l
+	ld	d, h
+	ld	a, (de)
+	srl	a
+	ld	(de), a
+} by {	
+	ld	e, l
+	ld	d, h
+	srl	(hl)
+	; peephole 0w' shifted in (hl) instead of via (de) and a.
+}
+
+replace restart {
+	ld	c, l
+	ld	b, h
+	ld	a, (bc)
+	srl	a
+	ld	(bc), a
+} by {	
+	ld	c, l
+	ld	b, h
+	srl	(hl)
+	; peephole 0w'' shifted in (hl) instead of via (bc) and a.
+}
 
 replace restart {
 	push	af
@@ -1317,8 +1356,9 @@ replace restart {
 	ld	%1 (iy),a
 } by {
 	inc	%1 (iy)
+	ld	a, %1 (iy)
 	; peephole 42e incremented in %1 (iy) instead of a.
-} if notUsed('a')
+}
 
 replace restart {
 	ld	%1,a
