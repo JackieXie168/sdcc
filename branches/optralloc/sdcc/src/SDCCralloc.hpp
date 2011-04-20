@@ -508,7 +508,7 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
 
   //std::cout << "nth elem. est. cost: " << arep[options.max_allocs_per_node / NUM_REGS].s << "\n";
 
-  for (n = options.max_allocs_per_node / NUM_REGS; n < alist_size; n++)
+  for (n = options.max_allocs_per_node / NUM_REGS + 1; n < alist_size; n++)
     alist.erase(arep[n].i);
     
   delete[] arep;
