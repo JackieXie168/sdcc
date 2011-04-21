@@ -8094,7 +8094,7 @@ genPackBits (sym_link * etype,
       else
         {
           /* Case with a bit-field length <8 and arbitrary source */
-          cheapMove (AOP (right), 0, ASMOP_A, 0);
+          cheapMove (ASMOP_A, 0, AOP (right), 0);
           /* shift and mask source value */
           AccLsh (bstr);
           emit2 ("and a,!immedbyte", (~mask) & 0xff);
