@@ -649,7 +649,7 @@ _mangleSupportFunctionName (const char *original)
 }
 
 static const char *
-_getRegName (struct regs *reg)
+_getRegName (const struct reg_info *reg)
 {
   if (reg)
     {

@@ -100,7 +100,7 @@ static struct
   int nRegs;
 } _G;
 
-static regs _gbz80_regs[] = {
+static reg_info _gbz80_regs[] = {
   {REG_GPR, C_IDX, "c", 1},
   {REG_GPR, B_IDX, "b", 1},
   {REG_GPR, E_IDX, "e", 1},
@@ -110,7 +110,7 @@ static regs _gbz80_regs[] = {
   {REG_CND, CND_IDX, "c", 1}
 };
 
-static regs _z80_regs[] = {
+static reg_info _z80_regs[] = {
   {REG_GPR, C_IDX, "c", 1},
   {REG_GPR, B_IDX, "b", 1},
   {REG_GPR, E_IDX, "e", 1},
@@ -120,7 +120,7 @@ static regs _z80_regs[] = {
   {REG_CND, CND_IDX, "c", 1}
 };
 
-regs *regsZ80;
+reg_info *regsZ80;
 
 /** Number of usable registers (all but C) */
 #define Z80_MAX_REGS ((sizeof(_z80_regs)/sizeof(_z80_regs[0]))-1)
@@ -131,7 +131,7 @@ static void freeAllRegs ();
 
 /** Returns pointer to register wit index number
  */
-regs *
+reg_info *
 regWithIdx (int idx)
 {
   int i;
@@ -151,7 +151,7 @@ regWithIdx (int idx)
 /** Frees a register.
  */
 static void
-freeReg (regs * reg)
+freeReg (reg_info *reg)
 {
   wassert (!reg->isFree);
   reg->isFree = 1;
@@ -161,7 +161,7 @@ freeReg (regs * reg)
 /** noOverLap - will iterate through the list looking for over lap
  */
 static int
-noOverLap (set * itmpStack, symbol * fsym)
+noOverLap (set *itmpStack, symbol *fsym)
 {
   symbol *sym;
 
@@ -323,7 +323,7 @@ spillThis (symbol * sym)
 /** Symbol has a given register.
  */
 static bool
-symHasReg (symbol * sym, regs * reg)
+symHasReg (symbol *sym, const reg_info *reg)
 {
   int i;
 

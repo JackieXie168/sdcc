@@ -250,7 +250,7 @@ typedef struct
     void (*emitDebuggerSymbol) (const char *);
     struct
     {
-      int (*regNum) (struct regs *);
+      int (*regNum) (struct reg_info *);
       bitVect *cfiSame;
       bitVect *cfiUndef;
       int addressSize;
@@ -298,8 +298,8 @@ typedef struct
   void (*assignRegisters) (struct ebbIndex *);
 
   /** Returns the register name of a symbol.
-      Used so that 'regs' can be an incomplete type. */
-  const char *(*getRegName) (struct regs * reg);
+      Used so that 'reg_info' can be an incomplete type. */
+  const char *(*getRegName) (struct reg_info *reg);
 
   /* list of keywords that are used by this
      target (used by lexer) */

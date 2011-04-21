@@ -307,7 +307,7 @@ pic14printLocals (struct dbuf_s *oBuf)
 {
     set *allregs[6] = { dynAllocRegs/*, dynStackRegs, dynProcessorRegs*/,
         dynDirectRegs, dynDirectBitRegs/*, dynInternalRegs */ };
-    regs *reg;
+    reg_info *reg;
     int i, is_first = 1;
     static unsigned sectionNr = 0;
 

@@ -1,5 +1,55 @@
 2011-04-21 Philipp Klaus Krause <pkk@spth.de>
 
+	* src/SDCCdebug.h,
+	  src/mcs51/gen.c,
+	  src/mcs51/ralloc.c,
+	  src/mcs51/gen.h,
+	  src/mcs51/ralloc.h,
+	  src/mcs51/main.c,
+	  src/mcs51/rtrack.c,
+	  src/SDCCsymt.h,
+	  src/SDCCdwarf2.c,
+	  src/port.h,
+	  src/pic14/pcode.h,
+	  src/pic14/pcodepeep.c,
+	  src/pic14/pcoderegs.c,
+	  src/pic14/ralloc.c,
+	  src/pic14/gen.h,
+	  src/pic14/ralloc.h,
+	  src/pic14/main.c,
+	  src/pic14/pcode.c,
+	  src/pic14/glue.c,
+	  src/z80/ralloc.c,
+	  src/z80/gen.h,
+	  src/z80/ralloc.h,
+	  src/z80/main.c,
+	  src/pic16/pcode.h,
+	  src/pic16/device.c,
+	  src/pic16/device.h,
+	  src/pic16/gen.c,
+	  src/pic16/pcoderegs.c,
+	  src/pic16/ralloc.c,
+	  src/pic16/gen.h,
+	  src/pic16/ralloc.h,
+	  src/pic16/main.c,
+	  src/pic16/main.h,
+	  src/pic16/pcode.c,
+	  src/pic16/glue.c,
+	  src/hc08/gen.h,
+	  src/hc08/ralloc.h,
+	  src/hc08/main.c,
+	  src/hc08/gen.c,
+	  src/hc08/ralloc.c,
+	  src/ds390/gen.h,
+	  src/ds390/ralloc.h,
+	  src/ds390/main.c,
+	  src/ds390/gen.c,
+	  src/ds390/ralloc.c,
+	  src/cdbFile.c:
+	  Renamed regs struct to reg_info, since g++ pollutes the global namespace with "regs" on OpenSolaris, even when using --std=c++98.
+
+2011-04-21 Philipp Klaus Krause <pkk@spth.de>
+
 	* Merge everything except src/z80/gen.c from trunk.
 
 2011-04-20 Philipp Klaus Krause <pkk@spth.de>

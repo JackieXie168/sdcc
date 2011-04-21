@@ -78,7 +78,7 @@ typedef struct asmop
   union
   {
     value *aop_lit;             /* if literal */
-    regs *aop_reg[4];           /* array of registers */
+    reg_info *aop_reg[4];       /* array of registers */
     char *aop_dir;              /* if direct  */
     char *aop_immd;             /* if immediate others are implied */
     int aop_stk;                /* stack offset when AOP_STK */
