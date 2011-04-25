@@ -192,6 +192,7 @@ void Areas51 (void)
  *		VOID	library()	lklibr.c
  *		VOID	link_main()	lkmain.c
  *		VOID	lkexit()	lkmain.c
+ *		VOID	lkfopen()	lkbank.c
  *		VOID	lnkarea()	lkarea.c
  *		VOID	map()		lkmain.c
  *		VOID	new()		lksym.c
@@ -221,6 +222,12 @@ main(int argc, char *argv[])
 	/* sdas initialization */
 	sdld_init(argv[0]);
 	/* end sdas specific */
+
+	/* use these defaults for parsing the .lk script */
+	a_bytes = 4;
+	a_mask = 0xFFFFFFFF;
+	s_mask = 0x80000000;
+	v_mask = 0x7FFFFFFF;
 
 	if (!is_sdld())
 		fprintf(stdout, "\n");
@@ -390,36 +397,9 @@ main(int argc, char *argv[])
 			/* end sdld specific */
 
 			/*
-			 * Open output file
+			 * Open output file(s)
 			 */
-			if (oflag == 1) {
-				ofp = afile(linkp->f_idp, "ihx", 1);
-				if (ofp == NULL) {
-					lkexit(1);
-				}
-				/* sdld specific */
-				/* include NoICE command to load hex file */
-				if (jfp) fprintf( jfp, "LOAD %s.ihx\n", linkp->f_idp );
-				/* end sdld specific */
-			} else
-			if (oflag == 2) {
-				ofp = afile(linkp->f_idp, "s19", 1);
-				if (ofp == NULL) {
-					lkexit(1);
-				}
-				/* sdld specific */
-				/* include NoICE command to load hex file */
-				if (jfp) fprintf( jfp, "LOAD %s.s19\n", linkp->f_idp );
-				/* end sdld specific */
-			} else
-			/* sdld specific */
-			if (oflag == 3) {
-				ofp = afile(linkp->f_idp, "elf", 2);
-				if (ofp == NULL) {
-					lkexit(1);
-				}
-			}
-			/* end sdld specific */
+			lkfopen();
 		} else {
 			/*
 			 * Link in library files
@@ -461,6 +441,7 @@ main(int argc, char *argv[])
  *	functions called:
  *		int	fclose()	c_library
  *		VOID	exit()		c_library
+ *		VOID	lkfclose()	lkbank.c
  *
  *	side effects:
  *		All files closed. Program terminates.
@@ -470,11 +451,11 @@ VOID
 lkexit(i)
 int i;
 {
+	lkfclose();
 #if NOICE
 	if (jfp != NULL) fclose(jfp);
 #endif
 	if (mfp != NULL) fclose(mfp);
-	if (ofp != NULL) fclose(ofp);
 	if (rfp != NULL) fclose(rfp);
 	if (sfp != NULL) { if (sfp != stdin) fclose(sfp); }
 	if (tfp != NULL) fclose(tfp);
@@ -766,7 +747,7 @@ map(void)
 	filep = linkp->f_flp;
 	while (filep) {
 		if (strlen (filep->f_idp) > 40)
-			fprintf(mfp, "%s\n%44s  [ ", filep->f_idp, "");
+			fprintf(mfp, "%s\n%40s  [ ", filep->f_idp, "");
 		else
 			fprintf(mfp, "%-40.40s  [ ", filep->f_idp);
 		i = 0;
@@ -788,7 +769,7 @@ map(void)
 		fprintf(mfp, "\nLibraries Linked                          [ object file ]\n\n");
 		for (lbfh=lbfhead; lbfh; lbfh=lbfh->next) {
 			if (strlen (lbfh->libspc) > 40)
-				fprintf(mfp, "%s\n%44s  [ %-.32s ]\n",
+				fprintf(mfp, "%s\n%40s  [ %-.32s ]\n",
 					lbfh->libspc, "", lbfh->relfil);
 			else
 				fprintf(mfp, "%-40.40s  [ %-.32s ]\n",
@@ -898,10 +879,7 @@ parse()
 
 				case 't':
 				case 'T':
-					if (TARGET_IS_6808)
-						oflag = 3;
-					else
-						goto err;
+					oflag = 4;
 					break;
 
 				case 'A':
@@ -1064,10 +1042,7 @@ parse()
 				return(0);
 			/* end sdld specific */
 		} else
-		if (ctype[c] & ILL) {
-			fprintf(stderr, "Invalid input\n");
-			lkexit(ER_FATAL);
-		} else {
+		if (!(ctype[c] & ILL)) {
 			if (linkp == NULL) {
 				linkp = (struct lfile *)
 					new (sizeof (struct lfile));
@@ -1081,6 +1056,9 @@ parse()
 			}
 			getfid(fid, c);
 			lfp->f_idp = strsto(fid);
+		} else {
+			fprintf(stderr, "Invalid input\n");
+			lkexit(ER_FATAL);
 		}
 	}
 	return(0);
@@ -1242,6 +1220,7 @@ gblsav()
 	gsp->g_strp = (char *) new (strlen(ip)+1);
 	strcpy(gsp->g_strp, ip);
 }
+
 
 /*)Function	VOID	setgbl()
  *
