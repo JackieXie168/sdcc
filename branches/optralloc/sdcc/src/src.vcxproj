@@ -495,10 +495,6 @@
       <Project>{2f87ba6f-8ee1-48d0-9817-6ba30bddb3c1}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="avr\avr.vcxproj">
-      <Project>{493caaa0-fccc-455f-9127-706b20c3d4c9}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="ds390\ds390.vcxproj">
       <Project>{14a8a991-bad6-49eb-84fb-6f6cf12b436d}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -517,10 +513,6 @@
     </ProjectReference>
     <ProjectReference Include="pic16\pic16.vcxproj">
       <Project>{7e09a25e-1c9d-438d-85db-8535f134890d}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="xa51\xa51.vcxproj">
-      <Project>{a4c9f645-9297-4ad0-b092-cfaf1289984a}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="z80\z80.vcxproj">

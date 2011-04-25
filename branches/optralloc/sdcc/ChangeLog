@@ -1,3 +1,17 @@
+2011-04-25 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* debugger/mcs51/cmd.c,
+	* debugger/mcs51/symtab.c,
+	* src/z80/ralloc2.cc: fixed some warnings
+	* sdas/linksrc/aslink.vcxproj,
+	* sdas/linksrc/aslink.vcxproj.filters: added lksdcdb.c
+	* src/src.vcxproj,
+	* src/src.vcxproj.filters,
+	* sdcc.sln: added dependencies on config, removed avr & xa51
+	* sdcc_vc_in.h: set OPT_DISABLE_AVR & OPT_DISABLE_XA51
+	* src/pic14/ralloc.h: fixed rename of struct regs to reg_info
+	* src/z80/gen.c: replaced true/false with TRUE/FALSE
+
 2011-04-21 Philipp Klaus Krause <pkk@spth.de>
 
 	* src/SDCCdebug.h,
@@ -109,7 +123,7 @@
 2011-04-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* Merge everything except src/z80/gen.c from trunk.
-	
+
 2011-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* Merge everything except src/z80/gen.c from trunk.
@@ -791,7 +805,7 @@
 	* src/version.awk,
 	  src/src.dsp,
 	  support/scripts/resource.rc:
-	  Merge from trunk. 
+	  Merge from trunk.
 	* src/z80/gen.c:
 	  Improved addition by increment.
 
@@ -800,7 +814,7 @@
 	* src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc:
 	  Early elimination of some impossible assignments.
-	  
+
 2011-02-07 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/ralloc2.cc,

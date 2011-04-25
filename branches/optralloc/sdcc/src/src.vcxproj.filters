@@ -71,9 +71,6 @@
     <ClCompile Include="SDCClabel.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SDCClex.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SDCCloop.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -154,6 +151,9 @@
     </ClCompile>
     <ClCompile Include="regression\while.c">
       <Filter>Regression Test</Filter>
+    </ClCompile>
+    <ClCompile Include="sdcclex.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

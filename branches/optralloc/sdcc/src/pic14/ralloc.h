@@ -62,7 +62,7 @@ typedef struct reg_info
   unsigned address;           /* reg's address if isFixed | isMapped is true */
   unsigned size;              /* 0 for byte, 1 for int, 4 for long */
   unsigned alias;             /* Alias mask if register appears in multiple banks */
-  struct regs *reg_alias;     /* If more than one register share the same address 
+  struct reg_info *reg_alias; /* If more than one register share the same address 
                                * then they'll point to each other. (primarily for bits)*/
   pCodeRegLives reglives;     /* live range mapping */
 }

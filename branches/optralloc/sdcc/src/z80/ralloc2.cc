@@ -91,7 +91,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
           // Spilt.
           else
             {
-              c += OP_SYMBOL_CONST(o)->remat ? 1.5 : 4.0f;
+              c += OP_SYMBOL_CONST(o)->remat ? 1.5f : 4.0f;
               while(++oi != oi_end)
                 {
                   v = oi->second;
@@ -1160,7 +1160,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   if(ia.registers[REG_E][1] < 0)
     c += 0.0001;
   if(ia.registers[REG_D][1] < 0)
-    c += 0.00001;
+    c += 0.00001f;
 
   if(a.marked)
     c -= 0.5f;

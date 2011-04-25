@@ -8668,7 +8668,7 @@ genAssign (iCode * ic)
         {
           // We need to be able to handle any assignment here, ensuring not to overwrite any parts of the source that we still need.
         
-          bool assigned[4] = {false, false, false, false};	// This has to be made bigger when sdcc supports variables larger than 4 bytes in registers.
+          bool assigned[4] = {FALSE, FALSE, FALSE, FALSE};	// This has to be made bigger when sdcc supports variables larger than 4 bytes in registers.
           int cached_byte = -1;
 
           while (size--)
@@ -8697,7 +8697,7 @@ genAssign (iCode * ic)
               if (i < AOP_SIZE (result))
                 {
                   cheapMove (AOP (result), i, AOP(right), i); // We can safely assign a byte.
-                  assigned[i] = true;
+                  assigned[i] = TRUE;
                   continue;
                 }
               
@@ -8716,7 +8716,7 @@ genAssign (iCode * ic)
                   break;
               wassertl (i != AOP_SIZE (result), "genAssign error: Trying to cache non-existant byte in accumulator."); 
               cheapMove (ASMOP_A, 0, AOP (right), i);
-              assigned[i] = true;
+              assigned[i] = TRUE;
               cached_byte = i;
             }
            

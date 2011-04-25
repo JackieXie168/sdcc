@@ -133,6 +133,7 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="lksdcdb.c" />
     <ClCompile Include="lk_readnl.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
