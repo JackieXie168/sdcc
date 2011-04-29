@@ -4744,7 +4744,7 @@ $as_echo "$bor_cv_c_pipe" >&6; }
     CXXFLAGS="-pipe ${CXXFLAGS}"
   fi
 
-  WALL_FLAG="-Wall"
+  WALL_FLAG="-Wall -Wno-parentheses"
   C99_FLAG="--std=c99"
   MAKEDEP="$CC $sdcc_cv_MM"
 else

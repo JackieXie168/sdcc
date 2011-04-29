@@ -384,7 +384,7 @@ if test "$ac_cv_c_compiler_gnu" = "yes"; then
     CXXFLAGS="-pipe ${CXXFLAGS}"
   fi
 
-  WALL_FLAG="-Wall"
+  WALL_FLAG="-Wall -Wno-parentheses"
   C99_FLAG="--std=c99"
   MAKEDEP="$CC $sdcc_cv_MM"
 else

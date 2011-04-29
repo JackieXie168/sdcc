@@ -41,7 +41,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 {
   float c = 0.0f;
 
-  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi_end;
 
   var_t byteregs[4];	// Todo: Change this when sdcc supports variables larger than 4 bytes.
   unsigned short int size;
@@ -111,7 +111,7 @@ bool operand_sane(const operand *o, const assignment &a, unsigned short int i, c
   if(!o || !IS_SYMOP(o))
     return(true);
  
-  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi_end;
   boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
   
   if(oi == oi_end)
@@ -172,7 +172,7 @@ assign_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
 
   reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
 
-  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi_end;
 
   int size1 = 0, size2 = 0;
 
@@ -259,7 +259,7 @@ return_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
 
   reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
   
-  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi_end;
 
   int size = 0;
   
@@ -313,7 +313,7 @@ call_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 
   reg_t byteregs[4] = {-1, -1, -1, -1};	// Todo: Change this when sdcc supports variables larger than 4 bytes.
   
-  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi_end;
 
   int size = 0;
   
@@ -389,13 +389,13 @@ result_overwrites_operand(const assignment &a, unsigned short int i, const G_t &
   if(!result || !IS_SYMOP(result))
     return(false);
 	
-  std::multimap<int, var_t>::const_iterator oir, oir_end, oirs;
+  operand_map_t::const_iterator oir, oir_end, oirs;
 	
   boost::tie(oir, oir_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(result)->key);
   if(oir == oir_end)
     return(false);
 		
-  std::multimap<int, var_t>::const_iterator oio, oio_end;
+  operand_map_t::const_iterator oio, oio_end;
 	
   if(left && IS_SYMOP(left))
     for(boost::tie(oio, oio_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(left)->key); oio != oio_end; ++oio)
@@ -424,15 +424,6 @@ result_overwrites_operand(const assignment &a, unsigned short int i, const G_t &
   return(false);
 }
 
-template <class G_t, class I_t> static float
-or_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
-{
-  if(result_overwrites_operand(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
-
-  return(default_instruction_cost(a, i, G, I));
-}
-
 // Return true, iff the operand is placed (partially) in r.
 template <class G_t>
 bool operand_in_reg(const operand *o, reg_t r, const i_assignment &ia, unsigned short int i, const G_t &G)
@@ -440,7 +431,7 @@ bool operand_in_reg(const operand *o, reg_t r, const i_assignment &ia, unsigned 
   if(!o || !IS_SYMOP(o))
     return(false);
 
-  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi_end;
   for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
     if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
       return(true);
@@ -454,7 +445,7 @@ bool operand_is_pair(const operand *o, const assignment &a, unsigned short int i
   if(!o || !IS_SYMOP(o))
     return(false);
 
-  std::multimap<int, var_t>::const_iterator oi, oi2, oi3, oi_end;
+  operand_map_t::const_iterator oi, oi2, oi3, oi_end;
   boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
   if(oi == oi_end)
     return(false);
@@ -480,7 +471,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 {
   const iCode *ic = G[i].ic;
 
-  std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
+  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
   if(iai == a.i_assignments.end())
     {
       std::cerr << "ERROR: Instruction assignment not found.\n";
@@ -591,7 +582,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(TARGET_IS_GBZ80)
     return(true);
 
-  std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
+  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
   if(iai == a.i_assignments.end())
     {
       std::cerr << "ERROR: Instruction assignment not found.\n";
@@ -742,13 +733,15 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(TARGET_IS_GBZ80)
     return(true);
 
-  std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
+  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
   if(iai == a.i_assignments.end())
     {
       std::cerr << "ERROR: Instruction assignment not found.\n";
       return(false);
     }
   const i_assignment &ia = iai->second;
+
+  //std::cout << "IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
 
   bool unused_IYL = (ia.registers[REG_IYL][1] < 0);
   bool unused_IYH = (ia.registers[REG_IYH][1] < 0);
@@ -779,15 +772,19 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     }
   bool input_in_IY = input_in_IYL || input_in_IYH;
 
-  const std::set<var_t> &dying = G[i].dying;
+  //const std::set<var_t> &dying = G[i].dying;
   
-  bool dying_IYL = result_in_IYL || dying.find(ia.registers[REG_IYL][1]) != dying.end() || dying.find(ia.registers[REG_IYL][0]) != dying.end();
-  bool dying_IYH = result_in_IYH || dying.find(ia.registers[REG_IYH][1]) != dying.end() || dying.find(ia.registers[REG_IYH][0]) != dying.end();
+  //bool dying_IYL = result_in_IYL || dying.find(ia.registers[REG_IYL][1]) != dying.end() || dying.find(ia.registers[REG_IYL][0]) != dying.end();
+  //bool dying_IYH = result_in_IYH || dying.find(ia.registers[REG_IYH][1]) != dying.end() || dying.find(ia.registers[REG_IYH][0]) != dying.end();
 
-  bool result_only_IY = (result_in_IYL || unused_IYL || dying_IYL) && (result_in_IYH || unused_IYH || dying_IYH);
+  //bool result_only_IY = (result_in_IYL || unused_IYL || dying_IYL) && (result_in_IYH || unused_IYH || dying_IYH);
+
+  //std::cout << "IYinst_ok: IY unused?\n";
 
   if(unused_IYL && unused_IYH)
     return(true);	// Register IY not in use.
+
+  //std::cout << "IYinst_ok: IY partially used?\n";
 
   // Code generator cannot handle variables that are only partially in IY.
   if(unused_IYL ^ unused_IYH)
@@ -809,6 +806,9 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(false);
 
 #if 0
+  std::cout << "IYinst_ok: Assignment: ";
+  print_assignment(a);
+  std::cout << "\n";
   std::cout << "IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
 #endif
 
@@ -847,10 +847,10 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
 #if 0
   if(ia.registers[REG_IYL][1] == 2)
- {
-    std::cout << "Default drop.\n";
-    std::cout << "result is pair: " << operand_is_pair(IC_RESULT(ic), a, i, G) << "\n";
-}
+    {
+      std::cout << "Default drop.\n";
+      std::cout << "result is pair: " << operand_is_pair(IC_RESULT(ic), a, i, G) << "\n";
+    }
 #endif
 
   return(false);
@@ -884,7 +884,7 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
   if(!o || !IS_SYMOP(o))
     return;
   symbol *sym = OP_SYMBOL(o);
-  std::multimap<int, var_t>::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi_end;
   for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
     {
       var_t v = oi->second;
@@ -983,17 +983,12 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case CALL:
         case PCALL:
         case RETURN:
-        //case '+':
-        //case '-':
         case '*':
         case '>':
         case '<':
         case EQ_OP:
         case AND_OP:
         case OR_OP:
-        //case '^':
-        //case '|': - see above.
-        //case BITWISEAND:
         case GETHBIT:
         case LEFT_OP:
         case RIGHT_OP:
@@ -1041,8 +1036,6 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
           return(ifx_cost(a, i, G, I));
         case JUMPTABLE:
           return(jumptab_cost(a, i, G, I));
-        case '|':
-          return(or_cost(a, i, G, I));
         default:
           return(default_instruction_cost(a, i, G, I));
         }
@@ -1054,7 +1047,7 @@ float weird_byte_order(const assignment &a, const I_t &I)
 {
   float c = 0.0f;
   
-  std::set<var_t>::const_iterator vi, vi_end;
+  varset_t::const_iterator vi, vi_end;
   for(vi = a.local.begin(), vi_end = a.local.end(); vi != vi_end; ++vi)
     if(a.global[*vi] % 2 != I[*vi].byte % 2)
       c += 8.0f;
@@ -1066,7 +1059,7 @@ float weird_byte_order(const assignment &a, const I_t &I)
 template <class I_t>
 bool local_assignment_insane(const assignment &a, const I_t &I, var_t lastvar)
 {
-  std::set<var_t>::const_iterator v, v_end, v_old;
+  varset_t::const_iterator v, v_end, v_old;
   
   for(v = a.local.begin(), v_end = a.local.end(); v != v_end;)
     {
@@ -1093,30 +1086,19 @@ bool local_assignment_insane(const assignment &a, const I_t &I, var_t lastvar)
   return(false);
 }
 
+// For early removel of assignments that cannot be extended to valid assignments.
 template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar)
+bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar)
 {
   // Can check for Ainst_ok() since A only contains 1-byte variables.
   if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
-
-  std::map<int, i_assignment>::const_iterator iai = a.i_assignments.find(i);
-  if(iai == a.i_assignments.end())
-    {
-      std::cerr << "ERROR: Instruction assignment not found.\n";
-      return(250.0f);
-    }
-  const i_assignment &ia = iai->second;
+    return(true);
 
   if(local_assignment_insane(a, I, lastvar))
-    return(std::numeric_limits<float>::infinity());
+    return(true);
 
-  // Can only check for HLinst_ok() in some cases.
-  if(OPTRALLOC_HL &&
-      (ia.registers[REG_L][1] >= 0 && ia.registers[REG_H][1] >= 0) &&
-      !((ia.registers[REG_L][0] >= 0) ^ (ia.registers[REG_H][0] >= 0)) &&
-      !HLinst_ok(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
+  const iassignmap_t::const_iterator iai = a.i_assignments.find(i);
+  const i_assignment &ia = iai->second;
 
   // Code generator cannot handle variables that are only partially in IY.
   if(OPTRALLOC_IY &&
@@ -1124,19 +1106,34 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
     ia.registers[REG_IYH][1] >= 0 && (I[ia.registers[REG_IYH][1]].size != 2 || I[ia.registers[REG_IYH][1]].byte != 1) ||
     ia.registers[REG_IYL][0] >= 0 && (I[ia.registers[REG_IYL][0]].size != 2 || I[ia.registers[REG_IYL][0]].byte != 0) ||
     ia.registers[REG_IYH][0] >= 0 && (I[ia.registers[REG_IYH][0]].size != 2 || I[ia.registers[REG_IYH][0]].byte != 1)))
-    return(std::numeric_limits<float>::infinity());
+    return(true);
+
+  // Can only check for HLinst_ok() in some cases.
+  if(OPTRALLOC_HL &&
+      (ia.registers[REG_L][1] >= 0 && ia.registers[REG_H][1] >= 0) &&
+      !((ia.registers[REG_L][0] >= 0) ^ (ia.registers[REG_H][0] >= 0)) &&
+      !HLinst_ok(a, i, G, I))
+    return(true);
 
   // Can only check for IYinst_ok() in some cases.
   if(OPTRALLOC_IY &&
       (ia.registers[REG_IYL][1] >= 0 && ia.registers[REG_IYH][1] >= 0) &&
       !((ia.registers[REG_IYL][0] >= 0) ^ (ia.registers[REG_IYH][0] >= 0)) &&
       !IYinst_ok(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
+    return(true);
 
-  // The code generator could deal with this for '+' in some cases though.
-  const iCode *ic = G[i].ic;
-  if((ic->op == '|' || ic->op == '&' || ic->op == '^' || ic->op == '+' || ic->op == '-') && result_overwrites_operand(a, i, G, I))
-    return(std::numeric_limits<float>::infinity());
+  const iCode *const ic = G[i].ic;
+  if((ic->op == '~' || ic->op == UNARYMINUS || ic->op == '+' || ic->op == '-' || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND) && result_overwrites_operand(a, i, G, I))
+    return(true);
+
+  return(false);
+}
+
+template <class G_t, class I_t>
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
+  const i_assignment &ia = iai->second;
     
   float c = 0.0f;
 
@@ -1149,7 +1146,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
     c += 0.02f;
 
   // Using IY is rarely a good choice, so discard the IY-users first when in doubt.
-  std::map<int, i_assignment>::const_iterator mi, mi_end;
+  iassignmap_t::const_iterator mi, mi_end;
   for(mi = a.i_assignments.begin(), mi_end = a.i_assignments.end(); mi != mi_end; ++mi)
     {
       if(OPTRALLOC_IY && (mi->second.registers[REG_IYL][1] >= 0 || mi->second.registers[REG_IYH][1] >= 0))
@@ -1165,7 +1162,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   if(a.marked)
     c -= 0.5f;
 
-  std::set<var_t>::const_iterator v, v_end;
+  varset_t::const_iterator v, v_end;
   for(v = a.local.begin(), v_end = a.local.end(); v != v_end; ++v)
     c -= *v * 0.01f;
 
@@ -1200,7 +1197,8 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
   	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
   }
   std::cout << "\n";
-  std::cout << "Cost: " << winner.s << "\n";*/
+  std::cout << "Cost: " << winner.s << "\n";
+  std::cout.flush();*/
 
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))

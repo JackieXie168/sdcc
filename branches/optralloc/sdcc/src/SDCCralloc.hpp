@@ -42,9 +42,18 @@
 #include <sstream>
 #include <fstream>
 
+//#include <boost/tr1/unordered_map.hpp>
+//#include <boost/tr1/unordered_set.hpp>
+
+//#include <boost/pool/poolfwd.hpp>
+//#include <boost/pool/pool_alloc.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/connected_components.hpp>
+
+#include <stx/btree_set.h>
+//#include <stx/btree_map.h>
+//#include <stx/btree_multimap.h>
 
 #include "SDCCtree_dec.hpp"
 
@@ -104,7 +113,6 @@ struct i_assignment
       registers[r][0] = v;
   }
 
-#if 0
   void remove_var(var_t v)
   {
     for (reg_t r = 0; r < NUM_REGS; r++)
@@ -118,23 +126,30 @@ struct i_assignment
           registers[r][0] = -1;
       }
   }
-#endif
 };
+
+//typedef std::set<var_t, std::less<var_t>, boost::fast_pool_allocator<var_t> > varset_t; // Slower
+//typedef std::set<var_t> varset_t;
+typedef stx::btree_set<var_t> varset_t; // Faster than std::set
+//typedef std::tr1::unordered_set<var_t> varset_t;
+typedef std::map<int, i_assignment> iassignmap_t;
+//typedef std::tr1::unordered_map<int, i_assignment> iassignmap_t; // Slower than std::set
+//typedef stx::btree_map<int, i_assignment> iassignmap_t; // Slower than std::set
 
 struct assignment
 {
   float s;
 
-  std::set<var_t> local;	// Entries: var
+  varset_t local;	// Entries: var
   std::vector<reg_t> global;	// Entries: global[var] = reg (-1 if no reg assigned)
 
-  std::map<int, i_assignment> i_assignments;
+  iassignmap_t i_assignments;
 
   bool marked;
 
   bool operator<(const assignment& a) const
   {
-    std::set<var_t>::const_iterator i, ai, i_end, ai_end;
+    varset_t::const_iterator i, ai, i_end, ai_end;
 
     i_end = local.end();
     ai_end = a.local.end();
@@ -163,21 +178,31 @@ struct assignment
 template <class G_t, class I_t>
 float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
 
+// For early removel of assignments that cannot be extended to valid assignments. Port-specific.
+template <class G_t, class I_t>
+bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar);
+
 // Rough cost estimate. Port-specific.
 template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar);
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+
+typedef std::list<assignment> assignment_list_t;
+//typedef std::vector<assignment> assignment_list_t;
 
 struct tree_dec_node
 {
   std::set<unsigned int> bag;
   std::set<var_t> alive;
-  std::list<assignment> assignments;
+  assignment_list_t assignments;
 };
+
+typedef std::multimap<int, var_t> operand_map_t;
+//typedef stx::btree_multimap<int, var_t> operand_map_t; // Slightly slower than std::multimap.
 
 struct cfg_node
 {
   iCode *ic;
-  std::multimap<int, var_t> operands;
+  operand_map_t operands;
   std::set<var_t> alive;
   std::set<var_t> dying;
 };
@@ -371,7 +396,7 @@ inline void alive_tree_dec(tree_dec_t &tree_dec, const cfg_t &cfg)
 // For debugging.
 void print_assignment(const assignment &a)
 {
-  std::set<var_t>::const_iterator i;
+  varset_t::const_iterator i;
   std::cout << "[";
   for (i = a.local.begin(); i != a.local.end(); ++i)
     std::cout << "(" << int(*i) << ", " << int(a.global[*i]) << "), ";
@@ -382,7 +407,7 @@ void print_assignment(const assignment &a)
 template <class I_t>
 bool assignment_conflict(const assignment &a, const I_t &I, var_t v, reg_t r)
 {
-  std::set<var_t>::const_iterator i, i_end;
+  varset_t::const_iterator i, i_end;
 
   for (i = a.local.begin(), i_end = a.local.end(); i != i_end; ++i)
     {
@@ -396,9 +421,9 @@ bool assignment_conflict(const assignment &a, const I_t &I, var_t v, reg_t r)
 }
 
 template<class G_t>
-void assignments_introduce_instruction(std::list<assignment> &alist, unsigned short int i, const G_t &G)
+void assignments_introduce_instruction(assignment_list_t &alist, unsigned short int i, const G_t &G)
 {
-  std::list<assignment>::iterator ai, ai_end;
+  assignment_list_t::iterator ai, ai_end;
 
   for (ai = alist.begin(), ai_end = alist.end(); ai != ai_end; ++ai)
     {
@@ -417,17 +442,16 @@ void assignments_introduce_instruction(std::list<assignment> &alist, unsigned sh
     }
 }
 
-template <class I_t>
-void assignments_introduce_variable(std::list<assignment> &alist, unsigned short int i, short int v, const I_t &I)
+template <class G_t, class I_t>
+void assignments_introduce_variable(assignment_list_t &alist, unsigned short int i, short int v, const G_t &G, const I_t &I)
 {
-  std::list<assignment>::iterator ai, ai_end, ai2;
+  assignment_list_t::iterator ai;
   bool a_initialized;
   assignment a;
+  size_t c, c_end;
 
-  for (ai = alist.begin(), ai_end = alist.end(); ai != ai_end; ai = ai2)
+  for (ai = alist.begin(), c = 0, c_end = alist.size(); c < c_end; c++, ai++)
     {
-      ai2 = ai;
-      ++ai2;
       a_initialized = false;
 
       for (reg_t r = 0; r < NUM_REGS; r++)
@@ -442,12 +466,10 @@ void assignments_introduce_variable(std::list<assignment> &alist, unsigned short
                   a.local.insert(v);
                 }
               a.global[v] = r;
-              
-              std::map<int, i_assignment>::iterator ia_i = a.i_assignments.find(i);
-              i_assignment ia = ia_i->second;
-              ia_i->second.add_var(v, r);
-              alist.insert(ai2, a);
-              ia_i->second = ia;
+              a.i_assignments[i].add_var(v, r);
+              if(!assignment_hopeless(a, i, G, I, v))
+                alist.push_back(a);
+              a.i_assignments[i].remove_var(v);
             }
         }
     }
@@ -455,7 +477,7 @@ void assignments_introduce_variable(std::list<assignment> &alist, unsigned short
 
 struct assignment_rep
 {
-  std::list<assignment>::iterator i;
+  assignment_list_t::iterator i;
   float s;
 
   bool operator<(const assignment_rep& a) const
@@ -469,7 +491,7 @@ float compability_cost(const assignment& a, const assignment& ac, const I_t &I)
 {
   float c = 0.0f;
   
-  std::set<var_t>::const_iterator vi, vi_end;
+  varset_t::const_iterator vi, vi_end;
   
   for(vi = ac.local.begin(), vi_end = ac.local.end(); vi != vi_end; ++vi)
     {
@@ -485,11 +507,11 @@ float compability_cost(const assignment& a, const assignment& ac, const I_t &I)
 // Ensure that we never get more than options.max_allocs_per_node assignments at a single node of the tree decomposition.
 // Tries to drop the worst ones first (but never drop the empty assignment, as it's the only one guaranteed to be always valid).
 template <class G_t, class I_t>
-void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, const G_t &G, const I_t &I, var_t lastvar, const assignment& ac)
+void drop_worst_assignments(assignment_list_t &alist, unsigned short int i, const G_t &G, const I_t &I, const assignment& ac)
 {
   unsigned int n;
   size_t alist_size;
-  std::list<assignment>::iterator ai, an;
+  assignment_list_t::iterator ai, an;
 
   if ((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(options.max_allocs_per_node))
     return;
@@ -501,14 +523,14 @@ void drop_worst_assignments(std::list<assignment> &alist, unsigned short int i, 
   for (n = 0, ai = alist.begin(); n < alist_size; ++ai, n++)
     {
       arep[n].i = ai;
-      arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I, lastvar) + compability_cost(*ai, ac, I);
+      arep[n].s = ai->s + rough_cost_estimate(*ai, i, G, I) + compability_cost(*ai, ac, I);
     }
 
   std::nth_element(arep + 1, arep + options.max_allocs_per_node / NUM_REGS, arep + alist_size);
 
   //std::cout << "nth elem. est. cost: " << arep[options.max_allocs_per_node / NUM_REGS].s << "\n";
 
-  for (n = options.max_allocs_per_node / NUM_REGS + 1; n < alist_size; n++)
+  for (n = options.max_allocs_per_node / NUM_REGS; n < alist_size; n++)
     alist.erase(arep[n].i);
     
   delete[] arep;
@@ -521,7 +543,7 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
   //std::cout << "Leaf (" << t << "):\n"; std::cout.flush();
 
   assignment a;
-  std::list<assignment> &alist = T[t].assignments;
+  assignment_list_t &alist = T[t].assignments;
 
   a.s = 0;
   a.global.resize(boost::num_vertices(I), -1);
@@ -534,13 +556,13 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
   adjacency_iter_t c, c_end;
-  std::list<assignment>::iterator ai;
+  assignment_list_t::iterator ai;
   boost::tie(c, c_end) = adjacent_vertices(t, T);
 
   //std::cout << "Introduce (" << t << "):\n"; std::cout.flush();
   //std::cout << "ac: "; print_assignment(ac); std::cout << "\n";
 
-  std::list<assignment> &alist = T[t].assignments;
+  assignment_list_t &alist = T[t].assignments;
 
   std::swap(alist, T[*c].assignments);
 
@@ -555,13 +577,10 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
   assignments_introduce_instruction(alist, i, G);
 
   std::set<var_t>::const_iterator v;
-  var_t lastvar = -1;
   for (v = new_vars.begin(); v != new_vars.end(); ++v)
     {
-      //std::cout << "New var: " << *v << "\n";
-      drop_worst_assignments(alist, i, G, I, lastvar, ac);
-      assignments_introduce_variable(alist, i, *v, I);
-      lastvar = *v;
+      drop_worst_assignments(alist, i, G, I, ac);
+      assignments_introduce_variable(alist, i, *v, G, I);
     }
 
   // Summation of costs and early removal of assignments.
@@ -573,13 +592,17 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
         ++ai;
     }
 
-  /*for(ai = alist.begin(); ai != alist.end(); ++ai)
+  // Free memory in the std::set<var_t, boost::pool_allocator<var_t> > that live in the assignments in the list.
+  //boost::singleton_pool<boost::fast_pool_allocator_tag, sizeof(var_t)>::release_memory();
+
+#if 0
+  for(ai = alist.begin(); ai != alist.end(); ++ai)
   	print_assignment(*ai);
-  std::cout << "\n";
   
   assignment best;
   get_best_local_assignment(best, t, T);
-  std::cout << "Best: "; print_assignment(best); std::cout << "\n";*/
+  std::cout << "Best: "; print_assignment(best); std::cout << "\n";
+#endif
 }
 
 bool assignments_locally_same(const assignment &a1, const assignment &a2)
@@ -587,7 +610,7 @@ bool assignments_locally_same(const assignment &a1, const assignment &a2)
   if (a1.local != a2.local)
     return(false);
 
-  std::set<var_t>::const_iterator i, i_end;
+  varset_t::const_iterator i, i_end;
   for (i = a1.local.begin(), i_end = a1.local.end(); i != i_end; ++i)
     if (a1.global[*i] != a2.global[*i])
       return(false);
@@ -605,7 +628,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
   //std::cout << "Forget (" << t << "):\n"; std::cout.flush();
 
-  std::list<assignment> &alist = T[t].assignments;
+  assignment_list_t &alist = T[t].assignments;
 
   std::swap(alist, T[*c].assignments);
 
@@ -616,23 +639,28 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   std::set<var_t> old_vars;
   std::set_difference(T[*c].alive.begin(), T[*c].alive.end(), T[t].alive.begin(), T[t].alive.end(), std::inserter(old_vars, old_vars.end()));
 
-  std::list<assignment>::iterator ai, aif;
+  assignment_list_t::iterator ai, aif;
 
   // Restrict assignments (locally) to current variables.
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     {
-      std::set<var_t>::iterator mi, mi2, m_end;
+      /*varset_t::iterator mi, mi2, m_end;
       for (mi = ai->local.begin(), m_end = ai->local.end(); mi != m_end; mi = mi2)
         {
           mi2 = mi;
           ++mi2;
           if (old_vars.find(*mi) != old_vars.end())
             ai->local.erase(mi);
-        }
+        }*/
+      // Erasing by iterators doesn't work with B-Trees, and erasing by value invalidates iterators.
+      std::set<var_t>::const_iterator oi, oi_end;
+      for (oi = old_vars.begin(), oi_end = old_vars.end(); oi != oi_end; ++oi)
+        ai->local.erase(*oi);
       ai->i_assignments.erase(i);
     }
 
   alist.sort();
+  //std::sort(alist.begin(), alist.end());
 
   // Collapse (locally) identical assignments.
   for (ai = alist.begin(); ai != alist.end();)
@@ -656,13 +684,18 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
         }
     }
 
-  /*for(ai = alist.begin(); ai != alist.end(); ++ai)
+  // Free memory in the std::set<var_t, boost::pool_allocator<var_t> > that live in the assignments in the list.
+  //boost::singleton_pool<boost::fast_pool_allocator_tag, sizeof(var_t)>::release_memory();
+
+#if 0
+  for(ai = alist.begin(); ai != alist.end(); ++ai)
   	print_assignment(*ai);
   std::cout << "\n";
   
   assignment best;
   get_best_local_assignment(best, t, T);
-  std::cout << "Best: "; print_assignment(best); std::cout << "\n";*/
+  std::cout << "Best: "; print_assignment(best); std::cout << "\n";
+#endif
 }
 
 // Handle join nodes in the nice tree decomposition
@@ -679,14 +712,16 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
   ++c;
   c3 = c;
 
-  std::list<assignment> &alist1 = T[t].assignments;
-  std::list<assignment> &alist2 = T[*c2].assignments;
-  std::list<assignment> &alist3 = T[*c3].assignments;
+  assignment_list_t &alist1 = T[t].assignments;
+  assignment_list_t &alist2 = T[*c2].assignments;
+  assignment_list_t &alist3 = T[*c3].assignments;
 
   alist2.sort();
+  //std::sort(alist2.begin(), alist2.end());
   alist3.sort();
+  //std::sort(alist3.begin(), alist3.end());
 
-  std::list<assignment>::iterator ai2, ai3;
+  assignment_list_t::iterator ai2, ai3;
   for (ai2 = alist2.begin(), ai3 = alist3.begin(); ai2 != alist2.end() && ai3 != alist3.end();)
     {
       if (assignments_locally_same(*ai2, *ai3))
@@ -726,9 +761,9 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 template <class T_t>
 void get_best_local_assignment(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T)
 {
-  const std::list<assignment> &alist = T[t].assignments;
+  const assignment_list_t &alist = T[t].assignments;
 
-  std::list<assignment>::const_iterator ai, ai_end, ai_best;
+  assignment_list_t::const_iterator ai, ai_end, ai_best;
   for(ai = ai_best = alist.begin(), ai_end = alist.end(); ai != ai_end; ++ai)
     if(ai->s < ai_best->s)
       ai_best = ai;
