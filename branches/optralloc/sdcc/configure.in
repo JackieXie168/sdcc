@@ -381,7 +381,12 @@ if test "$ac_cv_c_compiler_gnu" = "yes"; then
   bor_IS_VALID_OPTION(pipe)
   if test "$bor_cv_c_pipe" = "yes"; then
     CFLAGS="-pipe ${CFLAGS}"
-    CXXFLAGS="-pipe ${CXXFLAGS}"
+    # Don't use "-pipe" on x86 Solaris g++, since src/z80/ralloc2.cc dies with:
+    # Assembler: ralloc2.cc
+    #         "<stdin>", line 117637 : Internal: Out of symbol table
+    if test `uname` != "SunOS" -o \( `uname` = "SunOS" -a `uname -m` != "i86pc" \); then
+      CXXFLAGS="-pipe ${CXXFLAGS}"
+    fi
   fi
 
   WALL_FLAG="-Wall -Wno-parentheses"
@@ -952,7 +957,7 @@ sdcc ${VERSION} is now configured for
   Source directory:     ${srcdir}
   C compiler:           ${CC}
   CFLAGS:               ${CFLAGS}
-  C++ compiler:         $(CXX)
+  C++ compiler:         ${CXX}
   CXXFLAGS:             ${CXXFLAGS}
 
   ENABLED Ports:

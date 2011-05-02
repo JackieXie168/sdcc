@@ -1,3 +1,8 @@
+2011-05-02 Borut Razem <borut.razem AT gmail.com>
+
+	* configure.in, configure:
+	  don't use "-pipe" on x86 Solaris g++, since src/z80/ralloc2.cc dies
+
 2011-04-29 Philipp Klaus Krause <pkk@spth.de>
 
 	* Merge everything except src/z80/gen.c from trunk.
