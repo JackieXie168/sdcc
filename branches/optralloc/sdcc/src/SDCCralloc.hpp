@@ -52,7 +52,7 @@
 #include <boost/graph/connected_components.hpp>
 
 #include <stx/btree_set.h>
-//#include <stx/btree_map.h>
+#include <stx/btree_map.h>
 //#include <stx/btree_multimap.h>
 
 #include "SDCCtree_dec.hpp"
@@ -78,18 +78,18 @@ typedef signed char reg_t;
 #define MAX_NUM_REGS 9
 
 // Assignment at an instruction
-struct i_assignment
+struct i_assignment_t
 {
   var_t registers[MAX_NUM_REGS][2];
 
-  i_assignment(void)
+  i_assignment_t(void)
   {
     for (reg_t r = 0; r < MAX_NUM_REGS; r++)
       for (unsigned int i = 0; i < 2; i++)
         registers[r][i] = -1;
   }
 
-  bool operator<(const i_assignment &i_a) const
+  bool operator<(const i_assignment_t &i_a) const
   {
     for (reg_t r = 0; r < NUM_REGS; r++)
       for (unsigned int i = 0; i < 2; i++)
@@ -128,13 +128,12 @@ struct i_assignment
   }
 };
 
-//typedef std::set<var_t, std::less<var_t>, boost::fast_pool_allocator<var_t> > varset_t; // Slower
+//typedef std::set<var_t, std::less<var_t>, boost::fast_pool_allocator<var_t> > varset_t; // Slower than ordinary std::set
 //typedef std::set<var_t> varset_t;
 typedef stx::btree_set<var_t> varset_t; // Faster than std::set
-//typedef std::tr1::unordered_set<var_t> varset_t;
-typedef std::map<int, i_assignment> iassignmap_t;
-//typedef std::tr1::unordered_map<int, i_assignment> iassignmap_t; // Slower than std::set
-//typedef stx::btree_map<int, i_assignment> iassignmap_t; // Slower than std::set
+//typedef std::tr1::unordered_set<var_t> varset_t; // Speed about the same as std::set
+//typedef std::map<int, float> icosts_t;
+typedef stx::btree_map<int, float> icosts_t; // Faster than std::map
 
 struct assignment
 {
@@ -142,8 +141,8 @@ struct assignment
 
   varset_t local;	// Entries: var
   std::vector<reg_t> global;	// Entries: global[var] = reg (-1 if no reg assigned)
-
-  iassignmap_t i_assignments;
+  icosts_t i_costs;  // Costs for all instructions in bag (needed to avoid double counting costs at join nodes)
+  i_assignment_t i_assignment; // Assignment at the instruction currently being added in an introduce node;
 
   bool marked;
 
@@ -431,14 +430,14 @@ void assignments_introduce_instruction(assignment_list_t &alist, unsigned short 
 
       std::set_intersection(ai->local.begin(), ai->local.end(), G[i].alive.begin(), G[i].alive.end(), std::inserter(i_variables, i_variables.end()));
 
-      i_assignment ia;
+      i_assignment_t ia;
 
       std::set<var_t>::const_iterator v, v_end;
       for (v = i_variables.begin(), v_end = i_variables.end(); v != v_end; ++v)
         if (ai->global[*v] >= 0)
           ia.add_var(*v, ai->global[*v]);
 
-      ai->i_assignments[i] = ia;
+      ai->i_assignment = ia;
     }
 }
 
@@ -466,10 +465,10 @@ void assignments_introduce_variable(assignment_list_t &alist, unsigned short int
                   a.local.insert(v);
                 }
               a.global[v] = r;
-              a.i_assignments[i].add_var(v, r);
+              a.i_assignment.add_var(v, r);
               if(!assignment_hopeless(a, i, G, I, v))
                 alist.push_back(a);
-              a.i_assignments[i].remove_var(v);
+              a.i_assignment.remove_var(v);
             }
         }
     }
@@ -586,7 +585,7 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
   // Summation of costs and early removal of assignments.
   for (ai = alist.begin(); ai != alist.end();)
     {
-      if ((ai->s += instruction_cost(*ai, i, G, I)) == std::numeric_limits<float>::infinity())
+      if ((ai->s += (ai->i_costs[i] = instruction_cost(*ai, i, G, I))) == std::numeric_limits<float>::infinity())
         ai = alist.erase(ai);
       else
         ++ai;
@@ -656,7 +655,7 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
       std::set<var_t>::const_iterator oi, oi_end;
       for (oi = old_vars.begin(), oi_end = old_vars.end(); oi != oi_end; ++oi)
         ai->local.erase(*oi);
-      ai->i_assignments.erase(i);
+      ai->i_costs.erase(i);
     }
 
   alist.sort();
@@ -730,7 +729,7 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
           // Avoid double-counting instruction costs.
           std::set<unsigned int>::iterator bi;
           for (bi = T[t].bag.begin(); bi != T[t].bag.end(); ++bi)
-            ai2->s -= instruction_cost(*ai2, *bi, G, I);
+            ai2->s -= ai2->i_costs[*bi];
           for (size_t i = 0; i < ai2->global.size(); i++)
             ai2->global[i] = ((ai2->global[i] != -1) ? ai2->global[i] : ai3->global[i]);
           alist1.push_back(*ai2);

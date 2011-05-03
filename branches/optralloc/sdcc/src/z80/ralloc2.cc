@@ -426,7 +426,7 @@ result_overwrites_operand(const assignment &a, unsigned short int i, const G_t &
 
 // Return true, iff the operand is placed (partially) in r.
 template <class G_t>
-bool operand_in_reg(const operand *o, reg_t r, const i_assignment &ia, unsigned short int i, const G_t &G)
+bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, unsigned short int i, const G_t &G)
 {
   if(!o || !IS_SYMOP(o))
     return(false);
@@ -470,14 +470,7 @@ template <class G_t, class I_t>
 bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
-
-  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
-  if(iai == a.i_assignments.end())
-    {
-      std::cerr << "ERROR: Instruction assignment not found.\n";
-      return(false);
-    }
-  const i_assignment &ia = iai->second;
+  const i_assignment_t &ia = a.i_assignment;
 
   if(ia.registers[REG_A][1] < 0)
     return(true);	// Register A not in use.
@@ -582,13 +575,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(TARGET_IS_GBZ80)
     return(true);
 
-  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
-  if(iai == a.i_assignments.end())
-    {
-      std::cerr << "ERROR: Instruction assignment not found.\n";
-      return(false);
-    }
-  const i_assignment &ia = iai->second;
+  const i_assignment_t &ia = a.i_assignment;
 
   bool unused_L = (ia.registers[REG_L][1] < 0);
   bool unused_H = (ia.registers[REG_H][1] < 0);
@@ -733,13 +720,7 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(TARGET_IS_GBZ80)
     return(true);
 
-  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
-  if(iai == a.i_assignments.end())
-    {
-      std::cerr << "ERROR: Instruction assignment not found.\n";
-      return(false);
-    }
-  const i_assignment &ia = iai->second;
+  const i_assignment_t &ia = a.i_assignment;
 
   //std::cout << "IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
 
@@ -1043,7 +1024,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
 }
 
 template <class I_t>
-float weird_byte_order(const assignment &a, const I_t &I)
+float weird_byte_order(const assignment &a, const I_t &I) 
 {
   float c = 0.0f;
   
@@ -1097,8 +1078,7 @@ bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G
   if(local_assignment_insane(a, I, lastvar))
     return(true);
 
-  const iassignmap_t::const_iterator iai = a.i_assignments.find(i);
-  const i_assignment &ia = iai->second;
+  const i_assignment_t &ia = a.i_assignment;
 
   // Code generator cannot handle variables that are only partially in IY.
   if(OPTRALLOC_IY &&
@@ -1132,8 +1112,7 @@ bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G
 template <class G_t, class I_t>
 float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
-  iassignmap_t::const_iterator iai = a.i_assignments.find(i);
-  const i_assignment &ia = iai->second;
+  const i_assignment_t &ia = a.i_assignment;
     
   float c = 0.0f;
 
@@ -1146,11 +1125,12 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
     c += 0.02f;
 
   // Using IY is rarely a good choice, so discard the IY-users first when in doubt.
-  iassignmap_t::const_iterator mi, mi_end;
-  for(mi = a.i_assignments.begin(), mi_end = a.i_assignments.end(); mi != mi_end; ++mi)
+  if(OPTRALLOC_IY)
     {
-      if(OPTRALLOC_IY && (mi->second.registers[REG_IYL][1] >= 0 || mi->second.registers[REG_IYH][1] >= 0))
-        c += 8.0f;
+      varset_t::const_iterator vi, vi_end;
+      for(vi = a.local.begin(), vi_end = a.local.end(); vi != vi_end; ++vi)
+        if(a.global[*vi] == REG_IYL || a.global[*vi] == REG_IYH)
+          c += 8.0f;
     }
 
   // An artifical ordering of assignments.
