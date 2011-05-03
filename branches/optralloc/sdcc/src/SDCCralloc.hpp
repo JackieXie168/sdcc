@@ -89,6 +89,7 @@ struct i_assignment_t
         registers[r][i] = -1;
   }
 
+#if 0
   bool operator<(const i_assignment_t &i_a) const
   {
     for (reg_t r = 0; r < NUM_REGS; r++)
@@ -101,6 +102,7 @@ struct i_assignment_t
         }
     return(false);
   }
+#endif
 
   void add_var(var_t v, reg_t r)
   {
