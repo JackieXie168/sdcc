@@ -8718,6 +8718,8 @@ genAssign (iCode * ic)
               cheapMove (ASMOP_A, 0, AOP (right), i);
               assigned[i] = TRUE;
               cached_byte = i;
+              emit2("pop hl");
+              spillPair (PAIR_HL);
             }
            
           if (cached_byte != -1)
