@@ -2151,12 +2151,12 @@ setupPair (PAIR_ID pairId, asmop *aop, int offset)
 {
   switch (aop->type)
     {
-    case AOP_IY:emitDebug(";setupPair:AOP_IY");
+    case AOP_IY:
       wassertl (pairId == PAIR_IY || pairId == PAIR_HL, "AOP_IY must be in IY or HL");
       fetchLitPair (pairId, aop, 0);
       break;
 
-    case AOP_HL:emitDebug(";setupPair:AOP_HL");
+    case AOP_HL:
       wassertl (pairId == PAIR_HL, "AOP_HL must be in HL");
 
       fetchLitPair (pairId, aop, offset);
@@ -2218,7 +2218,7 @@ setupPair (PAIR_ID pairId, asmop *aop, int offset)
         break;
       }
 
-    case AOP_PAIRPTR:emitDebug(";setupPair:AOP_PAIRPTR");
+    case AOP_PAIRPTR:
       if (pairId != aop->aopu.aop_pairId)
         genMovePairPair(aop->aopu.aop_pairId, pairId);
       adjustPair (_pairs[pairId].name, &_G.pairs[pairId].offset, offset);

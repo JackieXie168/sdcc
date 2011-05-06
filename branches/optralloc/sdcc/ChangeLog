@@ -1,5 +1,12 @@
 2011-05-06 Philipp Klaus Krause <pkk@spth.de>
 
+	* src/z80/gen.c:
+	  Remove some leftover debug stuff.
+	* src/z80/peeph-z80.def:
+	  Generalize optimization of bit setting and resetting.
+
+2011-05-06 Philipp Klaus Krause <pkk@spth.de>
+
 	* Merge everything except src/z80/gen.c from trunk,
 	  but mark gen.c as merged, so that further changes in gen.c
 	  will be merged.
