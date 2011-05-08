@@ -1,5 +1,10 @@
 2011-05-08 Philipp Klaus Krause <pkk@spth.de>
 
+	* src/z80/ralloc2.cc
+	  Fixed over-eager early HLinst_OK() use.
+
+2011-05-08 Philipp Klaus Krause <pkk@spth.de>
+
 	* Merge from trunk.
 
 2011-05-06 Philipp Klaus Krause <pkk@spth.de>

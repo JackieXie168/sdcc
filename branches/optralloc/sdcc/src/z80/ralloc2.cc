@@ -1091,7 +1091,7 @@ bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G
   // Can only check for HLinst_ok() in some cases.
   if(OPTRALLOC_HL &&
       (ia.registers[REG_L][1] >= 0 && ia.registers[REG_H][1] >= 0) &&
-      !((ia.registers[REG_L][0] >= 0) ^ (ia.registers[REG_H][0] >= 0)) &&
+      (ia.registers[REG_L][0] >= 0 && ia.registers[REG_H][0] >= 0) &&
       !HLinst_ok(a, i, G, I))
     return(true);
 
@@ -1117,6 +1117,12 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   float c = 0.0f;
 
   c += weird_byte_order(a, I);
+
+  if(OPTRALLOC_HL &&
+    (ia.registers[REG_L][1] >= 0 && ia.registers[REG_H][1] >= 0) &&
+    !((ia.registers[REG_L][0] >= 0) ^ (ia.registers[REG_H][0] >= 0)) &&
+    !HLinst_ok(a, i, G, I))
+    c += 8.0f;
 
   if(OPTRALLOC_A && ia.registers[REG_A][1] < 0)
     c += 0.03f;
