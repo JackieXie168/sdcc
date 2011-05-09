@@ -1,3 +1,9 @@
+2011-05-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Handle the check for result bytes overwriting operand bytes in the conflict graph instead of the cost function.
+
 2011-05-08 Philipp Klaus Krause <pkk@spth.de>
 
 	* src/z80/ralloc2.cc

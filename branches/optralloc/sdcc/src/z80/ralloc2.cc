@@ -375,53 +375,47 @@ jumptab_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t 
   return(default_operand_cost(IC_JTCOND(ic), a, i, G, I));
 }
 
-// This serves to avoid operations that overwrite their own operands before using them, e.g. x = y | a, with x_0 placed in the same reg as y_1.
-// Code generation for such cases is broken (and the fix is ugly) so better avoid them.
-template <class G_t, class I_t> static bool
-result_overwrites_operand(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+template <class I_t> void
+add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
-  const iCode *ic = G[i].ic;
-	
+  const iCode *ic = n.ic;
+  
   const operand *result = IC_RESULT(ic);
   const operand *left = IC_LEFT(ic);
   const operand *right = IC_RIGHT(ic);
 	
   if(!result || !IS_SYMOP(result))
-    return(false);
-	
-  operand_map_t::const_iterator oir, oir_end, oirs;
-	
-  boost::tie(oir, oir_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(result)->key);
+    return;
+    
+  if(!(ic->op == '~' || ic->op == UNARYMINUS || ic->op == '+' || ic->op == '-' || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)) 
+    return; // Code generation can always handle all other operations. Todo: Handle ^, |, BITWISEAND there as well.
+   
+  operand_map_t::const_iterator oir, oir_end, oirs; 
+  boost::tie(oir, oir_end) = n.operands.equal_range(OP_SYMBOL_CONST(result)->key);
   if(oir == oir_end)
-    return(false);
-		
+    return;
+    
   operand_map_t::const_iterator oio, oio_end;
-	
+  
   if(left && IS_SYMOP(left))
-    for(boost::tie(oio, oio_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(left)->key); oio != oio_end; ++oio)
+    for(boost::tie(oio, oio_end) = n.operands.equal_range(OP_SYMBOL_CONST(left)->key); oio != oio_end; ++oio)
       for(oirs = oir; oirs != oir_end; ++oirs)
         {
           var_t rvar = oirs->second;
           var_t ovar = oio->second;
-          reg_t rreg = a.global[rvar];
-          reg_t oreg = a.global[ovar];
-      	  if(rreg >= 0 && oreg >= 0 && rreg == oreg && I[rvar].byte < I[ovar].byte)
-      		return(true);
-        }
-
-  if(right && IS_SYMOP(right))
-    for(boost::tie(oio, oio_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(right)->key); oio != oio_end; ++oio)
-      for(oirs = oir; oirs != oir_end; ++oirs)
-        {
-          var_t rvar = oirs->second;
-          var_t ovar = oio->second;
-          reg_t rreg = a.global[rvar];
-          reg_t oreg = a.global[ovar];
-      	  if(rreg >= 0 && oreg >= 0 && rreg == oreg && I[rvar].byte < I[ovar].byte)
-      		return(true);
+          if(I[rvar].byte < I[ovar].byte)
+            boost::add_edge(rvar, ovar, I);
         }
         
-  return(false);
+  if(right && IS_SYMOP(right))
+    for(boost::tie(oio, oio_end) = n.operands.equal_range(OP_SYMBOL_CONST(right)->key); oio != oio_end; ++oio)
+      for(oirs = oir; oirs != oir_end; ++oirs)
+        {
+          var_t rvar = oirs->second;
+          var_t ovar = oio->second;
+          if(I[rvar].byte < I[ovar].byte)
+            boost::add_edge(rvar, ovar, I);
+        }
 }
 
 // Return true, iff the operand is placed (partially) in r.
@@ -956,8 +950,8 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case '^':
         case '|':
         case BITWISEAND:
-          if(result_overwrites_operand(a, i, G, I))
-            return(std::numeric_limits<float>::infinity());
+          //if(result_overwrites_operand(a, i, G, I))
+          //  return(std::numeric_limits<float>::infinity());
         // Exact cost:
         case IPUSH:
         //case IPOP:
@@ -1100,10 +1094,6 @@ bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G
       (ia.registers[REG_IYL][1] >= 0 && ia.registers[REG_IYH][1] >= 0) &&
       !((ia.registers[REG_IYL][0] >= 0) ^ (ia.registers[REG_IYH][0] >= 0)) &&
       !IYinst_ok(a, i, G, I))
-    return(true);
-
-  const iCode *const ic = G[i].ic;
-  if((ic->op == '~' || ic->op == UNARYMINUS || ic->op == '+' || ic->op == '-' || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND) && result_overwrites_operand(a, i, G, I))
     return(true);
 
   return(false);

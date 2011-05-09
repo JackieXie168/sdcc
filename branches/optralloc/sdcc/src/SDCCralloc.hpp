@@ -175,18 +175,6 @@ struct assignment
   }
 };
 
-// Cost function. Port-specific.
-template <class G_t, class I_t>
-float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
-
-// For early removel of assignments that cannot be extended to valid assignments. Port-specific.
-template <class G_t, class I_t>
-bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar);
-
-// Rough cost estimate. Port-specific.
-template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
-
 typedef std::list<assignment> assignment_list_t;
 //typedef std::vector<assignment> assignment_list_t;
 
@@ -221,6 +209,22 @@ typedef boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS, con_
 typedef boost::adjacency_matrix<boost::undirectedS, con_node> con2_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_node> cfg_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> cfg_sym_t;
+
+// Cost function. Port-specific.
+template <class G_t, class I_t>
+float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+
+// For early removel of assignments that cannot be extended to valid assignments. Port-specific.
+template <class G_t, class I_t>
+bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar);
+
+// Rough cost estimate. Port-specific.
+template <class G_t, class I_t>
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+
+// Avoid overwriting operands that are still needed by the result. Port-specific.
+template <class I_t> void
+add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
 
 inline void
 add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
@@ -327,6 +331,8 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
       add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RESULT(ic), sym_to_index);
       add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_LEFT(ic), sym_to_index);
       add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RIGHT(ic), sym_to_index);
+      
+      add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
     }
 
   // Get conflict graph from sdcc
