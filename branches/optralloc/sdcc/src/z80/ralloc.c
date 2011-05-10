@@ -3020,6 +3020,8 @@ z80_oldralloc (ebbIndex * ebbi)
       _G.nRegs = Z80_MAX_REGS;
       regsZ80 = _z80_regs;
     }
+    
+  z80_init_asmops ();
 
   /* change assignments this will remove some
      live ranges reducing some register pressure */
