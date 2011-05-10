@@ -81,6 +81,7 @@ enum
 #endif
 
 #define DISABLE_PACKREGSFORSUPPORT      1
+#define DISABLE_PACKREGSFORACCUSE       1
 
 // Build the old allocator. It can be used by command-line options
 #define OLDRALLOC 1
@@ -812,6 +813,9 @@ deassignLRs (iCode * ic, eBBlock * ebp)
 {
   symbol *sym;
   int k;
+#ifdef OLDRALLOC
+  symbol *result;
+#endif
 
   for (sym = hTabFirstItem (liveRanges, &k); sym; sym = hTabNextItem (liveRanges, &k))
     {
@@ -851,6 +855,45 @@ deassignLRs (iCode * ic, eBBlock * ebp)
 
           bitVectUnSetBit (_G.regAssigned, sym->key);
 
+#ifdef OLDRALLOC
+          /* if the result of this one needs registers
+             and does not have it then assign it right
+             away */
+          if (z80_opts.oldralloc && IC_RESULT (ic) && !(SKIP_IC2 (ic) ||      /* not a special icode */
+                                  ic->op == JUMPTABLE || ic->op == IFX || ic->op == IPUSH || ic->op == IPOP || ic->op == RETURN) && (result = OP_SYMBOL (IC_RESULT (ic))) &&    /* has a result */
+              result->liveTo > ic->seq &&       /* and will live beyond this */
+              result->liveTo <= ebp->lSeq &&    /* does not go beyond this block */
+              result->liveFrom == ic->seq &&    /* does not start before here */
+              result->regType == sym->regType &&        /* same register types */
+              result->nRegs &&  /* which needs registers */
+              !result->isspilt &&       /* and does not already have them */
+              !result->remat && !bitVectBitValue (_G.regAssigned, result->key) &&
+              /* the number of free regs + number of regs in this LR
+                 can accomodate the what result Needs */
+              ((nfreeRegsType (result->regType) + sym->nRegs) >= result->nRegs))
+            {
+              for (i = 0; i < result->nRegs; i++)
+                {
+                  if (i < sym->nRegs)
+                    result->regs[i] = sym->regs[i];
+                  else
+                    result->regs[i] = getRegGpr (ic, ebp, result);
+
+                  /* if the allocation failed which means
+                     this was spilt then break */
+                  if (!result->regs[i])
+                    {
+                      wassert (0);
+                      assert (0);
+                      break;
+                    }
+                }
+
+              _G.regAssigned = bitVectSetBit (_G.regAssigned, result->key);
+              _G.totRegAssigned = bitVectSetBit (_G.totRegAssigned, result->key);
+            }
+#endif
+
           /* free the remaining */
           for (; i < sym->nRegs; i++)
             {
@@ -863,10 +906,8 @@ deassignLRs (iCode * ic, eBBlock * ebp)
                 freeReg (sym->regs[i]);
             }
         }
-
     }
 }
-
 
 /** Reassign this to registers.
  */
@@ -1006,8 +1047,9 @@ verifyRegsAssigned (operand * op, iCode * ic)
   if (sym->regs[0])
     return;
 
-  // Don't warn, since this is not used by default
-  //werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT, sym->prereqv ? sym->prereqv->name : sym->name);
+  // Don't warn for new allocator , since this is not used by default (until Thoruop is implemented for spillocation compaction).
+  if (z80_opts.oldralloc)
+    werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT, sym->prereqv ? sym->prereqv->name : sym->name);
   spillThis (sym);
 }
 
@@ -2077,7 +2119,7 @@ packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
   if (bitVectnBitsOn (OP_DEFS (op)) > 1)
     return NULL;
 
-  if (OPTRALLOC_A ? getSize (operandType (op)) != 2 : getSize (operandType (op)) > 2)
+  if ((!z80_opts.oldralloc && OPTRALLOC_A) ? getSize (operandType (op)) != 2 : getSize (operandType (op)) > 2)
     return NULL;
 
   /* And this is the definition */
@@ -2172,8 +2214,11 @@ packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
         continue;
 
       /* Strangely this leads to a code size increase for some functions. */
-      if (ic->op == '+' && getSize (operandType (IC_RESULT (ic))) == 2 && isOperandEqual (op, IC_RESULT (ic)))
-        continue;
+      if(!z80_opts.oldralloc)
+        {
+          if (ic->op == '+' && getSize (operandType (IC_RESULT (ic))) == 2 && isOperandEqual (op, IC_RESULT (ic)))
+            continue;
+        }
 
       if (ic->op == '*' && isOperandEqual (op, IC_LEFT (ic)))
         continue;
@@ -2728,14 +2773,14 @@ packRegisters (eBBlock * ebp)
          result of that operation is not on stack then we can leave the
          result of this operation in acc:b combination */
 
-      if (!OPTRALLOC_HL && !DISABLE_PACK_HL && IS_ITEMP (IC_RESULT (ic)))
+      if ((z80_opts.oldralloc || !OPTRALLOC_HL) && !DISABLE_PACK_HL && IS_ITEMP (IC_RESULT (ic)))
         if (!IS_GB && !IY_RESERVED)
           packRegsForHLUse3 (ic, IC_RESULT (ic), ebp);
 
-      if (!OPTRALLOC_IY && !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
+      if ((z80_opts.oldralloc || !OPTRALLOC_IY) && !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
         packRegsForIYUse (ic, IC_RESULT (ic), ebp);
 
-      if (!OPTRALLOC_A && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
+      if ((z80_opts.oldralloc || !OPTRALLOC_A) && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
           getSize (operandType (IC_RESULT (ic))) == 1)
         packRegsForAccUse2 (ic);
     }
@@ -3102,7 +3147,7 @@ z80_ralloc (ebbIndex * ebbi)
 
   RegFix (ebbs, count);
 
-  /* When --max-allocs-per-node is et too low, there can be gaps. */
+  /* When --max-allocs-per-node is too low, there can be gaps. */
   //freeAllRegs ();
   //fillGaps();
 
