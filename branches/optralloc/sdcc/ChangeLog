@@ -1,3 +1,10 @@
+2011-05-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/z80.h,
+	  src/z80/main.c,
+	  src/z80/ralloc.s:
+	  Reintegrated old register allocator (option --oldralloc), currently broken though.
+
 2011-05-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCralloc.hpp,

@@ -23,6 +23,7 @@ typedef struct
     int reserveIY;
     int dump_graphs;
     int optralloc_remat;
+    int oldralloc;
   }
 Z80_OPTS;
 
