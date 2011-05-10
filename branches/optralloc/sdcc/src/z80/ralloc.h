@@ -37,8 +37,8 @@ enum
   D_IDX,
   L_IDX,
   H_IDX,
-    IYL_IDX,
-    IYH_IDX,
+  IYL_IDX,
+  IYH_IDX,
 #if DEBUG_FAKE_EXTRA_REGS
   M_IDX,
   N_IDX,

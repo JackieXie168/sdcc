@@ -3012,12 +3012,12 @@ z80_oldralloc (ebbIndex * ebbi)
   if (IS_GB)
     {
       /* DE is required for the code gen. */
-      _G.nRegs = GBZ80_MAX_REGS;
+      _G.nRegs = 2;
       regsZ80 = _gbz80_regs;
     }
   else
     {
-      _G.nRegs = Z80_MAX_REGS;
+      _G.nRegs = 4;
       regsZ80 = _z80_regs;
     }
     
