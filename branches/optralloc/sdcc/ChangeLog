@@ -1,3 +1,10 @@
+2011-05-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/peeph-z80.def:
+	  Fixed some bit-manipulation peepholes for immediate operands.
+	* src/z80/gen.c:
+	  Fixed operand loading in complement.
+
 2011-05-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* Merge from trunk.

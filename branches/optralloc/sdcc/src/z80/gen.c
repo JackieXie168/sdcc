@@ -3021,7 +3021,7 @@ genCpl (const iCode *ic)
   size = AOP_SIZE (IC_RESULT (ic));
   while (size--)
     {
-      cheapMove (AOP (IC_LEFT (ic)), offset, ASMOP_A, 0);
+      cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
       emit3 (A_CPL, 0, 0);
       cheapMove (AOP (IC_RESULT (ic)), offset++, ASMOP_A, 0);
     }
@@ -6084,8 +6084,6 @@ genCmpEq (iCode * ic, iCode * ifx)
     }
   else
     {
-      emitDebug(";4");
-
       gencjne (left, right, regalloc_dry_run ? 0 : newiTempLabel (NULL));
       if (AOP_TYPE (result) == AOP_CRY && AOP_SIZE (result))
         {
@@ -9959,7 +9957,7 @@ genZ80Code (iCode * lic)
       regalloc_dry_run_cost = 0;
       genZ80iCode (ic);
       //printf("; iCode %d total cost: %d\n", ic->key, (int)(regalloc_dry_run_cost));
-      emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));
+      //emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));
     }
 
 

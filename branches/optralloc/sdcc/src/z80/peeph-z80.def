@@ -703,7 +703,7 @@ replace restart {
 } by {
 	; peephole 0zj' tested bit %2 of %1 directly instead of going through a.
 	bit	%2,%1
-} if notUsed('a'), canAssign('b' %1)
+} if notUsed('a'), canAssign(%1 'b')
 
 replace restart {
 	ld	a, %1
@@ -713,8 +713,8 @@ replace restart {
 	; peephole 0zj'' set bit %2 of %1 directly instead of going through a.
 	set	%2, %1
 	ld	a, %1
-} if canAssign('b' %1)
-// canAssign('b' %1) is true, iff set b, %1 is possible.
+} if canAssign(%1 'b')
+// canAssign(%1 'b') is true, iff set b, %1 is possible.
 
 replace restart {
 	ld	a, %1 (%2)
@@ -734,8 +734,8 @@ replace restart {
 	; peephole 0zj'''' reset bit %2 of %1 directly instead of going through a.
 	res	%2, %1
 	ld	a, %1
-} if canAssign('b' %1)
-// canAssign('b' %1) is true, iff set b, %1 is possible.
+} if canAssign(%1 'b')
+// canAssign(%1 'b') is true, iff set b, %1 is possible.
 
 replace restart {
 	ld	a, %1 (%2)
