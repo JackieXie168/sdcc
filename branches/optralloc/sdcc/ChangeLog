@@ -1,5 +1,11 @@
 2011-05-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCralloc.hpp,
+	  configure.in:
+	  Make STX library optional and detect it in configure script.
+
+2011-05-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/gen.c:
 	  Minor code cleanup and cost function accuracy improvement.
 

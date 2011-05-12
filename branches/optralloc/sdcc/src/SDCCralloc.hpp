@@ -51,10 +51,6 @@
 #include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/connected_components.hpp>
 
-#include <stx/btree_set.h>
-#include <stx/btree_map.h>
-//#include <stx/btree_multimap.h>
-
 #include "SDCCtree_dec.hpp"
 
 extern "C"
@@ -68,6 +64,13 @@ extern "C"
 
 iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
 }
+
+#ifdef HAVE_STX_BTREE_SET_H
+#include <stx/btree_set.h>
+#endif
+#ifdef HAVE_STX_BTREE_MAP_H
+#include <stx/btree_map.h>
+#endif
 
 typedef short int var_t;
 typedef signed char reg_t;
@@ -130,12 +133,19 @@ struct i_assignment_t
   }
 };
 
-//typedef std::set<var_t, std::less<var_t>, boost::fast_pool_allocator<var_t> > varset_t; // Slower than ordinary std::set
-//typedef std::set<var_t> varset_t;
+#ifdef HAVE_STX_BTREE_SET_H
 typedef stx::btree_set<var_t> varset_t; // Faster than std::set
-//typedef std::tr1::unordered_set<var_t> varset_t; // Speed about the same as std::set
-//typedef std::map<int, float> icosts_t;
+#else
+typedef std::set<var_t> varset_t;
+#endif
+//typedef std::set<var_t, std::less<var_t>, boost::fast_pool_allocator<var_t> > varset_t; // Slower than ordinary std::set
+
+#ifdef HAVE_STX_BTREE_MAP_H
 typedef stx::btree_map<int, float> icosts_t; // Faster than std::map
+#else
+typedef std::map<int, float> icosts_t;
+#endif
+//typedef std::tr1::unordered_set<var_t> varset_t; // Speed about the same as std::set
 
 struct assignment
 {
