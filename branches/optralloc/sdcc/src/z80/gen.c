@@ -2056,7 +2056,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
                     emit2 ("ld %s,%s", _pairs[pairId].l, aopGet (aop, offset, FALSE));
                     emit2 ("ld %s,%s", _pairs[pairId].h, aopGet (aop, offset + 1, FALSE));
                   }
-                regalloc_dry_run_cost += ld_cost(ASMOP_A, aop) * 2;	// Todo: Exact cost.                
+                regalloc_dry_run_cost += ld_cost(ASMOP_L, aop) * 2;           
               }
           }
         /* PENDING: check? */
