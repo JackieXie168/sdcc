@@ -42,11 +42,6 @@
 #include <sstream>
 #include <fstream>
 
-//#include <boost/tr1/unordered_map.hpp>
-//#include <boost/tr1/unordered_set.hpp>
-
-//#include <boost/pool/poolfwd.hpp>
-//#include <boost/pool/pool_alloc.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/connected_components.hpp>
