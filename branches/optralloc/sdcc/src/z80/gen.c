@@ -653,40 +653,6 @@ z80_emitDebuggerSymbol (const char * debugSym)
   _G.lines.isDebug = 0;
 }
 
-/*-----------------------------------------------------------------*/
-/* emit2 - writes the code into a file : for now it is simple    */
-/*-----------------------------------------------------------------*/
-static void
-_emit2 (const char *inst, const char *fmt,...)
-{
-  va_list ap;
-  char lb[INITIAL_INLINEASM];
-  char *lbp = lb;
-
-  va_start (ap, fmt);
-
-  if (*inst != '\0')
-    {
-      sprintf (lb, "%s\t", inst);
-      vsprintf (lb + (strlen (lb)), fmt, ap);
-    }
-  else
-    vsprintf (lb, fmt, ap);
-
-  while (isspace (*lbp))
-    lbp++;
-
-  if (lbp && *lbp)
-    {
-      _G.lines.current = (_G.lines.current ?
-                  connectLine (_G.lines.current, _newLineNode (lb)) :
-                  (_G.lines.head = _newLineNode (lb)));
-    }
-  _G.lines.current->isInline = _G.lines.isInline;
-  _G.lines.current->ic = _G.current_iCode;
-  va_end (ap);
-}
-
 // Todo: Handle IY (when used as AOP_HLREG or AOP_REG) correctly.
 static unsigned char
 ld_cost(asmop *op1, asmop *op2)
@@ -1039,13 +1005,6 @@ static void
 _moveA3(asmop *from, int offset)
 {
     _emitMove3(ASMOP_A, 0, from, offset);
-}
-
-/* Load A into aop */
-static void
-_moveFromA(asmop *to, int offset)
-{
-  _emitMove3(to, offset, ASMOP_A, 0);
 }
 
 static void
@@ -2993,7 +2952,7 @@ genNot (const iCode * ic)
 release:
   /* release the aops */
   freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (result, NULL, ic); 
 }
 
 /*-----------------------------------------------------------------*/
