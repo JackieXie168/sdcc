@@ -2991,6 +2991,8 @@ RegFix (eBBlock ** ebbs, int count)
     }
 }
 
+void z80_init_asmops (void);
+
 #ifdef OLDRALLOC
 /*-----------------------------------------------------------------*/
 /* Old, obsolete register allocator                                */
@@ -3091,8 +3093,6 @@ z80_oldralloc (ebbIndex * ebbi)
   return;
 }
 #endif
-
-void z80_init_asmops (void);
 
 /*-----------------------------------------------------------------*/
 /* New register allocator                                          */

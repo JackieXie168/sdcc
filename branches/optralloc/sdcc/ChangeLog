@@ -1,3 +1,9 @@
+2011-05-13 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* sdas/linksrc/aslink.vcxproj,
+	* sdas/linksrc/aslink.vcxproj.filters: added lkbank.c
+	* src/z80/ralloc.c: moved z80_init_asmops prototype
+
 2011-05-13 Philipp Klaus Krause <pkk@spth.de>
 
 	* Merge from trunk.

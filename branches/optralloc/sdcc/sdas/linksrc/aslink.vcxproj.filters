@@ -83,6 +83,9 @@
     <ClCompile Include="lksdcdb.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lkbank.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aslink.h">
