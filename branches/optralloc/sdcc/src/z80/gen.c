@@ -5656,10 +5656,12 @@ fix:
             {
               symbol *tlbl;
               if (!regalloc_dry_run)
-                tlbl = newiTempLabel (NULL);
-              emit2 ("jp PO, !tlabel", tlbl->key + 100);
-              emit2 ("xor a, !immedbyte", 0x80);
-              regalloc_dry_run_cost += 4;
+                {
+                  tlbl = newiTempLabel (NULL);
+                  emit2 ("jp PO, !tlabel", tlbl->key + 100);
+                  emit2 ("xor a, !immedbyte", 0x80);
+                }
+              regalloc_dry_run_cost += 5;
               if (!regalloc_dry_run)
                 emitLabel (tlbl->key + 100);
               result_in_carry = FALSE;
