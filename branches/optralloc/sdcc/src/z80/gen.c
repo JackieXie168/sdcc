@@ -8632,6 +8632,7 @@ genAssign (iCode * ic)
 
           while (size--)
             {
+<<<<<<< .working
               int i;
               
               // Find lowest byte that can be assigned and needs to be assigned.
@@ -8677,7 +8678,7 @@ genAssign (iCode * ic)
               cheapMove (ASMOP_A, 0, AOP (right), i);
               assigned[i] = TRUE;
               cached_byte = i;
-              emit2("pop hl");
+              _emit2("pop hl");
               spillPair (PAIR_HL);
             }
            
@@ -8690,11 +8691,11 @@ genAssign (iCode * ic)
             /* PENDING: do this check better */
             if ((IS_GB || IY_RESERVED) && requiresHL (AOP (right)) && requiresHL (AOP (result)))
               {
-                emit2("push hl");
+                _push (PAIR_HL);
                 regalloc_dry_run_cost += 1;
                 cheapMove (ASMOP_A, 0, AOP (right), offset);
                 cheapMove (AOP (result), offset, ASMOP_A, 0);
-                emit2("pop hl");
+                _pop (PAIR_HL);
                 regalloc_dry_run_cost += 1;
                 spillPair (PAIR_HL);
               }
@@ -8720,7 +8721,7 @@ genJumpTab (const iCode *ic)
   aopOp (IC_JTCOND (ic), ic, FALSE, FALSE);
   /* get the condition into accumulator */
   if (!IS_GB)
-    emit2 ("push de");
+    _push (PAIR_DE);
   cheapMove (ASMOP_E, 0, AOP (IC_JTCOND (ic)), 0);
   if(!regalloc_dry_run)
     {
@@ -8739,7 +8740,7 @@ genJumpTab (const iCode *ic)
   regalloc_dry_run_cost += 5;
   freeAsmop (IC_JTCOND (ic), NULL, ic);
   if (!IS_GB)
-    emit2 ("pop de");
+    _pop (PAIR_DE);
   if(!regalloc_dry_run)
     {
       emit2 ("jp !*hl");
