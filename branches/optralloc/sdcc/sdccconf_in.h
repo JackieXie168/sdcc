@@ -25,6 +25,10 @@
 /* XXX */
 #undef EXEC_PREFIX
 
+/* Define to 1 if you have the <boost/graph/adjacency_list.hpp> header file.
+   */
+#undef HAVE_BOOST_GRAPH_ADJACENCY_LIST_HPP
+
 /* Define to 1 if you have the <endian.h> header file. */
 #undef HAVE_ENDIAN_H
 

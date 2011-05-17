@@ -4764,6 +4764,20 @@ fi
 
 done
 
+for ac_header in boost/graph/adjacency_list.hpp
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "boost/graph/adjacency_list.hpp" "ac_cv_header_boost_graph_adjacency_list_hpp" "$ac_includes_default"
+if test "x$ac_cv_header_boost_graph_adjacency_list_hpp" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_BOOST_GRAPH_ADJACENCY_LIST_HPP 1
+_ACEOF
+
+else
+  as_fn_error $? "boost library not found (boost/graph/adjacency_list.hpp)." "$LINENO" 5
+fi
+
+done
+
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
