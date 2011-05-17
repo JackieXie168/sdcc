@@ -8632,7 +8632,6 @@ genAssign (iCode * ic)
 
           while (size--)
             {
-<<<<<<< .working
               int i;
               
               // Find lowest byte that can be assigned and needs to be assigned.
@@ -8692,11 +8691,9 @@ genAssign (iCode * ic)
             if ((IS_GB || IY_RESERVED) && requiresHL (AOP (right)) && requiresHL (AOP (result)))
               {
                 _push (PAIR_HL);
-                regalloc_dry_run_cost += 1;
                 cheapMove (ASMOP_A, 0, AOP (right), offset);
                 cheapMove (AOP (result), offset, ASMOP_A, 0);
                 _pop (PAIR_HL);
-                regalloc_dry_run_cost += 1;
                 spillPair (PAIR_HL);
               }
             else
