@@ -1,5 +1,10 @@
 2011-05-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/z80/gen.c:
+	  Code cleanup wrt. temporary labels.
+
+2011-05-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* configure.in:
 	  Give an error when boost is not detected.
 

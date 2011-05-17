@@ -3645,9 +3645,7 @@ emitCall (const iCode *ic, bool ispcall)
         }
       else
         {
-          symbol *rlbl;
-          if (!regalloc_dry_run)
-            rlbl = newiTempLabel (NULL);
+          symbol *rlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
           // At least one of BC, DE, HL is free now, so use it to push the return address.
           if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG ||
               AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != B_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != C_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx != B_IDX && AOP (IC_LEFT (ic))->aopu.aop_reg[1]->rIdx != C_IDX)
@@ -4403,9 +4401,7 @@ genPlusIncr (const iCode *ic)
     )
     {
       int offset = 0;
-      symbol *tlbl = NULL;
-      if(!regalloc_dry_run)
-        tlbl = newiTempLabel (NULL);
+      symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
       while (size--)
         {
           emit3_o (A_INC, AOP (IC_RESULT (ic)), offset++, 0, 0);
@@ -4457,9 +4453,7 @@ genPlusIncr (const iCode *ic)
 static void
 outBitAcc (operand * result)
 {
-  symbol *tlbl;
-  if(!regalloc_dry_run)
-    tlbl = newiTempLabel (NULL);
+  symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
   /* if the result is a bit */
   if (AOP_TYPE (result) == AOP_CRY)
     {
@@ -5926,11 +5920,8 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
 static void
 gencjne (operand * left, operand * right, symbol * lbl)
 {
-  symbol *tlbl;
+  symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
   PAIR_ID pop;
-
-  if (!regalloc_dry_run)
-    tlbl = newiTempLabel (NULL);
 
   pop = gencjneshort (left, right, lbl);
 
@@ -5976,7 +5967,6 @@ genCmpEq (iCode * ic, iCode * ifx)
 
   if (ifx && !AOP_SIZE (result))
     {
-      symbol *tlbl;
       /* if they are both bit variables */
       if (AOP_TYPE (left) == AOP_CRY &&
           ((AOP_TYPE (right) == AOP_CRY) || (AOP_TYPE (right) == AOP_LIT)))
@@ -5986,8 +5976,7 @@ genCmpEq (iCode * ic, iCode * ifx)
       else
         {
           PAIR_ID pop;
-          if(!regalloc_dry_run)
-             tlbl = newiTempLabel (NULL);
+          symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
           pop = gencjneshort (left, right, tlbl);
           if (IC_TRUE (ifx))
             {
@@ -6008,9 +5997,7 @@ genCmpEq (iCode * ic, iCode * ifx)
           else
             {
               /* PENDING: do this better */
-              symbol *lbl;
-              if(!regalloc_dry_run)
-                lbl = newiTempLabel (NULL);
+              symbol *lbl = regalloc_dry_run ? 0 : newiTempLabel (0);
               if(pop != PAIR_INVALID)
                 {
                   emit2 ("pop %s", _pairs[pop].name);
@@ -6097,7 +6084,6 @@ static void
 genAndOp (const iCode *ic)
 {
   operand *left, *right, *result;
-  symbol *tlbl;
 
   /* note here that && operations that are in an if statement are
      taken away by backPatchLabels only those used in arthmetic
@@ -6114,8 +6100,7 @@ genAndOp (const iCode *ic)
     }
   else
     {
-      if (!regalloc_dry_run)
-        tlbl = newiTempLabel (NULL);
+      symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
       _toBoolean (left);
       if (!regalloc_dry_run)
         emit2 ("jp Z,!tlabel", tlbl->key + 100);
@@ -6138,7 +6123,6 @@ static void
 genOrOp (const iCode *ic)
 {
   operand *left, *right, *result;
-  symbol *tlbl;
 
   /* note here that || operations that are in an
      if statement are taken away by backPatchLabels
@@ -6155,8 +6139,7 @@ genOrOp (const iCode *ic)
     }
   else
     {
-      if (!regalloc_dry_run)
-        tlbl = newiTempLabel (NULL);
+      symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
       _toBoolean (left);
       if (!regalloc_dry_run)
         emit2 ("jp NZ,!tlabel", tlbl->key + 100);
@@ -6295,11 +6278,9 @@ genAnd (const iCode *ic, iCode * ifx)
       (AOP_TYPE (result) == AOP_CRY) &&
       (AOP_TYPE (left) != AOP_CRY))
     {
-      symbol *tlbl;
+      symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
       int sizel;
 
-      if (!regalloc_dry_run)
-        tlbl = newiTempLabel (NULL);
       sizel = AOP_SIZE (left);
       if (size)
         {
@@ -6332,7 +6313,9 @@ genAnd (const iCode *ic, iCode * ifx)
       if (size)
         {
           emit2 ("clr c");
-          emit2 ("!tlabeldef", tlbl->key + 100);
+          if (!regalloc_dry_run)
+            emit2 ("!tlabeldef", tlbl->key + 100);
+          regalloc_dry_run_cost += 3;
           _G.lines.current->isLabel = 1;
         }
       // if(left & literal)
@@ -6501,11 +6484,9 @@ genOr (const iCode *ic, iCode * ifx)
       (AOP_TYPE (result) == AOP_CRY) &&
       (AOP_TYPE (left) != AOP_CRY))
     {
-      symbol *tlbl;
+      symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
       int sizel;
 
-      if (!regalloc_dry_run)
-        tlbl = newiTempLabel (NULL);
       sizel = AOP_SIZE (left);
 
       if (size)
@@ -6680,11 +6661,9 @@ genXor (const iCode *ic, iCode * ifx)
       (AOP_TYPE (result) == AOP_CRY) &&
       (AOP_TYPE (left) != AOP_CRY))
     {
-      symbol *tlbl;
+      symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
       int sizel;
 
-      if (!regalloc_dry_run)
-        tlbl = newiTempLabel (NULL);
       sizel = AOP_SIZE (left);
 
       if (size)
@@ -7013,13 +6992,8 @@ shiftL2Left2Result (operand * left, int offl,
     {
     int size = 2;
     int offset = 0;
-    symbol *tlbl, *tlbl1;
-
-    if (!regalloc_dry_run)
-      {
-        tlbl = newiTempLabel (NULL);
-        tlbl1 = newiTempLabel (NULL);
-      }
+    symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
+    symbol *tlbl1 = regalloc_dry_run ? 0 : newiTempLabel (0);
 
     if (AOP (result)->type == AOP_REG)
       {
@@ -8984,10 +8958,7 @@ genDummyRead (const iCode *ic)
 static void
 genCritical (const iCode *ic)
 {
-  symbol *tlbl;
-  
-  if(!regalloc_dry_run)
-    tlbl = newiTempLabel (NULL);
+  symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
 
   if (IS_GB)
     {
@@ -9034,10 +9005,7 @@ genCritical (const iCode *ic)
 static void
 genEndCritical (const iCode *ic)
 {
-  symbol *tlbl;
-  
-  if(!regalloc_dry_run)
-    tlbl = newiTempLabel (NULL);
+  symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
 
   if (IS_GB)
     {
