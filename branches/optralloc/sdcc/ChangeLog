@@ -1,7 +1,11 @@
+2011-05-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* Merge from trunk.
+
 2011-05-16 Philipp Klaus Krause <pkk@spth.de>
 
 	* src/z80/gen.c:
-	  Try to fix crash when running on cygwin.
+	  Fixed crash when running on cygwin.
 
 2011-05-15 Philipp Klaus Krause <pkk@spth.de>
 
