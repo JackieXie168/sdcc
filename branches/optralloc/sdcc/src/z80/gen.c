@@ -1113,14 +1113,6 @@ spillPairReg (const char *regname)
     }
 }
 
-/** Push a register pair onto the stack */
-static void
-genPairPush (asmop * aop)
-{
-  emit2 ("push %s", getPairName (aop));
-  regalloc_dry_run_cost += (getPairId (aop) == PAIR_IY ? 2 : 1);
-}
-
 static void
 _push (PAIR_ID pairId)
 {
@@ -2888,28 +2880,47 @@ outBitC (operand * result)
 }
 
 /*-----------------------------------------------------------------*/
-/* toBoolean - emit code for orl a,operator(sizeop)                */
+/* toBoolean - emit code for or a,operator(sizeop)                 */
 /*-----------------------------------------------------------------*/
 static void
-_toBoolean (operand * oper)
+_toBoolean (const operand *oper, bool needflag)
 {
   int size = AOP_SIZE (oper);
   int offset = 0;
+
+  cheapMove (ASMOP_A, 0, AOP (oper), offset++);
   if (size > 1)
     {
-      cheapMove (ASMOP_A, 0, AOP (oper), offset++);
-      size--;
-      while (size--)
+      while (--size)
         emit3_o (A_OR, ASMOP_A, 0, AOP (oper), offset++);
+    }
+  else if (needflag)
+    emit3 (A_OR, ASMOP_A, ASMOP_A);
+}
+
+/*-----------------------------------------------------------------*/
+/* castBoolean - emit code for casting operand to boolean in a     */
+/*-----------------------------------------------------------------*/
+static void
+_castBoolean (const operand *right)
+{
+  emitDebug ("; Casting to bool");
+
+  /* Can do without OR-ing for small arguments */
+  if (AOP_SIZE (right)== 1 && AOP_TYPE (right) != AOP_ACC)
+    {
+      emit3 (A_XOR, ASMOP_A, ASMOP_A);
+      emit3 (A_CP, ASMOP_A, AOP (right));
     }
   else
     {
-      if (AOP (oper)->type != AOP_ACC)
-        {
-          _clearCarry();
-          emit3 (A_OR, ASMOP_A, AOP (oper));
-        }
+      _toBoolean (right, FALSE);
+      emit2 ("add a,!immedbyte", 0xff);
+      emit2 ("ld a,!zero");
+      regalloc_dry_run_cost += 4;
     }
+  emit2 ("rla");
+  regalloc_dry_run_cost += 1;
 }
 
 /*-----------------------------------------------------------------*/
@@ -2939,7 +2950,7 @@ genNot (const iCode * ic)
       goto release;
     }
 
-  _toBoolean (left);
+  _toBoolean (left, FALSE);
 
   /* Not of A:
      If A == 0, !A = 1
@@ -6101,11 +6112,11 @@ genAndOp (const iCode *ic)
   else
     {
       symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
-      _toBoolean (left);
+      _toBoolean (left, TRUE);
       if (!regalloc_dry_run)
         emit2 ("jp Z,!tlabel", tlbl->key + 100);
       regalloc_dry_run_cost += 3;
-      _toBoolean (right);
+      _toBoolean (right, FALSE);
       if (!regalloc_dry_run)
         emitLabelNoSpill (tlbl->key + 100);
       outBitAcc (result);
@@ -6140,11 +6151,11 @@ genOrOp (const iCode *ic)
   else
     {
       symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
-      _toBoolean (left);
+      _toBoolean (left, TRUE);
       if (!regalloc_dry_run)
         emit2 ("jp NZ,!tlabel", tlbl->key + 100);
       regalloc_dry_run_cost += 3;
-      _toBoolean (right);
+      _toBoolean (right, FALSE);
       if (!regalloc_dry_run)
         emitLabelNoSpill (tlbl->key + 100);
       outBitAcc (result);
@@ -8391,7 +8402,7 @@ genIfx (iCode * ic, iCode * popIc)
   /* get the value into acc */
   if(AOP_TYPE (cond) != AOP_CRY &&
     !IS_BOOL (operandType(cond)))
-    _toBoolean (cond);
+    _toBoolean (cond, FALSE);
   /* Special case: Condition is bool */
   else if(IS_BOOL (operandType(cond)))
     {
@@ -8777,44 +8788,8 @@ genCast (const iCode *ic)
   /* casting to bool */
   if (IS_BOOL(operandType(result)))
     {
-      symbol *tlbl1, *tlbl2;
-      emitDebug("; Casting to bool");
-      size = AOP_SIZE(right);
-
-      /* Can do without branching for small arguments */
-      if(size == 1)
-        {
-          emit3(A_XOR, ASMOP_A, ASMOP_A);
-          emit3(A_CP, ASMOP_A, AOP (right));
-          emit3(A_RLA, 0, 0);
-          cheapMove (AOP (result), 0, ASMOP_A, 0);
-          goto release;
-        }
-
-      if(!regalloc_dry_run)
-        {
-          tlbl1 = newiTempLabel(0);
-          tlbl2 = newiTempLabel(0);
-        }
-      while(--size)
-        {
-          cheapMove (ASMOP_A, 0, AOP (right), size);
-          emit3(A_OR, ASMOP_A, ASMOP_A);
-          if(!regalloc_dry_run)
-            emit2("jp NZ,!tlabel", tlbl1->key + 100);
-          regalloc_dry_run_cost += 3;
-        }
-      emit3(A_CP, ASMOP_A, AOP (right));
-      emit3(A_RLA, 0, 0);
-      if(!regalloc_dry_run)
-        {
-          emit2("jp !tlabel", tlbl2->key + 100);
-          emitLabelNoSpill(tlbl1->key + 100);
-          emit2("ld a,#0x01");
-          emitLabelNoSpill(tlbl2->key + 100);
-        }
-      regalloc_dry_run_cost += 5;
-      cheapMove (AOP (result), 0, ASMOP_A, 0);
+      _castBoolean (right);
+      outAcc (result);
       goto release;
     }
 
@@ -9011,7 +8986,7 @@ genEndCritical (const iCode *ic)
   else if (IC_RIGHT (ic))
     {
       aopOp (IC_RIGHT (ic), ic, FALSE, TRUE);
-      _toBoolean (IC_RIGHT (ic));
+      _toBoolean (IC_RIGHT (ic), TRUE);
       //don't enable interrupts if they were off before
       if(!regalloc_dry_run)
         {
