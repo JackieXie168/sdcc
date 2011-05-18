@@ -7910,7 +7910,7 @@ genGenPointerGet (operand * left,
               _moveFrom_tpair_ (ASMOP_A, 0, pair);
 
               r = (l < h ? l : h);
-              for (size; size != r; size--)
+              for (; size != r; size--)
                 {
                   emit2 ("dec %s", _pairs[pair].name);
                   regalloc_dry_run_cost += 1;
