@@ -1,5 +1,12 @@
 2011-05-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCtree_dec.hpp,
+	  src/SDCCralloc.hpp,
+	  src/z80/rallo2.cc:
+	  Debug message cleanup.
+
+2011-05-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/gen.c:
 	  Ported reorganization of cast to bool from trunk.
 

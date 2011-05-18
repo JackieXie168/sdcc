@@ -181,7 +181,7 @@ struct assignment
 };
 
 typedef std::list<assignment> assignment_list_t;
-//typedef std::vector<assignment> assignment_list_t;
+//typedef std::vector<assignment> assignment_list_t; // Probably faster, but would require some code reorganization.
 
 struct tree_dec_node
 {
@@ -373,7 +373,9 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
       std::vector<boost::graph_traits<cfg_t>::vertices_size_type> component(num_vertices(cfg2));
       if (boost::connected_components(cfg2, &component[0]) > 1)
         {
-          //std::cerr << "Non-connected liverange found and spilt:" << con[i].name << "\n";
+#ifdef DEBUG_RALLOC_DEC
+          std::cerr << "Non-connected liverange found and spilt:" << con[i].name << "\n";
+#endif
           for (boost::graph_traits<cfg_t>::vertices_size_type k = 0; k < boost::num_vertices(cfg) - 1; k++)
             cfg[k].alive./*insert*/erase(i);
         }
@@ -404,8 +406,7 @@ inline void alive_tree_dec(tree_dec_t &tree_dec, const cfg_t &cfg)
     }
 }
 
-#if 1
-// For debugging.
+#if defined(DEBUG_RALLOC_DEC) || defined (DEBUG_RALLOC_DEC_ASS)
 void print_assignment(const assignment &a)
 {
   varset_t::const_iterator i;
@@ -528,7 +529,9 @@ void drop_worst_assignments(assignment_list_t &alist, unsigned short int i, cons
   if ((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(options.max_allocs_per_node))
     return;
 
-  //std::cout << "Too many assignments here (" << i << "):" << alist_size << " > " << options.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Too many assignments here (" << i << "):" << alist_size << " > " << options.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
+#endif
 
   assignment_rep *arep = new assignment_rep[alist_size];
 
@@ -552,7 +555,9 @@ void drop_worst_assignments(assignment_list_t &alist, unsigned short int i, cons
 template <class T_t, class G_t, class I_t>
 void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I)
 {
-  //std::cout << "Leaf (" << t << "):\n"; std::cout.flush();
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Leaf (" << t << "):\n"; std::cout.flush();
+#endif
 
   assignment a;
   assignment_list_t &alist = T[t].assignments;
@@ -571,8 +576,10 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
   assignment_list_t::iterator ai;
   boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-  //std::cout << "Introduce (" << t << "):\n"; std::cout.flush();
-  //std::cout << "ac: "; print_assignment(ac); std::cout << "\n";
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Introduce (" << t << "):\n"; std::cout.flush();
+  std::cout << "ac: "; print_assignment(ac); std::cout << "\n";
+#endif
 
   assignment_list_t &alist = T[t].assignments;
 
@@ -607,10 +614,9 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
   // Free memory in the std::set<var_t, boost::pool_allocator<var_t> > that live in the assignments in the list.
   //boost::singleton_pool<boost::fast_pool_allocator_tag, sizeof(var_t)>::release_memory();
 
-#if 0
+#ifdef DEBUG_RALLOC_DEC_ASS
   for(ai = alist.begin(); ai != alist.end(); ++ai)
   	print_assignment(*ai);
-  
   assignment best;
   get_best_local_assignment(best, t, T);
   std::cout << "Best: "; print_assignment(best); std::cout << "\n";
@@ -638,7 +644,9 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   adjacency_iter_t c, c_end;
   boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-  //std::cout << "Forget (" << t << "):\n"; std::cout.flush();
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Forget (" << t << "):\n"; std::cout.flush();
+#endif
 
   assignment_list_t &alist = T[t].assignments;
 
@@ -656,14 +664,6 @@ void tree_dec_ralloc_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   // Restrict assignments (locally) to current variables.
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     {
-      /*varset_t::iterator mi, mi2, m_end;
-      for (mi = ai->local.begin(), m_end = ai->local.end(); mi != m_end; mi = mi2)
-        {
-          mi2 = mi;
-          ++mi2;
-          if (old_vars.find(*mi) != old_vars.end())
-            ai->local.erase(mi);
-        }*/
       // Erasing by iterators doesn't work with B-Trees, and erasing by value invalidates iterators.
       std::set<var_t>::const_iterator oi, oi_end;
       for (oi = old_vars.begin(), oi_end = old_vars.end(); oi != oi_end; ++oi)
@@ -718,7 +718,9 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
   adjacency_iter_t c, c_end, c2, c3;
   boost::tie(c, c_end) = adjacent_vertices(t, T);
 
-  //std::cout << "Join (" << t << "):\n"; std::cout.flush();
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Join (" << t << "):\n"; std::cout.flush();
+#endif
 
   c2 = c;
   ++c;
@@ -764,10 +766,12 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
   alist2.clear();
   alist3.clear();
 
-  /*std::list<assignment>::iterator ai;
+#ifdef DEBUG_RALLOC_DEC_ASS
+  std::list<assignment>::iterator ai;
   for(ai = alist1.begin(); ai != alist1.end(); ++ai)
   	print_assignment(*ai);
-  std::cout << "\n";*/
+  std::cout << "\n";
+#endif
 }
 
 template <class T_t>

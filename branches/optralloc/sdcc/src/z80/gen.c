@@ -1,6 +1,7 @@
 /*-------------------------------------------------------------------------
   gen.c - Z80 specific code generator.
 
+  Philipp Klaus Krause pkk@spth.de, philipp@informatik.uni-frankfurt.de (2011)
   Michael Hope <michaelh@juju.net.nz> 2000
   Based on the mcs51 generator -
       Sandeep Dutta . sandeep.dutta@usa.net (1998)

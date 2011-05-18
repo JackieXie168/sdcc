@@ -18,6 +18,9 @@
 //
 // An optimal, polynomial-time register allocator.
 
+//#define DEBUG_RALLOC_DEC // Uncomment to get debug messages while doing register allocation on the tree decomposition.
+//#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (m,uch more verbose than the one above).
+
 #include "SDCCralloc.hpp"
 
 
@@ -1167,14 +1170,16 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
 
-  /*std::cout << "Winner: ";
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
   {
   	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
   }
   std::cout << "\n";
   std::cout << "Cost: " << winner.s << "\n";
-  std::cout.flush();*/
+  std::cout.flush();
+#endif
 
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))
@@ -1225,7 +1230,9 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 
 void z80_ralloc2_cc(ebbIndex *ebbi)
 {
-  //std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
+#endif
 
   cfg_t control_flow_graph;
 

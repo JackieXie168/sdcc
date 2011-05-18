@@ -239,12 +239,6 @@ void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_
   boost::add_edge(*t, s, T);
   T[s].bag = neighbours;
   T[s].bag.insert(*v);
-
-  //std::set<unsigned int>::iterator x;
-  //std::cout << "Added (";
-  //for(x = T[*s].begin(); x != T[*s].end(); ++x)
-  //	std::cout << *x << " ";
-  //std::cout << ") connecting " << *s << " to " << *t << "\n";
 }
 
 // Create a tree decomposition from en elimination ordering.
