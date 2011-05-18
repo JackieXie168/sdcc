@@ -9791,7 +9791,7 @@ dryZ80iCode (iCode *ic)
   return(regalloc_dry_run_cost);
 }
 
-#if 1
+#ifdef DEBUG_DRY_COST
 static void
 dryZ80Code (iCode * lic)
 {
@@ -9809,7 +9809,9 @@ dryZ80Code (iCode * lic)
 void
 genZ80Code (iCode * lic)
 {
-  //dryZ80Code(lic);
+#ifdef DEBUG_DRY_COST
+  dryZ80Code(lic);
+#endif
 
   iCode *ic;
   int cln = 0;

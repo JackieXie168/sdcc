@@ -1,7 +1,7 @@
 2011-05-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
-	  Remove unnecessary statement.
+	  Remove unnecessary statement, debug message cleanup.
 
 2011-05-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
