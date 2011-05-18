@@ -1,3 +1,11 @@
+2011-05-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* Merge from trunk.
+
+2011-05-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* device/include/pic16/i2c.h: applied patch 3303565
+
 2011-05-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c,
