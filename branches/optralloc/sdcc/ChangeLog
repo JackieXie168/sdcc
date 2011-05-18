@@ -4,10 +4,6 @@
 
 2011-05-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* device/include/pic16/i2c.h: applied patch 3303565
-
-2011-05-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
-
 	* src/z80/gen.c,
 	  support/regression/tests/bug3303325.c:
 	  Merge from trunk: Fixed bug #3303325.
