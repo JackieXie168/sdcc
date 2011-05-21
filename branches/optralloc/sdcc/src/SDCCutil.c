@@ -23,6 +23,7 @@
 -------------------------------------------------------------------------*/
 
 #include <math.h>
+#include <string.h>
 #include <ctype.h>
 
 #ifdef _WIN32
@@ -741,7 +742,7 @@ hexEscape (const char **src)
 
   ++*src;                       /* Skip over the 'x' */
 
-  value = strtol (*src, &s, 16);
+  value = strtoul (*src, &s, 16);
 
   if (s == *src)
     {
@@ -769,7 +770,7 @@ hexEscape (const char **src)
 unsigned char
 universalEscape (const char **str, unsigned int n)
 {
-  int digits;
+  unsigned int digits;
   unsigned value = 0;
   const char *s = *str;
 
