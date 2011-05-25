@@ -123,6 +123,8 @@ enum
   DISABLE_DEBUG = 0
 };
 
+//#define DEBUG_DRY_COST
+
 static char *_z80_return[] =
   {"l", "h", "e", "d"};
 static char *_gbz80_return[] =
@@ -372,7 +374,7 @@ z80_init_asmops(void)
   _fReturn3 = IS_GB ? _gbz80_return3 : _z80_return3;
 }
 
-bool regalloc_dry_run;
+bool regalloc_dry_run = FALSE;
 unsigned char regalloc_dry_run_cost; 
 
 static bool
@@ -9807,7 +9809,7 @@ dryZ80Code (iCode * lic)
 /* genZ80Code - generate code for Z80 based controllers for a block of intructions     */
 /*-------------------------------------------------------------------------------------*/
 void
-genZ80Code (iCode * lic)
+genZ80Code (iCode *lic)
 {
 #ifdef DEBUG_DRY_COST
   dryZ80Code(lic);
@@ -9859,7 +9861,6 @@ genZ80Code (iCode * lic)
         }
       regalloc_dry_run_cost = 0;
       genZ80iCode (ic);
-      //printf("; iCode %d total cost: %d\n", ic->key, (int)(regalloc_dry_run_cost));
       //emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));
     }
 

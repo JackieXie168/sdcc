@@ -1,4 +1,11 @@
-2011-05-25:
+2011-05-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.c,
+	  src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Exact cost for builtin function calls.
+
+2011-05-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCtree_dec.hpp,
 	  src/SDCCralloc.hpp,

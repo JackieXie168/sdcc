@@ -913,6 +913,11 @@ void assign_operands_for_cost(const assignment &a, unsigned short int i, const G
       assign_operand_for_cost(IC_RIGHT(ic), a, i, G, I);
       assign_operand_for_cost(IC_RESULT(ic), a, i, G, I);
     }
+    
+  if(ic->op == SEND && ic->builtinSEND)
+    {
+      assign_operands_for_cost(a, *(adjacent_vertices(i, G).first), G, I);
+    }
 }
 
 // Cost function.
@@ -945,6 +950,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case GOTO:
         case INLINEASM:
           return(0.0f);
+        // Exact cost:
         case '!':
         case '~':
         case UNARYMINUS:
@@ -953,9 +959,6 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case '^':
         case '|':
         case BITWISEAND:
-          //if(result_overwrites_operand(a, i, G, I))
-          //  return(std::numeric_limits<float>::infinity());
-        // Exact cost:
         case IPUSH:
         //case IPOP:
         case CALL:
@@ -977,7 +980,7 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
         case JUMPTABLE:
         case CAST:
         //case RECEIVE:
-        //case SEND:	// todo: Make builtins work
+        case SEND:	// todo: Make builtins work
         case DUMMY_READ_VOLATILE:
         case CRITICAL:
         case ENDCRITICAL:
