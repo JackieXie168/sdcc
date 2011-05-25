@@ -1,3 +1,10 @@
+2011-05-25:
+
+	* src/SDCCtree_dec.hpp,
+	  src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Fixed bug in Thorup heuristic, that resulted in much higher width of tree-decomposition.
+
 2011-05-21 Philipp Klaus Krause <pkk AT spth.de>
 
 	* Merge from trunk.

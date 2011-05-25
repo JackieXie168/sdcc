@@ -1102,6 +1102,33 @@ bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G
   return(false);
 }
 
+template <class T_t>
+void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T)
+{
+  const assignment_list_t &alist = T[t].assignments;
+
+  assignment_list_t::const_iterator ai, ai_end, ai_best;
+  for(ai = ai_best = alist.begin(), ai_end = alist.end(); ai != ai_end; ++ai)
+    {
+      if(ai->s < ai_best->s)
+        {
+          varset_t::const_iterator vi, vi_end;
+          for(vi = ai->local.begin(), vi_end = ai->local.end(); vi != vi_end; ++vi)
+            if(OPTRALLOC_A && ai->global[*vi] == REG_A || OPTRALLOC_HL && (ai->global[*vi] == REG_H || ai->global[*vi] == REG_L) || OPTRALLOC_IY && (ai->global[*vi] == REG_IYH || ai->global[*vi] == REG_IYL))
+              goto too_risky;
+          ai_best = ai;
+        }
+too_risky:
+      ;
+    }
+	
+  a = *ai_best;
+  
+  std::set<var_t>::const_iterator vi, vi_end;
+  for(vi = T[t].alive.begin(), vi_end = T[t].alive.end(); vi != vi_end; ++vi)
+    a.local.insert(*vi);
+}
+
 template <class G_t, class I_t>
 float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {

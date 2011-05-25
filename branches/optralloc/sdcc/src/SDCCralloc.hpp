@@ -502,6 +502,8 @@ struct assignment_rep
 template <class I_t>
 float compability_cost(const assignment& a, const assignment& ac, const I_t &I)
 {
+  typedef typename boost::graph_traits<I_t>::adjacency_iterator adjacency_iter_t;
+  
   float c = 0.0f;
   
   varset_t::const_iterator vi, vi_end;
@@ -509,9 +511,19 @@ float compability_cost(const assignment& a, const assignment& ac, const I_t &I)
   for(vi = ac.local.begin(), vi_end = ac.local.end(); vi != vi_end; ++vi)
     {
       const var_t v = *vi;
-      if(a.global[v] == ac.global[v])
+      if(a.global[v] != ac.global[v])
+      {
+        c += 1000.0f;
         continue;
-      c += 250.0f;
+      }
+        
+      adjacency_iter_t j, j_end;
+      for (boost::tie(j, j_end) = adjacent_vertices(v, I); j != j_end; ++j)
+        if(ac.global[v] != -1 && a.global[*j] == ac.global[v])
+        {
+          c += 1000.0f;
+          break;
+        }
     }
   
   return(c);
@@ -766,6 +778,10 @@ void tree_dec_ralloc_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
   alist2.clear();
   alist3.clear();
 
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Remaining assignments: " << alist1.size() << "\n"; std::cout.flush();
+#endif
+
 #ifdef DEBUG_RALLOC_DEC_ASS
   std::list<assignment>::iterator ai;
   for(ai = alist1.begin(); ai != alist1.end(); ++ai)
@@ -786,6 +802,9 @@ void get_best_local_assignment(assignment &a, typename boost::graph_traits<T_t>:
 	
   a = *ai_best;
 }
+
+template <class T_t>
+void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T);
 
 // Handle nodes in the tree decomposition, by detecting their type and calling the appropriate function. Recurses.
 template <class T_t, class G_t, class I_t>
@@ -813,7 +832,7 @@ void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_des
       c0 = *c++;
       c1 = *c;
       tree_dec_ralloc_nodes(T, c0, G, I, ac);
-      get_best_local_assignment(ac2, c0, T);
+      get_best_local_assignment_biased(ac2, c0, T);
       tree_dec_ralloc_nodes(T, c1, G, I, ac2);
       tree_dec_ralloc_join(T, t, G, I);
       break;
@@ -969,7 +988,9 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
   boost::write_graphviz(dump_file, tree_dec, boost::make_label_writer(name));
   delete[] name;
 
-  //std::cout << "Width: " << (w  - 1) << "(" << currFunc->name << ")\n";
+#ifdef D_RALLOC_DEC
+  std::cout << "Width: " << (w  - 1) << "(" << currFunc->name << ")\n";
+#endif
 }
 
 #endif

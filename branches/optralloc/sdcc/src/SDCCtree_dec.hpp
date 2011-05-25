@@ -68,7 +68,7 @@ void thorup_D(l_t &l, const std::multimap<unsigned int, unsigned int> &MJ, const
       j--;
       if (m.find(j) == m.end())
         m[j] = i++;
-
+        
       std::multimap<unsigned int, unsigned int>::const_iterator k, k_end;
 
       for (boost::tie(k, k_end) = MS.equal_range(j); k != k_end; ++k)
@@ -85,7 +85,7 @@ void thorup_D(l_t &l, const std::multimap<unsigned int, unsigned int> &MJ, const
   std::map<unsigned int, unsigned int>::iterator mi;
 
   for (mi = m.begin(); mi != m.end(); ++mi)
-    v[mi->first] = mi->second;
+    v[mi->second] = mi->first;
 
   for (i = 0; i < n; i++)
     l.push_back(v[i]);
@@ -101,13 +101,13 @@ void thorup_E(std::multimap<unsigned int, unsigned int> &M, const I_t &I)
   typedef typename boost::property_map<I_t, boost::vertex_index_t>::type index_map;
   index_map index = boost::get(boost::vertex_index, I);
 
-  std::stack<std::pair<unsigned int, unsigned int> > s;
+  std::stack<std::pair<int, unsigned int> > s;
 
   M.clear();
 
-  s.push(std::pair<unsigned int, unsigned int>(0, boost::num_vertices(I)));
+  s.push(std::pair<int, unsigned int>(-1, boost::num_vertices(I)));
 
-  for (unsigned int i = 0; i < boost::num_vertices(I); i++)
+  for (int i = 0; i < boost::num_vertices(I); i++)
     {
       unsigned int j = i;
       adjacency_iter_t j_curr, j_end;
@@ -125,15 +125,21 @@ void thorup_E(std::multimap<unsigned int, unsigned int> &M, const I_t &I)
           s.pop();
         }
 
-      unsigned int i2 = i;	// Using i2 instead of i keeps this (or rather thorup_D) from crashing.
-
-      while (j > s.top().second && s.top().second > i2)
+      int i2 = i;
+      while (j >= s.top().second && s.top().second > i2)
         {
           i2 = s.top().first;
           s.pop();
         }
 
-      s.push(std::pair<unsigned int, unsigned int>(i2, j));
+      s.push(std::pair<int, unsigned int>(i2, j));
+    }
+    
+    // Not in Thorup's paper, but without this the algorithm gives incorrect results.
+    while(s.size() > 1)
+    {
+    	M.insert(std::pair<unsigned int, unsigned int>(s.top().second, s.top().first));
+    	s.pop();
     }
 }
 
