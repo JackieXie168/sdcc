@@ -1,3 +1,7 @@
+2011-05-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* Merge from trunk.
+
 2011-05-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCicode.c,

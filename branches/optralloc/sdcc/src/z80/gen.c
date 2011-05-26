@@ -5141,7 +5141,7 @@ release:
 }
 
 /*-----------------------------------------------------------------*/
-/* genMultChar - generates code for unsigned 8x8 multiplication    */
+/* genMultOneChar - generates code for unsigned 8x8 multiplication */
 /*-----------------------------------------------------------------*/
 static void
 genMultOneChar (const iCode * ic)
@@ -5167,8 +5167,13 @@ genMultOneChar (const iCode * ic)
       savedB = TRUE;
     }
     
-  cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
-  cheapMove (ASMOP_H, 0, AOP (IC_LEFT (ic)), LSB);
+  if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG || AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != H_IDX)
+    {
+      cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
+      cheapMove (ASMOP_H, 0, AOP (IC_LEFT (ic)), LSB);
+    }
+  else
+    cheapMove (ASMOP_H, 0, AOP (IC_RIGHT (ic)), LSB);
 
   if (!regalloc_dry_run)
     {
