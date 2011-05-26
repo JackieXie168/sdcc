@@ -7252,7 +7252,7 @@ static void
 genLeftShift (const iCode *ic)
 {
   int size, offset;
-  symbol *tlbl, *tlbl1;
+  symbol *tlbl = 0, *tlbl1 = 0;
   operand *left, *right, *result;
 
   right = IC_RIGHT (ic);
@@ -7506,7 +7506,7 @@ genRightShift (const iCode *ic)
   int size, offset, first = 1;
   bool is_signed;
 
-  symbol *tlbl, *tlbl1;
+  symbol *tlbl = 0, *tlbl1 = 0;
 
   /* if signed then we do it the hard way preserve the
      sign bit moving it inwards */
