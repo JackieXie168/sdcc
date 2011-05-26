@@ -1,3 +1,10 @@
+2011-05-26 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/hc08/main.c(hc08_dwarfRegNum): fixed interface
+	* src/mcs51/gen.c: fixed MSVC errors by changing snprintf to SNPRINTF
+	* src/port.h: fixed regNum and getRegName function pointer definitions
+	* src/z80/gen.c(genJumpTab): fixed warning
+
 2011-05-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:

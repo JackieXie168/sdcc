@@ -391,7 +391,7 @@ Push (const char *s)
     {
       char buf[8] = "";
 
-      snprintf (buf, 8, "a%s", s);
+      SNPRINTF (buf, 8, "a%s", s);
       emitpush (buf);
     }
   else
@@ -2825,7 +2825,7 @@ saveRBank (int bank, iCode * ic, bool pushPsw)
       else
         {
           char buf[16] = "";
-          snprintf (buf, 16, "(%s+%d)", regs8051[i].base, 8 * bank + regs8051[i].offset);
+          SNPRINTF (buf, 16, "(%s+%d)", regs8051[i].base, 8 * bank + regs8051[i].offset);
           emitpush (buf);
         }
     }
@@ -2906,7 +2906,7 @@ unsaveRBank (int bank, iCode * ic, bool popPsw)
       else
         {
           char buf[16] = "";
-          snprintf (buf, 16, "(%s+%d)", regs8051[i].base, 8 * bank + regs8051[i].offset);
+          SNPRINTF (buf, 16, "(%s+%d)", regs8051[i].base, 8 * bank + regs8051[i].offset);
           emitpop (buf);
         }
     }
@@ -3307,11 +3307,11 @@ genPcall (iCode * ic)
                   char buf[8] = "";
                   int reg = ((FUNC_REGBANK (dtype)) << 3) & 0xff;
                   emitcode ("mov", "psw,#0x%02x", reg);
-                  snprintf (buf, 8, "0x%02x", reg + 2);
+                  SNPRINTF (buf, 8, "0x%02x", reg + 2);
                   emitpop (buf);
-                  snprintf (buf, 8, "0x%02x", reg + 1);
+                  SNPRINTF (buf, 8, "0x%02x", reg + 1);
                   emitpop (buf);
-                  snprintf (buf, 8, "0x%02x", reg + 0);
+                  SNPRINTF (buf, 8, "0x%02x", reg + 0);
                   emitpop (buf);
                 }
               else

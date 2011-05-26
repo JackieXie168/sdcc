@@ -347,7 +347,7 @@ oclsExpense (struct memmap *oclass)
 /*   Application Binary Interface (M8/16EABI)"                          */
 /*----------------------------------------------------------------------*/
 static int
-hc08_dwarfRegNum (const reg_info *reg)
+hc08_dwarfRegNum (const struct reg_info *reg)
 {
   switch (reg->rIdx)
     {

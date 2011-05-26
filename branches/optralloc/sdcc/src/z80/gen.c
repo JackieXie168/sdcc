@@ -8730,7 +8730,7 @@ release:
 static void
 genJumpTab (const iCode *ic)
 {
-  symbol *jtab;
+  symbol *jtab = NULL;
 
   aopOp (IC_JTCOND (ic), ic, FALSE, FALSE);
   /* get the condition into accumulator */
