@@ -1,5 +1,9 @@
 2011-05-27 Philipp Klaus Krause <pkk AT spth.de>
 
+	* Merge from trunk.
+
+2011-05-27 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCCtree_dec.hpp,
 	  src/z80/ralloc2.cc:
 	  Workarounds for compiler warnings.

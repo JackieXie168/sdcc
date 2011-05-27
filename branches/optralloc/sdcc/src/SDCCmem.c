@@ -1064,7 +1064,8 @@ redoStackOffsets (void)
 
 }
 
-#define SYM_BP(sym)   (SPEC_OCLS (sym->etype)->paged ? "_bpx" : options.omitFramePtr ? "sp" : "_bp")
+#define SP_BP(sp, bp) (options.omitFramePtr ? sp : bp)
+#define SYM_BP(sym)   (SPEC_OCLS (sym->etype)->paged ? SP_BP("_spx", "_bpx") : SP_BP("sp", "_bp"))
 
 /*-----------------------------------------------------------------*/
 /* printAllocInfoSeg- print the allocation for a given section     */
@@ -1072,25 +1073,12 @@ redoStackOffsets (void)
 static void
 printAllocInfoSeg (memmap * map, symbol * func, struct dbuf_s *oBuf)
 {
-  int stack_offset = 0;
   symbol *sym;
 
   if (!map)
     return;
   if (!map->syms)
     return;
-
-  if (options.omitFramePtr)
-    {
-      if (options.useXstack)
-        {
-          stack_offset = func->xstack;
-        }
-      else
-        {
-          stack_offset = func->stack;
-        }
-    }
 
   for (sym = setFirstItem (map->syms); sym;
        sym = setNextItem (map->syms))
@@ -1125,6 +1113,16 @@ printAllocInfoSeg (memmap * map, symbol * func, struct dbuf_s *oBuf)
       /* if on stack */
       if (sym->onStack)
         {
+          int stack_offset = 0;
+
+          if (options.omitFramePtr)
+            {
+              if (SPEC_OCLS (sym->etype)->paged)
+                stack_offset = func->xstack;
+              else
+                stack_offset = func->stack;
+            }
+
           dbuf_printf (oBuf, "to stack - %s %+d\n", SYM_BP (sym), sym->stack - stack_offset);
           continue;
         }
