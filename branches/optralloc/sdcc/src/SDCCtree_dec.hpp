@@ -107,7 +107,7 @@ void thorup_E(std::multimap<unsigned int, unsigned int> &M, const I_t &I)
 
   s.push(std::pair<int, unsigned int>(-1, boost::num_vertices(I)));
 
-  for (int i = 0; i < boost::num_vertices(I); i++)
+  for (unsigned int i = 0; i < boost::num_vertices(I); i++)
     {
       unsigned int j = i;
       adjacency_iter_t j_curr, j_end;
@@ -125,7 +125,7 @@ void thorup_E(std::multimap<unsigned int, unsigned int> &M, const I_t &I)
           s.pop();
         }
 
-      int i2 = i;
+      unsigned int i2 = i;
       while (j >= s.top().second && s.top().second > i2)
         {
           i2 = s.top().first;

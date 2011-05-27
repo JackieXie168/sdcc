@@ -1164,7 +1164,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 
   // An artifical ordering of assignments.
   if(ia.registers[REG_E][1] < 0)
-    c += 0.0001;
+    c += 0.0001f;
   if(ia.registers[REG_D][1] < 0)
     c += 0.00001f;
 
