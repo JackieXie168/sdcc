@@ -353,7 +353,6 @@ void nicify_diffs(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
     case 1:
       break;
     case 2:
-
       c0 = *c++;
       c1 = *c;
       nicify_diffs(T, c0);

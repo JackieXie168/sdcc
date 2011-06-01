@@ -58,6 +58,8 @@ extern "C"
 #include "ralloc.h"
 
 iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
+
+bool assignment_optimal;
 }
 
 #ifdef HAVE_STX_BTREE_SET_H
@@ -541,6 +543,8 @@ void drop_worst_assignments(assignment_list_t &alist, unsigned short int i, cons
   if ((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(options.max_allocs_per_node))
     return;
 
+  assignment_optimal = false;
+
 #ifdef DEBUG_RALLOC_DEC
   std::cout << "Too many assignments here (" << i << "):" << alist_size << " > " << options.max_allocs_per_node / NUM_REGS << ". Dropping some.\n";
 #endif
@@ -925,7 +929,7 @@ void good_re_root(T_t &T)
   re_root(T, t);
 }
 
-// Dump con, with numbered nodes, show live variables at each node.
+// Dump conflict graph, with numbered nodes, show live variables at each node.
 void dump_con(const con_t &con)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());

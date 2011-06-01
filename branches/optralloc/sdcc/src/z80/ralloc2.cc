@@ -1196,6 +1196,7 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
     add_edge(boost::source(*e, I), boost::target(*e, I), I2);
 
   assignment ac;
+  assignment_optimal = true;
   tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac);
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());

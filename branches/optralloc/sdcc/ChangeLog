@@ -1,3 +1,10 @@
+2011-06-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/gen.c,
+	  src/z80/gen.h:
+	  Emit info about the register assignment being optimal when using --fverbose-asm.
+
 2011-05-27 Philipp Klaus Krause <pkk AT spth.de>
 
 	* Merge from trunk.

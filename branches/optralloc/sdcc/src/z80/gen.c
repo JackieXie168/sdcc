@@ -3938,6 +3938,9 @@ genFunction (const iCode * ic)
 
   /* Create the function header */
   emit2 ("!functionheader", sym->name);
+
+  emitDebug(assignment_optimal ? "; Register assignment is optimal." : "; Register assignment might be sub-optimal.");
+
   if (!IS_STATIC(sym->etype))
     {
       struct dbuf_s dbuf;
