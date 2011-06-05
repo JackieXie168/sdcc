@@ -266,6 +266,13 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
         boost::add_vertex(cfg);
         key_to_index[ic->key] = i;
 
+        if(ic->op == SEND && ic->builtinSEND) // Ensure that only the very first send iCode is active.
+          {
+            operand *bi_parms[MAX_BUILTIN_ARGS];
+            int nbi_parms;
+            getBuiltinParms(ic, &nbi_parms, bi_parms);
+          }
+
         if(ic->op == '>' || ic->op == '<' || ic->op == EQ_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)
           {
             iCode *ifx;

@@ -1,5 +1,11 @@
 2011-06-05 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCCralloc.hpp,
+	  src/z80/gen.c:
+	  Ensure that SEND iCodes, except for the first in each chain are deactivated for cost function calculation.
+
+2011-06-05 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/gen.c:
 	  Fixed use of arbitrary register combinations as return value.
 

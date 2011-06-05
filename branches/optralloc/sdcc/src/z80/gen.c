@@ -9362,7 +9362,7 @@ setupForMemcpy (const iCode *ic, int nparams, operand **pparams)
   memset (ids, PAIR_INVALID, sizeof (ids));
 
   /* Sanity checks */
-  wassert (nparams == 3);
+  wassertl (nparams == 3, "Built-in memcpy() must have three parameters");
 
   for (i = 0; i < nparams; i++)
     {
