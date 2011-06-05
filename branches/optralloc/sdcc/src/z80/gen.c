@@ -4275,8 +4275,6 @@ genRet (const iCode *ic)
   aopOp (IC_LEFT (ic), ic, FALSE, FALSE);
   size = AOP_SIZE (IC_LEFT (ic));
 
-  aopDump("IC_LEFT", AOP(IC_LEFT(ic)));
-
   if (size==2)
     {
       fetchPair(IS_GB ? PAIR_DE : PAIR_HL, AOP (IC_LEFT (ic)));
@@ -4287,6 +4285,65 @@ genRet (const iCode *ic)
         {
           fetchPair (PAIR_DE, AOP (IC_LEFT (ic)));
           fetchPairLong (PAIR_HL, AOP (IC_LEFT (ic)), ic, 2);
+        }
+      else if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG)
+        {
+          // We need to be able to handle any assignment here, ensuring not to overwrite any parts of the source that we still need.
+        
+          bool assigned[4] = {FALSE, FALSE, FALSE, FALSE};	// This has to be made bigger when sdcc supports variables larger than 4 bytes in registers.
+          int cached_byte = -1;
+
+          while (size--)
+            {
+              int i;
+              
+              // Find lowest byte that can be assigned and needs to be assigned.
+              for (i = 0; i < AOP_SIZE (IC_LEFT (ic)); i++)
+                {
+                  int j;
+                  
+                  if (assigned[i])
+                    continue;
+                    
+                  for (j = 0; j < AOP_SIZE (IC_LEFT (ic)); j++)
+                    {
+                      if (!assigned[j] && i != j && _fReturn3[i]->aopu.aop_reg[0]->rIdx == AOP (IC_LEFT (ic))->aopu.aop_reg[j]->rIdx)
+                        goto skip_byte; // We can't write this one without overwriting the source.
+                    }
+                  
+                  break; // Found byte that can be written safely.
+                  
+                  skip_byte:;
+                }
+
+              if (i < AOP_SIZE (IC_LEFT (ic)))
+                {
+                  cheapMove (_fReturn3[i], 0, AOP(IC_LEFT (ic)), i); // We can safely assign a byte.
+                  assigned[i] = TRUE;
+                  continue;
+                }
+              
+              // No byte can be assigned safely (i.e. the assignment is a permutation). Cache one in the accumulator.
+ 
+              if (cached_byte != -1)
+                {
+                  // Already one cached. Can happen when the assignment is a permutation consisting of multiple cycles.
+                  cheapMove (_fReturn3[cached_byte], 0, ASMOP_A, 0);
+                  cached_byte = -1;
+                  continue;
+                }
+              
+              for (i = 0; i < AOP_SIZE (IC_LEFT (ic)); i++)
+                if (!assigned[i])
+                  break;
+              wassertl (i != AOP_SIZE (IC_LEFT (ic)), "genAssign error: Trying to cache non-existant byte in accumulator."); 
+              cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), i);
+              assigned[i] = TRUE;
+              cached_byte = i;
+            }
+           
+          if (cached_byte != -1)
+            cheapMove (_fReturn3[cached_byte], 0, ASMOP_A, 0);
         }
       else
         {
@@ -6940,8 +6997,7 @@ shiftR2Left2Result (operand * left, int offl,
 
   /*  if (AOP(result)->type == AOP_REG) { */
 
-  if(!regalloc_dry_run)
-    tlbl = newiTempLabel (NULL);
+  tlbl = regalloc_dry_run ? 0 : newiTempLabel (NULL);
 
   /* Left is already in result - so now do the shift */
   /* Optimizing for speed by default. */

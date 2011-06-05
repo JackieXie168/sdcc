@@ -1,3 +1,8 @@
+2011-06-05 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fixed use of arbitrary register combinations as return value.
+
 2011-06-01 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc2.cc,
