@@ -5226,14 +5226,14 @@ genMultOneChar (const iCode * ic)
       _push (PAIR_BC);
       savedB = TRUE;
     }
-    
+
   if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG || AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != H_IDX)
     {
       cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
       cheapMove (ASMOP_H, 0, AOP (IC_LEFT (ic)), LSB);
     }
   else
-    cheapMove (ASMOP_H, 0, AOP (IC_RIGHT (ic)), LSB);
+    cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
 
   if (!regalloc_dry_run)
     {
