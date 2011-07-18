@@ -1,6 +1,7 @@
 2011-07-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/SDCCOpt.c:
+	* src/SDCCOpt.c,
+	  src/SDCCcse.c:
 	  Preserve block number when replacing iCode.
 
 2011-07-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
