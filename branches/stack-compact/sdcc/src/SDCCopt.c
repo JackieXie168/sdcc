@@ -60,6 +60,7 @@ cnvToFcall (iCode * ic, eBBlock * ebp)
   symbol *func = NULL;
   char *filename = ic->filename;
   int lineno = ic->lineno;
+  short block = ic->block;
   int bytesPushed=0;
 
   ip = ic->next;                /* insertion point */
@@ -165,6 +166,7 @@ cnvToFcall (iCode * ic, eBBlock * ebp)
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
       if (IS_SYMOP (left))
           OP_USES (left) = bitVectSetBit (OP_USES (left), newic->key);
 
@@ -182,6 +184,7 @@ cnvToFcall (iCode * ic, eBBlock * ebp)
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
       if (IS_SYMOP (right))
           OP_USES (right) = bitVectSetBit (OP_USES (right), newic->key);
     }
@@ -203,6 +206,7 @@ cnvToFcall (iCode * ic, eBBlock * ebp)
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
       if (IS_SYMOP (right))
           OP_USES (right) = bitVectSetBit (OP_USES (right), newic->key);
 
@@ -221,6 +225,7 @@ cnvToFcall (iCode * ic, eBBlock * ebp)
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
       if (IS_SYMOP (left))
         OP_USES (left) = bitVectSetBit (OP_USES (left), newic->key);
     }
@@ -231,6 +236,7 @@ cnvToFcall (iCode * ic, eBBlock * ebp)
   OP_USES (IC_RESULT (newic)) = bitVectSetBit (OP_USES (IC_RESULT (newic)), newic->key);
   newic->filename = filename;
   newic->lineno = lineno;
+  newic->block = block;
   newic->parmBytes += bytesPushed;
   ebp->hasFcall = 1;
   if (currFunc)
@@ -264,6 +270,7 @@ cnvToFloatCast (iCode * ic, eBBlock * ebp)
   symbol *func = NULL;
   sym_link *type = operandType (IC_RIGHT (ic));
   int linenno = ic->lineno;
+  short block = ic->block;
   int bwd, su;
   int bytesPushed=0;
 
@@ -309,6 +316,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = linenno;
+      newic->block = block;
     }
   else
     {
@@ -327,6 +335,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = linenno;
+      newic->block = block;
     }
 
   /* make the call */
@@ -355,6 +364,7 @@ found:
   addiCodeToeBBlock (ebp, newic, ip);
   newic->filename = filename;
   newic->lineno = linenno;
+  newic->block = block;
 }
 
 /*----------------------------------------------------------------------*/
@@ -367,6 +377,7 @@ cnvToFixed16x16Cast (iCode * ic, eBBlock * ebp)
   symbol *func = NULL;
   sym_link *type = operandType (IC_RIGHT (ic));
   int linenno = ic->lineno;
+  short block = ic->block;
   int bwd, su;
   int bytesPushed=0;
 
@@ -405,6 +416,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = linenno;
+      newic->block = block;
     }
   else
     {
@@ -423,6 +435,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = linenno;
+      newic->block = block;
     }
 
   /* make the call */
@@ -451,6 +464,7 @@ found:
   addiCodeToeBBlock (ebp, newic, ip);
   newic->filename = filename;
   newic->lineno = linenno;
+  newic->block = block;
 }
 
 /*-----------------------------------------------------------------*/
@@ -464,6 +478,7 @@ cnvFromFloatCast (iCode * ic, eBBlock * ebp)
   sym_link *type = operandType (IC_LEFT (ic));
   char *filename = ic->filename;
   int lineno = ic->lineno;
+  short block = ic->block;
   int bwd, su;
   int bytesPushed=0;
 
@@ -503,6 +518,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
     }
   else
     {
@@ -521,6 +537,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
     }
 
   /* make the call */
@@ -549,6 +566,7 @@ found:
   addiCodeToeBBlock (ebp, newic, ip);
   newic->filename = filename;
   newic->lineno = lineno;
+  newic->block = block;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -562,6 +580,7 @@ cnvFromFixed16x16Cast (iCode * ic, eBBlock * ebp)
   sym_link *type = operandType (IC_LEFT (ic));
   char *filename = ic->filename;
   int lineno = ic->lineno;
+  short block = ic->block;
   int bwd, su;
   int bytesPushed=0;
 
@@ -608,6 +627,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
     }
   else
     {
@@ -626,6 +646,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
     }
 
   /* make the call */
@@ -654,6 +675,7 @@ found:
   addiCodeToeBBlock (ebp, newic, ip);
   newic->filename = filename;
   newic->lineno = lineno;
+  newic->block = block;
 }
 
 extern operand *geniCodeRValue (operand *, bool);
@@ -670,6 +692,7 @@ convilong (iCode * ic, eBBlock * ebp)
   iCode *newic;
   char *filename = ic->filename;
   int lineno = ic->lineno;
+  short block = ic->block;
   int bwd;
   int su;
   int bytesPushed=0;
@@ -756,6 +779,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
 
       /* second one */
       if (IS_REGPARM (FUNC_ARGS(func->type)->next->etype))
@@ -771,6 +795,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
     }
   else
     {
@@ -791,6 +816,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
 
       /* insert push left */
       if (IS_REGPARM (FUNC_ARGS(func->type)->etype))
@@ -808,6 +834,7 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      newic->block = block;
     }
 
   /* for the result */
@@ -815,6 +842,7 @@ found:
   IC_RESULT (newic) = IC_RESULT (ic);
   newic->filename = filename;
   newic->lineno = lineno;
+  newic->block = block;
   newic->parmBytes+=bytesPushed; // to clear the stack after the call
   ebp->hasFcall = 1;
   if (currFunc)
