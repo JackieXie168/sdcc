@@ -41,6 +41,7 @@ void btree_add_child(short parent, short child)
   boost::add_edge(parent, child, btree);
 }
 
+#if 0
 short btree_lowest_common_ancestor(short a, short b)
 {
   if(a == b)
@@ -52,13 +53,14 @@ short btree_lowest_common_ancestor(short a, short b)
 		
   return(btree_lowest_common_ancestor(a, b));
 }
+#endif
 
 void btree_add_symbol(struct symbol *s)
 {
   btree[s->block].insert(s);
 }
 
-void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssize, int *ssize)
+static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssize, int *ssize)
 {
   std::set<symbol *>::iterator s, s_end;
   
