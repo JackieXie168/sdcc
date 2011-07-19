@@ -996,6 +996,8 @@ redoStackOffsets (void)
       if ((sym->_isparm && !IS_REGPARM (sym->etype)))
         continue;
 
+printf ("Local symbol %s / %d, block %d, size %d, allocreq %d\n", sym->name, sym->key, (int)(sym->block), getSize (sym->type), (int)(sym->allocreq));
+
       if (IS_AGGREGATE (sym->type))
         {
           if (port->stack.direction > 0)
