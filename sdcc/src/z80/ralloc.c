@@ -446,7 +446,7 @@ createStackSpil (symbol * sym)
   struct dbuf_s dbuf;
 
   D (D_ALLOC, ("createStackSpil: for sym %p\n", sym));
-printf("Creating new spilllocation.\n");
+//printf("Creating new spilllocation.\n");
   /* first go try and find a free one that is already
      existing on the stack */
   if (applyToSet (_G.stackSpil, isFree, &sloc, sym))
@@ -515,7 +515,7 @@ spillThis (symbol * sym)
 
   D (D_ALLOC, ("spillThis: spilling %p\n", sym));
   
-printf("Spilling symbol %s / %d.\n", sym->name, sym->key);
+//printf("Spilling symbol %s / %d.\n", sym->name, sym->key);
 
   sym->for_newralloc = 0;
 

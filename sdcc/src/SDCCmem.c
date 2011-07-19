@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "dbuf_string.h"
+#include "SDCCbtree.h"
 
 /* memory segments */
 memmap *xstack = NULL;          /* xternal stack data          */
@@ -973,6 +974,8 @@ allocVariables (symbol * symChain)
   return stack;
 }
 
+#define BTREE_STACK
+
 /*-----------------------------------------------------------------*/
 /* redoStackOffsets :- will reassign the values for stack offsets  */
 /*-----------------------------------------------------------------*/
@@ -996,26 +999,18 @@ redoStackOffsets (void)
       if ((sym->_isparm && !IS_REGPARM (sym->etype)))
         continue;
 
-printf ("Local symbol %s / %d, block %d, size %d, allocreq %d\n", sym->name, sym->key, (int)(sym->block), getSize (sym->type), (int)(sym->allocreq));
+//printf ("Local symbol %s / %d, block %d, size %d, allocreq %d\n", sym->name, sym->key, (int)(sym->block), getSize (sym->type), (int)(sym->allocreq));
 
-      if (IS_AGGREGATE (sym->type))
-        {
-          if (port->stack.direction > 0)
-            {
-              SPEC_STAK (sym->etype) = sym->stack = (sPtr + 1);
-              sPtr += size;
-            }
-          else
-            {
-              sPtr -= size;
-              SPEC_STAK (sym->etype) = sym->stack = sPtr;
-            }
-          continue;
-        }
-
+#ifdef BTREE_STACK
+      currFunc->stack -= size;
+      SPEC_STAK (currFunc->etype) -= size;
+      
+      if(IS_AGGREGATE (sym->type) || sym->allocreq)
+        btree_add_symbol (sym);
+#else
       /* if allocation not required then subtract
          size from overall stack size & continue */
-      if (!sym->allocreq)
+      if (!IS_AGGREGATE (sym->type) && !sym->allocreq)
         {
           currFunc->stack -= size;
           SPEC_STAK (currFunc->etype) -= size;
@@ -1032,7 +1027,13 @@ printf ("Local symbol %s / %d, block %d, size %d, allocreq %d\n", sym->name, sym
           sPtr -= size;
           SPEC_STAK (sym->etype) = sym->stack = sPtr;
         }
+#endif
     }
+    
+#ifdef BTREE_STACK
+  if (elementsInSet(istack->syms))
+    btree_alloc ();
+#endif
 
   /* do the same for the external stack */
 
@@ -1044,16 +1045,9 @@ printf ("Local symbol %s / %d, block %d, size %d, allocreq %d\n", sym->name, sym
       if ((sym->_isparm && !IS_REGPARM (sym->etype)))
         continue;
 
-      if (IS_AGGREGATE (sym->type))
-        {
-          SPEC_STAK (sym->etype) = sym->stack = (xsPtr + 1);
-          xsPtr += size;
-          continue;
-        }
-
       /* if allocation not required then subtract
          size from overall stack size & continue */
-      if (!sym->allocreq)
+      if (!IS_AGGREGATE (sym->type) && !sym->allocreq)
         {
           currFunc->xstack -= size;
           SPEC_STAK (currFunc->etype) -= size;
