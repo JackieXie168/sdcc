@@ -999,9 +999,8 @@ redoStackOffsets (void)
       if ((sym->_isparm && !IS_REGPARM (sym->etype)))
         continue;
 
-//printf ("Local symbol %s / %d, block %d, size %d, allocreq %d\n", sym->name, sym->key, (int)(sym->block), getSize (sym->type), (int)(sym->allocreq));
-
 #ifdef BTREE_STACK
+      /* Remove them all, and let btree_alloc() below put them back in more efficiently. */
       currFunc->stack -= size;
       SPEC_STAK (currFunc->etype) -= size;
       
@@ -1031,7 +1030,7 @@ redoStackOffsets (void)
     }
     
 #ifdef BTREE_STACK
-  if (elementsInSet(istack->syms))
+  if (elementsInSet (istack->syms))
     btree_alloc ();
 #endif
 
