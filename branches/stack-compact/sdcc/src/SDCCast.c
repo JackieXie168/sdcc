@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "dbuf_string.h"
+#include "SDCCbtree.h"
 
 int currLineno = 0;
 set *astList = NULL;
@@ -6053,6 +6054,8 @@ fixupInline (ast * tree, int level)
       symbol *decls;
 
       int thisBlockBlockno = ++blockNo;
+      
+      btree_add_child(savedBlockno, thisBlockBlockno);
 
       level++;
 
