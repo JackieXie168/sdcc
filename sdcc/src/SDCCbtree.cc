@@ -69,7 +69,7 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
       struct symbol *const sym = *s;
       const int size = getSize (sym->type);
       
-      std::cout << "Allocating symbol " << sym->name << " to " << sPtr << "\n";
+      std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
       
       if (port->stack.direction > 0)
         {
