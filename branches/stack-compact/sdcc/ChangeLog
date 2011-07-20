@@ -1,5 +1,10 @@
 2011-07-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCtree_dec.hpp:
+	  Allow retrieval of separators when generating tree-decompositions from elimination orderings.
+
+2011-07-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/Makefile.in,
 	  src/SDCC.y,
 	  src/SDCCralloc.hpp,

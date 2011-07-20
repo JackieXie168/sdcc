@@ -35,8 +35,8 @@
 // void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg)
 // Creates a tree decomposition T from a graph cfg using Thorup's heuristic.
 //
-// void tree_decomposition_from_elimination_ordering(T_t &T, std::list<unsigned int>& l, const G_t &G)
-// Creates a tree decomposition T of a graph G from an elimination ordering l.
+// void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsigned int>& l, const G_t &G, std::map<unsigned int, std::set<unsigned int> > *S)
+// Creates a tree decomposition T of a graph G from an elimination ordering l. If S is nonzero, separators are stored into it.
 //
 // void thorup_elimination_ordering(l_t &l, const J_t &J)
 // Creates an elimination ordering l of a graph J using Thorup's heuristic.
@@ -209,7 +209,7 @@ void make_clique(const std::set<unsigned int> &X , G_t &G)
 }
 
 template <class T_t, class v_t, class G_t>
-void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_t &G, std::vector<bool> &active)
+void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_t &G, std::vector<bool> &active, std::map<unsigned int, std::set<unsigned int> > *S)
 {
   // Base case: Empty graph. Create an empty bag.
   if (v == v_end)
@@ -235,7 +235,7 @@ void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_
   active[*v] = false;
   make_clique(neighbours, G);
   v_t v_next = v;
-  add_vertices_to_tree_decomposition(T, ++v_next, v_end, G, active);
+  add_vertices_to_tree_decomposition(T, ++v_next, v_end, G, active, S);
 
   // Add new bag
   typename boost::graph_traits<T_t>::vertex_iterator t;
@@ -245,11 +245,15 @@ void add_vertices_to_tree_decomposition(T_t &T, const v_t v, const v_t v_end, G_
   boost::add_edge(*t, s, T);
   T[s].bag = neighbours;
   T[s].bag.insert(*v);
+  
+  // Store separators
+  if(S)
+    (*S)[*v] = neighbours;
 }
 
 // Create a tree decomposition from en elimination ordering.
 template <class T_t, class G_t>
-void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsigned int>& l, const G_t &G)
+void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsigned int>& l, const G_t &G, std::map<unsigned int, std::set<unsigned int> > *S)
 {
   std::list<unsigned int>::const_reverse_iterator v, v_end;
   v = l.rbegin(), v_end = l.rend();
@@ -260,7 +264,7 @@ void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsign
 
   std::vector<bool> active(boost::num_vertices(G), true);
 
-  add_vertices_to_tree_decomposition(T, v, v_end, G_sym, active);
+  add_vertices_to_tree_decomposition(T, v, v_end, G_sym, active, S);
 }
 
 template <class T_t, class G_t>
@@ -270,7 +274,7 @@ void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg)
 
   thorup_elimination_ordering(elimination_ordering, cfg);
 
-  tree_decomposition_from_elimination_ordering(tree_decomposition, elimination_ordering, cfg);
+  tree_decomposition_from_elimination_ordering(tree_decomposition, elimination_ordering, cfg, 0);
 }
 
 // Ensure that all joins are at proper join nodes: Each node that has two children has the same bag as its children.
