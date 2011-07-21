@@ -837,7 +837,7 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 }
 
 template <class G_t, class I_t>
-void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   iCode *ic = G[i].ic;
   
@@ -851,11 +851,24 @@ void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G,
 }
 
 template<class G_t>
-void unset_surviving_regs(unsigned short int i, const G_t &G)
+static void unset_surviving_regs(unsigned short int i, const G_t &G)
 {
   iCode *ic = G[i].ic;
   
   freeBitVect(ic->rSurv);
+}
+
+template<class G_t, class I_t>
+static void set_spilt(const assignment &a, unsigned short int i, G_t &G, const I_t &I)
+{
+  std::set<var_t>::const_iterator v, v_end;
+  for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
+    {
+      symbol *const sym = (symbol *)(hTabItemWithKey(liveRanges, I[*v].v));
+      if(sym->regs[0] || sym->accuse || sym->remat || !sym->nRegs)
+        continue;
+      G[i].stack_alive.insert(sym); // Needs to be allocated on the stack.
+    }
 }
 
 template <class G_t, class I_t>
@@ -1183,7 +1196,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 }
 
 template <class T_t, class G_t, class I_t>
-void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
+void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 {
   con2_t I2(boost::num_vertices(I));
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
@@ -1258,7 +1271,10 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
     }
     
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
-    set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
+    {
+      set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
+      set_spilt(winner, i, G, I);
+    }
 }
 
 iCode *z80_ralloc2_cc(ebbIndex *ebbi)
@@ -1298,9 +1314,11 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   if(z80_opts.dump_graphs)
     dump_tree_decomposition(tree_decomposition);
 
+  // Allocate registers
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
   
-  thorup_C(control_flow_graph, separators);
+  // Allocate stack space
+  tree_dec_salloc(control_flow_graph, separators);
 
   return(ic);
 }
