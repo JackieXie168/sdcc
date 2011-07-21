@@ -6,7 +6,7 @@
 	  src/z80/ralloc.c,
 	  src/SDCCbtree.cc,
 	  src/SDCCtree_dec.hpp:
-	  More preparations for Thorup-style spilllocation allocation.
+	  Preparations for tree-decomposition-based spilllocation allocation.
 
 2011-07-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

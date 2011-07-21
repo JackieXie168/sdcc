@@ -867,7 +867,7 @@ static void set_spilt(const assignment &a, unsigned short int i, G_t &G, const I
       symbol *const sym = (symbol *)(hTabItemWithKey(liveRanges, I[*v].v));
       if(sym->regs[0] || sym->accuse || sym->remat || !sym->nRegs)
         continue;
-      G[i].stack_alive.insert(sym); // Needs to be allocated on the stack.
+      G[i].stack_alive[sym] = INT_MIN; // Needs to be allocated on the stack.
     }
 }
 
