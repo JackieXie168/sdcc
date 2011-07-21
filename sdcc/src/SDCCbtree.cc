@@ -26,7 +26,7 @@ extern "C"
 #include "common.h"
 }
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, std::set<symbol *> > btree_t;
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, std::pair<std::set<symbol *>, int> > btree_t;
 
 static btree_t btree;
 
@@ -57,14 +57,13 @@ short btree_lowest_common_ancestor(short a, short b)
 
 void btree_add_symbol(struct symbol *s)
 {
-  btree[s->block].insert(s);
+  btree[s->block].first.insert(s);
 }
 
 static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssize, int *ssize)
 {
   std::set<symbol *>::iterator s, s_end;
-  
-  for(s = btree[v].begin(), s_end = btree[v].end(); s != s_end; ++s)
+  for(s = btree[v].first.begin(), s_end = btree[v].first.end(); s != s_end; ++s)
     {
       struct symbol *const sym = *s;
       const int size = getSize (sym->type);
@@ -84,11 +83,11 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
           cssize += size;
         }
     }
+  btree[v].second = cssize;
   if(cssize > *ssize)
     *ssize = cssize;
     
   typename boost::graph_traits<btree_t>::out_edge_iterator e, e_end;
-  
   for(boost::tie(e, e_end) = boost::out_edges(v, btree); e != e_end; ++e)
     btree_alloc_subtree(boost::target(*e, btree), sPtr, cssize, ssize);
 }
@@ -99,5 +98,10 @@ void btree_alloc(void)
   btree_alloc_subtree(0, 0, 0, &ssize);
   currFunc->stack += ssize;
   SPEC_STAK (currFunc->etype) += ssize;
+}
+
+int btree_get_stack_size(short block)
+{
+  return(btree[block].second);
 }
 

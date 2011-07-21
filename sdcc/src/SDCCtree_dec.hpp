@@ -40,6 +40,12 @@
 //
 // void thorup_elimination_ordering(l_t &l, const J_t &J)
 // Creates an elimination ordering l of a graph J using Thorup's heuristic.
+//
+// void thorup_C_p(p_t &p, const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S)
+// Constructs the partial map p used in Thorup's coloring heuristic algorithm C from the underlying graph G and the separators S.
+
+#ifndef SDCCTREE_DEC_HH
+#define SDCCTREE_DEC_HH 1
 
 #include <map>
 #include <vector>
@@ -52,9 +58,6 @@
 #include <boost/graph/properties.hpp>
 #include <boost/graph/copy.hpp>
 #include <boost/graph/adjacency_list.hpp>
-
-#include <boost/graph/max_cardinality_matching.hpp> // For thorup_C()
-#include <boost/graph/filtered_graph.hpp> // For thorup_C()
 
 // Thorup algorithm D.
 // The use of the multimap makes the complexity of this O(|I|log|I|), which could be reduced to O(|I|).
@@ -498,16 +501,20 @@ struct in_separator_node {
   std::set<unsigned int> s;
 };
 
-template <class G_t>
-void thorup_C(const G_t &G, /*const*/ std::map<unsigned int, std::set<unsigned int> > &S)
+#include <boost/graph/max_cardinality_matching.hpp>
+#include <boost/graph/filtered_graph.hpp>
+
+// Construct the partial map p used in Thorup's algorithm C from the underlying graph G and the separators S.
+template <class p_t, class G_t>
+void thorup_C_p(p_t &p, const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S)
 {
   typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> F_t;
   F_t F(boost::num_vertices(G));
 
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
-      in_separator_edge<F_t> edge_filter(S[i], F);
-      in_separator_node node_filter(S[i]);
+      in_separator_edge<F_t> edge_filter(S.find(i)->second, F);
+      in_separator_node node_filter(S.find(i)->second);
       
       boost::filtered_graph<F_t, in_separator_edge<F_t>, in_separator_node > f(F, edge_filter, node_filter);
 
@@ -515,14 +522,13 @@ void thorup_C(const G_t &G, /*const*/ std::map<unsigned int, std::set<unsigned i
 
       boost::edmonds_maximum_cardinality_matching(f, &M[0]);
 
-      if(boost::matching_size(f, &M[0]) * 2 >= S[i].size())
+      if(boost::matching_size(f, &M[0]) * 2 < S.find(i)->second.size())
         {
-        }
-      else
-        {
-          boost::add_edge(i, *S[i].begin(), F);
-          
+          boost::add_edge(i, *S.find(i)->second.begin(), F);
+          p[i] = *S.find(i)->second.begin();
         }
     }
 }
+
+#endif
 

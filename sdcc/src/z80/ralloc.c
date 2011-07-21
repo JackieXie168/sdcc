@@ -1028,7 +1028,7 @@ tryAllocatingRegPair (symbol * sym)
 #endif
 /*------------------------------------------------------------------*/
 /* verifyRegsAssigned - make sure an iTemp is properly initialized; */
-/* it should either have registers or have beed spilled. Otherwise, */
+/* it should either have registers or have been spilled. Otherwise, */
 /* there was an uninitialized variable, so just spill this to get   */
 /* the operand in a valid state.                                    */
 /*------------------------------------------------------------------*/
@@ -1050,7 +1050,7 @@ verifyRegsAssigned (operand * op, iCode * ic)
   if (sym->regs[0])
     return;
 
-  // Don't warn for new allocator , since this is not used by default (until Thoruop is implemented for spillocation compaction).
+  // Don't warn for new allocator , since this is now used by default (until Thorup is implemented for spillocation compaction).
   if (z80_opts.oldralloc)
     werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT, sym->prereqv ? sym->prereqv->name : sym->name);
   spillThis (sym);
@@ -3000,8 +3000,8 @@ void z80_init_asmops (void);
 void
 z80_oldralloc (ebbIndex * ebbi)
 {
-  eBBlock **ebbs = ebbi->bbOrder;
-  int count = ebbi->count;
+  eBBlock **const ebbs = ebbi->bbOrder;
+  const int count = ebbi->count;
   iCode *ic;
   int i;
 
@@ -3100,8 +3100,8 @@ z80_oldralloc (ebbIndex * ebbi)
 void
 z80_ralloc (ebbIndex * ebbi)
 {
-  eBBlock **ebbs = ebbi->bbOrder;
-  int count = ebbi->count;
+  eBBlock **const ebbs = ebbi->bbOrder;
+  const int count = ebbi->count;
   iCode *ic;
   int i;
 
@@ -3149,12 +3149,6 @@ z80_ralloc (ebbIndex * ebbi)
 
   RegFix (ebbs, count);
 
-  /* When --max-allocs-per-node is too low, there can be gaps. */
-  //freeAllRegs ();
-  //fillGaps();
-
-  /* New register allcoator here. */
-
   /* if stack was extended then tell the user */
   if (_G.stackExtend)
     {
@@ -3180,10 +3174,10 @@ z80_ralloc (ebbIndex * ebbi)
      for each of the instruction */
   createRegMask (ebbs, count);
 
-  ic = joinPushes (ic);
-
   /* redo that offsets for stacked automatic variables */
   redoStackOffsets ();
+  
+  ic = joinPushes (ic);
 
   genZ80Code (ic);
 

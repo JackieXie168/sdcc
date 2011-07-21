@@ -46,6 +46,9 @@
 #include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/connected_components.hpp>
 
+#include <boost/icl/discrete_interval.hpp>
+#include <boost/icl/interval_set.hpp>
+
 #include "SDCCtree_dec.hpp"
 
 extern "C"
@@ -201,6 +204,9 @@ struct cfg_node
   operand_map_t operands;
   std::set<var_t> alive;
   std::set<var_t> dying;
+  
+  std::set<symbol *> stack_alive;
+  boost::icl::interval_set<int> free_stack;
 };
 
 struct con_node
@@ -1007,6 +1013,48 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 #ifdef D_RALLOC_DEC
   std::cout << "Width: " << (w  - 1) << "(" << currFunc->name << ")\n";
 #endif
+}
+
+// Coloring as in Thorup's algorihtm C, modified to account for variables of different size.
+template <class p_t, class G_t>
+void thorup_C_color(const p_t &p, const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S, int size)
+{
+  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+    {
+      typename p_t::const_iterator pi = p.find(i);
+      if(/*pi == p.end()*/true)
+        {
+          std::cout << "Coloring at " << i << "\n";
+          std::set<symbol *>::const_iterator s;
+          for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
+            if(size == (*s)->nRegs)
+              std::cout << (*s)->name << " ";
+          std::cout << "\n";
+        }
+      else
+        {
+        }
+    }
+}
+
+template <class G_t>
+void tree_dec_salloc(G_t &G, /*const*/ std::map<unsigned int, std::set<unsigned int> > &S)
+{
+  std::map<unsigned int, unsigned int> p;
+  std::set<int> sizes;
+  
+  thorup_C_p(p, G, S);
+
+  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+    {
+      std::set<symbol *>::const_iterator s;
+      for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
+        sizes.insert((*s)->nRegs);
+      G[i].free_stack.insert(boost::icl::discrete_interval<int>::type(7, INT_MAX));
+    }
+    
+  for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
+    thorup_C_color(p, G, S, *s);
 }
 
 #endif
