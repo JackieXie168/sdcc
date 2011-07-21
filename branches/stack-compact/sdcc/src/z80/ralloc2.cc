@@ -1272,6 +1272,8 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   cfg_t control_flow_graph;
 
   con_t conflict_graph;
+  
+  std::map<unsigned int, std::set<unsigned int> > separators;
 
   ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
@@ -1283,7 +1285,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 
   tree_dec_t tree_decomposition;
 
-  thorup_tree_decomposition(tree_decomposition, control_flow_graph);
+  thorup_tree_decomposition(tree_decomposition, control_flow_graph, &separators);
 
   nicify(tree_decomposition);
 
@@ -1297,6 +1299,8 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
     dump_tree_decomposition(tree_decomposition);
 
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
+  
+  thorup_C(control_flow_graph, separators);
 
   return(ic);
 }

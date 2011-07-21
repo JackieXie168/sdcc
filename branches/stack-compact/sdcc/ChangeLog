@@ -1,5 +1,11 @@
 2011-07-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCtree_dec.hpp,
+	  src/z80/ralloc2.cc:
+	  Some work towards Thorup-style spilllocation allocation.
+	 
+2011-07-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCtree_dec.hpp:
 	  Allow retrieval of separators when generating tree-decompositions from elimination orderings.
 

@@ -32,8 +32,8 @@
 // void nicify(T_t &T)
 // Transforms a tree decomposition T into a nice tree decomposition
 //
-// void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg)
-// Creates a tree decomposition T from a graph cfg using Thorup's heuristic.
+// void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg, std::map<unsigned int, std::set<unsigned int> > *S)
+// Creates a tree decomposition T from a graph cfg using Thorup's heuristic. If S is nonzero, separators are stored into it.
 //
 // void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsigned int>& l, const G_t &G, std::map<unsigned int, std::set<unsigned int> > *S)
 // Creates a tree decomposition T of a graph G from an elimination ordering l. If S is nonzero, separators are stored into it.
@@ -52,6 +52,9 @@
 #include <boost/graph/properties.hpp>
 #include <boost/graph/copy.hpp>
 #include <boost/graph/adjacency_list.hpp>
+
+#include <boost/graph/max_cardinality_matching.hpp> // For thorup_C()
+#include <boost/graph/filtered_graph.hpp> // For thorup_C()
 
 // Thorup algorithm D.
 // The use of the multimap makes the complexity of this O(|I|log|I|), which could be reduced to O(|I|).
@@ -267,14 +270,15 @@ void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsign
   add_vertices_to_tree_decomposition(T, v, v_end, G_sym, active, S);
 }
 
+// Create a tree-decomposition for a graph using Thorup's heuristic to obtain an elimination ordering
 template <class T_t, class G_t>
-void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg)
+void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg, std::map<unsigned int, std::set<unsigned int> > *S)
 {
   std::list<unsigned int> elimination_ordering;
 
   thorup_elimination_ordering(elimination_ordering, cfg);
 
-  tree_decomposition_from_elimination_ordering(tree_decomposition, elimination_ordering, cfg, 0);
+  tree_decomposition_from_elimination_ordering(tree_decomposition, elimination_ordering, cfg, S);
 }
 
 // Ensure that all joins are at proper join nodes: Each node that has two children has the same bag as its children.
@@ -470,4 +474,55 @@ void nicify(T_t &T)
   nicify_diffs_more(T, t);
 }
 
+template <class F_t>
+struct in_separator_edge {
+  in_separator_edge() { }
+  in_separator_edge(const std::set<unsigned int> &S, const F_t &F) : s(S) { f = &F; }
+  template <typename Edge>
+  bool operator()(const Edge& e) const {
+    return(s.count(boost::source(e, *f)) && s.count(boost::source(e, *f)));
+  }
+  
+  std::set<unsigned int> s;
+  const F_t *f;
+};
+
+struct in_separator_node {
+  in_separator_node() { }
+  in_separator_node(const std::set<unsigned int> &S) : s(S) { }
+  template <typename node>
+  bool operator()(const node& n) const {
+    return(s.count(n));
+  }
+  
+  std::set<unsigned int> s;
+};
+
+template <class G_t>
+void thorup_C(const G_t &G, /*const*/ std::map<unsigned int, std::set<unsigned int> > &S)
+{
+  typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> F_t;
+  F_t F(boost::num_vertices(G));
+
+  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+    {
+      in_separator_edge<F_t> edge_filter(S[i], F);
+      in_separator_node node_filter(S[i]);
+      
+      boost::filtered_graph<F_t, in_separator_edge<F_t>, in_separator_node > f(F, edge_filter, node_filter);
+
+      std::vector<typename boost::graph_traits<G_t>::vertex_descriptor> M(boost::num_vertices(G));
+
+      boost::edmonds_maximum_cardinality_matching(f, &M[0]);
+
+      if(boost::matching_size(f, &M[0]) * 2 >= S[i].size())
+        {
+        }
+      else
+        {
+          boost::add_edge(i, *S[i].begin(), F);
+          
+        }
+    }
+}
 
