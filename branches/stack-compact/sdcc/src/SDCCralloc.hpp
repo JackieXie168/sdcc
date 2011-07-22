@@ -56,6 +56,7 @@ extern "C"
 #include "SDCCsymt.h"
 #include "SDCCicode.h"
 #include "SDCCBBlock.h"
+#include "SDCCbtree.h"
 
 #include "z80.h"
 #include "ralloc.h"
@@ -349,6 +350,11 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
               symbol *isym = (symbol *)(hTabItemWithKey(liveRanges, i));
               for (reg_t k = 0; k < isym->nRegs; k++)
                 cfg[key_to_index[ic->key]].alive.insert(sym_to_index[std::pair<int, int>(i, k)]);
+                
+              if(isym->block)
+                isym->block = btree_lowest_common_ancestor(isym->block, ic->block);
+              else
+                isym->block = ic->block;    
             }
         }
 

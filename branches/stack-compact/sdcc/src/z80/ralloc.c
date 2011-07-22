@@ -45,6 +45,7 @@
 
 #include "z80.h"
 #include "SDCCicode.h"
+#include "SDCCbtree.h"
 #include "dbuf_string.h"
 
 /* Flags to turn off optimisations.
@@ -397,15 +398,6 @@ noOverLap (set *itmpStack, symbol *fsym)
     {
       if (bitVectBitValue (sym->clashes, fsym->key))
         return 0;
-#if 0
-      // if sym starts before (or on) our end point
-      // and ends after (or on) our start point,
-      // it is an overlap.
-      if (sym->liveFrom <= fsym->liveTo && sym->liveTo >= fsym->liveFrom)
-        {
-          return 0;
-        }
-#endif
     }
   return 1;
 }
@@ -457,6 +449,7 @@ createStackSpil (symbol * sym)
       sym->stackSpil = 1;
       sloc->isFree = 0;
       addSetHead (&sloc->usl.itmpStack, sym);
+      sloc->block = btree_lowest_common_ancestor(sloc->block, sym->block);
       D (D_ALLOC, ("createStackSpil: found existing\n"));
       return sym;
     }
@@ -473,6 +466,7 @@ createStackSpil (symbol * sym)
   /* set the type to the spilling symbol */
   sloc->type = copyLinkChain (sym->type);
   sloc->etype = getSpec (sloc->type);
+  sloc->block = sym->block;
   SPEC_SCLS (sloc->etype) = S_AUTO;
   SPEC_EXTR (sloc->etype) = 0;
   SPEC_STAT (sloc->etype) = 0;
