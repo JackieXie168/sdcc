@@ -23,7 +23,6 @@
 
 #include "SDCCralloc.hpp"
 
-
 extern "C"
 {
   unsigned char dryZ80iCode (iCode * ic);

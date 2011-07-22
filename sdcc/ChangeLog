@@ -1,5 +1,14 @@
 2011-07-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCbtree.h,
+	  src/SDCCbtree.cc,
+	  src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc,
+	  src/z80/ralloc.c:
+	  Use the block-tree based stack allocator for spilllocations, too (z80 and gbz80 only).
+
+2011-07-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCbtree.cc,
 	  src/SDCCralloc.hpp,
 	  src/SDCCsymt.h,
