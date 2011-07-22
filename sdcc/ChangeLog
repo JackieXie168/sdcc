@@ -1,9 +1,12 @@
 2011-07-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/SDCCralloc.hpp,
+	* src/SDCCbtree.cc,
+	  src/SDCCralloc.hpp,
 	  src/SDCCsymt.h,
+	  src/SDCCtree_dec.hpp,
 	  src/z80/ralloc2.cc,
 	  src/z80/ralloc.c,
+	  src/z80/ralloc.h,
 	  src/z80/gen.c:
 	  Minor code cleanup.
 	  
