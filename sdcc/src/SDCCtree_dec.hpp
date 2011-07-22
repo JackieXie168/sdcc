@@ -501,6 +501,7 @@ struct in_separator_node {
   std::set<unsigned int> s;
 };
 
+#if 0
 #include <boost/graph/max_cardinality_matching.hpp>
 #include <boost/graph/filtered_graph.hpp>
 
@@ -529,6 +530,7 @@ void thorup_C_p(p_t &p, const G_t &G, const std::map<unsigned int, std::set<unsi
         }
     }
 }
+#endif
 
 #endif
 

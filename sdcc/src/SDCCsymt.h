@@ -318,9 +318,9 @@ typedef struct symbol
   unsigned noSpilLoc:1;         /* cannot be assigned a spil location */
   unsigned isstrlit;            /* is a string literal and it's usage count  */
   unsigned accuse;              /* can be left in the accumulator
-                                   On the Z80 accuse is divided into
-                                   ACCUSE_A and ACCUSE_HL as the idea
-                                   is quite similar.
+                                   On the Z80 accuse is divided into ACCUSE_A and
+                                   ACCUSE_HL (old register allocator only)
+                                   as the idea is quite similar.
                                  */
   unsigned dptr;                /* 8051 variants with multiple DPTRS
                                    currently implemented in DS390 only
@@ -366,7 +366,7 @@ typedef struct symbol
   struct bitVect *clashes;      /* overlaps with what other symbols */
   struct ast *funcTree;         /* function body ast if inlined */
 
-  bool for_newralloc;
+  bool for_newralloc;           /* To be handled by the new allocator */
 }
 symbol;
 

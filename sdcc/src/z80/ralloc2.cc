@@ -858,6 +858,7 @@ static void unset_surviving_regs(unsigned short int i, const G_t &G)
   freeBitVect(ic->rSurv);
 }
 
+#if 0
 template<class G_t, class I_t>
 static void set_spilt(const assignment &a, unsigned short int i, G_t &G, const I_t &I)
 {
@@ -867,9 +868,10 @@ static void set_spilt(const assignment &a, unsigned short int i, G_t &G, const I
       symbol *const sym = (symbol *)(hTabItemWithKey(liveRanges, I[*v].v));
       if(sym->regs[0] || sym->accuse || sym->remat || !sym->nRegs)
         continue;
-      G[i].stack_alive[sym] = INT_MIN; // Needs to be allocated on the stack.
+      G[i].stack_alive.insert(sym); // Needs to be allocated on the stack.
     }
 }
+#endif
 
 template <class G_t, class I_t>
 void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
@@ -1273,12 +1275,16 @@ void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
       set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
+#if 0
       set_spilt(winner, i, G, I);
+#endif
     }
 }
 
 iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 {
+  eBBlock **const ebbs = ebbi->bbOrder;
+  const int count = ebbi->count;
   iCode *ic;
 
 #ifdef DEBUG_RALLOC_DEC
@@ -1317,8 +1323,33 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   // Allocate registers
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
   
-  // Allocate stack space
-  tree_dec_salloc(control_flow_graph, separators);
+  RegFix (ebbs, count);
+
+#if 0
+  /* if stack was extended then tell the user */
+  if (_G.stackExtend)
+    {
+/*      werror(W_TOOMANY_SPILS,"stack", */
+/*             _G.stackExtend,currFunc->name,""); */
+      _G.stackExtend = 0;
+    }
+
+  if (_G.dataExtend)
+    {
+/*      werror(W_TOOMANY_SPILS,"data space", */
+/*             _G.dataExtend,currFunc->name,""); */
+      _G.dataExtend = 0;
+    }
+#endif
+
+  if (options.dump_rassgn)
+    {
+      dumpEbbsToFileExt (DUMP_RASSGN, ebbi);
+      dumpLiveRanges (DUMP_LRANGE, liveRanges);
+    }
+
+  /* redo that offsets for stacked automatic variables */
+  redoStackOffsets ();
 
   return(ic);
 }
