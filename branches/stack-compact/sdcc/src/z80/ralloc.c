@@ -449,6 +449,7 @@ createStackSpil (symbol * sym)
 //printf("Creating new spilllocation.\n");
   /* first go try and find a free one that is already
      existing on the stack */
+     
   if (applyToSet (_G.stackSpil, isFree, &sloc, sym))
     {
       /* found a free one : just update & return */
@@ -485,11 +486,11 @@ createStackSpil (symbol * sym)
   if (IN_STACK (sloc->etype))
     {
       currFunc->stack += getSize (sloc->type);
-      _G.stackExtend += getSize (sloc->type);
+      //_G.stackExtend += getSize (sloc->type);
     }
   else
     {
-      _G.dataExtend += getSize (sloc->type);
+      //_G.dataExtend += getSize (sloc->type);
     }
 
   /* add it to the stackSpil set */
@@ -3146,36 +3147,10 @@ z80_ralloc (ebbIndex * ebbi)
 
   /* The new register allocator invokes its magic */
   ic = z80_ralloc2_cc (ebbi);
-
-  RegFix (ebbs, count);
-
-  /* if stack was extended then tell the user */
-  if (_G.stackExtend)
-    {
-/*      werror(W_TOOMANY_SPILS,"stack", */
-/*             _G.stackExtend,currFunc->name,""); */
-      _G.stackExtend = 0;
-    }
-
-  if (_G.dataExtend)
-    {
-/*      werror(W_TOOMANY_SPILS,"data space", */
-/*             _G.dataExtend,currFunc->name,""); */
-      _G.dataExtend = 0;
-    }
-
-  if (options.dump_rassgn)
-    {
-      dumpEbbsToFileExt (DUMP_RASSGN, ebbi);
-      dumpLiveRanges (DUMP_LRANGE, liveRanges);
-    }
-
+  
   /* after that create the register mask
      for each of the instruction */
   createRegMask (ebbs, count);
-
-  /* redo that offsets for stacked automatic variables */
-  redoStackOffsets ();
   
   ic = joinPushes (ic);
 

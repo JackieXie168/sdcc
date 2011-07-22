@@ -3174,7 +3174,7 @@ static void
 genUminus (const iCode *ic)
 {
   int offset, size;
-  sym_link *optype, *rtype;
+  sym_link *optype;
 
   /* assign asmops */
   aopOp (IC_LEFT (ic), ic, FALSE, FALSE);
@@ -3190,7 +3190,6 @@ genUminus (const iCode *ic)
     }
 
   optype = operandType (IC_LEFT (ic));
-  rtype = operandType (IC_RESULT (ic));
 
   /* if float then do float stuff */
   if (IS_FLOAT (optype))
@@ -3245,10 +3244,8 @@ static void
 assignResultValue (operand * oper)
 {
   int size = AOP_SIZE (oper);
-  bool topInA = 0;
 
   wassertl (size <= 4, "Got a result that is bigger than four bytes");
-  topInA = requiresHL (AOP (oper));
 
   if (IS_GB && size == 4 && requiresHL (AOP (oper)))
     {
@@ -9349,7 +9346,7 @@ setupForMemcpy (const iCode *ic, int nparams, operand **pparams)
   PAIR_ID dest[3] = {
     PAIR_DE, PAIR_HL, PAIR_BC
   };
-  int i, nunity = 0;
+  int i;
   bool skip[3] = {FALSE, FALSE, FALSE};
   short dstregs[4];
   short srcregs[4];

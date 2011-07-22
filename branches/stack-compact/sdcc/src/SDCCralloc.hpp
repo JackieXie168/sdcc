@@ -204,9 +204,11 @@ struct cfg_node
   operand_map_t operands;
   std::set<var_t> alive;
   std::set<var_t> dying;
-  
-  std::map<symbol *, int> stack_alive;
+
+#if 0 
+  std::set<symbol *> stack_alive;
   boost::icl::interval_set<int> free_stack;
+#endif
 };
 
 struct con_node
@@ -1015,27 +1017,28 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 #endif
 }
 
+#if 0
 // Coloring as in Thorup's algorihtm C, modified to account for variables of different size.
 template <class p_t, class G_t>
 void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S, int size)
 {
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
-      std::map<symbol *, int>::const_iterator s;
+      std::set<symbol *>::const_iterator s;
       
       boost::icl::interval_set<int> used_colors;
       for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
-        if(s->second != INT_MIN)
-          used_colors |= boost::icl::discrete_interval<int>::type(s->second, s->second + s->first->nRegs);
+        ;//if(s->second != INT_MIN)
+          ;//used_colors |= boost::icl::discrete_interval<int>::type(s->second, s->second + s->first->nRegs);
       G[i].free_stack -= used_colors;
     
       typename p_t::const_iterator pi = p.find(i);
       if(/*pi == p.end()*/true)
         {
-          std::map<symbol *, int>::iterator s;
+          std::set<symbol *>::iterator s;
           std::cout << "Coloring at " << i << "\n";
           for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
-            if(size == s->first->nRegs && s->second == INT_MIN)
+            if(size == (*s)->nRegs && true /*not colored*/)
               {
                 int start;
                 boost::icl::interval_set<int>::iterator si;
@@ -1051,9 +1054,9 @@ void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<
                     if(boost::icl::last(*si) >= start + size)
                       break; // Found one.
                   }
-                s->second = start;
+                //s->second = start;
                 G[i].free_stack -= boost::icl::discrete_interval<int>::type(start, start + size);
-                std::cout << "Assigned " << s->first->name << " to [" << start << "," << (start + size) << "[\n";
+                std::cout << "Assigned " << (*s)->name << "\n";
               }
         }
       else
@@ -1072,15 +1075,16 @@ void tree_dec_salloc(G_t &G, /*const*/ std::map<unsigned int, std::set<unsigned 
 
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
-      std::map<symbol *, int>::const_iterator s;
+      std::set<symbol *>::const_iterator s;
       for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
-        sizes.insert(s->first->nRegs);
-      G[i].free_stack.insert(boost::icl::discrete_interval<int>::type(7, INT_MAX));
+        sizes.insert((*s)->nRegs);
+      G[i].free_stack.insert(boost::icl::discrete_interval<int>::type(btree_get_stack_size(G[i].ic->block), INT_MAX));
     }
     
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
     thorup_C_color(p, G, S, *s);
 }
+#endif
 
 #endif
 
