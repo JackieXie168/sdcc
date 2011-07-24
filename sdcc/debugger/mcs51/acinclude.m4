@@ -17,18 +17,19 @@ AC_DEFUN([wi_LIB_READLINE], [
   if test "$ac_cv_header_readline_readline_h" = yes; then
     dnl check the readline version
 
+    AC_MSG_CHECKING([for GNU Readline version])
     cat > conftest.$ac_ext <<EOF
 #include <stdio.h>
 #include <readline/readline.h>
 wi_LIB_READLINE_VERSION RL_VERSION_MAJOR RL_VERSION_MINOR
 EOF
 
-    wi_READLINE_VERSION=$($CPP $CPPFLAGS conftest.$ac_ext | sed -n -e "s/^wi_LIB_READLINE_VERSION  *\([[0-9\]][[0-9\]]*\)  *\([[0-9\]][[0-9\]]*\)$/\1.\2/p")
+    wi_READLINE_VERSION=$($CPP $CPPFLAGS conftest.$ac_ext | sed -n -e "s/^wi_LIB_READLINE_VERSION  *\([[0-9]][[0-9]]*\)  *\([[0-9]][[0-9]]*\)$/\1.\2/p")
     rm -rf conftest*
 
     if test -n "$wi_READLINE_VERSION"; then
       wi_MAJOR=$(expr $wi_READLINE_VERSION : '\([[0-9]][[0-9]]*\)\.')
-      wi_MINOR=$(expr $wi_READLINE_VERSION : '[[0-9]][[0-9]]*\.\([[0-9]][[0-9]]*$\)')
+      wi_MINOR=$(expr $wi_READLINE_VERSION : '[[0-9]][[0-9]]*\.\([[0-9]][[0-9]]*\)')
       if test $wi_MINOR -lt 10; then
         wi_MINOR=$(expr $wi_MINOR \* 10)
       fi
@@ -36,6 +37,7 @@ EOF
     else
       wi_READLINE_VERSION=-1
     fi
+    AC_MSG_RESULT($wi_READLINE_VERSION)
 
     dnl check for the readline library
 
