@@ -786,8 +786,6 @@ newiTempOperand (sym_link * type, char throwType)
 
   op->svt.symOperand = itmp;
   op->key = itmp->key = ++operandKey;
-  
-//printf("New iTempOp %s / %d created.\n spillLoc %d\n", itmp->name, itmp->key, (int)(itmp->usl.spillLoc));
 
   return op;
 }
@@ -3449,7 +3447,6 @@ geniCodeReceive (value * args, operand * func)
                   OP_SYMBOL (sym->reqv)->isreqv = 1;
                   OP_SYMBOL (sym->reqv)->islocal = 0;
                   SPIL_LOC (sym->reqv) = sym;
-//printf("2Using %s as spilloc for %s\n", sym->name, OP_SYMBOL(sym->reqv)->name);
                 }
             }
 
