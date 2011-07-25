@@ -77,6 +77,9 @@ typedef signed char reg_t;
 // Upper bound on NUM_REGS
 #define MAX_NUM_REGS 9
 
+// Use top-down approach (better when the heuristic is used, doesn't matter for the result when --max-allocs-per-node is high enough)
+#define TOP_DOWN_RALLOC
+
 // Assignment at an instruction
 struct i_assignment_t
 {
@@ -869,15 +872,22 @@ std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_bes
   switch (out_degree(t, T))
     {
     case 0:
+#ifdef TOP_DOWN_RALLOC
+      return(t_s < t_old_s ? std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t>(t, t_s) : std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t>(t_old, t_old_s));
+#else
       return(t_s > t_old_s ? std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t>(t, t_s) : std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t>(t_old, t_old_s));
+#endif
     case 1:
       return(find_best_root(T, *c, T[*c].alive.size() ? T[*c].alive.size() : t_s, t_old, t_old_s));
     case 2:
       c0 = *c++;
       c1 = *c;
       boost::tie(t0, t0_s) = find_best_root(T, c0, T[c0].alive.size() ? T[c0].alive.size() : t_s, t_old, t_old_s);
+#ifdef TOP_DOWN_RALLOC
+      return(find_best_root(T, c1, T[c1].alive.size() ? T[c1].alive.size() : t_s, t0_s < t_old_s ? t0 : t_old, t0_s < t_old_s ? t0_s : t_old_s));
+#else
       return(find_best_root(T, c1, T[c1].alive.size() ? T[c1].alive.size() : t_s, t0_s > t_old_s ? t0 : t_old, t0_s > t_old_s ? t0_s : t_old_s));
-      break;
+#endif
     default:
       std::cerr << "Not nice.\n";
       break;
