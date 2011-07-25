@@ -303,8 +303,6 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
                 // Add node to conflict graph:
                 if (sym_to_index.find(std::pair<int, reg_t>(j2, 0)) != sym_to_index.end())
                   continue;
-                  
-//std::cout << "Adding var " << sym->name << " / " << sym->key << " ( spillloc " << sym->usl.spillLoc << ") to cfg.\n";
 
                 // Other parts of the allocator may rely on the variables corresponding to bytes from the same sdcc variable to have subsequent numbers.
                 for (reg_t k = 0; k < sym->nRegs; k++)

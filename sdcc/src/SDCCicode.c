@@ -1562,7 +1562,6 @@ operandFromSymbol (symbol * sym)
       op->type = SYMBOL;
       op->svt.symOperand = sym;
       op->key = sym->key;
-//printf("1Overwriting key by %d\n", (int)(sym->key));
       op->isvolatile = isOperandVolatile (op, TRUE);
       op->isGlobal = isOperandGlobal (op);
       return op;
@@ -1591,14 +1590,12 @@ operandFromSymbol (symbol * sym)
          and before liveRange calculation */
       sym->reqv = newiTempOperand (sym->type, 0);
       sym->reqv->key = sym->key;
-//printf("2Overwriting key by %d\n", (int)(sym->key));
       OP_SYMBOL (sym->reqv)->prereqv = sym;
       OP_SYMBOL (sym->reqv)->key = sym->key;
       OP_SYMBOL (sym->reqv)->isreqv = 1;
       OP_SYMBOL (sym->reqv)->islocal = 1;
       OP_SYMBOL (sym->reqv)->onStack = sym->onStack;
       SPIL_LOC (sym->reqv) = sym;
-//printf("1Using %s as spilloc for %s\n", sym->name, OP_SYMBOL(sym->reqv)->name);
     }
 
   if (!IS_AGGREGATE (sym->type))
@@ -1608,7 +1605,6 @@ operandFromSymbol (symbol * sym)
       op->svt.symOperand = sym;
       op->isaddr = 1;
       op->key = sym->key;
-//printf("3Overwriting key by %d\n", (int)(sym->key));
       op->isvolatile = isOperandVolatile (op, TRUE);
       op->isGlobal = isOperandGlobal (op);
       op->isPtr = IS_PTR (operandType (op));
