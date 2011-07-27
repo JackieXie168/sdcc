@@ -501,7 +501,7 @@ struct in_separator_node {
   std::set<unsigned int> s;
 };
 
-#if 0
+#ifdef TD_SALLOC
 #include <boost/graph/max_cardinality_matching.hpp>
 #include <boost/graph/filtered_graph.hpp>
 

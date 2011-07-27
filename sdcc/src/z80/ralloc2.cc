@@ -857,7 +857,7 @@ static void unset_surviving_regs(unsigned short int i, const G_t &G)
   freeBitVect(ic->rSurv);
 }
 
-#if 0
+#ifdef TD_SALLOC
 template<class G_t, class I_t>
 static void set_spilt(const assignment &a, unsigned short int i, G_t &G, const I_t &I)
 {
@@ -1274,7 +1274,7 @@ void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
       set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
-#if 0
+#ifdef TD_SALLOC
       set_spilt(winner, i, G, I);
 #endif
     }
@@ -1349,6 +1349,10 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 
   /* redo that offsets for stacked automatic variables */
   redoStackOffsets ();
+
+#ifdef TD_SALLOC
+  tree_dec_salloc(control_flow_graph, separators);
+#endif
 
   return(ic);
 }
