@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------------
 ;  abs.s
 ;
-;  Copyright (C) 2010, Philipp Klaus Krause
+;  Copyright (C) 2011, Philipp Klaus Krause
 ;
 ;  This library is free software; you can redistribute it and/or modify it
 ;  under the terms of the GNU General Public License as published by the
@@ -28,34 +28,71 @@
 
 	.area   _CODE
 
-	.globl _abs
+	.globl ___setjmp
 
-; 12B; 86T for nonnegative arguments, 78T for negative.
-_abs:
+___setjmp:
 	pop	hl
-	pop	de
-	push	de
+	pop	iy
+	push	af
 	push	hl
+
+	; Store return address.
+	ld	0(iy), l
+	ld	1(iy), h
+
+	; Store stack pointer.
 	xor	a, a
 	ld	l, a
 	ld	h, a
-	sbc	hl, de
-	ret	P
-	ex	de, hl
+	ld	hl, #0
+	add	hl, sp
+	ld	2(iy), l
+	ld	3(iy), h
+
+	; Store frame pointer.
+	push	ix
+	pop	hl
+	ld	4(iy), l
+	ld	5(iy), h
+
+	; Return 0.
+	ld	l, a
+	ld	h, a
 	ret
 
-; 14B; 59T for nonegative arguments, 94T for negative:
-;_abs:
-;	pop	de
-;	pop	hl
-;	push	hl
-;	push	de
-;	bit	7, h
-;	ret	Z
-;	xor	a, a
-;	ld	e, a
-;	ld	d, a
-;	ex	de, hl
-;	sbc	hl, de
-;	ret
+.globl _longjmp
+
+_longjmp:
+	pop	af
+	pop	iy
+	pop	de
+
+	; Ensure that return value is non-zero.
+	ld	a, e
+	or	a, d
+	jr	NZ, jump
+	ld	de, #1
+jump:
+
+	; Restore frame pointer.
+	ld	l, 4(iy)
+	ld	h, 5(iy)
+	push	hl
+	pop	ix
+
+	; Adjust stack pointer.
+	ld	l, 2(iy)
+	ld	h, 3(iy)
+	ld	sp, hl
+	inc	sp
+	inc	sp
+
+	; Move return value into hl.
+	ex	de, hl
+
+	; Jump.
+	ld	c, 0(iy)
+	ld	b, 1(iy)
+	push	bc
+	ret
 

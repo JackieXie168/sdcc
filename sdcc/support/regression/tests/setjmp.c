@@ -17,7 +17,7 @@ T2_isr (void) __interrupt 5 //no using
 }
 #endif
 
-#if defined(SDCC_mcs51) || defined(PORT_HOST)
+#if defined(SDCC_mcs51) || defined(SDCC_z80) || defined(PORT_HOST)
 
 void
 try_fun (jmp_buf catch, int except)
@@ -25,12 +25,32 @@ try_fun (jmp_buf catch, int except)
   longjmp (catch, except);
 }
 
+jmp_buf b;
+
+void g(void)
+{
+	longjmp(b, 0); // When called with an argument of 0, longjmp() makes setjmp() return 1 instead.
+	g();
+}
+
+void f1(void)
+{
+	static int i;
+	int j = setjmp(b);
+	ASSERT(i == j);
+	i++;
+	if(!j)
+		g();
+}
+
+#else
+#warning Skipped setjmp/longjmp test
 #endif
 
 void
 testJmp (void)
 {
-#if defined(SDCC_mcs51) || defined(PORT_HOST)
+#if defined(SDCC_mcs51) || defined(SDCC_z80) || defined(PORT_HOST)
   jmp_buf catch;
   int exception;
 
@@ -51,4 +71,14 @@ testJmp (void)
     }
   ASSERT (exception == 1);
 #endif
+
+// C99 might require setjmp to be a macro. The standard seems self-contradicting on this issue.
+//#ifndef setjmp
+//  ASSERT(0);
+//#endif
+
+#if defined(SDCC_mcs51) || defined(SDCC_z80) || defined(PORT_HOST)
+  f1();
+#endif
 }
+
