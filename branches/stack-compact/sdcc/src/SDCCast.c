@@ -2565,10 +2565,10 @@ checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit)
         {
           if (IS_INTEGRAL (orgType))
             {
-              // maybe this is NULL, than it's ok.
+              // maybe this is NULL, then it's ok.
               if (!(IS_LITERAL (orgType) && (SPEC_CVAL (orgType).v_ulong == 0)))
                 {
-                  if (GPTRSIZE > FPTRSIZE && IS_GENPTR (newType))
+                  if (GPTRSIZE > FPTRSIZE && IS_GENPTR (newType) && !IS_FUNCPTR (newType))
                     {
                       // no way to set the storage
                       if (IS_LITERAL (orgType))
@@ -2603,7 +2603,7 @@ checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit)
           else if (IS_GENPTR (orgType) && IS_VOID (orgType->next))
             {                   // cast from void* is always allowed
             }
-          else if (port->s.gptr_size > port->s.fptr_size /*!TARGET_IS_Z80 && !TARGET_IS_GBZ80 */ )
+          else if (GPTRSIZE > FPTRSIZE /*!TARGET_IS_Z80 && !TARGET_IS_GBZ80 */ )
             {
               // if not a pointer to a function
               if (!(IS_CODEPTR (newType) && IS_FUNC (newType->next) && IS_FUNC (orgType)))
@@ -2824,10 +2824,10 @@ decorateType (ast * tree, RESULT_TYPE resultType)
 
   switch (tree->opval.op)
     {
-        /*------------------------------------------------------------------*/
-        /*----------------------------*/
+      /*------------------------------------------------------------------*/
+      /*----------------------------*/
       /*        array node          */
-        /*----------------------------*/
+      /*----------------------------*/
     case '[':
       /* first check if this is an array or a pointer */
       if ((!IS_ARRAY (LTYPE (tree))) && (!IS_PTR (LTYPE (tree))))
@@ -3986,7 +3986,7 @@ decorateType (ast * tree, RESULT_TYPE resultType)
                     SPEC_STRUCT (LETYPE (tree))->tag);
         }
 #endif
-#if 0                           // disbaled to fix bug 2941749
+#if 0                           // disabled to fix bug 2941749
       if (IS_ADDRESS_OF_OP (tree->right)
           && IS_AST_SYM_VALUE (tree->right->left) && SPEC_ABSA (AST_SYMBOL (tree->right->left)->etype))
         {
@@ -4267,9 +4267,21 @@ decorateType (ast * tree, RESULT_TYPE resultType)
           return decorateType (tree, resultType);
         }
 
+      /* 'ifx (0 == op)' -> 'ifx (!(op))' */
+      if (IS_LITERAL (LETYPE (tree)) &&
+          floatFromVal (valFromType (LTYPE (tree))) == 0 &&
+          tree->opval.op == EQ_OP && (resultType == RESULT_TYPE_IFX || resultType == RESULT_TYPE_BIT))
+        {
+          tree->opval.op = '!';
+          tree->left = tree->right;
+          tree->right = NULL;
+          tree->decorated = 0;
+          return decorateType (tree, resultType);
+        }
+
       /* 'ifx (op == 0)' -> 'ifx (!(op))' */
-      if (IS_LITERAL (RTYPE (tree)) &&
-          floatFromVal (valFromType (RETYPE (tree))) == 0 &&
+      if (IS_LITERAL (RETYPE (tree)) &&
+          floatFromVal (valFromType (RTYPE (tree))) == 0 &&
           tree->opval.op == EQ_OP && (resultType == RESULT_TYPE_IFX || resultType == RESULT_TYPE_BIT))
         {
           tree->opval.op = '!';
@@ -4280,7 +4292,7 @@ decorateType (ast * tree, RESULT_TYPE resultType)
 
       /* if they are both literal then */
       /* rewrite the tree */
-      if (IS_LITERAL (RTYPE (tree)) && IS_LITERAL (LTYPE (tree)))
+      if (IS_LITERAL (RETYPE (tree)) && IS_LITERAL (LETYPE (tree)))
         {
           tree->type = EX_VALUE;
           tree->opval.val = valCompare (valFromType (LETYPE (tree)), valFromType (RETYPE (tree)), tree->opval.op);
@@ -5869,7 +5881,6 @@ optimizeCompare (ast * root)
   /* optimize else do nothing        */
   if (vleft && vright && IS_BITVAR (vleft->etype) && IN_BITSPACE (SPEC_OCLS (vleft->etype)) && IS_LITERAL (vright->etype))
     {
-
       /* if right side > 1 then comparison may never succeed */
       if ((litValue = (int) ulFromVal (vright)) > 1)
         {

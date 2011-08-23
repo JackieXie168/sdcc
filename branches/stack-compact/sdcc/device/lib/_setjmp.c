@@ -45,8 +45,8 @@ static void dummy (void) __naked
 ;	-----------------------------------------
 ;	 function setjmp
 ;	-----------------------------------------
-	.globl _setjmp
-_setjmp:
+	.globl ___setjmp
+___setjmp:
 	ar2 = 0x02
 	ar3 = 0x03
 	ar4 = 0x04
@@ -203,11 +203,16 @@ _longjmp:
 ;../../device/lib/_setjmp.c:200:SP = lsp;
 ;     genAssign
 	mov	sp,r5
-;../../device/lib/_setjmp.c:201:return rv;
+;../../device/lib/_setjmp.c:201:return rv ? rv : 1;
 ;     genAssign
 	mov	dph,r2
 	mov	dpl,r3
+	mov	a,r2
+	orl	a,r3
+	jnz	00001$
+	mov	dpl,#0x01
 ;     genRet
+00001$:
 	_RETURN
 
 	__endasm;
@@ -228,8 +233,8 @@ static void dummy (void) __naked
 ;	-----------------------------------------
 ;	 function setjmp
 ;	-----------------------------------------
-	.globl _setjmp
-_setjmp:
+	.globl ___setjmp
+___setjmp:
 	ar2 = 0x02
 	ar3 = 0x03
 	ar4 = 0x04
@@ -374,10 +379,16 @@ _longjmp:
 ;../../device/lib/_setjmp.c:35:SP = lsp;
 ;     genAssign
 	mov	sp,r5
-;../../device/lib/_setjmp.c:36:return rv;
-;     genRet
+;../../device/lib/_setjmp.c:36:return rv ? rv : 1;
+;     genAssign
 	mov	dph,r2
 	mov	dpl,r3
+	mov	a,r2
+	orl	a,r3
+	jnz	00001$
+	mov	dpl,#0x01
+;     genRet
+00001$:
 	_RETURN
 
 	__endasm;
@@ -389,7 +400,7 @@ _longjmp:
 extern unsigned char __data spx;
 extern unsigned char __data bpx;
 
-int setjmp (jmp_buf buf)
+int __setjmp (jmp_buf buf)
 {
     /* registers would have been saved on the
        stack anyway so we need to save SP
@@ -411,6 +422,7 @@ int setjmp (jmp_buf buf)
 int longjmp (jmp_buf buf, int rv)
 {
     unsigned char lsp;
+
 #ifdef SDCC_USE_XSTACK
     spx = *buf++;
     bpx = *buf++;
@@ -423,7 +435,7 @@ int longjmp (jmp_buf buf, int rv)
     *((unsigned char __data *) lsp - 2) = *buf++;
 #endif
     SP = lsp;
-    return rv;
+    return rv ? rv : 1;
 }
 
 #endif

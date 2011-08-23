@@ -2068,8 +2068,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
               }
           }
         /* PENDING: check? */
-        if (pairId == PAIR_HL)
-          spillPair (PAIR_HL);
+        spillPair (pairId);
     }
 }
 
@@ -2705,7 +2704,8 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset)
     return;
   if (to->type == AOP_REG && from->type == AOP_REG && to->aopu.aop_reg[to_offset] == from->aopu.aop_reg[from_offset])
     return;
-
+  if (to->type == AOP_HLREG && from->type == AOP_HLREG && !strcmp(to->aopu.aop_str[to_offset], from->aopu.aop_str[from_offset]))
+    return;
   aopPut3 (to, to_offset, from, from_offset);
 }
 
@@ -4632,6 +4632,7 @@ static void
 genPlus (iCode * ic)
 {
   int size, offset = 0;
+  bool premoved;
 
   /* special cases :- */
 
@@ -4951,10 +4952,24 @@ genPlus (iCode * ic)
           goto release;
         }
     }
-  setupToPreserveCarry (ic);
-  while (size--)
+  
+  // Avoid overwriting operand in h or l when setupToPreserveCarry () loads hl.
+  if(!couldDestroyCarry (AOP (IC_LEFT (ic))))
     {
       cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
+      premoved = TRUE;
+    }
+  else
+    premoved = FALSE;
+    
+  setupToPreserveCarry (ic);
+
+  while (size--)
+    {
+      if(!premoved)
+        cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
+      else
+        premoved = FALSE;
       if (offset == 0)
       {
         if(size == 0 && AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT && ulFromVal (AOP (IC_RIGHT (ic))->aopu.aop_lit) == 1)
@@ -5215,13 +5230,18 @@ genMultOneChar (const iCode * ic)
       savedB = TRUE;
     }
 
-  if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG || AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != H_IDX)
+  // genMult() already swapped operands if necessary.
+  if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX ||
+    AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == H_IDX && !requiresHL (AOP (IC_LEFT (ic))))
+    {
+      cheapMove (ASMOP_E, 0, AOP (IC_LEFT (ic)), LSB);
+      cheapMove (ASMOP_H, 0, AOP (IC_RIGHT (ic)), LSB);
+    }
+  else
     {
       cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
       cheapMove (ASMOP_H, 0, AOP (IC_LEFT (ic)), LSB);
     }
-  else
-    cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
 
   if (!regalloc_dry_run)
     {
@@ -5310,11 +5330,11 @@ genMult (iCode *ic)
       AOP_SIZE (IC_RIGHT (ic)) > 2 ||
       AOP_SIZE (IC_RESULT (ic)) > 2)
     {
-      wassertl (0, "Multiplication is handled through support function calls");
+      wassertl (0, "Multiplication is handled through support function calls.");
     }
 
   /* Swap left and right such that right is a literal */
-  if ((AOP_TYPE (IC_LEFT (ic)) == AOP_LIT))
+  if (AOP_TYPE (IC_LEFT (ic)) == AOP_LIT)
     {
       operand *t = IC_RIGHT (ic);
       IC_RIGHT (ic) = IC_LEFT (ic);
@@ -5327,13 +5347,13 @@ genMult (iCode *ic)
       goto release;
     }
 
-  wassertl (AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT, "Right must be a literal");
+  wassertl (AOP_TYPE (IC_RIGHT (ic)) == AOP_LIT, "Right must be a literal.");
 
   val = (int) ulFromVal ( AOP (IC_RIGHT (ic))->aopu.aop_lit);
   //  wassertl (val > 0, "Multiply must be positive");
   wassertl (val != 1, "Can't multiply by 1");
 
-  if (IS_Z80 && !isPairDead (PAIR_DE, ic)) {
+  if (IS_Z80 && (byteResult ? bitVectBitValue (ic->rSurv, E_IDX) : !isPairDead (PAIR_DE, ic))) {
     _push (PAIR_DE);
     _G.stack.pushedDE = TRUE;
   }
@@ -5353,9 +5373,7 @@ genMult (iCode *ic)
         }
     }
   else
-    {
-      fetchPair (PAIR_DE, AOP (IC_LEFT (ic)));
-    }
+    fetchPair (PAIR_DE, AOP (IC_LEFT (ic)));
 
   i = val;
 
@@ -6426,16 +6444,9 @@ genAnd (const iCode *ic, iCode * ifx)
             }
           else
             {
-              if (AOP_TYPE (left) == AOP_ACC)
-                {
-                  wassertl (0, "Tried to perform an AND where the left operand is allocated into A");
-                }
-              else
-                {
-                  cheapMove (ASMOP_A, 0, AOP (left), offset);
-                  emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
-                  cheapMove (AOP (left), offset, ASMOP_A, 0);
-                }
+              cheapMove (ASMOP_A, 0, AOP (left), offset);
+              emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
+              cheapMove (AOP (left), offset, ASMOP_A, 0);
             }
         }
     }
@@ -6613,14 +6624,9 @@ genOr (const iCode *ic, iCode * ifx)
             }
           else
             {
-              if (AOP_TYPE (left) == AOP_ACC)
-                emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
-              else
-                {
-                  cheapMove (ASMOP_A, 0, AOP (left), offset);
-                  emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
-                  cheapMove (AOP (result), offset, ASMOP_A, 0);
-                }
+              cheapMove (ASMOP_A, 0, AOP (left), offset);
+              emit3_o (A_OR, ASMOP_A, 0, AOP (right), offset);
+              cheapMove (AOP (result), offset, ASMOP_A, 0);
             }
         }
     }
@@ -7561,13 +7567,6 @@ genRightShift (const iCode *ic)
 
   is_signed = !SPEC_USIGN (retype);
 
-  /* signed & unsigned types are treated the same : i.e. the
-     signed is NOT propagated inwards : quoting from the
-     ANSI - standard : "for E1 >> E2, is equivalent to division
-     by 2**E2 if unsigned or if it has a non-negative value,
-     otherwise the result is implementation defined ", MY definition
-     is that the sign does not get propagated */
-
   right = IC_RIGHT (ic);
   left = IC_LEFT (ic);
   result = IC_RESULT (ic);
@@ -7704,9 +7703,18 @@ genUnpackBits (operand * result, int pair)
       wassertl (rsize == 2, "HL must be of size 2");
       emit2 ("ld a,!*hl");
       emit2 ("inc hl");
-      emit2 ("ld h,!*hl");
-      emit2 ("ld l,a");
-      emit2 ("ld a,h");
+      if(AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != H_IDX)
+        {
+          emit2 ("ld h,!*hl");
+          cheapMove (AOP (result), offset++, ASMOP_A, 0);
+          emit2 ("ld a,h");
+        }
+      else
+        {
+          emit2 ("ld l,!*hl");
+          cheapMove (AOP (result), offset++, ASMOP_A, 0);
+          emit2 ("ld a,l");
+        }
       emit2 ("and a,!immedbyte", ((unsigned char) -1) >> (16 - blen));
       regalloc_dry_run_cost += 7;
       if (!SPEC_USIGN (etype))
@@ -7722,7 +7730,7 @@ genUnpackBits (operand * result, int pair)
             }
           regalloc_dry_run_cost += 7;
         }
-      emit2 ("ld h,a");
+      cheapMove (AOP (result), offset++, ASMOP_A, 0);
       regalloc_dry_run_cost += 1;
       spillPair (PAIR_HL);
       return;
