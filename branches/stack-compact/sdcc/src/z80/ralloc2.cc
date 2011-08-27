@@ -896,12 +896,14 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
           else if(a.global[v] == REG_A)
             {
               sym->accuse = ACCUSE_A;
+              sym->isspilt = false;
               sym->nRegs = 0;
               sym->regs[I[v].byte] = 0;
             }
           else
             {
               sym->accuse = ACCUSE_IY;
+              sym->isspilt = false;
               sym->nRegs = 0;
               sym->regs[I[v].byte] = 0;
             }
@@ -1252,12 +1254,14 @@ void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
           else if(winner.global[v] == REG_A)
             {
               sym->accuse = ACCUSE_A;
+              sym->isspilt = false;
               sym->nRegs = 0;
               sym->regs[0] = 0;
             }
           else
             {
               sym->accuse = ACCUSE_IY;
+              sym->isspilt = false;
               sym->nRegs = 0;
               sym->regs[I[v].byte] = 0;
             }
