@@ -21,6 +21,8 @@
 //#define DEBUG_RALLOC_DEC // Uncomment to get debug messages while doing register allocation on the tree decomposition.
 //#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (m,uch more verbose than the one above).
 
+#define TD_SALLOC
+
 #include "SDCCralloc.hpp"
 
 extern "C"
@@ -860,16 +862,49 @@ static void unset_surviving_regs(unsigned short int i, const G_t &G)
 }
 
 #ifdef TD_SALLOC
-template<class G_t, class I_t>
-static void set_spilt(const assignment &a, unsigned short int i, G_t &G, const I_t &I)
+template<class G_t, class I_t, class SI_t>
+static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
 {
-  std::set<var_t>::const_iterator v, v_end;
-  for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
+  std::map<int, var_t> symbol_to_sindex;
+  var_t j;
+
+  for(unsigned int i = 0, j = 0; i < boost::num_vertices(G); i++)
     {
-      symbol *const sym = (symbol *)(hTabItemWithKey(liveRanges, I[*v].v));
-      if(sym->regs[0] || sym->accuse || sym->remat || !sym->nRegs)
+      std::set<var_t>::const_iterator v, v_end;
+      for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
+        {
+          var_t vs;
+          
+          symbol *const sym = (symbol *)(hTabItemWithKey(liveRanges, I[*v].v));
+      
+          if (sym->regs[0] || sym->accuse || sym->remat || !sym->nRegs)
+            continue;
+ 
+          if (symbol_to_sindex.find(I[*v].v) == symbol_to_sindex.end())
+            {
+              boost::add_vertex(scon);
+              scon[j].sym = sym;
+              scon[j].colored = false;
+              symbol_to_sindex[I[*v].v] = j;
+              j++;
+              
+
+            }
+            
+          vs = symbol_to_sindex[I[*v].v];
+        
+          G[i].stack_alive.insert(vs); // Needs to be allocated on the stack.
+        }
+    }
+    
+  // Add edges to conflict graph.
+  typename boost::graph_traits<I_t>::edge_iterator e, e_end;
+  for (boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
+    {
+      if (I[boost::source(*e, I)].v == I[boost::target(*e, I)].v || symbol_to_sindex.find(I[boost::source(*e, I)].v) == symbol_to_sindex.end() || symbol_to_sindex.find(I[boost::target(*e, I)].v) == symbol_to_sindex.end())
         continue;
-      G[i].stack_alive.insert(sym); // Needs to be allocated on the stack.
+        
+      boost::add_edge(symbol_to_sindex[I[boost::source(*e, I)].v], symbol_to_sindex[I[boost::target(*e, I)].v], scon);
     }
 }
 #endif
@@ -1200,8 +1235,13 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   return(c);
 }
 
+#ifndef TD_SALLOC
 template <class T_t, class G_t, class I_t>
 void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
+#else
+template <class T_t, class G_t, class I_t, class SI_t>
+void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
+#endif
 {
   con2_t I2(boost::num_vertices(I));
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
@@ -1278,12 +1318,11 @@ void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
     }
     
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
-    {
       set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
+    
 #ifdef TD_SALLOC
-      set_spilt(winner, i, G, I);
+  set_spilt(winner, G, I, SI);
 #endif
-    }
 }
 
 iCode *z80_ralloc2_cc(ebbIndex *ebbi)
@@ -1299,6 +1338,10 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   cfg_t control_flow_graph;
 
   con_t conflict_graph;
+  
+#ifdef TD_SALLOC
+  scon_t stack_conflict_graph;
+#endif
   
   std::map<unsigned int, std::set<unsigned int> > separators;
 
@@ -1326,9 +1369,18 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
     dump_tree_decomposition(tree_decomposition);
 
   // Allocate registers
+#ifndef TD_SALLOC
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
+#else
+  tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
+#endif
   
   RegFix (ebbs, count);
+
+#ifdef TD_SALLOC
+  if(z80_opts.dump_graphs)
+    dump_scon(stack_conflict_graph);
+#endif
 
 #if 0
   /* if stack was extended then tell the user */
@@ -1357,7 +1409,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   redoStackOffsets ();
 
 #ifdef TD_SALLOC
-  tree_dec_salloc(control_flow_graph, separators);
+  tree_dec_salloc(control_flow_graph, separators, stack_conflict_graph);
 #endif
 
   return(ic);
