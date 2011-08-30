@@ -1129,8 +1129,15 @@ getBuiltinParms (iCode * fic, int *pcount, operand ** parms)
   return ic;
 }
 
+/* This seems to be a GCC 4.6.[01] bug
+ * see http://sourceforge.net/tracker/?func=detail&aid=3285611&group_id=599&atid=300599
+ */
+#if defined(__linux__) && defined(__i386__) && defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 6 && (__GNUC_PATCHLEVEL__ == 0 || __GNUC_PATCHLEVEL__ == 1)
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#endif
 /*-----------------------------------------------------------------*/
-/* operandOperation - performs operations on operands             */
+/* operandOperation - performs operations on operands              */
 /*-----------------------------------------------------------------*/
 operand *
 operandOperation (operand * left, operand * right, int op, sym_link * type)
@@ -1384,7 +1391,12 @@ operandOperation (operand * left, operand * right, int op, sym_link * type)
 
   return retval;
 }
-
+/* This seems to be a GCC 4.6.[01] bug
+ * see http://sourceforge.net/tracker/?func=detail&aid=3285611&group_id=599&atid=300599
+ */
+#if defined(__linux__) && defined(__i386__) && defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 6 && (__GNUC_PATCHLEVEL__ == 0 || __GNUC_PATCHLEVEL__ == 1)
+#pragma GCC pop_options
+#endif
 
 /*-----------------------------------------------------------------*/
 /* isOperandEqual - compares two operand & return 1 if they are =  */
@@ -1926,7 +1938,7 @@ checkPtrQualifiers (sym_link * ltype, sym_link * rtype)
 /* geniCodeCast - changes the value from one type to another       */
 /*-----------------------------------------------------------------*/
 static operand *
-geniCodeCast (sym_link * type, operand * op, bool implicit)
+geniCodeCast (sym_link *type, operand *op, bool implicit)
 {
   iCode *ic;
   sym_link *optype;
@@ -1968,6 +1980,11 @@ geniCodeCast (sym_link * type, operand * op, bool implicit)
       SPEC_SCLS (restype) = SPEC_SCLS (opetype);
       SPEC_OCLS (restype) = SPEC_OCLS (opetype);
     }
+
+  /* Convert cast to _Bool bitfield members to casts to _Bool. */
+  if (SPEC_NOUN (restype) == V_BBITFIELD)
+    SPEC_NOUN (restype) = V_BOOL;
+
   ADDTOCHAIN (ic);
   return IC_RESULT (ic);
 }
@@ -3428,7 +3445,6 @@ geniCodeFunctionBody (ast * tree, int lvl)
 {
   iCode *ic;
   operand *func;
-  sym_link *fetype;
   char *savefilename;
   int savelineno;
 
@@ -3439,7 +3455,6 @@ geniCodeFunctionBody (ast * tree, int lvl)
   operandKey = 0;
   iCodeKey = 0;
   func = ast2iCode (tree->left, lvl + 1);
-  fetype = getSpec (operandType (func));
 
   savefilename = filename;
   savelineno = lineno;

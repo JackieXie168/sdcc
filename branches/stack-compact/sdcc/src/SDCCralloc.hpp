@@ -1038,15 +1038,17 @@ void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
       std::set<symbol *>::const_iterator s;
-      
+ 
+#if 0     
       boost::icl::interval_set<int> used_colors;
       for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
         ;/*if(s->second != INT_MIN)
           used_colors |= boost::icl::discrete_interval<int>::type(s->second, s->second + s->first->nRegs);*/
       G[i].free_stack -= used_colors;
+#endif
     
       typename p_t::const_iterator pi = p.find(i);
-      if(/*pi == p.end()*/true)
+      if(/*pi == p.end()*/true) // Just color all uncolored variables at X_{v_i} greedily.
         {
           std::set<symbol *>::iterator s;
           std::cout << "Coloring at " << i << "\n";
@@ -1071,7 +1073,7 @@ void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<
                 std::cout << "Assigned " << (*s)->name << " to " << start << "\n";
               }
         }
-      else
+      else // Optimally color the biclique X_{v_i} \cup X_{p(v_i)} and rename the colors greedily.
         {
         }
     }
