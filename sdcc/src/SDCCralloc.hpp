@@ -207,8 +207,9 @@ struct cfg_node
   std::set<var_t> dying;
 
 #ifdef TD_SALLOC
-  std::set<symbol *> stack_alive;
-  boost::icl::interval_set<int> free_stack;
+  std::set<var_t> stack_alive;
+  //std::set<symbol *> stack_alive;
+  //boost::icl::interval_set<int> free_stack;
 #endif
 };
 
@@ -220,9 +221,21 @@ struct con_node
   char *name;
 };
 
+#ifdef TD_SALLOC
+struct scon_node
+{
+  symbol *sym;
+  bool colored;
+  boost::icl::interval_set<int> free_stack;
+};
+#endif
+
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, tree_dec_node> tree_dec_t;
 typedef boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS, con_node> con_t;
 typedef boost::adjacency_matrix<boost::undirectedS, con_node> con2_t;
+#ifdef TD_SALLOC
+typedef boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS, scon_node> scon_t;
+#endif
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_node> cfg_t;
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> cfg_sym_t;
 
@@ -961,7 +974,7 @@ void good_re_root(T_t &T)
   re_root(T, t);
 }
 
-// Dump conflict graph, with numbered nodes, show live variables at each node.
+// Dump conflict graph, with numbered and named nodes.
 void dump_con(const con_t &con)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());
@@ -978,6 +991,26 @@ void dump_con(const con_t &con)
   boost::write_graphviz(dump_file, con, boost::make_label_writer(name));
   delete[] name;
 }
+
+#ifdef TD_SALLOC
+// Dump stack conflict graph, with numbered and named nodes.
+void dump_scon(const scon_t &scon)
+{
+  std::ofstream dump_file((std::string(dstFileName) + ".dumpscon" + currFunc->rname + ".dot").c_str());
+
+  std::string *name = new std::string[num_vertices(scon)];
+  for (var_t i = 0; static_cast<boost::graph_traits<cfg_t>::vertices_size_type>(i) < boost::num_vertices(scon); i++)
+    {
+      std::ostringstream os;
+      os << i;
+      if (scon[i].sym->name)
+        os << " : " << scon[i].sym->name << " : " << getSize(scon[i].sym->type);
+      name[i] = os.str();
+    }
+  boost::write_graphviz(dump_file, scon, boost::make_label_writer(name));
+  delete[] name;
+}
+#endif
 
 // Dump cfg, with numbered nodes, show live variables at each node.
 void dump_cfg(const cfg_t &cfg)
@@ -1031,9 +1064,41 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 }
 
 #ifdef TD_SALLOC
+template <class SI_t>
+void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
+{
+  int start;
+  int size = getSize(SI[v].sym->type);
+  
+  std::cout << "Coloring " << v << "\n";
+  
+  // Find a suitable free stack location.
+  boost::icl::interval_set<int>::iterator si;
+  for(si = SI[v].free_stack.begin();; ++si)
+    {
+       start = boost::icl::first(*si);
+       // Adjust start address for alignment
+       if(start % alignment)
+         start = start + alignment - start % alignment;
+                    
+       if(boost::icl::last(*si) >= start + size)
+         break; // Found one.
+    }
+  
+  SI[v].colored = true;
+  
+  // Mark stack location as used for all conflicting variables.
+  typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
+  for (boost::tie(n, n_end) = boost::adjacent_vertices(v, SI); n != n_end; ++n)
+    SI[*n].free_stack -= boost::icl::discrete_interval<int>::type(start, start + size);
+}
+
+#endif
+
+#ifdef TD_SALLOC
 // Coloring as in Thorup's algorithm C, heavily modified to account for variables of different size.
-template <class p_t, class G_t>
-void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S, int size)
+template <class p_t, class G_t, class SI_t>
+void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::map<unsigned int, std::set<unsigned int> > &S, int size)
 {
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
@@ -1050,8 +1115,13 @@ void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<
       typename p_t::const_iterator pi = p.find(i);
       if(/*pi == p.end()*/true) // Just color all uncolored variables at X_{v_i} greedily.
         {
-          std::set<symbol *>::iterator s;
-          std::cout << "Coloring at " << i << "\n";
+          std::set<var_t>::const_iterator s;
+          //std::cout << "Coloring at " << i << "\n";
+          
+          for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
+            if(getSize(SI[*s].sym->type) == size && !SI[*s].colored)
+              color_stack_var_greedily(*s, SI, (size == 2 || size == 4) ? size : 1);
+#if 0
           for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
             if(size == (*s)->nRegs && true /*not colored*/)
               {
@@ -1072,6 +1142,7 @@ void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<
                 G[i].free_stack -= boost::icl::discrete_interval<int>::type(start, start + size);
                 std::cout << "Assigned " << (*s)->name << " to " << start << "\n";
               }
+#endif
         }
       else // Optimally color the biclique X_{v_i} \cup X_{p(v_i)} and rename the colors greedily.
         {
@@ -1079,8 +1150,8 @@ void thorup_C_color(const p_t &p, G_t &G, const std::map<unsigned int, std::set<
     }
 }
 
-template <class G_t>
-void tree_dec_salloc(G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S)
+template <class G_t, class SI_t>
+void tree_dec_salloc(const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S, SI_t &SI)
 {
   std::map<unsigned int, unsigned int> p;
   std::set<int> sizes;
@@ -1089,15 +1160,14 @@ void tree_dec_salloc(G_t &G, const std::map<unsigned int, std::set<unsigned int>
 
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
-      std::set<symbol *>::const_iterator s;
+      std::set<var_t>::const_iterator s;
       for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
-        sizes.insert((*s)->nRegs);
-      G[i].free_stack.insert(boost::icl::discrete_interval<int>::type(btree_get_stack_size(G[i].ic->block), INT_MAX));
+        sizes.insert(getSize(SI[*s].sym->type));
     }
     
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
     {
-      thorup_C_color(p, G, S, *s);
+      thorup_C_color(p, G, SI, S, *s);
     }
 }
 #endif
