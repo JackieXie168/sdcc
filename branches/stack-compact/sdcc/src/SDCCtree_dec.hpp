@@ -32,7 +32,10 @@
 // void nicify(T_t &T)
 // Transforms a tree decomposition T into a nice tree decomposition
 //
-// void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg, std::map<unsigned int, std::set<unsigned int> > *S)
+// void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg)
+// Creates a tree decomposition T from a graph cfg using Thorup's heuristic.
+//
+// void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg, std::list<unsigned int> *o, std::map<unsigned int, std::set<unsigned int> > *S)
 // Creates a tree decomposition T from a graph cfg using Thorup's heuristic. If S is nonzero, separators are stored into it.
 //
 // void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsigned int>& l, const G_t &G, std::map<unsigned int, std::set<unsigned int> > *S)
@@ -275,13 +278,22 @@ void tree_decomposition_from_elimination_ordering(T_t &T, const std::list<unsign
 
 // Create a tree-decomposition for a graph using Thorup's heuristic to obtain an elimination ordering
 template <class T_t, class G_t>
-void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg, std::map<unsigned int, std::set<unsigned int> > *S)
+void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg)
 {
   std::list<unsigned int> elimination_ordering;
 
   thorup_elimination_ordering(elimination_ordering, cfg);
 
-  tree_decomposition_from_elimination_ordering(tree_decomposition, elimination_ordering, cfg, S);
+  tree_decomposition_from_elimination_ordering(tree_decomposition, elimination_ordering, cfg, 0);
+}
+
+// Create a tree-decomposition for a graph using Thorup's heuristic to obtain an elimination ordering and return the odering (and if desired the separators) to the caller.
+template <class T_t, class G_t>
+void thorup_tree_decomposition(T_t &tree_decomposition, const G_t &cfg, std::list<unsigned int> *o, std::map<unsigned int, std::set<unsigned int> > *S)
+{
+  thorup_elimination_ordering(*o, cfg);
+
+  tree_decomposition_from_elimination_ordering(tree_decomposition, *o, cfg, S);
 }
 
 // Ensure that all joins are at proper join nodes: Each node that has two children has the same bag as its children.

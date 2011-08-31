@@ -1341,9 +1341,9 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   
 #ifdef TD_SALLOC
   scon_t stack_conflict_graph;
-#endif
-  
+  std::list<unsigned int> ordering;
   std::map<unsigned int, std::set<unsigned int> > separators;
+#endif
 
   ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
@@ -1355,7 +1355,11 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 
   tree_dec_t tree_decomposition;
 
-  thorup_tree_decomposition(tree_decomposition, control_flow_graph, &separators);
+#ifndef TD_SALLOC
+  thorup_tree_decomposition(tree_decomposition, control_flow_graph);
+#else
+  thorup_tree_decomposition(tree_decomposition, control_flow_graph, &ordering, &separators);
+#endif
 
   nicify(tree_decomposition);
 
@@ -1409,7 +1413,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   redoStackOffsets ();
 
 #ifdef TD_SALLOC
-  tree_dec_salloc(control_flow_graph, separators, stack_conflict_graph);
+  tree_dec_salloc(control_flow_graph, stack_conflict_graph, ordering, separators);
 #endif
 
   return(ic);
