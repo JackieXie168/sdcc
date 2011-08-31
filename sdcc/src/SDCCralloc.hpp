@@ -1070,8 +1070,6 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
   int start;
   int size = getSize(SI[v].sym->type);
   
-  std::cout << "Coloring " << v << "\n";
-  
   // Find a suitable free stack location.
   boost::icl::interval_set<int>::iterator si;
   for(si = SI[v].free_stack.begin();; ++si)
@@ -1086,6 +1084,8 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
     }
   
   SI[v].colored = true;
+  
+  std::cout << "Assigned " << (*s)->name << " to " << start << "\n";
   
   // Mark stack location as used for all conflicting variables.
   typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
@@ -1103,14 +1103,6 @@ void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::map<unsigne
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
       std::set<symbol *>::const_iterator s;
- 
-#if 0     
-      boost::icl::interval_set<int> used_colors;
-      for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
-        ;/*if(s->second != INT_MIN)
-          used_colors |= boost::icl::discrete_interval<int>::type(s->second, s->second + s->first->nRegs);*/
-      G[i].free_stack -= used_colors;
-#endif
     
       typename p_t::const_iterator pi = p.find(i);
       if(/*pi == p.end()*/true) // Just color all uncolored variables at X_{v_i} greedily.
@@ -1121,28 +1113,6 @@ void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::map<unsigne
           for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
             if(getSize(SI[*s].sym->type) == size && !SI[*s].colored)
               color_stack_var_greedily(*s, SI, (size == 2 || size == 4) ? size : 1);
-#if 0
-          for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
-            if(size == (*s)->nRegs && true /*not colored*/)
-              {
-                int start;
-                boost::icl::interval_set<int>::iterator si;
-                // Find a suitable free stack location.
-                for(si = G[i].free_stack.begin();; ++si)
-                  {
-                    start = boost::icl::first(*si);
-                    // Adjust start address for alignment
-                    if(size == 2 || size == 4 && start % size)
-                      start = start + size - start % size;
-                    
-                    if(boost::icl::last(*si) >= start + size)
-                      break; // Found one.
-                  }
-                //s->second = start;
-                G[i].free_stack -= boost::icl::discrete_interval<int>::type(start, start + size);
-                std::cout << "Assigned " << (*s)->name << " to " << start << "\n";
-              }
-#endif
         }
       else // Optimally color the biclique X_{v_i} \cup X_{p(v_i)} and rename the colors greedily.
         {
