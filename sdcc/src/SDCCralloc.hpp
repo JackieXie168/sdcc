@@ -208,8 +208,6 @@ struct cfg_node
 
 #ifdef TD_SALLOC
   std::set<var_t> stack_alive;
-  //std::set<symbol *> stack_alive;
-  //boost::icl::interval_set<int> free_stack;
 #endif
 };
 
@@ -1075,17 +1073,18 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
   for(si = SI[v].free_stack.begin();; ++si)
     {
        start = boost::icl::first(*si);
+       
        // Adjust start address for alignment
        if(start % alignment)
          start = start + alignment - start % alignment;
                     
-       if(boost::icl::last(*si) >= start + size)
+       if(boost::icl::last(*si) >= start + size - 1)
          break; // Found one.
     }
   
   SI[v].colored = true;
   
-  std::cout << "Assigned " << (*s)->name << " to " << start << "\n";
+  std::cout << "Assigned " << SI[v].sym->name << " to " << start << "\n";
   
   // Mark stack location as used for all conflicting variables.
   typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
@@ -1121,7 +1120,7 @@ void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::map<unsigne
 }
 
 template <class G_t, class SI_t>
-void tree_dec_salloc(const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S, SI_t &SI)
+void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &ordering, const std::map<unsigned int, std::set<unsigned int> > &S)
 {
   std::map<unsigned int, unsigned int> p;
   std::set<int> sizes;
@@ -1133,6 +1132,11 @@ void tree_dec_salloc(const G_t &G, const std::map<unsigned int, std::set<unsigne
       std::set<var_t>::const_iterator s;
       for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
         sizes.insert(getSize(SI[*s].sym->type));
+    }
+    
+  for(unsigned int i = 0; i < boost::num_vertices(SI); i++)
+    {
+      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));  // Todo: COrrect initialization
     }
     
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
