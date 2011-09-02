@@ -1416,6 +1416,8 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   tree_dec_salloc(control_flow_graph, stack_conflict_graph, ordering, separators);
 #endif
 
+  chaitin_salloc(stack_conflict_graph);
+
   return(ic);
 }
 

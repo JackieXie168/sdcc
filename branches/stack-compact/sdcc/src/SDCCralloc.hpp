@@ -1010,7 +1010,7 @@ void dump_con(const con_t &con)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());
 
-  std::string *name = new std::string[num_vertices(con)];
+  std::string *name = new std::string[boost::num_vertices(con)];
   for (var_t i = 0; static_cast<boost::graph_traits<cfg_t>::vertices_size_type>(i) < boost::num_vertices(con); i++)
     {
       std::ostringstream os;
@@ -1029,8 +1029,8 @@ void dump_scon(const scon_t &scon)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpscon" + currFunc->rname + ".dot").c_str());
 
-  std::string *name = new std::string[num_vertices(scon)];
-  for (var_t i = 0; static_cast<boost::graph_traits<cfg_t>::vertices_size_type>(i) < boost::num_vertices(scon); i++)
+  std::string *name = new std::string[boost::num_vertices(scon)];
+  for (var_t i = 0; static_cast<boost::graph_traits<scon_t>::vertices_size_type>(i) < boost::num_vertices(scon); i++)
     {
       std::ostringstream os;
       os << i;
@@ -1048,7 +1048,7 @@ void dump_cfg(const cfg_t &cfg)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcfg" + currFunc->rname + ".dot").c_str());
 
-  std::string *name = new std::string[num_vertices(cfg)];
+  std::string *name = new std::string[boost::num_vertices(cfg)];
   for (unsigned int i = 0; i < boost::num_vertices(cfg); i++)
     {
       std::ostringstream os;
@@ -1070,7 +1070,7 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 
   unsigned int w = 0;
 
-  std::string *name = new std::string[num_vertices(tree_dec)];
+  std::string *name = new std::string[boost::num_vertices(tree_dec)];
   for (unsigned int i = 0; i < boost::num_vertices(tree_dec); i++)
     {
       if (tree_dec[i].bag.size() > w)
@@ -1128,21 +1128,22 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
 #endif
 
 #ifdef TD_SALLOC
-// Coloring as in Thorup's algorithm C, heavily modified to account for variables of different size.
+// Coloring similar to Thorup's algorithm C, heavily modified to account for variables of different size.
 template <class p_t, class G_t, class SI_t>
-void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::map<unsigned int, std::set<unsigned int> > &S, int size)
+void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsigned int> &ordering, const std::map<unsigned int, std::set<unsigned int> > &S, int size)
 {
-  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+  std::list<unsigned int>::const_iterator i, i_end;
+  for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
     {
       std::set<symbol *>::const_iterator s;
     
-      typename p_t::const_iterator pi = p.find(i);
+      typename p_t::const_iterator pi = p.find(*i);
       if(/*pi == p.end()*/true) // Just color all uncolored variables at X_{v_i} greedily.
         {
           std::set<var_t>::const_iterator s;
-          //std::cout << "Coloring at " << i << "\n";
+          //std::cout << "Coloring at " << *i << "\n";
           
-          for(s = G[i].stack_alive.begin(); s != G[i].stack_alive.end(); ++s)
+          for(s = G[*i].stack_alive.begin(); s != G[*i].stack_alive.end(); ++s)
             if(getSize(SI[*s].sym->type) == size && !SI[*s].colored)
               color_stack_var_greedily(*s, SI, (size == 2 || size == 4) ? size : 1);
         }
@@ -1169,14 +1170,70 @@ void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &orde
     
   for(unsigned int i = 0; i < boost::num_vertices(SI); i++)
     {
-      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));  // Todo: COrrect initialization
+      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));  // Todo: Correct initialization
     }
     
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
+    thorup_C_color(p, G, SI, ordering, S, *s);
+}
+
+template <class SI_t>
+void chaitin_ordering(const SI_t &SI, std::list<var_t> &ordering)
+{
+  std::vector<bool> marked(boost::num_vertices(SI));
+  unsigned int num_marked, i, d, mind, minn;
+  std::stack<var_t> stack;
+  
+  for(num_marked = 0; num_marked < boost::num_vertices(SI); num_marked++)
     {
-      thorup_C_color(p, G, SI, S, *s);
+      mind = UINT_MAX;
+      minn = -1;
+      for(i = 0; i < boost::num_vertices(SI); i++)
+        {
+          if(marked[i])
+            continue;
+          
+          typename boost::graph_traits<const SI_t>::adjacency_iterator n, n_end;
+          for (boost::tie(n, n_end) = boost::adjacent_vertices(i, SI), d = 0; n != n_end; ++n)
+             d += !marked[*n];
+             
+          if(d < mind)
+            {
+              mind = d;
+              minn = i;
+            }
+        }
+        
+      stack.push(minn);
+      marked[minn] = true;
+    }
+    
+  while(!stack.empty())
+    {
+      ordering.push_back(stack.top());
+      stack.pop();
     }
 }
+
+template <class SI_t>
+void chaitin_salloc(SI_t &SI)
+{
+  std::cout << "Chaitin\n";
+
+  std::list<var_t> ordering;
+  
+  chaitin_ordering(SI, ordering);
+  
+  for(unsigned int i = 0; i < boost::num_vertices(SI); i++)
+    {
+      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));  // Todo: Correct initialization
+    }
+  
+  std::list<var_t>::const_iterator i, i_end;
+  for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
+    color_stack_var_greedily(*i, SI, (getSize(SI[*i].sym->type) == 2 || getSize(SI[*i].sym->type) == 4) ? getSize(SI[*i].sym->type) : 1);
+}
+
 #endif
 
 #endif
