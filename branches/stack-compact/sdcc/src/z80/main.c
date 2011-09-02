@@ -42,6 +42,7 @@
 #define OPTION_DUMP_GRAPHS     "--dump-graphs"
 #define OPTION_MAX_ALLOCS_NODE "--max-allocs-per-node"
 #define OPTION_OLDRALLOC       "--oldralloc"
+#define OPTION_SALLOC          "--salloc"
 
 static char _z80_defaultRules[] = {
 #include "peeph.rul"
@@ -67,6 +68,7 @@ static OPTION _z80_options[] = {
   {0, OPTION_OPTRALLOC_REMAT, &z80_opts.optralloc_remat, "Handle rematerializeable variables in new register allocator"},
   {0, OPTION_DUMP_GRAPHS,     &z80_opts.dump_graphs, "Dump control flow graph, conflict graph and tree decomposition in register allocator"},
   {0, OPTION_OLDRALLOC,       &z80_opts.oldralloc, "Use old register allocator"},
+  {0, OPTION_SALLOC,          &z80_opts.salloc, "Choose stack allocator: 0 greedy, 1 treedec, 2 chaitin"},
   {0, NULL}
 };
 
