@@ -1176,7 +1176,9 @@ void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &orde
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
     thorup_C_color(p, G, SI, ordering, S, *s);
 }
+#endif
 
+#ifdef CH_SALLOC
 template <class SI_t>
 void chaitin_ordering(const SI_t &SI, std::list<var_t> &ordering)
 {
@@ -1233,7 +1235,6 @@ void chaitin_salloc(SI_t &SI)
   for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
     color_stack_var_greedily(*i, SI, (getSize(SI[*i].sym->type) == 2 || getSize(SI[*i].sym->type) == 4) ? getSize(SI[*i].sym->type) : 1);
 }
-
 #endif
 
 #endif

@@ -22,6 +22,7 @@
 //#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (m,uch more verbose than the one above).
 
 #define TD_SALLOC
+#define CH_SALLOC
 
 #include "SDCCralloc.hpp"
 
@@ -1378,29 +1379,21 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 #else
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
 #endif
-  
-  RegFix (ebbs, count);
 
 #ifdef TD_SALLOC
   if(z80_opts.dump_graphs)
     dump_scon(stack_conflict_graph);
 #endif
 
-#if 0
-  /* if stack was extended then tell the user */
-  if (_G.stackExtend)
-    {
-/*      werror(W_TOOMANY_SPILS,"stack", */
-/*             _G.stackExtend,currFunc->name,""); */
-      _G.stackExtend = 0;
-    }
-
-  if (_G.dataExtend)
-    {
-/*      werror(W_TOOMANY_SPILS,"data space", */
-/*             _G.dataExtend,currFunc->name,""); */
-      _G.dataExtend = 0;
-    }
+#if defined(TD_SALLOC) && defined(CH_SALLOC)
+  if (SALLOC_TD)
+    tree_dec_salloc(control_flow_graph, stack_conflict_graph, ordering, separators);
+  else if(SALLOC_CH)
+    chaitin_salloc(stack_conflict_graph);
+  else
+    RegFix (ebbs, count);
+#else
+  RegFix (ebbs, count);
 #endif
 
   if (options.dump_rassgn)
@@ -1411,12 +1404,6 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 
   /* redo that offsets for stacked automatic variables */
   redoStackOffsets ();
-
-#ifdef TD_SALLOC
-  tree_dec_salloc(control_flow_graph, stack_conflict_graph, ordering, separators);
-#endif
-
-  chaitin_salloc(stack_conflict_graph);
 
   return(ic);
 }

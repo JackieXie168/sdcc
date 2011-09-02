@@ -1,5 +1,13 @@
 2011-09-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc,
+	  src/z80/main.c,
+	  src/z80/z80.h:
+	  Preparations for tree-decomposition-based spilllocation allocation and Chaitin-style spilllocation allocation.
+
+2011-09-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* Merge from trunk,
 	* src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc:
