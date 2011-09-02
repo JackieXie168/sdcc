@@ -1391,9 +1391,8 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   else if(SALLOC_CH)
     chaitin_salloc(stack_conflict_graph);
   else
-    RegFix (ebbs, count);
 #else
-  RegFix (ebbs, count);
+    RegFix (ebbs, count);
 #endif
 
   if (options.dump_rassgn)
