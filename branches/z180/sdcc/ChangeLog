@@ -1,7 +1,24 @@
+2011-09-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* configure.in,
+	  configure,
+	  sdccconf_in.h,
+	  src/SDCCmain.c,
+	  src/SDCCglue.c,
+	  src/SDCCopt.c,
+	  src/port.h,
+	  src/SDCCopt.c,
+	  src/SDCCralloc.hpp,
+	  src/z80/z80.h,
+	  src/z80/main.c,
+	  src/z80/gen.c,
+	  src/z80/ralloc.c:
+	  Basic infrastructure for z180 port.
+
 2011-09-02 Philipp Klaus Krause <pkk AT spth.de>
 
 	* tests/bug3403429.c:
-	  Regression etst for bug 3403429.
+	  Regression test for bug 3403429.
 
 2011-09-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
