@@ -1,5 +1,11 @@
 2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Preparations for full tree-decomposition-based spilllocation allocation.
+
+2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCbtree.cc,
 	  src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc,

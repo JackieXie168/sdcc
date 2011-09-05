@@ -1095,6 +1095,30 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 }
 
 #ifdef TD_SALLOC
+
+template <class SI_t>
+void color_stack_var(var_t v, SI_t &SI, int start, int *ssize)
+{
+  symbol *const sym = SI[v].sym;
+  const int size = getSize(sym->type);
+  
+  SI[v].colored = true;
+  
+  if(IS_AGGREGATE(sym->type))
+    SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start;
+  else
+    SPEC_STAK(sym->usl.spillLoc->etype) = sym->usl.spillLoc->stack = (port->stack.direction > 0) ? start + 1 : -start;
+    
+  if(ssize)
+    *ssize = (start + size > *ssize) ? start + size : *ssize;
+    
+  // Mark stack location as used for all conflicting variables.
+  typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
+  for(boost::tie(n, n_end) = boost::adjacent_vertices(v, SI); n != n_end; ++n)
+    SI[*n].free_stack -= boost::icl::discrete_interval<int>::type(start, start + size);
+}
+
+// Place a single variable on the stack greedily.
 template <class SI_t>
 void color_stack_var_greedily(var_t v, SI_t &SI, int alignment, int *ssize)
 {
@@ -1115,25 +1139,39 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment, int *ssize)
        if(boost::icl::last(*si) >= start + size - 1)
          break; // Found one.
     }
-  
-  SI[v].colored = true;
-  
-  if(IS_AGGREGATE(sym->type))
-    SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start;
-  else
-    SPEC_STAK(sym->usl.spillLoc->etype) = sym->usl.spillLoc->stack = (port->stack.direction > 0) ? start + 1 : -start;
-        
-  std::cout << "Assigned " << sym->name << " to " << start << "\n";
-  
-  if(ssize)
-    *ssize = (start + size > *ssize) ? start + size : *ssize;
-  
-  // Mark stack location as used for all conflicting variables.
-  typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
-  for(boost::tie(n, n_end) = boost::adjacent_vertices(v, SI); n != n_end; ++n)
-    SI[*n].free_stack -= boost::icl::discrete_interval<int>::type(start, start + size);
+    
+  color_stack_var(v, SI, start, ssize);
 }
 
+// Place a two variables that need to share a stack location on the stack greedily.
+template <class SI_t>
+void color_stack_vars_greedily(var_t v1, var_t v2, SI_t &SI, int alignment, int *ssize)
+{
+  int start;
+  symbol *const sym1 = SI[v1].sym;
+  symbol *const sym2 = SI[v2].sym;
+  if(getSize(sym1->type) != getSize(sym2->type))
+    std::cerr << "Size mismatch in stack allocation.\n";
+  const int size = getSize(sym1->type);
+  
+  // Find a suitable free stack location.
+  boost::icl::interval_set<int> free_stack = (SI[v1].free_stack & SI[v2].free_stack);
+  boost::icl::interval_set<int>::iterator si;
+  for(si = free_stack.begin();; ++si)
+    {
+       start = boost::icl::first(*si);
+       
+       // Adjust start address for alignment
+       if(start % alignment)
+         start = start + alignment - start % alignment;
+                    
+       if(boost::icl::last(*si) >= start + size - 1)
+         break; // Found one.
+    }
+  
+  color_stack_var(v1, SI, start, ssize);
+  color_stack_var(v2, SI, start, ssize);
+}
 #endif
 
 #ifdef TD_SALLOC
@@ -1178,9 +1216,7 @@ void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &orde
     }
     
   for(unsigned int i = 0; i < boost::num_vertices(SI); i++)
-    {
       SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));
-    }
     
   int ssize = 0;
   clearStackOffsets();
@@ -1235,16 +1271,12 @@ void chaitin_ordering(const SI_t &SI, std::list<var_t> &ordering)
 template <class SI_t>
 void chaitin_salloc(SI_t &SI)
 {
-  std::cout << "Chaitin\n";
-
   std::list<var_t> ordering;
   
   chaitin_ordering(SI, ordering);
   
   for(unsigned int i = 0; i < boost::num_vertices(SI); i++)
-    {
       SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));
-    }
     
   int ssize = 0;
   
