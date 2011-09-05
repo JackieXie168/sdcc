@@ -1096,7 +1096,7 @@ void dump_tree_decomposition(const tree_dec_t &tree_dec)
 
 #ifdef TD_SALLOC
 template <class SI_t>
-void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
+void color_stack_var_greedily(var_t v, SI_t &SI, int alignment, int *ssize)
 {
   int start;
   int size = getSize(SI[v].sym->type);
@@ -1119,6 +1119,9 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
   
   std::cout << "Assigned " << SI[v].sym->name << " to " << start << "\n";
   
+  if(ssize)
+    *ssize = (start + size > *ssize) ? start + size : *ssize;
+  
   // Mark stack location as used for all conflicting variables.
   typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
   for (boost::tie(n, n_end) = boost::adjacent_vertices(v, SI); n != n_end; ++n)
@@ -1130,7 +1133,7 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment)
 #ifdef TD_SALLOC
 // Coloring similar to Thorup's algorithm C, heavily modified to account for variables of different size.
 template <class p_t, class G_t, class SI_t>
-void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsigned int> &ordering, const std::map<unsigned int, std::set<unsigned int> > &S, int size)
+void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsigned int> &ordering, const std::map<unsigned int, std::set<unsigned int> > &S, int size, int *ssize)
 {
   std::list<unsigned int>::const_iterator i, i_end;
   for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
@@ -1145,7 +1148,7 @@ void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsign
           
           for(s = G[*i].stack_alive.begin(); s != G[*i].stack_alive.end(); ++s)
             if(getSize(SI[*s].sym->type) == size && !SI[*s].colored)
-              color_stack_var_greedily(*s, SI, (size == 2 || size == 4) ? size : 1);
+              color_stack_var_greedily(*s, SI, (size == 2 || size == 4) ? size : 1, ssize);
         }
       else // Optimally color the biclique X_{v_i} \cup X_{p(v_i)} and rename the colors greedily.
         {
@@ -1173,8 +1176,14 @@ void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &orde
       SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));
     }
     
+  int ssize = 0;
+  clearStackOffsets();
+    
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
-    thorup_C_color(p, G, SI, ordering, S, *s);
+    thorup_C_color(p, G, SI, ordering, S, *s, &ssize);
+    
+  currFunc->stack += ssize;
+  SPEC_STAK (currFunc->etype) += ssize;
 }
 #endif
 
@@ -1230,10 +1239,17 @@ void chaitin_salloc(SI_t &SI)
     {
       SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));
     }
+    
+  int ssize = 0;
+  
+  clearStackOffsets();
   
   std::list<var_t>::const_iterator i, i_end;
   for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
-    color_stack_var_greedily(*i, SI, (getSize(SI[*i].sym->type) == 2 || getSize(SI[*i].sym->type) == 4) ? getSize(SI[*i].sym->type) : 1);
+    color_stack_var_greedily(*i, SI, (getSize(SI[*i].sym->type) == 2 || getSize(SI[*i].sym->type) == 4) ? getSize(SI[*i].sym->type) : 1, &ssize);
+    
+  currFunc->stack += ssize;
+  SPEC_STAK (currFunc->etype) += ssize;
 }
 #endif
 
