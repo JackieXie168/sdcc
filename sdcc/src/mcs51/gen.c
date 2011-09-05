@@ -1993,8 +1993,12 @@ toBoolean (operand * oper)
 {
   int size = AOP_SIZE (oper) - 1;
   int offset = 1;
-  bool AccUsed = FALSE;
+  bool AccUsed;
+  sym_link *type = operandType (oper);
   bool pushedB;
+
+  /* always need B for float */
+  AccUsed = IS_FLOAT (type);
 
   while (!AccUsed && size--)
     {
@@ -2011,23 +2015,26 @@ toBoolean (operand * oper)
     {
       size = AOP_SIZE (oper) - 1;
     }
-  offset = 1;
-  MOVA (aopGet (oper, 0, FALSE, FALSE));
+
+  offset = 0;
   if (size && AccUsed && (AOP (oper)->type != AOP_ACC))
     {
       pushedB = pushB ();
-      emitcode ("mov", "b,a");
+      MOVB (aopGet (oper, offset++, FALSE, FALSE));
       while (--size)
         {
           MOVA (aopGet (oper, offset++, FALSE, FALSE));
           emitcode ("orl", "b,a");
         }
       MOVA (aopGet (oper, offset++, FALSE, FALSE));
+      if (IS_FLOAT (type))
+        emitcode ("anl", "a,#0x7F");  //clear sign bit
       emitcode ("orl", "a,b");
       popB (pushedB);
     }
   else
     {
+      MOVA (aopGet (oper, offset++, FALSE, FALSE));
       while (size--)
         {
           emitcode ("orl", "a,%s", aopGet (oper, offset++, FALSE, FALSE));
@@ -6299,7 +6306,11 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
       while (size--)
         {
           char *l = Safe_strdup (aopGet (left, offset, FALSE, FALSE));
-          emitcode ("cjne", "%s,%s,!tlabel", l, aopGet (right, offset, FALSE, FALSE), lbl->key + 100);
+          const char *r = aopGet (right, offset, FALSE, FALSE);
+          if (EQ(l, "a") && EQ(r, zero))
+            emitcode ("jnz", "!tlabel", lbl->key + 100);
+          else
+            emitcode ("cjne", "%s,%s,!tlabel", l, r, lbl->key + 100);
           Safe_free (l);
           offset++;
         }
@@ -6311,16 +6322,18 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
            AOP_TYPE (right) == AOP_DIR ||
            AOP_TYPE (right) == AOP_LIT ||
            AOP_TYPE (right) == AOP_IMMD ||
-           (AOP_TYPE (left) == AOP_DIR && AOP_TYPE (right) == AOP_LIT) || (IS_AOP_PREG (left) && !IS_AOP_PREG (right)))
+           (AOP_TYPE (left) == AOP_DIR && AOP_TYPE (right) == AOP_LIT) ||
+           (IS_AOP_PREG (left) && !IS_AOP_PREG (right)))
     {
       while (size--)
         {
+          const char *r;
           MOVA (aopGet (left, offset, FALSE, FALSE));
-          if ((AOP_TYPE (left) == AOP_DIR && AOP_TYPE (right) == AOP_LIT) &&
-              ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0))
+          r = aopGet (right, offset, FALSE, TRUE);
+          if (EQ (r, zero))
             emitcode ("jnz", "!tlabel", lbl->key + 100);
           else
-            emitcode ("cjne", "a,%s,!tlabel", aopGet (right, offset, FALSE, TRUE), lbl->key + 100);
+            emitcode ("cjne", "a,%s,!tlabel", r, lbl->key + 100);
           offset++;
         }
     }
@@ -7379,11 +7392,14 @@ genOr (iCode * ic, iCode * ifx)
                 }
               else if (bytelit == 0x0FF)
                 {
+                  /* dummy read of volatile operand */
+                  if (isOperandVolatile (left, FALSE))
+                    MOVA (aopGet (left, offset, FALSE, FALSE));
                   aopPut (result, "#0xff", offset);
                 }
               else if (IS_AOP_PREG (left))
                 {
-                  MOVA (aopGet (left, offset, FALSE, TRUE));
+                  MOVA (aopGet (left, offset, FALSE, FALSE));
                   emitcode ("orl", "a,%s", aopGet (right, offset, FALSE, FALSE));
                   aopPut (result, "a", offset);
                 }
