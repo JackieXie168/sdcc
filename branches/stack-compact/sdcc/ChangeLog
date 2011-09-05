@@ -1,3 +1,48 @@
+2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* Merge from trunk.
+
+2011-09-05 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* device/lib/sincoshf.c: fixed bug 3326853
+
+2011-09-05 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/tests/bug1723128.c: fixed bug 3403038
+
+2011-09-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCsymt.h,
+	  support/regression/tests/bug3404101.c:
+	  Fixed bug #3404101.
+
+2011-09-04 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* Makefile.in: added some dependencies to fix bug 3148465
+	* src/mcs51/gen.c (gencjneshort,genOr): small optimizations
+	* src/SDCCicode.h,
+	* src/SDCCicode.c (operandType): fixed warning
+	* src/SDCCsymt.h: cosmetics
+	* src/z80/gen.c: fixed warnings
+	* support/cpp/sdcpp-opts.c (sdcpp_common_init): return true on success
+
+2011-09-04 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/sdcc.nsi: include readline5.dll in 64bit package
+
+2011-09-03 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* support/regression/tests/bug3368945.c,
+	* support/regression/tests/bug3381400.c,
+	* support/regression/tests/bug3397636.c: fixed line endings and svn props
+	* support/regression/tests/bug3401973.c: put large struct in large memory
+	* support/regression/tests/bug3403429.c: fixed warnings, explained bug
+
+2011-09-02 Philipp Klaus Krause <pkk AT spth.de>
+
+	* tests/bug3403429.c:
+	  Regression etst for bug 3403429.
+
 2011-09-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCralloc.hpp,
@@ -17,7 +62,7 @@
 
 	* Merge from trunk.
 
-2011-08-31 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2011-09-01 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCtree_dec.hpp,
 	  src/SDCCralloc.hpp,
