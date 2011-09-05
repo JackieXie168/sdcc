@@ -884,7 +884,7 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
       scon[j].colored = false;
       j++;
       
-      std::cout << "Symbol " << sym->name << " needs stack space.\n";
+      //std::cout << "Symbol " << sym->name << " needs stack space.\n";
     }
   j_mark = j;
   
