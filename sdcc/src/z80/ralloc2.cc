@@ -881,7 +881,7 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
       
       boost::add_vertex(scon);
       scon[j].sym = sym;
-      scon[j].colored = false;
+      scon[j].color = -1;
       j++;
       
       //std::cout << "Symbol " << sym->name << " needs stack space.\n";
@@ -925,7 +925,7 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
             {
               boost::add_vertex(scon);
               scon[j].sym = sym;
-              scon[j].colored = false;
+              scon[j].color = -1;
               symbol_to_sindex[I[*v].v] = j;
               j++;
             }
