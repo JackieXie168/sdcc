@@ -1170,7 +1170,7 @@ void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &orde
     
   for(unsigned int i = 0; i < boost::num_vertices(SI); i++)
     {
-      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));  // Todo: Correct initialization
+      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));
     }
     
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
@@ -1228,7 +1228,7 @@ void chaitin_salloc(SI_t &SI)
   
   for(unsigned int i = 0; i < boost::num_vertices(SI); i++)
     {
-      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));  // Todo: Correct initialization
+      SI[i].free_stack.insert(boost::icl::discrete_interval<int>::type(0, 1 << 15));
     }
   
   std::list<var_t>::const_iterator i, i_end;
