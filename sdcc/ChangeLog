@@ -1,5 +1,11 @@
 2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/z80/ralloc2.cc,
+	  src/z80/main.c:
+	  Preparations for handling variables that had their address taken in tree-decomposition-based spilllocation allocation and Chaitin-style spilllocation allocation.
+
+2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* Merge from trunk.
 
 2011-09-05 Maarten Brock <sourceforge.brock AT dse.nl>
