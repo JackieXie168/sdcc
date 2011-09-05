@@ -1099,7 +1099,8 @@ template <class SI_t>
 void color_stack_var_greedily(var_t v, SI_t &SI, int alignment, int *ssize)
 {
   int start;
-  int size = getSize(SI[v].sym->type);
+  symbol *const sym = SI[v].sym;
+  const int size = getSize(sym->type);
   
   // Find a suitable free stack location.
   boost::icl::interval_set<int>::iterator si;
@@ -1117,14 +1118,19 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment, int *ssize)
   
   SI[v].colored = true;
   
-  std::cout << "Assigned " << SI[v].sym->name << " to " << start << "\n";
+  if(IS_AGGREGATE(sym->type))
+    SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start;
+  else
+    SPEC_STAK(sym->usl.spillLoc->etype) = sym->usl.spillLoc->stack = (port->stack.direction > 0) ? start + 1 : -start;
+        
+  std::cout << "Assigned " << sym->name << " to " << start << "\n";
   
   if(ssize)
     *ssize = (start + size > *ssize) ? start + size : *ssize;
   
   // Mark stack location as used for all conflicting variables.
   typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
-  for (boost::tie(n, n_end) = boost::adjacent_vertices(v, SI); n != n_end; ++n)
+  for(boost::tie(n, n_end) = boost::adjacent_vertices(v, SI); n != n_end; ++n)
     SI[*n].free_stack -= boost::icl::discrete_interval<int>::type(start, start + size);
 }
 
@@ -1205,7 +1211,7 @@ void chaitin_ordering(const SI_t &SI, std::list<var_t> &ordering)
             continue;
           
           typename boost::graph_traits<const SI_t>::adjacency_iterator n, n_end;
-          for (boost::tie(n, n_end) = boost::adjacent_vertices(i, SI), d = 0; n != n_end; ++n)
+          for(boost::tie(n, n_end) = boost::adjacent_vertices(i, SI), d = 0; n != n_end; ++n)
              d += !marked[*n];
              
           if(d < mind)

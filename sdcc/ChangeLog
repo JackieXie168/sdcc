@@ -1,5 +1,14 @@
 2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCbtree.cc,
+	  src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc,
+	  src/z80/ralloc.c,
+	  src/z80/gen.
+	  Chaitin-style spilllocation allocation and simplified tree-decomposition-based spilllocation allocation usable for the first time.
+
+2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCmem.h,
 	  src/SDCCralloc.hpp:
 	  Preparations for tree-decomposition-based spilllocation allocation and Chaitin-style spilllocation allocation.

@@ -72,14 +72,14 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
         {
           SPEC_STAK (sym->etype) = sym->stack = (sPtr + 1);
           sPtr += size;
-          cssize += size;
         }
       else
         {
           sPtr -= size;
           SPEC_STAK (sym->etype) = sym->stack = sPtr;
-          cssize += size;
         }
+        
+      cssize += size;
     }
   btree[v].second = cssize;
   if(cssize > *ssize)

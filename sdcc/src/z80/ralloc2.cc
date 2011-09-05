@@ -1433,14 +1433,14 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
     dump_scon(stack_conflict_graph);
 #endif
 
+  RegFix (ebbs, count);
+  
 #if defined(TD_SALLOC) && defined(CH_SALLOC)
   if (SALLOC_TD)
     tree_dec_salloc(control_flow_graph, stack_conflict_graph, ordering, separators);
   else if(SALLOC_CH)
     chaitin_salloc(stack_conflict_graph);
-  else
 #endif
-    RegFix (ebbs, count);
 
   if (options.dump_rassgn)
     {
@@ -1449,7 +1449,8 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
     }
 
   /* redo that offsets for stacked automatic variables */
-  redoStackOffsets ();
+  if(!SALLOC_TD && !SALLOC_CH)
+    redoStackOffsets ();
 
   return(ic);
 }
