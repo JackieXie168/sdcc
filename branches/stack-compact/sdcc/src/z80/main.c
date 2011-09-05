@@ -68,7 +68,7 @@ static OPTION _z80_options[] = {
   {0, OPTION_OPTRALLOC_REMAT, &z80_opts.optralloc_remat, "Handle rematerializeable variables in new register allocator"},
   {0, OPTION_DUMP_GRAPHS,     &z80_opts.dump_graphs, "Dump control flow graph, conflict graph and tree decomposition in register allocator"},
   {0, OPTION_OLDRALLOC,       &z80_opts.oldralloc, "Use old register allocator"},
-  {0, OPTION_SALLOC,          &z80_opts.salloc, "Choose stack allocator: 0 greedy, 1 treedec, 2 chaitin"},
+  {0, OPTION_SALLOC,          &z80_opts.salloc, "Choose stack allocator: 0 greedy, 1 treedec, 2 chaitin", CLAT_INTEGER},
   {0, NULL}
 };
 

@@ -867,9 +867,38 @@ template<class G_t, class I_t, class SI_t>
 static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
 {
   std::map<int, var_t> symbol_to_sindex;
-  var_t j;
+  symbol *sym;
+  var_t j, j_mark;
 
-  for(unsigned int i = 0, j = 0; i < boost::num_vertices(G); i++)
+  // Add variables that need to be on the stack due to having had their address taken.
+  for(sym = static_cast<symbol *>(setFirstItem(istack->syms)), j = 0; sym; sym = static_cast<symbol *>(setNextItem(istack->syms)))
+    {
+      if(sym->isparm)
+        continue;
+        
+      if(!(IS_AGGREGATE(sym->type) || sym->allocreq && sym->addrtaken))
+        continue;
+      
+      boost::add_vertex(scon);
+      scon[j].sym = sym;
+      scon[j].colored = false;
+      j++;
+      
+      std::cout << "Symbol " << sym->name << " needs stack space.\n";
+    }
+  j_mark = j;
+  
+  // Add edges due to scope (see C99 standard.v erse 1233, which requires things to have different addresses, not allowing us to allocate them to the same location, even if weotherwise could).
+  for(unsigned int i = 0; i < boost::num_vertices(scon); i++)
+     for(unsigned int j = i + 1; j < boost::num_vertices(scon); j++)
+        {
+          short p = btree_lowest_common_ancestor(scon[i].sym->block, scon[j].sym->block);
+          if(p == scon[i].sym->block || p == scon[j].sym->block)
+            boost::add_edge(i, j, scon);
+        }
+    
+  // Add variables that have been spilt in register allocation.
+  for(unsigned int i = 0/*, j = 0*/; i < boost::num_vertices(G); i++)
     {
       std::set<var_t>::const_iterator v, v_end;
       for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
@@ -888,8 +917,6 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
               scon[j].colored = false;
               symbol_to_sindex[I[*v].v] = j;
               j++;
-              
-
             }
             
           vs = symbol_to_sindex[I[*v].v];
@@ -907,6 +934,16 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
         
       boost::add_edge(symbol_to_sindex[I[boost::source(*e, I)].v], symbol_to_sindex[I[boost::target(*e, I)].v], scon);
     }
+    
+  // Add conflicts between variables that had their address taken and those that have been spilt by register allocation.
+  // TODO: More exact live range analysis for variables that had their address taken (to reduce stack space consumption further, by reducing the number of conflicts here).
+  for(unsigned int i = 0; i < j_mark; i++)
+    for(unsigned int j = j_mark; j < boost::num_vertices(scon); j++)
+      {
+        short p = btree_lowest_common_ancestor(scon[i].sym->block, scon[j].sym->block);
+        if(p == scon[i].sym->block || p == scon[j].sym->block)
+          boost::add_edge(i, j, scon);
+      }
 }
 #endif
 
@@ -1374,7 +1411,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
     dump_tree_decomposition(tree_decomposition);
 
   // Allocate registers
-#ifndef TD_SALLOC
+#if !defined(TD_SALLOC) && !defined(CH_SALLOC)
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
 #else
   tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
@@ -1391,9 +1428,8 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   else if(SALLOC_CH)
     chaitin_salloc(stack_conflict_graph);
   else
-#else
-    RegFix (ebbs, count);
 #endif
+    RegFix (ebbs, count);
 
   if (options.dump_rassgn)
     {
