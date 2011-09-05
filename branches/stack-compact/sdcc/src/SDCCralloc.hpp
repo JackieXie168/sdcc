@@ -223,7 +223,7 @@ struct con_node
 struct scon_node
 {
   symbol *sym;
-  bool colored;
+  int color;
   boost::icl::interval_set<int> free_stack;
 };
 #endif
@@ -1102,7 +1102,7 @@ void color_stack_var(var_t v, SI_t &SI, int start, int *ssize)
   symbol *const sym = SI[v].sym;
   const int size = getSize(sym->type);
   
-  SI[v].colored = true;
+  SI[v].color = start;
   
   if(IS_AGGREGATE(sym->type))
     SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start;
@@ -1172,10 +1172,100 @@ void color_stack_vars_greedily(var_t v1, var_t v2, SI_t &SI, int alignment, int 
   color_stack_var(v1, SI, start, ssize);
   color_stack_var(v2, SI, start, ssize);
 }
+
+struct bpt_node
+{
+  var_t v;
+};
+
+typedef boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS, bpt_node> bpt_t;
+
+template <class G_t, class SI_t>
+void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int size, int alignment, int *ssize)
+{
+  std::map<unsigned int, unsigned int> i_to_i;
+  unsigned int j;
+  
+  bpt_t b;
+  
+  // Add nodes to bipartite graph b.
+  std::set<var_t>::const_iterator s;
+  for(s = G[i].stack_alive.begin(), j = 0; s != G[i].stack_alive.end(); ++s)
+    {
+      var_t v = *s;
+      
+      if(getSize(SI[v].sym->type) != size)
+        continue; // Wrong size.
+        
+      if(i_to_i.find(v) != i_to_i.end())
+        continue; // Already added to bipartite graph.
+      
+      boost::add_vertex(b);
+      b[j].v = v;
+      i_to_i[v] = j++;
+    }
+  for(s = G[pi].stack_alive.begin(); s != G[pi].stack_alive.end(); ++s)
+    {
+      var_t v = *s;
+      
+      if(getSize(SI[v].sym->type) != size)
+        continue; // Wrong size.
+        
+      if(i_to_i.find(v) != i_to_i.end())
+        continue; // Already added to bipartite graph.
+        
+      boost::add_vertex(b);
+      b[j].v = v;
+      i_to_i[v] = j++;
+    }
+    
+  // Add edges to b.
+  for(unsigned int i = 0; i < boost::num_vertices(b); i++)
+    for(unsigned int j = i + 1; i < boost::num_vertices(b); i++)
+       if(!boost::edge(b[i].v, b[j].v, SI).second)
+         boost::add_edge(i, j, b);
+  
+  // Find maximum matching in b.
+  std::vector<typename boost::graph_traits<G_t>::vertex_descriptor> M(boost::num_vertices(b));
+  boost::edmonds_maximum_cardinality_matching(b, &M[0]);
+  
+  // Allocate.
+  for(unsigned int i = 0; i < boost::num_vertices(b); i++)
+    {
+      const var_t v1 = b[i].v;
+    
+      if(M[i] == boost::graph_traits<bpt_t>::null_vertex())
+        {
+          if(SI[v1].color < 0)
+            color_stack_var_greedily(v1, SI, alignment, ssize);
+          continue;
+        }
+        
+      const var_t v2 = b[M[v1]].v;
+      const int c1 = SI[v1].color;
+      const int c2 = SI[v2].color;
+      if(c1 >= 0 && c2 >= 0) // Both already colored.
+        continue;
+        
+      if(c1 < 0 && c2 < 0) // Both still uncolored.
+        {
+          color_stack_vars_greedily(v1, v2, SI, alignment, ssize);
+          continue;
+        }
+        
+      // Give the uncolored one the color of the colored one.
+      var_t vc, vu;
+      if(c1 >= 0)
+        vc = v1, vu = v2;
+      else
+        vu = v1, vc = v2;
+      color_stack_var(vu, SI, SI[vc].color, ssize);
+    }
+}
 #endif
 
 #ifdef TD_SALLOC
-// Coloring similar to Thorup's algorithm C, heavily modified to account for variables of different size.
+// Coloring similar to Thorup's algorithm C, heavily modified to account for variables of different size and alignment.
 template <class p_t, class G_t, class SI_t>
 void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsigned int> &ordering, const std::map<unsigned int, std::set<unsigned int> > &S, int size, int *ssize)
 {
@@ -1191,12 +1281,11 @@ void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsign
           //std::cout << "Coloring at " << *i << "\n";
           
           for(s = G[*i].stack_alive.begin(); s != G[*i].stack_alive.end(); ++s)
-            if(getSize(SI[*s].sym->type) == size && !SI[*s].colored)
+            if(getSize(SI[*s].sym->type) == size && SI[*s].color < 0)
               color_stack_var_greedily(*s, SI, (size == 2 || size == 4) ? size : 1, ssize);
         }
       else // Optimally color the biclique X_{v_i} \cup X_{p(v_i)} and rename the colors greedily.
-        {
-        }
+        color_biclique(*i, pi->second, G, SI, size, (size == 2 || size == 4) ? size : 1, ssize);
     }
 }
 
