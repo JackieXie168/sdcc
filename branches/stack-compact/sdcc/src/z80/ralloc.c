@@ -442,7 +442,8 @@ createStackSpil (symbol * sym)
   /* first go try and find a free one that is already
      existing on the stack */
      
-  if (applyToSet (_G.stackSpil, isFree, &sloc, sym))
+
+  if (!SALLOC_TD && ! SALLOC_CH && applyToSet (_G.stackSpil, isFree, &sloc, sym))
     {
       /* found a free one : just update & return */
       sym->usl.spillLoc = sloc;

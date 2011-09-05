@@ -4001,6 +4001,7 @@ genFunction (const iCode * ic)
   emit2 ("!functionheader", sym->name);
 
   emitDebug(assignment_optimal ? "; Register assignment is optimal." : "; Register assignment might be sub-optimal.");
+  emitDebug("; Stack space usage: %d bytes.", sym->stack);
 
   if (!IS_STATIC(sym->etype))
     {
