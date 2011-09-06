@@ -1,5 +1,12 @@
 2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCsalloc.hpp,
+	  src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc:
+	  Reorganized code for stack allocation.
+
+2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCralloc.hpp,
 	  src/z80/z80.h:
 	  Fixed bug in full tree-decomposition-based spilllocation allocation.

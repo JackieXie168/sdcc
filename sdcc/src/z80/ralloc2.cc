@@ -25,6 +25,7 @@
 #define CH_SALLOC
 
 #include "SDCCralloc.hpp"
+#include "SDCCsalloc.hpp"
 
 extern "C"
 {
@@ -861,102 +862,6 @@ static void unset_surviving_regs(unsigned short int i, const G_t &G)
   
   freeBitVect(ic->rSurv);
 }
-
-#ifdef TD_SALLOC
-template<class G_t, class I_t, class SI_t>
-static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
-{
-  std::map<int, var_t> symbol_to_sindex;
-  symbol *sym;
-  var_t j, j_mark;
-
-  // Add variables that need to be on the stack due to having had their address taken.
-  for(sym = static_cast<symbol *>(setFirstItem(istack->syms)), j = 0; sym; sym = static_cast<symbol *>(setNextItem(istack->syms)))
-    {
-      if(sym->_isparm)
-        continue;
-        
-      if(!(IS_AGGREGATE(sym->type) || sym->allocreq && sym->addrtaken))
-        continue;
-      
-      boost::add_vertex(scon);
-      scon[j].sym = sym;
-      scon[j].color = -1;
-      j++;
-      
-      //std::cout << "Symbol " << sym->name << " needs stack space.\n";
-    }
-  j_mark = j;
-  
-  // Add edges due to scope (see C99 standard, verse 1233, which requires things to have different addresses, not allowing us to allocate them to the same location, even if weotherwise could).
-  for(unsigned int i = 0; i < boost::num_vertices(scon); i++)
-     for(unsigned int j = i + 1; j < boost::num_vertices(scon); j++)
-        {
-          short p = btree_lowest_common_ancestor(scon[i].sym->block, scon[j].sym->block);
-          if(p == scon[i].sym->block || p == scon[j].sym->block)
-            boost::add_edge(i, j, scon);
-        }
-  
-  // Set stack live ranges
-  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
-    {
-      for(unsigned int j = 0; j < boost::num_vertices(scon); j++)
-        {
-          short p = btree_lowest_common_ancestor(G[i].ic->block, scon[j].sym->block);
-          if(p == G[i].ic->block || p == scon[j].sym->block)
-            G[i].stack_alive.insert(j);
-        }
-    }
-  
-  // Add variables that have been spilt in register allocation.
-  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
-    {
-      std::set<var_t>::const_iterator v, v_end;
-      for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
-        {
-          var_t vs;
-          
-          symbol *const sym = (symbol *)(hTabItemWithKey(liveRanges, I[*v].v));
-      
-          if (sym->regs[0] || sym->accuse || sym->remat || !sym->nRegs)
-            continue;
- 
-          if (symbol_to_sindex.find(I[*v].v) == symbol_to_sindex.end())
-            {
-              boost::add_vertex(scon);
-              scon[j].sym = sym;
-              scon[j].color = -1;
-              symbol_to_sindex[I[*v].v] = j;
-              j++;
-            }
-            
-          vs = symbol_to_sindex[I[*v].v];
-        
-          G[i].stack_alive.insert(vs); // Needs to be allocated on the stack.
-        }
-    }
-    
-  // Add edges to conflict graph.
-  typename boost::graph_traits<I_t>::edge_iterator e, e_end;
-  for (boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
-    {
-      if (I[boost::source(*e, I)].v == I[boost::target(*e, I)].v || symbol_to_sindex.find(I[boost::source(*e, I)].v) == symbol_to_sindex.end() || symbol_to_sindex.find(I[boost::target(*e, I)].v) == symbol_to_sindex.end())
-        continue;
-        
-      boost::add_edge(symbol_to_sindex[I[boost::source(*e, I)].v], symbol_to_sindex[I[boost::target(*e, I)].v], scon);
-    }
-    
-  // Add conflicts between variables that had their address taken and those that have been spilt by register allocation.
-  // TODO: More exact live range analysis for variables that had their address taken (to reduce stack space consumption further, by reducing the number of conflicts here).
-  for(unsigned int i = 0; i < j_mark; i++)
-    for(unsigned int j = j_mark; j < boost::num_vertices(scon); j++)
-      {
-        short p = btree_lowest_common_ancestor(scon[i].sym->block, scon[j].sym->block);
-        if(p == scon[i].sym->block || p == scon[j].sym->block)
-          boost::add_edge(i, j, scon);
-      }
-}
-#endif
 
 template <class G_t, class I_t>
 void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
