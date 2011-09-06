@@ -1,7 +1,13 @@
 2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCbtree.cc,
+	  src/SDCCsalloc.hpp:
+	  Fixed crash and broken handling of volatile variables in stack allocation.
+
+2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCsalloc.hpp:
-	  Fixed crash in allocation of no-aggregates that have their address taken.
+	  Fixed crash in allocation of non-aggregates that have their address taken.
 
 2011-09-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
