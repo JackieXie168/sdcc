@@ -1187,7 +1187,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
   unsigned int j;
   
   bpt_t b;
- std::cout << "Biclique coloring at size " << size << "\n";
+
   // Add nodes to bipartite graph b.
   std::set<var_t>::const_iterator s;
   for(s = G[i].stack_alive.begin(), j = 0; s != G[i].stack_alive.end(); ++s)
@@ -1199,7 +1199,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
         
       if(i_to_i.find(v) != i_to_i.end())
         continue; // Already added to bipartite graph.
- std::cout << "Adding " << SI[v].sym->name << "\n";
+
       boost::add_vertex(b);
       b[j].v = v;
       i_to_i[v] = j++;
@@ -1213,7 +1213,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
         
       if(i_to_i.find(v) != i_to_i.end())
         continue; // Already added to bipartite graph.
-  std::cout << "Adding " << SI[v].sym->name << "\n";      
+    
       boost::add_vertex(b);
       b[j].v = v;
       i_to_i[v] = j++;
@@ -1221,7 +1221,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
 
   // Add edges to b.
   for(unsigned int i = 0; i < boost::num_vertices(b); i++)
-    for(unsigned int j = i + 1; i < boost::num_vertices(b); i++)
+    for(unsigned int j = i + 1; j < boost::num_vertices(b); j++)
        if(!boost::edge(b[i].v, b[j].v, SI).second)
          boost::add_edge(i, j, b);
   
@@ -1233,7 +1233,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
   for(unsigned int i = 0; i < boost::num_vertices(b); i++)
     {
       const var_t v1 = b[i].v;
-    
+
       if(M[i] == boost::graph_traits<bpt_t>::null_vertex())
         {
           if(SI[v1].color < 0)
@@ -1273,13 +1273,13 @@ void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsign
   for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
     {
       std::set<symbol *>::const_iterator s;
+      
+      //std::cout << "Coloring at " << *i << "\n";
     
       typename p_t::const_iterator pi = p.find(*i);
-      if(pi == p.end()) // Just color all uncolored variables at X_{v_i} greedily.
+      if(SALLOC_TDS || pi == p.end()) // Just color all uncolored variables at X_{v_i} greedily.
         {
-          std::set<var_t>::const_iterator s;
-          //std::cout << "Coloring at " << *i << "\n";
-          
+          std::set<var_t>::const_iterator s;    
           for(s = G[*i].stack_alive.begin(); s != G[*i].stack_alive.end(); ++s)
             if(getSize(SI[*s].sym->type) == size && SI[*s].color < 0)
               color_stack_var_greedily(*s, SI, (size == 2 || size == 4) ? size : 1, ssize);
