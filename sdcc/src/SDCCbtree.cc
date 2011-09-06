@@ -68,7 +68,7 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
       
       //std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
       
-      if (port->stack.direction > 0)
+      if(port->stack.direction > 0)
         {
           SPEC_STAK (sym->etype) = sym->stack = (sPtr + 1);
           sPtr += size;
@@ -94,8 +94,12 @@ void btree_alloc(void)
 {
   int ssize = 0;
   btree_alloc_subtree(0, 0, 0, &ssize);
-  currFunc->stack += ssize;
-  SPEC_STAK (currFunc->etype) += ssize;
+  
+  if(currFunc)
+    {
+      currFunc->stack += ssize;
+      SPEC_STAK (currFunc->etype) += ssize;
+    }
 }
 
 int btree_get_stack_size(short block)

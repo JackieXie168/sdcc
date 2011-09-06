@@ -25,7 +25,7 @@ ifdef CROSSCOMPILING
   SDCCFLAGS += -I$(top_srcdir)
 endif
 
-SDCCFLAGS += -mz80 --less-pedantic --profile -DREENTRANT=
+SDCCFLAGS += -mz80 --salloc 1 --less-pedantic --profile -DREENTRANT=
 LINKFLAGS += z80.lib
 
 OBJEXT = .rel

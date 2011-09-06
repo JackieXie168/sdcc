@@ -35,7 +35,7 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
       if(sym->_isparm)
         continue;
         
-      if(!(IS_AGGREGATE(sym->type) || sym->allocreq && sym->addrtaken))
+      if(!(IS_AGGREGATE(sym->type) || sym->allocreq && (sym->addrtaken || isVolatile(sym->type))))
         continue;
       
       boost::add_vertex(scon);
@@ -126,13 +126,14 @@ void color_stack_var(var_t v, SI_t &SI, int start, int *ssize)
   
   SI[v].color = start;
   
-  if(IS_AGGREGATE(sym->type) || sym->addrtaken)
-    SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start;
+  if(IS_AGGREGATE(sym->type) || sym->addrtaken || isVolatile(sym->type))
+    SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start -size;
   else
-    SPEC_STAK(sym->usl.spillLoc->etype) = sym->usl.spillLoc->stack = (port->stack.direction > 0) ? start + 1 : -start;
+    SPEC_STAK(sym->usl.spillLoc->etype) = sym->usl.spillLoc->stack = (port->stack.direction > 0) ? start + 1 : -start - size;
     
   if(ssize)
     *ssize = (start + size > *ssize) ? start + size : *ssize;
+  //std::cout << "Coloring to size " << (start + size) << " now: " << *ssize << "\n";
     
   // Mark stack location as used for all conflicting variables.
   typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
@@ -337,8 +338,11 @@ void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &orde
   for(std::set<int>::const_reverse_iterator s = sizes.rbegin(); s != sizes.rend(); ++s)
     thorup_C_color(p, G, SI, ordering, S, *s, &ssize);
     
-  currFunc->stack += ssize;
-  SPEC_STAK (currFunc->etype) += ssize;
+  if(currFunc)
+    {
+      currFunc->stack += ssize;
+      SPEC_STAK (currFunc->etype) += ssize;
+    }
 }
 #endif
 
@@ -398,9 +402,12 @@ void chaitin_salloc(SI_t &SI)
   std::list<var_t>::const_iterator i, i_end;
   for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
     color_stack_var_greedily(*i, SI, (getSize(SI[*i].sym->type) == 2 || getSize(SI[*i].sym->type) == 4) ? getSize(SI[*i].sym->type) : 1, &ssize);
-    
-  currFunc->stack += ssize;
-  SPEC_STAK (currFunc->etype) += ssize;
+  
+  if(currFunc)
+    {
+      currFunc->stack += ssize;
+      SPEC_STAK (currFunc->etype) += ssize;
+    }
 }
 #endif
 
