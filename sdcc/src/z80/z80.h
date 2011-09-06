@@ -40,8 +40,9 @@ extern Z80_OPTS z80_opts;
 #define OPTRALLOC_A 1
 #define OPTRALLOC_IY !IY_RESERVED
 
-#define SALLOC_TD (z80_opts.salloc == 1)
-#define SALLOC_CH (z80_opts.salloc == 2)
+#define SALLOC_CH (z80_opts.salloc == 1)
+#define SALLOC_TD (z80_opts.salloc == 2 || z80_opts.salloc == 3)
+#define SALLOC_TDS (z80_opts.salloc == 2)
 
 enum
   {
