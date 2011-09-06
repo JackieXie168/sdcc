@@ -126,7 +126,7 @@ void color_stack_var(var_t v, SI_t &SI, int start, int *ssize)
   
   SI[v].color = start;
   
-  if(IS_AGGREGATE(sym->type))
+  if(IS_AGGREGATE(sym->type) || sym->addrtaken)
     SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start;
   else
     SPEC_STAK(sym->usl.spillLoc->etype) = sym->usl.spillLoc->stack = (port->stack.direction > 0) ? start + 1 : -start;
