@@ -127,13 +127,14 @@ void color_stack_var(var_t v, SI_t &SI, int start, int *ssize)
   SI[v].color = start;
   
   if(IS_AGGREGATE(sym->type) || sym->addrtaken || isVolatile(sym->type))
-    SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start -size;
+    SPEC_STAK(sym->etype) = sym->stack = (port->stack.direction > 0) ? start + 1 : -start - size;
   else
     SPEC_STAK(sym->usl.spillLoc->etype) = sym->usl.spillLoc->stack = (port->stack.direction > 0) ? start + 1 : -start - size;
     
   if(ssize)
     *ssize = (start + size > *ssize) ? start + size : *ssize;
-  //std::cout << "Coloring to size " << (start + size) << " now: " << *ssize << "\n";
+    
+  //std::cout << "Placing " << sym->name << " at [" << start << ", " << (start + size - 1) << "]\n";
     
   // Mark stack location as used for all conflicting variables.
   typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
