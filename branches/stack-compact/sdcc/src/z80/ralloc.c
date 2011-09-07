@@ -518,7 +518,7 @@ spillThis (symbol * sym)
   /* if this is rematerializable or has a spillLocation
      we are okay, else we need to create a spillLocation
      for it */
-  if (!(sym->remat || sym->usl.spillLoc))
+  if (!(sym->remat || (!SALLOC_TD && !SALLOC_CH && sym->usl.spillLoc)))
     {
       createStackSpil (sym);
     }
