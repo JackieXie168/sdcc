@@ -1,7 +1,7 @@
 2011-09-07 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/ralloc.c:
-	  Fixed bug in stack allocation.
+	  Fixed bugs in stack allocation.
 
 2011-09-07 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
