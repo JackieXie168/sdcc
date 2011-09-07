@@ -55,7 +55,7 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
           if(p == scon[i].sym->block || p == scon[j].sym->block)
             boost::add_edge(i, j, scon);
         }
-  
+
   // Set stack live ranges
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
@@ -66,7 +66,7 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
             G[i].stack_alive.insert(j);
         }
     }
-  
+
   // Add variables that have been spilt in register allocation.
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
@@ -74,12 +74,12 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
       for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
         {
           var_t vs;
-          
+
           symbol *const sym = (symbol *)(hTabItemWithKey(liveRanges, I[*v].v));
-      
+
           if (sym->regs[0] || sym->accuse || sym->remat || !sym->nRegs)
             continue;
- 
+
           if (symbol_to_sindex.find(I[*v].v) == symbol_to_sindex.end())
             {
               boost::add_vertex(scon);
@@ -88,13 +88,13 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
               symbol_to_sindex[I[*v].v] = j;
               j++;
             }
-            
+
           vs = symbol_to_sindex[I[*v].v];
         
           G[i].stack_alive.insert(vs); // Needs to be allocated on the stack.
         }
     }
-    
+
   // Add edges to conflict graph.
   typename boost::graph_traits<I_t>::edge_iterator e, e_end;
   for (boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
