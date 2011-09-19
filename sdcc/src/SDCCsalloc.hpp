@@ -149,7 +149,7 @@ void color_stack_var_greedily(var_t v, SI_t &SI, int alignment, int *ssize)
   int start;
   symbol *const sym = SI[v].sym;
   const int size = getSize(sym->type);
-  
+ 
   // Find a suitable free stack location.
   boost::icl::interval_set<int>::iterator si;
   for(si = SI[v].free_stack.begin();; ++si)
@@ -179,7 +179,7 @@ void color_stack_vars_greedily(var_t v1, var_t v2, SI_t &SI, int alignment, int 
   if(getSize(sym1->type) != getSize(sym2->type))
     std::cerr << "Size mismatch in stack allocation: " << sym1->name << " and " << sym2->name << "\n";
   const int size = getSize(sym1->type);
-  
+
   // Find a suitable free stack location.
   boost::icl::interval_set<int> free_stack = (SI[v1].free_stack & SI[v2].free_stack);
   boost::icl::interval_set<int>::iterator si;
@@ -213,7 +213,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
   unsigned int j;
   
   bpt_t b;
-
+std::cout << "color_biclique\n";
   // Add nodes to bipartite graph b.
   std::set<var_t>::const_iterator s;
   for(s = G[i].stack_alive.begin(), j = 0; s != G[i].stack_alive.end(); ++s)
