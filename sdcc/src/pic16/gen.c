@@ -6362,6 +6362,7 @@ static void genInline (iCode *ic)
           ++bp;
           break;
 
+        case '\x87':
         case '\n':
           inComment = FALSE;
           *bp++ = '\0';
@@ -9695,6 +9696,15 @@ static void genCast (iCode *ic)
                         pic16_emitpcode(POC_CLRF,   pic16_popGet(AOP(result),offset++));
 
                 goto release;
+        }
+        
+        if (IS_BOOL(operandType(result)))
+        {
+          pic16_toBoolean (right);
+          emitSKPNZ;
+          pic16_emitpcode(POC_MOVLW, pic16_popGetLit(1));
+          pic16_emitpcode(POC_MOVWF,pic16_popGet(AOP(result),0));
+          goto release;
         }
 
         if(IS_BITFIELD(getSpec(restype))
