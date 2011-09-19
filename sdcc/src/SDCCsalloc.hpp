@@ -402,7 +402,7 @@ void chaitin_salloc(SI_t &SI)
   
   std::list<var_t>::const_iterator i, i_end;
   for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
-    color_stack_var_greedily(*i, SI, (getSize(SI[*i].sym->type) == 2 || getSize(SI[*i].sym->type) == 4) ? getSize(SI[*i].sym->type) : 1, &ssize);
+    color_stack_var_greedily(*i, SI, ((getSize(SI[*i].sym->type) == 2 || getSize(SI[*i].sym->type) == 4) && SALLOC_CHA) ? getSize(SI[*i].sym->type) : 1, &ssize);
   
   if(currFunc)
     {
