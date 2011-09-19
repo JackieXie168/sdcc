@@ -5482,6 +5482,7 @@ genInline (iCode * ic)
           ++bp;
           break;
 
+        case '\x87':
         case '\n':
           inComment = FALSE;
           *bp++ = '\0';

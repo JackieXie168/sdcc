@@ -805,9 +805,16 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
   if (IS_AST_PARAM (*actParm))
     {
       (*actParm)->decorated = 1;
-      return (processParms (func, defParm,
-                            &(*actParm)->left, parmNumber, FALSE) ||
-              processParms (func, defParm ? defParm->next : NULL, &(*actParm)->right, parmNumber, rightmost));
+      if ((*actParm)->reversed)
+        {
+          return (processParms (func, defParm, &(*actParm)->right, parmNumber, FALSE) ||
+                  processParms (func, defParm ? defParm->next : NULL, &(*actParm)->left, parmNumber, rightmost));
+        }
+      else
+        {
+          return (processParms (func, defParm, &(*actParm)->left, parmNumber, FALSE) ||
+                  processParms (func, defParm ? defParm->next : NULL, &(*actParm)->right, parmNumber, rightmost));
+        }
     }
   else if (defParm)             /* not vararg */
     {
@@ -925,7 +932,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
     {
       ast *pTree;
 
-      resultType = getResultTypeFromType (defParm->etype);
+      resultType = getResultTypeFromType (defParm->type);
       pTree = resolveSymbols (copyAst (*actParm));
 
       /* now change the current one to a cast */
