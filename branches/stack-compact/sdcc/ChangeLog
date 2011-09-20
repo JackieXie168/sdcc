@@ -1,3 +1,7 @@
+2011-09-20 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* Merge from trunk.
+
 2011-09-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/z80.h,
