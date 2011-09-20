@@ -213,7 +213,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
   unsigned int j;
   
   bpt_t b;
-std::cout << "color_biclique\n";
+
   // Add nodes to bipartite graph b.
   std::set<var_t>::const_iterator s;
   for(s = G[i].stack_alive.begin(), j = 0; s != G[i].stack_alive.end(); ++s)
