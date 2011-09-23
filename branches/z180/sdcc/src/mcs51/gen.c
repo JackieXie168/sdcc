@@ -3710,6 +3710,8 @@ genFunction (iCode * ic)
 
               for (i = ic; i; i = i->next)
                 {
+                  sym_link *dtype = NULL;
+
                   if (i->op == ENDFUNCTION)
                     {
                       /* we got to the end OK. */
@@ -3718,26 +3720,7 @@ genFunction (iCode * ic)
 
                   if (i->op == CALL)
                     {
-                      sym_link *dtype;
-
                       dtype = operandType (IC_LEFT (i));
-                      if (dtype && FUNC_REGBANK (dtype) != FUNC_REGBANK (sym->type))
-                        {
-                          /* Mark this bank for saving. */
-                          if (FUNC_REGBANK (dtype) >= MAX_REGISTER_BANKS)
-                            {
-                              werror (E_NO_SUCH_BANK, FUNC_REGBANK (dtype));
-                            }
-                          else
-                            {
-                              banksToSave |= (1 << FUNC_REGBANK (dtype));
-                            }
-
-                          /* And note that we don't need to do it in
-                           * genCall.
-                           */
-                          i->bankSaved = 1;
-                        }
                     }
                   if (i->op == PCALL)
                     {
@@ -3748,7 +3731,25 @@ genFunction (iCode * ic)
                        * The only thing I can think of to do is
                        * throw a warning and hope.
                        */
-                      werror (W_FUNCPTR_IN_USING_ISR);
+//                      werror (W_FUNCPTR_IN_USING_ISR);
+                      dtype = operandType (IC_LEFT (i))->next;
+                    }
+                  if (dtype && FUNC_REGBANK (dtype) != FUNC_REGBANK (sym->type))
+                    {
+                      /* Mark this bank for saving. */
+                      if (FUNC_REGBANK (dtype) >= MAX_REGISTER_BANKS)
+                        {
+                          werror (E_NO_SUCH_BANK, FUNC_REGBANK (dtype));
+                        }
+                      else
+                        {
+                          banksToSave |= (1 << FUNC_REGBANK (dtype));
+                        }
+
+                      /* And note that we don't need to do it in
+                       * genCall.
+                       */
+                      i->bankSaved = 1;
                     }
                 }
 
@@ -6306,7 +6307,11 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
       while (size--)
         {
           char *l = Safe_strdup (aopGet (left, offset, FALSE, FALSE));
-          emitcode ("cjne", "%s,%s,!tlabel", l, aopGet (right, offset, FALSE, FALSE), lbl->key + 100);
+          const char *r = aopGet (right, offset, FALSE, FALSE);
+          if (EQ(l, "a") && EQ(r, zero))
+            emitcode ("jnz", "!tlabel", lbl->key + 100);
+          else
+            emitcode ("cjne", "%s,%s,!tlabel", l, r, lbl->key + 100);
           Safe_free (l);
           offset++;
         }
@@ -6318,16 +6323,18 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
            AOP_TYPE (right) == AOP_DIR ||
            AOP_TYPE (right) == AOP_LIT ||
            AOP_TYPE (right) == AOP_IMMD ||
-           (AOP_TYPE (left) == AOP_DIR && AOP_TYPE (right) == AOP_LIT) || (IS_AOP_PREG (left) && !IS_AOP_PREG (right)))
+           (AOP_TYPE (left) == AOP_DIR && AOP_TYPE (right) == AOP_LIT) ||
+           (IS_AOP_PREG (left) && !IS_AOP_PREG (right)))
     {
       while (size--)
         {
+          const char *r;
           MOVA (aopGet (left, offset, FALSE, FALSE));
-          if ((AOP_TYPE (left) == AOP_DIR && AOP_TYPE (right) == AOP_LIT) &&
-              ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0))
+          r = aopGet (right, offset, FALSE, TRUE);
+          if (EQ (r, zero))
             emitcode ("jnz", "!tlabel", lbl->key + 100);
           else
-            emitcode ("cjne", "a,%s,!tlabel", aopGet (right, offset, FALSE, TRUE), lbl->key + 100);
+            emitcode ("cjne", "a,%s,!tlabel", r, lbl->key + 100);
           offset++;
         }
     }
@@ -7386,11 +7393,14 @@ genOr (iCode * ic, iCode * ifx)
                 }
               else if (bytelit == 0x0FF)
                 {
+                  /* dummy read of volatile operand */
+                  if (isOperandVolatile (left, FALSE))
+                    MOVA (aopGet (left, offset, FALSE, FALSE));
                   aopPut (result, "#0xff", offset);
                 }
               else if (IS_AOP_PREG (left))
                 {
-                  MOVA (aopGet (left, offset, FALSE, TRUE));
+                  MOVA (aopGet (left, offset, FALSE, FALSE));
                   emitcode ("orl", "a,%s", aopGet (right, offset, FALSE, FALSE));
                   aopPut (result, "a", offset);
                 }
@@ -7968,6 +7978,7 @@ genInline (iCode * ic)
           ++bp;
           break;
 
+        case '\x87':
         case '\n':
           inComment = FALSE;
           *bp++ = '\0';

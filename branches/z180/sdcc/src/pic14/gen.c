@@ -4462,6 +4462,7 @@ static void genInline (iCode *ic)
           ++bp;
           break;
 
+        case '\x87':
         case '\n':
           inComment = FALSE;
           *bp++ = '\0';
@@ -6590,6 +6591,15 @@ static void genCast (iCode *ic)
 
         goto release;
     }
+    
+    if (IS_BOOL(operandType(result)))
+        {
+          pic14_toBoolean (right);
+          emitSKPNZ;
+          emitpcode(POC_MOVLW, pic16_popGetLit(1));
+          emitpcode(POC_MOVWF,pic16_popGet(AOP(result),0));
+          goto release;
+        }
 
     if (IS_PTR(restype))
     {

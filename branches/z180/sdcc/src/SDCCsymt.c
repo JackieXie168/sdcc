@@ -2093,8 +2093,8 @@ computeType (sym_link * type1, sym_link * type2, RESULT_TYPE resultType, int op)
           switch (op)
             {
             case ':':
-              /* Currently only the Z80 and derivatives and the HC08 really supports _Bool */
-              if (!(TARGET_Z80_LIKE || TARGET_IS_HC08))
+              /* mcs51, xa51 and ds390 do not really support _Bool yet */
+              if (TARGET_IS_MCS51 || TARGET_IS_XA51 || TARGET_IS_DS390)
                 break;
               /* Avoid unnecessary cast to _Bool if both operands are _Bool */
               if ((IS_BOOL (etype1) || (IS_LITERAL (etype1) &&
@@ -2227,6 +2227,17 @@ compareFuncType (sym_link * dest, sym_link * src)
   if (IFFUNC_ISSHADOWREGS (dest) != IFFUNC_ISSHADOWREGS (src))
     {
       return 0;
+    }
+
+  /* compare register bank */
+  if (FUNC_REGBANK (dest) != FUNC_REGBANK (src))
+    { /* except for ISR's whose prototype need not match
+         since they are the top of a call-tree and
+         the prototype is only necessary for its vector in main */
+      if (!IFFUNC_ISISR (dest) || !IFFUNC_ISISR (src))
+        {
+          return 0;
+        }
     }
 
   /* compare expected args with actual args */
@@ -3125,6 +3136,7 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
   value *args;
   sym_link *type, *search;
   STORAGE_CLASS scls;
+  static struct dbuf_s dbuf2;
 
   if (start == NULL)
     {
@@ -3150,8 +3162,9 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
           switch (DCL_TYPE (type))
             {
             case FUNCTION:
-              dbuf_printf (dbuf, "function %s %s",
-                           (IFFUNC_ISBUILTIN (type) ? "__builtin__" : " "), (IFFUNC_ISJAVANATIVE (type) ? "_JavaNative" : " "));
+              dbuf_printf (dbuf, "function %s%s",
+                           (IFFUNC_ISBUILTIN (type) ? "__builtin__ " : ""),
+                           (IFFUNC_ISJAVANATIVE (type) ? "_JavaNative " : ""));
               dbuf_append_str (dbuf, "( ");
               for (args = FUNC_ARGS (type); args; args = args->next)
                 {
@@ -3159,7 +3172,17 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
                   if (args->next)
                     dbuf_append_str (dbuf, ", ");
                 }
-              dbuf_append_str (dbuf, ") ");
+              dbuf_append_str (dbuf, ")");
+              if (IFFUNC_ISREENT (type))
+                dbuf_append_str (dbuf, " __reentrant");
+              if (FUNC_REGBANK (type))
+                {
+                  dbuf_set_length (&dbuf2, 0);
+                  dbuf_printf (&dbuf2, " __using(%d)", FUNC_REGBANK (type));
+                  dbuf_append_str (dbuf, dbuf_c_str (&dbuf2));
+                }
+              if (IFFUNC_ISBANKEDCALL (type))
+                dbuf_append_str (dbuf, " __banked");
               break;
             case GPOINTER:
               dbuf_append_str (dbuf, "generic*");

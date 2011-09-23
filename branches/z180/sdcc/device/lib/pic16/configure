@@ -589,6 +589,8 @@ LD
 CCAS
 CC
 ARCH
+HAVE_NEW_PICS_FALSE
+HAVE_NEW_PICS_TRUE
 USE_FLOATS
 am__untar
 am__tar
@@ -655,6 +657,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_floats
+enable_new_pics
 enable_dependency_tracking
 '
       ac_precious_vars='build_alias
@@ -1277,6 +1280,9 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-floats         Enable output of float-values via printf().
+  --enable-new-pics       Enable use of PIC devices added to gputils after the
+                          0.13.7 release. Requires custom-built gputils
+                          obtained from their SVN repository!
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
 
@@ -2246,6 +2252,31 @@ if test "${enable_floats+set}" = set; then :
 fi
 
 
+NEWPICS=no;
+# Check whether --enable-new-pics was given.
+if test "${enable_new_pics+set}" = set; then :
+  enableval=$enable_new_pics;  case "x$enableval" in
+      xyes) NEWPICS=yes;
+            { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling support for PICs from unreleased gputils -- make sure you have up-to-date gputils from SVN." >&5
+$as_echo "$as_me: Enabling support for PICs from unreleased gputils -- make sure you have up-to-date gputils from SVN." >&6;};;
+      xno) NEWPICS=no;;
+      *) as_fn_error $? "bad value \"${enableval}\" for --enable-new-pics" "$LINENO" 5;;
+      esac
+else
+   NEWPICS=no
+
+fi
+
+
+ if  test x$NEWPICS = xyes ; then
+  HAVE_NEW_PICS_TRUE=
+  HAVE_NEW_PICS_FALSE='#'
+else
+  HAVE_NEW_PICS_TRUE='#'
+  HAVE_NEW_PICS_FALSE=
+fi
+
+
 # Checks for programs.
 
 # The default architecture can be selected at configure time by setting the
@@ -2843,6 +2874,10 @@ LTLIBOBJS=$ac_ltlibobjs
 
 
 
+if test -z "${HAVE_NEW_PICS_TRUE}" && test -z "${HAVE_NEW_PICS_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_NEW_PICS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
   as_fn_error $? "conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5

@@ -804,9 +804,16 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
   if (IS_AST_PARAM (*actParm))
     {
       (*actParm)->decorated = 1;
-      return (processParms (func, defParm,
-                            &(*actParm)->left, parmNumber, FALSE) ||
-              processParms (func, defParm ? defParm->next : NULL, &(*actParm)->right, parmNumber, rightmost));
+      if ((*actParm)->reversed)
+        {
+          return (processParms (func, defParm, &(*actParm)->right, parmNumber, FALSE) ||
+                  processParms (func, defParm ? defParm->next : NULL, &(*actParm)->left, parmNumber, rightmost));
+        }
+      else
+        {
+          return (processParms (func, defParm, &(*actParm)->left, parmNumber, FALSE) ||
+                  processParms (func, defParm ? defParm->next : NULL, &(*actParm)->right, parmNumber, rightmost));
+        }
     }
   else if (defParm)             /* not vararg */
     {
@@ -924,7 +931,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
     {
       ast *pTree;
 
-      resultType = getResultTypeFromType (defParm->etype);
+      resultType = getResultTypeFromType (defParm->type);
       pTree = resolveSymbols (copyAst (*actParm));
 
       /* now change the current one to a cast */
@@ -3074,7 +3081,7 @@ decorateType (ast * tree, RESULT_TYPE resultType)
       /*----------------------------*/
       p = newLink (DECLARATOR);
       /* if bit field then error */
-      if (IS_BITFIELD (tree->left->etype) || (IS_BITVAR (tree->left->etype) && !(TARGET_Z80_LIKE || TARGET_IS_HC08)))
+      if (IS_BITFIELD (tree->left->etype) || (IS_BITVAR (tree->left->etype) && (TARGET_IS_MCS51 || TARGET_IS_XA51 || TARGET_IS_DS390)))
         {
           werrorfl (tree->filename, tree->lineno, E_ILLEGAL_ADDR, "address of bit variable");
           goto errorTreeReturn;

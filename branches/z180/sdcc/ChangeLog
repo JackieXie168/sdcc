@@ -1,3 +1,7 @@
+2011-09-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* Merge from trunk.
+
 2011-09-03 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCmain.c:
@@ -3911,11 +3915,11 @@
 
 2010-02-20 Borut Razem <borut.razem AT siol.net>
 
-	* support/makebin/makebin.c: addad support for GameBoy binary file format,
+	* support/makebin/makebin.c: added support for GameBoy binary file format,
 	  added optional input and output file names arguments,
 	  making it (hopefully) more robust, ...
 	* all.dsp, sdcc.dsw, support/makebin/makebin.dsp:
-	  addad makebin to the MSVC project
+	  added makebin to the MSVC project
 	* src/SDCCmain.c: fixed bug #2955614 - Regression - Warning: Couldn't find
 
 2010-02-19 Frieder Ferlemann <Frieder.Ferlemann AT web.de>
@@ -11492,10 +11496,10 @@
 	* sim/ucsim/configure, sim/ucsim/configure.in: do not compile serio
 	  GUI tool by default
 	* src/pic/gen.c: don't include [p]strdin.h on solaris
-	* support/Util/pstdint.h: addad svn attributes
+	* support/Util/pstdint.h: added svn attributes
 	* support/regression/tests/constantRange.c,
 	  support/regression/tests/rotate.c: include inttypes.h instead
-	  stdint.h on solaris, addad svn attributes
+	  stdint.h on solaris, added svn attributes
 
 2006-06-18 Raphael Neider <rneider AT web.de>
 
