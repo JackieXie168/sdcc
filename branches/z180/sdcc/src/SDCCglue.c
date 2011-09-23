@@ -1824,6 +1824,9 @@ glue (void)
   /* initial comments */
   initialComments (asmFile);
 
+  if (TARGET_IS_Z180)
+    fprintf (asmFile, "\t.hd64\n");
+
   /* print module name */
   tfprintf (asmFile, "\t!module\n", moduleName);
   if (mcs51_like)

@@ -129,6 +129,13 @@ _z80_init (void)
 }
 
 static void
+_z180_init (void)
+{
+  z80_opts.sub = SUB_Z180;
+  asm_addTree (&_asxxxx_z80);
+}
+
+static void
 _gbz80_init (void)
 {
   z80_opts.sub = SUB_GBZ80;
@@ -966,7 +973,7 @@ PORT z180_port = {
    3,                           /* sizeofDispatch */
    },
   "_",
-  _z80_init,
+  _z180_init,
   _parseOptions,
   _z80_options,
   NULL,

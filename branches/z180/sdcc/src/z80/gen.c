@@ -5238,10 +5238,42 @@ genMultOneChar (const iCode * ic)
   symbol *tlbl1, *tlbl2;
   bool savedB = FALSE;
 
+  asmop *result = AOP (IC_RESULT (ic));
+  int resultsize = AOP_SIZE (IC_RESULT (ic));
+
   if(IS_GB)
     {
       wassertl (0, "Multiplication is handled through support function calls on gbz80");
       return;
+    }
+
+  if (IS_Z180 &&
+    AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP_TYPE (IC_RESULT (ic)) == AOP_REG)
+    {
+      if ((AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == B_IDX && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX ||
+        AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == B_IDX) &&
+        (resultsize > 1 ? result->aopu.aop_reg[1]->rIdx == B_IDX : !bitVectBitValue (ic->rSurv, B_IDX)) && result->aopu.aop_reg[0]->rIdx == C_IDX)
+        {
+          emit2 ("mlt bc");
+          regalloc_dry_run_cost += 2;
+          return;
+        }
+      if ((AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == D_IDX && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX ||
+        AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == D_IDX) &&
+        (resultsize > 1 ? result->aopu.aop_reg[1]->rIdx == D_IDX : !bitVectBitValue (ic->rSurv, D_IDX)) && result->aopu.aop_reg[0]->rIdx == E_IDX)
+        {
+          emit2 ("mlt de");
+          regalloc_dry_run_cost += 2;
+          return;
+        }
+      if ((AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == H_IDX && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == L_IDX ||
+        AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == L_IDX && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == H_IDX) &&
+        (resultsize > 1 ? result->aopu.aop_reg[1]->rIdx == H_IDX : !bitVectBitValue (ic->rSurv, H_IDX)) && result->aopu.aop_reg[0]->rIdx == L_IDX)
+        {
+          emit2 ("mlt hl");
+          regalloc_dry_run_cost += 2;
+          return;
+        }
     }
 
   if (!isPairDead (PAIR_DE, ic))
@@ -5298,20 +5330,20 @@ genMultOneChar (const iCode * ic)
       _G.stack.pushedDE = FALSE;
     }
 
-  if(AOP (IC_RESULT (ic))->type != AOP_HL)
+  if(result->type != AOP_HL)
     {
-    if (AOP_SIZE (IC_RESULT (ic)) == 1)
-      cheapMove (AOP (IC_RESULT (ic)), 0, ASMOP_L, 0);
+    if (resultsize == 1)
+      cheapMove (result, 0, ASMOP_L, 0);
     else
-      commitPair ( AOP (IC_RESULT (ic)), PAIR_HL);
+      commitPair (result, PAIR_HL);
     }
   else
     {
-    if (AOP_SIZE (IC_RESULT (ic)) == 1)
+    if (resultsize == 1)
       {
         emit2("ld a, l");
         regalloc_dry_run_cost += 1;
-        cheapMove (AOP (IC_RESULT (ic)), 0, ASMOP_A, 0);
+        cheapMove (result, 0, ASMOP_A, 0);
       }
     else
       {
@@ -5323,7 +5355,7 @@ genMultOneChar (const iCode * ic)
         emit2("ld e, l");
         emit2("ld d, h");
         regalloc_dry_run_cost += 2;
-        commitPair ( AOP (IC_RESULT (ic)), PAIR_DE);
+        commitPair (result, PAIR_DE);
         if(!isPairDead (PAIR_DE, ic))
           {
             _pop (PAIR_DE);
