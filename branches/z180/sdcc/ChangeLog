@@ -1,5 +1,10 @@
 2011-09-23 Philipp Klaus Krause <pkk AT spth.de>
 
+	* support/regression/tests/bug1115321.c:
+	  Fix last remaining ucz180 regression test failure.
+
+2011-09-23 Philipp Klaus Krause <pkk AT spth.de>
+
 	* device/include/string.h,
 	  device/include/sdcc-lib.h,
 	  device/include/math.h,
