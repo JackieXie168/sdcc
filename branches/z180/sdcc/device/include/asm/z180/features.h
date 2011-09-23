@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
-   stdarg.h - ANSI macros for variable parameter list
+   features.h - Z80 specific features.
 
-   Copyright (C) 2000, Michael Hope
+   Copyright (C) 2001, Michael Hope
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -26,35 +26,25 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef __SDC51_STDARG_H
-#define __SDC51_STDARG_H 1
+#ifndef __SDCC_ASM_Z180_FEATURES_H
+#define __SDCC_ASM_Z180_FEATURES_H   1
 
-#if defined(__z80) || defined(__z180) || defined(__gbz80) || defined(__hc08)
+#define _REENTRANT
+#define _CODE
+#define _AUTOMEM
+#define _STATMEM
 
-typedef unsigned char * va_list;
-#define va_start(marker, last)  { marker = (va_list)&last + sizeof(last); }
-#define va_arg(marker, type)    *((type *)((marker += sizeof(type)) - sizeof(type)))
+#define _SDCC_MANGLES_SUPPORT_FUNS	1
+#define _SDCC_Z80_STYLE_LIB_OPT		1
 
-#elif defined(__ds390) || defined(__ds400)
+/* The following are disabled to make the dhrystone test more authentic.
+ */
+#define _SDCC_PORT_PROVIDES_MEMCPY	0
+#define _SDCC_PORT_PROVIDES_STRCMP	0
+/* Register allocator is as good as hand coded asm.  Cool. */
+#define _SDCC_PORT_PROVIDES_STRCPY	0
 
-typedef unsigned char * va_list;
-#define va_start(marker, first) { marker = (va_list)&first; }
-#define va_arg(marker, type)    *((type *)(marker -= sizeof(type)))
-
-#elif defined(SDCC_USE_XSTACK)
-
-typedef unsigned char __pdata * va_list;
-#define va_start(marker, first) { marker = (va_list)&first; }
-#define va_arg(marker, type)    *((type __pdata *)(marker -= sizeof(type)))
-
-#else
-
-typedef unsigned char __data * va_list;
-#define va_start(marker, first) { marker = (va_list)&first; }
-#define va_arg(marker, type)    *((type __data * )(marker -= sizeof(type)))
+#define _SDCC_MALLOC_TYPE_MLH		1
 
 #endif
 
-#define va_end(marker) marker = (va_list) 0;
-
-#endif
