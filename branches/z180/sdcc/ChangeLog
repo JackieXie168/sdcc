@@ -1,5 +1,9 @@
 2011-09-24 Philipp Klaus Krause <pkk AT spth.de>
 
+	* Merge from trunk.
+
+2011-09-24 Philipp Klaus Krause <pkk AT spth.de>
+
 	* sim/ucsim/globals.cc,
 	  sim/ucsim/z80.src/inst_ed.cc:
 	  Report mlt instructions as invalid in simulator when running in Z80 mode.
@@ -7547,7 +7551,7 @@
 
 2008-02-26 Borut Razem <borut.razem AT siol.net>
 
-	* src/SDCCast.c, doc/sdccman.lyx: fixed RFE #1901171: inerger promotion
+	* src/SDCCast.c, doc/sdccman.lyx: fixed RFE #1901171: integer promotion
 	  of casted varargs
 	* support/scripts/sdcc.nsi: added MULTIUSER page,
 	  NSIS upgraded to version 2.35
