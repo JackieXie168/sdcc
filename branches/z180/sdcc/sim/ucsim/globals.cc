@@ -410,7 +410,7 @@ struct cpu_entry cpus_51[]=
 struct cpu_entry cpus_z80[]=
 {
   {"Z80"   , CPU_Z80, 0},
-  {"Z180"  , CPU_Z80, 0},
+  {"Z180"  , CPU_Z180,0},
   {NULL, 0, 0}
 };
 
