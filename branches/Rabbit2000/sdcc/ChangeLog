@@ -1,5 +1,13 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* support/regression/tests/bug1115321.c
+	  support/regression/Makefile.in
+	  support/regression/fwk/include/testfwk.h
+	  support/regression/ports/ucr2k
+	  Leland Morrison's Rabbit 2000 regression test port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCCmain.c:
 	  Fix library path. r2k port works now.
 
