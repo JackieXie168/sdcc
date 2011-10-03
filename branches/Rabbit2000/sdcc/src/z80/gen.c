@@ -4184,13 +4184,13 @@ genFunction (const iCode * ic)
             emit2 ("!enter");
           while (stack > 1)
             {
-              /*if (IS_R2K)
+              if (IS_R2K)
                 {
                   int d = (stack < 127 ? -stack : -127);
-                  emit2 ("add sp, %d", d);
+                  emit2 ("add sp, #%d", d);
                   stack += d;
                 }
-              else*/
+              else
                 {
                   emit2 ("push af");
                   stack -= 2;
