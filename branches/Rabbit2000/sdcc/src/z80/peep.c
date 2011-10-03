@@ -848,8 +848,11 @@ int z80instructionSize(lineNode *pl)
   if(ISINST(pl->line, "di") || ISINST(pl->line, "ei"))
     return(1);
 
-  if(ISINST(pl->line, "mlt"))
+  if(IS_Z180 && ISINST(pl->line, "mlt"))
     return(2);
+
+  if(IS_R2K && ISINST(pl->line, "mul"))
+    return(1);
 
   if(ISINST(pl->line, ".db"))
     {
