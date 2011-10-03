@@ -2025,6 +2025,11 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
         }
         else if (pairId == PAIR_IY)
           {
+            if (isPair (aop) && IS_R2K && getPairId(aop) == PAIR_HL)
+              {
+                emit2 ("ld iy, hl");
+                regalloc_dry_run_cost += 2;
+              }
             if (isPair (aop))
               {
                 emit2 ("push %s", _pairs[getPairId(aop)].name);
@@ -6477,7 +6482,8 @@ genAnd (const iCode *ic, iCode * ifx)
     }
 
   /* Make sure A is on the left to not overwrite it. */
-  if (AOP_TYPE (right) == AOP_ACC)
+  if (AOP_TYPE (right) == AOP_ACC ||
+    isPair (AOP (right)) && (getPairId (AOP (right)) == PAIR_HL || getPairId (AOP (right)) == PAIR_IY))
     {
       operand *tmp = right;
       right = left;
@@ -6540,6 +6546,15 @@ genAnd (const iCode *ic, iCode * ifx)
           goto release;
         }
       outBitC (result);
+      goto release;
+    }
+
+  if (IS_R2K && isPair (AOP (left)) && isPair (AOP (right)) && isPair (AOP (result)) && getPairId (AOP (right)) == PAIR_DE &&
+     (getPairId (AOP (left)) == PAIR_HL && getPairId (AOP (result)) == PAIR_HL ||
+     getPairId (AOP (left)) == PAIR_IY && getPairId (AOP (result)) == PAIR_IY))
+    {
+      emit2 ("and hl, de");
+      regalloc_dry_run_cost += (getPairId (AOP (left)) == PAIR_HL ? 2 : 3);
       goto release;
     }
 
