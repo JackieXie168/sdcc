@@ -1,5 +1,24 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* sim/ucsim/z80.src/Makefile.in,
+	  sim/ucsim/z80.src/z80cl.h,
+	  sim/ucsim/z80.src/regsz80.h,
+	  sim/ucsim/z80.src/sz80.cc,
+	  sim/ucsim/z80.src/z80mac.h,
+	  sim/ucsim/z80.src/inst_xd.cc,
+	  sim/ucsim/z80.src/z80.cc,
+	  sim/ucsim/z80.src/glob.cc,
+	  sim/ucsim/z80.src/inst_dd.cc,
+	  sim/ucsim/z80.src/glob.h,
+	  sim/ucsim/z80.src/inst_fd.cc,
+	  sim/ucsim/z80.src/simz80.cc,
+	  sim/ucsim/stypes.h,
+	  sim/ucsim/sim.src/uc.cc,
+	  sim/ucsim/globals.cc:
+	  Leland Morrison's Rabbit 2000 ucsim port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/gen.c:
 	  Use add sp, #n in function entry in r2k port.
 
