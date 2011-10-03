@@ -1,12 +1,12 @@
-# libc/r2k Makefile
+# libc/z80 Makefile
 
+VPATH  = @srcdir@
+srcdir = @srcdir@
+top_builddir = @top_builddir@
 
-srcdir = .
-top_builddir = ../../..
+AR_S            = @AR@ @AR_S_FLAG@
 
-AR_S            = ar -S
-
-LIB_TYPE        = RANLIB
+LIB_TYPE        = @LIB_TYPE@
 
 TOPDIR = ../../..
 
@@ -18,26 +18,27 @@ override PORTDIR = ../build/r2k
 
 include $(srcdir)/../incl.mk
 
-R2K_FLOAT = $(COMMON_FLOAT)
+Z80_FLOAT = $(COMMON_FLOAT)
 
-R2K_INT = $(COMMON_INT)
+Z80_INT = $(COMMON_INT)
 
-R2K_LONG = $(COMMON_LONG) \
+Z80_LONG = $(COMMON_LONG) \
   _divulong.c \
   _mullong.c
 
-R2K_SDCC = $(COMMON_SDCC) \
+Z80_SDCC = $(COMMON_SDCC) \
   _itoa.c \
   _ltoa.c \
   _startup.c \
   sprintf.c \
-  vprintf.c
+  vprintf.c \
+  _strlen.c
 
-R2KSOURCES = $(addprefix ../,$(R2K_FLOAT) $(R2K_INT) $(R2K_LONG) $(R2K_SDCC))
-R2KOBJECTS = $(patsubst %.c,%.rel,$(R2K_FLOAT) $(R2K_INT) $(R2K_LONG) $(R2K_SDCC))
+Z80SOURCES = $(addprefix ../,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_SDCC))
+Z8OBJECTS = $(patsubst %.c,%.rel,$(Z80_FLOAT) $(Z80_INT) $(Z80_LONG) $(Z80_SDCC))
 
 OBJ = divunsigned.rel divsigned.rel divmixed.rel modunsigned.rel modsigned.rel modmixed.rel mul.rel mulchar.rel \
-      putchar.rel shift.rel stubs.rel crt0_rle.rel heap.rel fstubs.rel memmove.rel strlen.rel abs.rel crtcall.rel \
+      putchar.rel shift.rel stubs.rel crt0_rle.rel heap.rel fstubs.rel memmove.rel abs.rel crtcall.rel \
       setjmp.rel
 
 LIB = r2k.lib
@@ -52,21 +53,21 @@ all: $(PORTDIR)/$(LIB) $(PORTDIR)/crt0.rel
 $(PORTDIR)/crt0.rel: crt0.rel
 	cp crt0.rel $(PORTDIR)/crt0.rel
 
-$(PORTDIR)/$(LIB): $(OBJ) $(R2KOBJECTS) Makefile
+$(PORTDIR)/$(LIB): $(OBJ) $(Z8OBJECTS) Makefile
 ifeq ($(LIB_TYPE), SDCCLIB)
 	rm -f $@; \
-	../../../bin/sdcclib -a $@ $(OBJ) $(R2KOBJECTS)
+	../../../bin/sdcclib -a $@ $(OBJ) $(Z8OBJECTS)
 else
   ifeq ($(LIB_TYPE), AR)
-	$(AR_S) -cq $@ $(OBJ) $(R2KOBJECTS)
+	$(AR_S) -cq $@ $(OBJ) $(Z8OBJECTS)
   else
     ifeq ($(LIB_TYPE), RANLIB)
-	$(AR_S) -cq $@ $(OBJ) $(R2KOBJECTS)
+	$(AR_S) -cq $@ $(OBJ) $(Z8OBJECTS)
 	$(top_builddir)/bin/asranlib $@
     else
 	rm -f $@; \
-	for i in $(basename $(OBJ) $(R2KOBJECTS)); do echo $$i >>$@; done
-	cp $(OBJ) $(R2KOBJECTS) $(PORTDIR)
+	for i in $(basename $(OBJ) $(Z8OBJECTS)); do echo $$i >>$@; done
+	cp $(OBJ) $(Z8OBJECTS) $(PORTDIR)
     endif
   endif
 endif

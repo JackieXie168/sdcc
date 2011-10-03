@@ -1,5 +1,20 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* device/include/asm/r2k,
+	  device/include/asm/r2k/features.h,
+	  device/lib/r2k/Makefile.in,
+	  Makefile.in,
+	  src/SDCCmain.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  device/lib/Makefile.in,
+	  configure.in,
+	  device/lib/r2k/Makefile.in,
+	  device/lib/r2k/strlen.s:
+	  r2k library cleanup.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* device/lib/r2k,
 	  device/include/sdcc-lib.h,
 	  device/include/math.h,

@@ -783,6 +783,8 @@ static const char *_r2kAsmCmd[] = {
 
 static const char *const _crt[] = { "crt0.rel", NULL, };
 static const char *const _libs_z80[] = { "z80", NULL, };
+static const char *const _libs_z180[] = { "z180", NULL, };
+static const char *const _libs_r2k[] = { "r2k", NULL, };
 static const char *const _libs_gb[] = { "gbz80", NULL, };
 
 /* Globals */
@@ -936,7 +938,7 @@ PORT z180_port = {
    ".rel",
    1,
    _crt,                        /* crt */
-   _libs_z80,                   /* libs */
+   _libs_z180,                  /* libs */
    },
   {                             /* Peephole optimizer */
    _z80_defaultRules,
@@ -1188,7 +1190,7 @@ PORT r2k_port = {
    ".rel",
    1,
    _crt,                        /* crt */
-   _libs_z80,                   /* libs */
+   _libs_r2k,                   /* libs */
    },
   {                             /* Peephole optimizer */
    _r2k_defaultRules,

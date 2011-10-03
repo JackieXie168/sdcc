@@ -2306,7 +2306,7 @@ aopGet (asmop * aop, int offset, bool bit16)
             {
               emit2 ("ioi");
               emit2 ("ld a,(%s)", aop->aopu.aop_dir);
-              emit2 ("nop");
+              emit2 ("nop");	/* Workaround for Rabbit 2000 hardware bug. see TN302 for details. */
               dbuf_append_char (&dbuf, 'a');
             }
           else
@@ -2525,7 +2525,7 @@ aopPut (asmop *aop, const char *s, int offset)
            */
           emit2 ("ioi");
           emit2 ("ld (%s),a", aop->aopu.aop_dir);
-          emit2 ("nop");
+          emit2 ("nop"); /* Workaround for Rabbit 2000 hardware bug. see TN302 for details. */
         }
       else
         { /*.p.t.20030716 handling for i/o port read access for Z80 */
