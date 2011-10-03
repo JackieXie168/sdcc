@@ -4172,15 +4172,24 @@ genFunction (const iCode * ic)
     emit2 ("!enterx", sym->stack);
   else if (sym->stack)
     {
-      if ((optimize.codeSize && sym->stack <= 8) || sym->stack <= 4)
+      if ((optimize.codeSize && sym->stack <= 8) || sym->stack <= 4 || IS_R2K && sym->stack <= 254)
         {
           int stack = sym->stack;
           if (!_G.omitFramePtr)
             emit2 ("!enter");
           while (stack > 1)
             {
-              emit2 ("push af");
-              stack -= 2;
+              /*if (IS_R2K)
+                {
+                  int d = (stack < 127 ? -stack : -127);
+                  emit2 ("add sp, %d", d);
+                  stack += d;
+                }
+              else*/
+                {
+                  emit2 ("push af");
+                  stack -= 2;
+                }
             }
           if(stack > 0)
             emit2 ("dec sp");

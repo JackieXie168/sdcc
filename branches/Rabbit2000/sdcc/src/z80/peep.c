@@ -759,6 +759,9 @@ int z80instructionSize(lineNode *pl)
   if(ISINST(pl->line, "add") && (!strncmp(op1start, "ix", 2) || !strncmp(op1start, "iy", 2)))
     return(2);
 
+  if(IS_R2K && ISINST(pl->line, "add") && !strncmp(op1start, "sp", 2))
+    return(2);
+
   /* 8 bit arithmetic, two operands */
   if(op2start &&  op1start[0] == 'a' && (ISINST(pl->line, "add") || ISINST(pl->line, "adc") || ISINST(pl->line, "sub") || ISINST(pl->line, "sbc") || ISINST(pl->line, "cp") || ISINST(pl->line, "and") || ISINST(pl->line, "or") || ISINST(pl->line, "xor")))
     {
