@@ -2206,6 +2206,8 @@ setLibPath (void)
 
       dbuf_init (&dbuf, PATH_MAX);
 
+      targetname = port->target;
+
       dbuf_makePath (&dbuf, LIB_DIR_SUFFIX, port->general.get_model ? port->general.get_model () : targetname);
       libDirsSet = appendStrSet (dataDirsSet, NULL, dbuf_c_str (&dbuf));
 

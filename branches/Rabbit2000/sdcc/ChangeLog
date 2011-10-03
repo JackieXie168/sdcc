@@ -1,5 +1,10 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCCmain.c:
+	  Fix library path. r2k port works now.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* device/include/stdint.h:
 	  Enable 64 bit integer types for r2k port.
 
