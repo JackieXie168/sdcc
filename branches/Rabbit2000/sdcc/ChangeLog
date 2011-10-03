@@ -1,5 +1,13 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* device/lib/r2k,
+	  device/include/sdcc-lib.h,
+	  device/include/math.h,
+	  device/include/stdarg.h:
+	  Leland Morrison's Rabbit 2000 library port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* configure.in:
 	  Add r2k port.
 	* src/port.h,
