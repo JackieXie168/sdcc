@@ -2302,6 +2302,13 @@ aopGet (asmop * aop, int offset, bool bit16)
               emit2 ("ldh a,(%s+%d)", aop->aopu.aop_dir, offset);
               dbuf_append_char (&dbuf, 'a');
             }
+	  else if (TARGET_IS_RABBIT)
+            {
+	      emit2 ("ioi");
+	      emit2 ("ld a,(%s)", aop->aopu.aop_dir);
+	      emit2 ("nop");
+              dbuf_append_char (&dbuf, 'a');
+            }
           else
             {                   /*.p.t.20030716 handling for i/o port read access for Z80 */
               if (aop->paged)
@@ -2507,6 +2514,18 @@ aopPut (asmop *aop, const char *s, int offset)
           if (strcmp (s, "a"))
             emit2 ("ld a,%s", s);
           emit2 ("ldh (%s+%d),a", aop->aopu.aop_dir, offset);
+        }
+      else if (TARGET_IS_RABBIT)
+        {
+          if (strcmp (s, "a"))
+            emit2 ("ld a,%s", s);
+	  
+	  /* LM 20110928: Need to fix to emit either "ioi" or "ioe"
+	   * (for internal vs. external I/O space
+	   */
+	  emit2 ("ioi");
+          emit2 ("ld (%s),a", aop->aopu.aop_dir);
+	  emit2 ("nop");
         }
       else
         { /*.p.t.20030716 handling for i/o port read access for Z80 */
@@ -4030,6 +4049,11 @@ genFunction (const iCode * ic)
      then save all potentially used registers. */
   if (IFFUNC_ISISR (sym->type))
     {
+      if (TARGET_IS_RABBIT)
+        {
+	  emit2 ("push ip");
+        }
+      
       /* If critical function then turn interrupts off */
       /* except when no interrupt number is given then it implies the NMI handler */
       if (IFFUNC_ISCRITICAL (sym->type) && (FUNC_INTNO(sym->type) != INTNO_UNSPEC))
@@ -4045,7 +4069,7 @@ genFunction (const iCode * ic)
          If critical function then turn interrupts off */
       if (IFFUNC_ISCRITICAL (sym->type))
         {
-          if (IS_GB)
+          if (IS_GB || TARGET_IS_RABBIT)
             {
               emit2 ("!di");
             }
@@ -4265,6 +4289,10 @@ genEndFunction (iCode * ic)
             {
               emit2 ("!ei");
             }
+	  else if (TARGET_IS_RABBIT)
+	    {
+	      emit2( "ipres" );
+	    }
           else
             {
               symbol *tlbl = newiTempLabel (NULL);
@@ -4290,6 +4318,13 @@ genEndFunction (iCode * ic)
       /* "critical interrupt" is used to imply NMI handler */
       if (!IS_GB && IFFUNC_ISCRITICAL (sym->type) && FUNC_INTNO(sym->type) == INTNO_UNSPEC)
         emit2 ("retn");
+      else if (TARGET_IS_RABBIT && IFFUNC_ISCRITICAL (sym->type) && FUNC_INTNO(sym->type) == INTNO_UNSPEC)
+        {
+	  // ISR exit sequence that works on the rabbit 4000
+	  emit2 ("pop ip");
+	  emit2 ("ipres");
+	  emit2 ("ret");
+        }
       else
         emit2 ("reti");
     }
@@ -9038,7 +9073,7 @@ genCritical (const iCode *ic)
 {
   symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
 
-  if (IS_GB)
+  if (IS_GB || TARGET_IS_RABBIT)
     {
       emit2 ("!di");
       regalloc_dry_run_cost += 1;
@@ -9051,6 +9086,7 @@ genCritical (const iCode *ic)
         {
           //get interrupt enable flag IFF2 into P/O
           emit2 ("ld a,i");
+	  
           //disable interrupt
           emit2 ("!di");
           //parity odd <==> P/O=0 <==> interrupt enable flag IFF2=0
@@ -9069,6 +9105,7 @@ genCritical (const iCode *ic)
     {
       //get interrupt enable flag IFF2 into P/O
       emit2 ("ld a,i");
+      
       //disable interrupt
       emit2 ("!di");
       regalloc_dry_run_cost += 2;
@@ -9090,13 +9127,19 @@ genEndCritical (const iCode *ic)
       emit2 ("!ei");
       regalloc_dry_run_cost += 1;
     }
+  else if (TARGET_IS_RABBIT)
+    {
+      emit2 ("ipres");
+      regalloc_dry_run_cost += 1;
+    }
   else if (IC_RIGHT (ic))
     {
       aopOp (IC_RIGHT (ic), ic, FALSE, TRUE);
       _toBoolean (IC_RIGHT (ic), TRUE);
-      //don't enable interrupts if they were off before
+      
       if(!regalloc_dry_run)
         {
+          //don't enable interrupts if they were off before
           emit2 ("jp Z,!tlabel", tlbl->key + 100);
           emit2 ("!ei");
           emitLabel (tlbl->key + 100);

@@ -34,6 +34,7 @@ extern Z80_OPTS z80_opts;
 #define IS_Z180 (z80_opts.sub == SUB_Z180)
 #define IS_GB  (z80_opts.sub == SUB_GBZ80)
 
+
 #define IY_RESERVED (z80_opts.reserveIY)
 
 #define OPTRALLOC_REMAT (z80_opts.optralloc_remat)

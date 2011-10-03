@@ -1,5 +1,19 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCCralloc.hpp,
+	  src/SDCCmain.c,
+	  src/SDCCglue.c,
+	  src/port.h,
+	  src/z80/peeph-r2k.def,
+	  src/z80/gen.c,
+	  src/z80/mappings.i,
+	  src/z80/main.c,
+	  src/z80/z80.h,
+	  src/z80/peep.c:
+	  Leland Morrison's Rabbit 2000 compiler port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* sdas/asrab,
 	  sdas/asrab/Makefile.in,
 	  sdas/asrab/rabbitext.c,

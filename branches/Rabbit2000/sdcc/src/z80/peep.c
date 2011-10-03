@@ -812,6 +812,12 @@ int z80instructionSize(lineNode *pl)
       return(3);
     }
 
+  if (TARGET_IS_RABBIT &&
+      (ISINST(pl->line, "ipset3") || ISINST(pl->line, "ipset2") ||
+       ISINST(pl->line, "ipset1") || ISINST(pl->line, "ipset0") ||
+       ISINST(pl->line, "ipres")))
+    return(2);
+  
   if(ISINST(pl->line, "reti") || ISINST(pl->line, "retn"))
     return(2);
 
