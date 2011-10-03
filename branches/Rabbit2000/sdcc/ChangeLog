@@ -1,3 +1,15 @@
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sdas/asrab,
+	  sdas/asrab/Makefile.in,
+	  sdas/asrab/rabbitext.c,
+	  sdas/asrab/clean.mk,
+	  sdas/asrab/rabbit.h,
+	  sdas/asrab/rabbitadr.c,
+	  sdas/asrab/rabbitpst.c,
+	  sdas/asrab/rabbitmch.c:
+	  Leland Morrison's assembler for Rabbit 2000 and Rabbit 4000.
+
 2011-10-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* sim/ucsim/hc08.src/glob.cc: add HCS08 instructions to disassembler
