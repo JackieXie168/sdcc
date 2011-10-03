@@ -5347,7 +5347,8 @@ genMultOneChar (const iCode * ic)
       _push (PAIR_DE);
       _G.stack.pushedDE = TRUE;
     }
-  if (!IS_Z180 && (!z80_opts.oldralloc && bitVectBitValue (ic->rSurv, B_IDX) ||
+  if (IS_R2K && !isPairDead (PAIR_BC, ic) ||
+    !IS_Z180 && (!z80_opts.oldralloc && bitVectBitValue (ic->rSurv, B_IDX) ||
     z80_opts.oldralloc && bitVectBitValue (ic->rMask, B_IDX) && !(getPairId (AOP (IC_RESULT (ic))) == PAIR_BC)))
     {
       _push (PAIR_BC);
@@ -5372,6 +5373,14 @@ genMultOneChar (const iCode * ic)
       emit2 ("ld l, e");
       emit2 ("mlt hl");
       regalloc_dry_run_cost += 3;
+    }
+  else if(IS_R2K)
+    {
+      emit2 ("ld c, h");
+      emit2 ("mul");
+      emit2 ("ld l, c");
+      emit2 ("ld h, b");
+      regalloc_dry_run_cost += 4;
     }
   else if (!regalloc_dry_run)
     {
