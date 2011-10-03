@@ -1,5 +1,11 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/gen.c,
+	  sim/ucsim/z80.src/inst_r2k.cc:
+	  Fixed multiplication using r2k mul instruction.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* sdas/asrab/rabbitmch.c:
 	  Leland Morrison's support for ld iy, hl.
 

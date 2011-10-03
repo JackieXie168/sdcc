@@ -5377,10 +5377,12 @@ genMultOneChar (const iCode * ic)
   else if(IS_R2K)
     {
       emit2 ("ld c, h");
+      emit2 ("ld d, #0x00");
+      emit2 ("ld b, d");
       emit2 ("mul");
       emit2 ("ld l, c");
       emit2 ("ld h, b");
-      regalloc_dry_run_cost += 4;
+      regalloc_dry_run_cost += 7;
     }
   else if (!regalloc_dry_run)
     {
