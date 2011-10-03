@@ -1,5 +1,12 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* sim/ucsim/z80.src/inst_r2k.cc,
+	  sim/ucsim/z80.src/glob_r2k.cc,
+	  sim/ucsim/z80.src/inst_ed_r2k.cc:
+	  Forgotten files from Leland Morrison's Rabbit 2000 ucsim port, support for r2k mul and ld iy, hl instructions in ucsim.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/peep.c:
 	  Handle r2k mul instruction in code size calculation.
 
