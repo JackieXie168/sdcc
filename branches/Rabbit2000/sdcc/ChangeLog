@@ -1,5 +1,10 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* device/include/stdint.h:
+	  Enable 64 bit integer types for r2k port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* device/include/asm/r2k,
 	  device/include/asm/r2k/features.h,
 	  device/lib/r2k/Makefile.in,
