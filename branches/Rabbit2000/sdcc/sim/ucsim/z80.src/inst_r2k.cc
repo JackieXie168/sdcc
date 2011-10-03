@@ -216,7 +216,7 @@ int cl_r2k::inst_lcall(t_mem code) {
 }
 
 int cl_r2k::inst_mul(t_mem code) {
-  long m = (long)(regs.BC) * (long)(regs.DE)
+  long m = (long)(regs.BC) * (long)(regs.DE);
   regs.BC = (m & 0xffff);
   regs.HL = ((m >> 16) & 0xffff);
   return(resGO);

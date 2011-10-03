@@ -554,6 +554,12 @@ struct mne *mp;
 		    outrb( &e2 );
 		    break;
 		  }
+		  
+		  if ((t1 == S_R16) && ((v1 == IX) || (v1 == IY))) {
+		    outab( ((v1==IX)?0xDD:0xFD) );
+		    outab(0x7D);
+		    break;
+		  }
 		}
 		if ((t1 == S_INDM) && (t2 == S_R16)) {
 			if (gixiy(v2) == HL) {

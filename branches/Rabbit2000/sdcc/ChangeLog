@@ -1,5 +1,10 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* sdas/asrab/rabbitmch.c:
+	  Leland Morrison's support for ld iy, hl.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* sim/ucsim/z80.src/inst_r2k.cc,
 	  sim/ucsim/z80.src/glob_r2k.cc,
 	  sim/ucsim/z80.src/inst_ed_r2k.cc:
