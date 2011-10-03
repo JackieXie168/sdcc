@@ -736,7 +736,7 @@ int z80instructionSize(lineNode *pl)
           fprintf(stderr, "Warning: z80instructionSize() failed to parse line node %s\n", pl->line);
           return(4);
         }
-      if(!strncmp(op2start, "ix", 2) || !strncmp(op2start, "iy", 2))
+      if(argCont(op1start, "(sp)") && (IS_R2K || !strncmp(op2start, "ix", 2) || !strncmp(op2start, "iy", 2)))
         return(2);
       return(1);
     }
@@ -812,7 +812,7 @@ int z80instructionSize(lineNode *pl)
       return(3);
     }
 
-  if (TARGET_IS_RABBIT &&
+  if (TARGET_IS_R2K &&
       (ISINST(pl->line, "ipset3") || ISINST(pl->line, "ipset2") ||
        ISINST(pl->line, "ipset1") || ISINST(pl->line, "ipset0") ||
        ISINST(pl->line, "ipres")))

@@ -624,6 +624,7 @@ OPT_DISABLE_PIC14
 OPT_DISABLE_DS400
 OPT_DISABLE_DS390
 OPT_DISABLE_GBZ80
+OPT_DISABLE_R2K
 OPT_DISABLE_Z180
 OPT_DISABLE_Z80
 OPT_DISABLE_MCS51
@@ -714,6 +715,7 @@ with_ccache
 enable_mcs51_port
 enable_z80_port
 enable_z180_port
+enable_r2k_port
 enable_gbz80_port
 enable_ds390_port
 enable_ds400_port
@@ -1372,6 +1374,7 @@ Optional Features:
   --disable-mcs51-port    Excludes the Intel mcs51 port
   --disable-z80-port      Excludes the z80 port
   --disable-z180-port     Excludes the z180 port
+  --disable-r2k-port      Excludes the r2k port
   --disable-gbz80-port    Excludes the Gameboy gbz80 port
   --disable-ds390-port    Excludes the DS390 port
   --disable-ds400-port    Excludes the DS400 port
@@ -6343,6 +6346,32 @@ _ACEOF
   fi
 
 
+  # Check whether --enable-r2k-port was given.
+if test "${enable_r2k_port+set}" = set; then :
+  enableval=$enable_r2k_port;
+fi
+
+
+  if test "$enable_r2k_port" = "no"; then
+    OPT_DISABLE_R2K=1
+  else
+    enable_r2k_port="yes"
+    OPT_DISABLE_R2K=0
+  fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define OPT_DISABLE_R2K $OPT_DISABLE_R2K
+_ACEOF
+
+
+
+  echo z80 >>ports.all
+  if test $OPT_DISABLE_R2K = 0; then
+    echo z80 >>ports.build
+  fi
+
+
   # Check whether --enable-gbz80-port was given.
 if test "${enable_gbz80_port+set}" = set; then :
   enableval=$enable_gbz80_port;
@@ -8777,6 +8806,7 @@ sdcc ${VERSION} is now configured for
     xa51                ${enable_xa51_port}
     z80                 ${enable_z80_port}
     z180                ${enable_z180_port}
+    r2k                 ${enable_r2k_port}
 
   Disable packihx:      ${OPT_DISABLE_PACKIHX}
   Disable ucsim:        ${OPT_DISABLE_UCSIM}
@@ -8836,6 +8866,7 @@ sdcc ${VERSION} is now configured for
     xa51                ${enable_xa51_port}
     z80                 ${enable_z80_port}
     z180                ${enable_z180_port}
+    r2k                 ${enable_r2k_port}
 
   Disable packihx:      ${OPT_DISABLE_PACKIHX}
   Disable ucsim:        ${OPT_DISABLE_UCSIM}

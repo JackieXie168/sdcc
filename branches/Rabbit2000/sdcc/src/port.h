@@ -397,11 +397,11 @@ extern PORT z80_port;
 #if !OPT_DISABLE_Z180
 extern PORT z180_port;
 #endif
-#if !OPT_DISABLE_GBZ80
-extern PORT gbz80_port;
-#endif
 #if !OPT_DISABLE_R2K
 extern PORT r2k_port;  /* rabbit 2000/3000 */
+#endif
+#if !OPT_DISABLE_GBZ80
+extern PORT gbz80_port;
 #endif
 #if !OPT_DISABLE_AVR
 extern PORT avr_port;

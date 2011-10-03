@@ -118,6 +118,7 @@ static char *_keywords[] = {
 
 extern PORT gbz80_port;
 extern PORT z80_port;
+extern PORT r2k_port;
 
 #include "mappings.i"
 
@@ -141,20 +142,16 @@ _z180_init (void)
 }
 
 static void
-_gbz80_init (void)
+_r2k_init (void)
 {
-  z80_opts.sub = SUB_GBZ80;
+  z80_opts.sub = SUB_R2K;
+  asm_addTree (&_asxxxx_r2k);
 }
 
 static void
-_r2k_init (void)
+_gbz80_init (void)
 {
-#if 1
-  z80_opts.sub = SUB_Z80;
-#else
-  z80_opts.sub = SUB_R2K;
-#endif
-  asm_addTree (&_asxxxx_r2k);
+  z80_opts.sub = SUB_GBZ80;
 }
 
 static void

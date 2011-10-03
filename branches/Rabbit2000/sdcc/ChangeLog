@@ -1,5 +1,17 @@
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
+	* configure.in:
+	  Add r2k port.
+	* src/port.h,
+	  src/z80/gen.c
+	  src/z80/main.c
+	  src/z80/z80.h:
+	  Code cleanup.
+	* src/z80/peep.c:
+	  Fix code size for ex (sp), hl in r2k port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCCralloc.hpp,
 	  src/SDCCmain.c,
 	  src/SDCCglue.c,
