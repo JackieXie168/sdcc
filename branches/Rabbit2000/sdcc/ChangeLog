@@ -1,3 +1,8 @@
+2011-10-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/z80.src/inst_r2k.cc:
+	  Fix signed multiplication to use two's complement instead of sign-magnitude.
+
 2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
 
 	* sim/ucsim/z80.src/r2k.cc,
