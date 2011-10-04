@@ -842,8 +842,13 @@ struct dis_entry DISASS_NAME(_dd)[]= {
   { 0x0074, 0x00ff, ' ', 2, "LD (IX+%d),H" },
   { 0x0075, 0x00ff, ' ', 2, "LD (IX+%d),L" },
   { 0x0077, 0x00ff, ' ', 2, "LD (IX+%d),A" },
+#ifndef R2K
   { 0x007C, 0x00ff, ' ', 1, "LD A,HX" },
   { 0x007D, 0x00ff, ' ', 1, "LD A,LX" },
+#else
+  { 0x007C, 0x00ff, ' ', 1, "LD HL,IX" },
+  { 0x007D, 0x00ff, ' ', 1, "LD IX,HL" },
+#endif
   { 0x007E, 0x00ff, ' ', 2, "LD A,(IX+%d)" },
   { 0x00F9, 0x00ff, ' ', 1, "LD SP,IX" },
 
@@ -936,8 +941,13 @@ struct dis_entry DISASS_NAME(_fd)[]= {
   { 0x0074, 0x00ff, ' ', 2, "LD (IY+%d),H" },
   { 0x0075, 0x00ff, ' ', 2, "LD (IY+%d),L" },
   { 0x0077, 0x00ff, ' ', 2, "LD (IY+%d),A" },
+#ifndef R2K
   { 0x007C, 0x00ff, ' ', 1, "LD A,HX" },
   { 0x007D, 0x00ff, ' ', 1, "LD A,LX" },
+#else
+  { 0x007C, 0x00ff, ' ', 1, "LD HL,IX" },
+  { 0x007D, 0x00ff, ' ', 1, "LD IX,HL" },
+#endif
   { 0x007E, 0x00ff, ' ', 2, "LD A,(IY+%d)" },
   { 0x00F9, 0x00ff, ' ', 1, "LD SP,IY" },
 

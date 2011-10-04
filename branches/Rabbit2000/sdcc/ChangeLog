@@ -1,3 +1,14 @@
+2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* sim/ucsim/z80.src/inst_r2k.cc,
+	  sim/ucsim/z80.src/r2k.cc,
+	  sim/ucsim/z80.src/z80cl.h,
+	  sim/ucsim/z80.src/inst_ed_r2k.cc,
+	  sim/ucsim/z80.src/inst_xd.cc,
+	  sim/ucsim/z80.src/r2kcl.h,
+	  sim/ucsim/z80.src/glob.cc:
+	  Leland Morrison's support for some more r2k-specific instrcutions.
+
 2011-10-04 Philipp Klaus Krause <pkk AT spth.de>
 
 	* sim/ucsim/z80.src/inst_r2k.cc:

@@ -446,11 +446,6 @@ cl_z80::inst_Xd(void)
       case 0x2C: // INC LX
       case 0x34: // INC (IX+dd)
         return(inst_Xd_inc(code));
-      {
-        t_addr addr;
-        addr = add_u16_disp(regs_IX_OR_IY,fetch());
-        store1(addr, get1(addr)+1);
-      }
 
       case 0x09: // ADD IX,BC
       case 0x19: // ADD IX,DE
@@ -491,24 +486,8 @@ cl_z80::inst_Xd(void)
         return(inst_Xd_misc(code));
       break;
 
-    case 0xC4:
-      if(type != CPU_R2K)
-        return(resINV_INST);
-      
-      regs_IX_OR_IY = get2( add_u16_disp(regs.SP, fetch()) );
-      return(resGO);
-      break;
-      
       case 0xCB: // escape, IX prefix to CB commands
         return(inst_Xdcb()); /* see inst_ddcb.cc */
-      break;
-
-    case 0xD4:
-      if(type != CPU_R2K)
-        return(resINV_INST);
-      
-      store2( add_u16_disp(regs.SP, fetch()), regs_IX_OR_IY );
-      return(resGO);
       break;
 
       case 0xE1: // POP IX
@@ -526,18 +505,6 @@ cl_z80::inst_Xd(void)
         }
       return(resGO);
 
-    case 0xE4:
-      if(type != CPU_R2K)
-        return(resINV_INST);
-
-#if inst_Xfix == 0xDD
-      regs.HL = get2( add_u16_disp(regs.HL, fetch()) );
-#else
-      regs.HL = get2( add_u16_disp(regs_IX_OR_IY, fetch()) );
-#endif
-      return(resGO);
-      break;
-
       case 0xE5: // PUSH IX
         push2(regs_IX_OR_IY);
       return(resGO);
@@ -546,16 +513,6 @@ cl_z80::inst_Xd(void)
         PC = regs_IX_OR_IY;
       return(resGO);
 
-    case 0xF4:
-      if(type != CPU_R2K)
-        return(resINV_INST);
-
-#if inst_Xfix == 0xDD
-      store2( add_u16_disp(regs.HL, fetch()), regs.HL ); break;
-#else
-      store2( add_u16_disp(regs_IX_OR_IY, fetch()), regs.HL ); break;
-#endif
-      
       default:
       return(resINV_INST);
     }

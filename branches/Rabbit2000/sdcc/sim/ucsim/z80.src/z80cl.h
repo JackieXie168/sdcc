@@ -82,6 +82,9 @@ public:
 };
 
 
+unsigned   word_parity( TYPE_UWORD  x );
+/* returns parity for a 16-bit value */
+
 #endif
 
 /* End of z80.src/z80cl.h */

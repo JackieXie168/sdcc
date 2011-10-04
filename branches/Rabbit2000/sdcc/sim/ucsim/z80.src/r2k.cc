@@ -563,7 +563,8 @@ cl_r2k::exec_inst(void)
       /* CB escapes out to 2 byte opcodes(CB include), opcodes
          to do register bit manipulations */
     case 0xcb: return(inst_cb());
-    case 0xcc: case 0xcd: return(inst_call(code));
+    case 0xcc: return(inst_bool(code));
+    case 0xcd: return(inst_call(code));
     case 0xce: return(inst_adc(code));
     case 0xcf: return(inst_lcall(code));
 
@@ -571,7 +572,7 @@ cl_r2k::exec_inst(void)
     case 0xd0: return(inst_ret(code));
     case 0xd1: return(inst_pop(code));
     case 0xd2: return(inst_jp(code));
-    case 0xd3: /* error */ break;
+    case 0xd3: /* error (ioi prefix) */ break;
     case 0xd4: return(inst_r2k_ld(code));
     case 0xd5: return(inst_push(code));
     case 0xd6: return(inst_sub(code));
@@ -580,12 +581,12 @@ cl_r2k::exec_inst(void)
     case 0xd8: return(inst_ret(code));
     case 0xd9: return(inst_exx(code));
     case 0xda: return(inst_jp(code));
-    case 0xdb: /* error */ break;
-    case 0xdc: return(inst_call(code));
+    case 0xdb: /* error (ioe prefix) */ break;
+    case 0xdc: return(inst_r2k_and(code));
       /* DD escapes out to 2 to 4 byte opcodes(DD included)
         with a variety of uses.  It can precede the CB escape
         sequence to extend CB codes with IX+immed_byte */
-    case 0xdd: return(inst_dd());
+    case 0xdd: return(inst_xd(code));
     case 0xde: return(inst_sbc(code));
     case 0xdf: return(inst_rst(code));
 
@@ -593,7 +594,7 @@ cl_r2k::exec_inst(void)
     case 0xe0: return(inst_ret(code));
     case 0xe1: return(inst_pop(code));
     case 0xe2: return(inst_jp(code));
-    case 0xe3: return(inst_ex(code));
+    case 0xe3: return(inst_r2k_ex(code));
     case 0xe4: return(inst_r2k_ld(code));
     case 0xe5: return(inst_push(code));
     case 0xe6: return(inst_and(code));
@@ -603,7 +604,7 @@ cl_r2k::exec_inst(void)
     case 0xe9: return(inst_jp(code));
     case 0xea: return(inst_jp(code));
     case 0xeb: return(inst_ex(code));
-    case 0xec: return(inst_call(code));
+    case 0xec: return(inst_r2k_or (code));
       /* ED escapes out to other oddball opcodes */
     case 0xed: return(inst_ed());
     case 0xee: return(inst_xor(code));
@@ -626,7 +627,7 @@ cl_r2k::exec_inst(void)
       /* FD escapes out to 2 to 4 byte opcodes(DD included)
         with a variety of uses.  It can precede the CB escape
         sequence to extend CB codes with IX+immed_byte */
-    case 0xfd: return(inst_fd());
+    case 0xfd: return(inst_xd(code));
     case 0xfe: return(inst_cp(code));
     case 0xff: return(inst_rst(code));
     }

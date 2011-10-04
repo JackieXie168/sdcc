@@ -23,6 +23,17 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "z80mac.h"
 
 
+unsigned   word_parity( TYPE_UWORD  x ) {
+  // bitcount(x) performed by shift-and-add
+  TYPE_UWORD  tmp = (x & 0x5555) + ((x & 0xAAAA) >> 1);
+  tmp = (tmp & 0x3333) + ((tmp & 0xCCCC) >> 2);
+  tmp = (tmp & 0x0F0F) + ((tmp & 0xF0F0) >> 4);
+  tmp = (tmp & 0x000F) + ((tmp & 0x0F00) >> 8);
+  
+  // parity determined by count being odd or even
+  return  0x01 ^ (tmp & 1);
+}
+
 /******** rabbit 2000 memory access helper functions *****************/
 TYPE_UDWORD  rabbit_mmu::logical_addr_to_phys( TYPE_UWORD logical_addr ) {
   TYPE_UDWORD  phys_addr = logical_addr;
@@ -192,6 +203,22 @@ cl_r2k::inst_r2k_ld(t_mem code)
   return(resGO);
 }
 
+int cl_r2k::inst_r2k_ex (t_mem code) {
+  TYPE_UWORD tempw;
+  
+  switch(code) {
+  case 0xE3:
+    // EX DE', HL  on rabbit processors
+    tempw = regs.aDE;
+    regs.aDE = regs.HL;
+    regs.HL = tempw;
+    return(resGO);
+    
+  default:
+    return(resINV_INST);
+  }
+}
+
 int cl_r2k::inst_ljp(t_mem code) {
   TYPE_UWORD  mn;
   
@@ -215,7 +242,43 @@ int cl_r2k::inst_lcall(t_mem code) {
   return(resGO);
 }
 
+int cl_r2k::inst_bool(t_mem code) {
+  regs.F &= ~BIT_ALL;
+  if (regs.HL)
+    regs.HL = 1;
+  else
+    regs.F |= BIT_Z;
+  return(resGO);
+}
+
+int cl_r2k::inst_r2k_and(t_mem code) {  // AND HL,DE
+  regs.HL &= regs.DE;
+  
+  regs.F &= ~BIT_ALL;
+  if (regs.DE & 0x8000)
+    regs.F |= BIT_S;
+  if (regs.DE == 0)
+    regs.F |= BIT_Z;
+  if (word_parity(regs.DE))
+    regs.F |= BIT_P;
+  return(resGO);
+}
+
+int cl_r2k::inst_r2k_or (t_mem code) {  // OR  HL,DE
+  regs.HL |= regs.DE;
+  
+  regs.F &= ~BIT_ALL;
+  if (regs.DE & 0x8000)
+    regs.F |= BIT_S;
+  if (regs.DE == 0)
+    regs.F |= BIT_Z;
+  if (word_parity(regs.DE))
+    regs.F |= BIT_P;
+  return(resGO);
+}
+
 int cl_r2k::inst_mul(t_mem code) {
+  long m;
   long m1 = (long)(regs.BC & 0x7fff);
   long m2 = (long)(regs.DE & 0x7fff);
   m1 = (regs.BC & 0x8000) ? -m1 : m1;
@@ -227,17 +290,48 @@ int cl_r2k::inst_mul(t_mem code) {
 }
 
 int cl_r2k::inst_rl_de(t_mem code) {
-return(resINV_INST);
+  TYPE_UWORD  tmp = (regs.F & BIT_C) >> BITPOS_C;
+  tmp |= (regs.DE << 1);
+  
+  regs.F = (regs.F & ~BIT_C) | (((regs.DE >> 15) & 1U) << BITPOS_C);
+  
+  if (regs.DE & 0x8000)
+    regs.F |= BIT_S;
+  if (regs.DE == 0)
+    regs.F |= BIT_Z;
+  if (word_parity(regs.DE))
+    regs.F |= BIT_P;
   return(resGO);
 }
 
 int cl_r2k::inst_rr_de(t_mem code) {
-return(resINV_INST);
+  TYPE_UWORD  tmp = (regs.F & BIT_C) << (15 - BITPOS_C);
+  tmp |= (regs.DE >> 1);
+  
+  regs.F = (regs.F & ~BIT_C) | ((regs.DE & 1) << BITPOS_C);
+  
+  if (regs.DE & 0x8000)
+    regs.F |= BIT_S;
+  if (regs.DE == 0)
+    regs.F |= BIT_Z;
+  if (word_parity(regs.DE))
+    regs.F |= BIT_P;
   return(resGO);
 }
 
-int cl_r2k::inst_rr_hl(t_mem code) {
-return(resINV_INST);
+int cl_r2k::inst_rr_hl(t_mem code)    // RR HL
+{
+  TYPE_UWORD  tmp = (regs.F & BIT_C) << (15 - BITPOS_C);
+  tmp |= (regs.HL >> 1);
+  
+  regs.F = (regs.F & ~BIT_C) | ((regs.HL & 1) << BITPOS_C);
+  
+  if (regs.HL & 0x8000)
+    regs.F |= BIT_S;
+  if (regs.HL == 0)
+    regs.F |= BIT_Z;
+  if (word_parity(regs.HL))
+    regs.F |= BIT_P;
   return(resGO);
 }
 
@@ -292,4 +386,197 @@ cl_r2k::inst_rst(t_mem code)
     break;
   }
   return(resGO);
+}
+
+int cl_r2k::inst_xd(t_mem prefix)
+{
+  TYPE_UWORD  *regs_IX_OR_IY = (prefix==0xdd)?(&regs.IX):(&regs.IY);
+  t_mem code;
+  
+  if (fetch(&code))
+    return(resBREAKPOINT);
+
+  switch (code) {
+    
+    // 0x06 LD A,(IX+A) is r4k+ instruction
+  case 0x21: // LD IX,nnnn
+  case 0x22: // LD (nnnn),IX
+    
+  case 0x2A: // LD IX,(nnnn)
+  case 0x2E: // LD LX,nn
+  case 0x36: // LD (IX+dd),nn
+  case 0x46: // LD B,(IX+dd)
+  case 0x4E: // LD C,(IX+dd)
+  case 0x56: // LD D,(IX+dd)
+  case 0x5E: // LD E,(IX+dd)
+  case 0x66: // LD H,(IX+dd)
+  case 0x6E: // LD L,(IX+dd)
+    
+  case 0x70: // LD (IX+dd),B
+  case 0x71: // LD (IX+dd),C
+  case 0x72: // LD (IX+dd),D
+  case 0x73: // LD (IX+dd),E
+  case 0x74: // LD (IX+dd),H
+  case 0x75: // LD (IX+dd),L
+  case 0x77: // LD (IX+dd),A
+  case 0x7E: // LD A,(IX+dd)
+  case 0xF9: // LD SP,IX
+    if (prefix == 0xdd)
+      return(inst_dd_ld(code));
+    else
+      return(inst_fd_ld(code));
+    
+  case 0x7C: // LD HL,IX
+    regs.HL = *regs_IX_OR_IY;  // LD HL, IX|IY for rabbit processors
+    return(resGO);
+  case 0x7D: // LD IX,HL
+    *regs_IX_OR_IY = regs.HL;   // LD IX|IY,HL for rabbit processors
+    return(resGO);
+    
+  case 0x23: // INC IX
+  case 0x34: // INC (IX+dd)
+    if (prefix == 0xdd)
+      return(inst_dd_inc(code));
+    else
+      return(inst_fd_inc(code));
+    
+  case 0x09: // ADD IX,BC
+  case 0x19: // ADD IX,DE
+  case 0x29: // ADD IX,IX
+  case 0x39: // ADD IX,SP
+  case 0x86: // ADD A,(IX)
+    if (prefix == 0xdd)
+      return(inst_dd_add(code));
+    else
+      return(inst_fd_add(code));
+    
+  case 0x2B: // DEC IX
+  case 0x35: // DEC (IX+dd)
+    if (prefix == 0xdd)
+      return(inst_dd_dec(code));
+    else
+      return(inst_fd_dec(code));
+    
+    // 0x4C  TEST IX is r4k+
+
+  case 0x8E: // ADC A,(IX)
+  case 0x96: // SUB (IX+dd)
+  case 0x9E: // SBC A,(IX+dd)
+  case 0xA6: // AND (IX+dd)
+  case 0xAE: // XOR (IX+dd)
+  case 0xB6: // OR (IX+dd)
+  case 0xBE: // CP (IX+dd)
+    if (prefix == 0xdd)
+      return(inst_dd_misc(code));
+    else
+      return(inst_fd_misc(code));
+    
+  case 0xC4: // LD IX,(SP+n)
+    *regs_IX_OR_IY = get2( add_u16_disp(regs.SP, fetch()) );
+    return(resGO);
+    
+  case 0xCB: // escape, IX prefix to CB commands
+    // fixme: limit the opcodes passed through to those officially
+    // documented as present on the rabbit processors
+    if (prefix == 0xdd)
+      return(inst_ddcb()); /* see inst_ddcb.cc */
+    else
+      return(inst_fdcb()); /* see inst_fdcb.cc */
+    
+  case 0xCC: // BOOL IX|IY
+    if (*regs_IX_OR_IY)
+      *regs_IX_OR_IY = 1;
+    
+    // update flags
+    regs.F &= ~BIT_ALL;
+    // bit 15 will never be set, so S<=0
+    if (*regs_IX_OR_IY == 0)
+      regs.F |= BIT_Z;
+    // L/V and C are always cleared
+    return(resGO);
+    
+  case 0xD4: // LD (SP+n),IX|IY
+    store2( add_u16_disp(regs.SP, fetch()), *regs_IX_OR_IY );
+    return(resGO);
+    
+  case 0xE1: // POP IX
+    *regs_IX_OR_IY = get2(regs.SP);
+    regs.SP+=2;
+    return(resGO);
+    
+  case 0xE3: // EX (SP),IX
+  {
+    TYPE_UWORD tempw;
+    
+    tempw = *regs_IX_OR_IY;
+    *regs_IX_OR_IY = get2(regs.SP);
+    store2(regs.SP, tempw);
+  }
+  return(resGO);
+  
+  case 0xE4:
+    if (prefix == 0xDD)
+      regs.HL = get2( add_u16_disp(regs.HL, fetch()) );
+    else
+      regs.HL = get2( add_u16_disp(regs.IY, fetch()) );
+    return(resGO);
+    
+  case 0xE5: // PUSH IX
+    push2(*regs_IX_OR_IY);
+    return(resGO);
+    
+  case 0xE9: // JP (IX)
+    PC = *regs_IX_OR_IY;
+    return(resGO);
+    
+  case 0xEA:
+    push2(PC);
+    PC = *regs_IX_OR_IY;
+    return(resGO);
+    
+  case 0xDC: // AND IX|IY,DE  for rabbit processors
+  case 0xEC: // OR  IX|IY,DE  for rabbit processors
+    if (code == 0xDC)
+      *regs_IX_OR_IY &= regs.DE;
+    else
+      *regs_IX_OR_IY |= regs.DE;
+    
+    // update flags
+    regs.F &= ~BIT_ALL;
+    if (*regs_IX_OR_IY & 0x8000)
+      regs.F |= BIT_S;
+    if (regs_IX_OR_IY == 0)
+      regs.F |= BIT_Z;
+    if (word_parity(*regs_IX_OR_IY))
+      regs.F |= BIT_P;
+    return(resGO);
+    
+  case 0xF4: // LD (HL|IY+d),HL
+    if (prefix == 0xDD)
+      store2( add_u16_disp(regs.HL, fetch()), regs.HL );
+    else
+      store2( add_u16_disp(regs.IY, fetch()), regs.HL );
+    return(resGO);
+    
+  case 0xFC: // RR IX|IY
+  {
+    TYPE_UWORD  tmp = (regs.F & BIT_C) << (15 - BITPOS_C);
+    tmp |= (*regs_IX_OR_IY >> 1);
+    
+    regs.F = (regs.F & ~BIT_C) | ((*regs_IX_OR_IY & 1) << BITPOS_C);
+    
+    if (*regs_IX_OR_IY & 0x8000)
+      regs.F |= BIT_S;
+    if (*regs_IX_OR_IY == 0)
+      regs.F |= BIT_Z;
+    if (word_parity(*regs_IX_OR_IY))
+      regs.F |= BIT_P;
+    return(resGO);
+  }
+  
+  default:
+    return(resINV_INST);
+  }
+  
+  return(resINV_INST);
 }

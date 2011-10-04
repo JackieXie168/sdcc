@@ -129,7 +129,12 @@ public:
   virtual int inst_add_sp_d(t_mem code);
   virtual int inst_altd(t_mem code);
   
-  virtual int inst_r2k_ld(t_mem code);
+  virtual int inst_bool   (t_mem code);
+  virtual int inst_r2k_ld (t_mem code);
+  virtual int inst_r2k_and(t_mem code);
+  virtual int inst_r2k_or (t_mem code);
+  virtual int inst_r2k_ex (t_mem code);
+  
   virtual int inst_ljp(t_mem code);
   virtual int inst_lcall(t_mem code);
   virtual int inst_mul(t_mem code);
@@ -138,6 +143,7 @@ public:
   virtual int inst_rr_de(t_mem code);
   virtual int inst_rr_hl(t_mem code);
 
+  virtual int inst_xd(t_mem prefix);
   virtual int inst_ed(void);
   virtual int inst_ed_(t_mem code);
   

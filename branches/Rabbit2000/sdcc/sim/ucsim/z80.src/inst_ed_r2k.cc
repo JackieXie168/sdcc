@@ -220,120 +220,54 @@ cl_r2k::inst_ed(void)
     ip=get1(regs.SP); regs.SP+=1;
     break;
     
-    case 0xA0: // LDI
-      // BC - count, sourc=HL, dest=DE.  *DE++ = *HL++, --BC until zero
-      regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
+  case 0xA0: // LDI
+    // BC - count, sourc=HL, dest=DE.  *DE++ = *HL++, --BC until zero
+    regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
+    store1(regs.DE, get1(regs.HL));
+    ++regs.HL;
+    ++regs.DE;
+    --regs.BC;
+    if (regs.BC != 0) regs.F |= BIT_P;
+    return(resGO);
+    
+  case 0xA8: // LDD
+    // BC - count, source=HL, dest=DE.  *DE-- = *HL--, --BC until zero
+    regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
+    store1(regs.DE, get1(regs.HL));
+    --regs.HL;
+    --regs.DE;
+    --regs.BC;
+    if (regs.BC != 0) regs.F |= BIT_P;
+    return(resGO);
+    
+  case 0xB0: // LDIR
+    // BC - count, sourc=HL, dest=DE.  *DE++ = *HL++, --BC until zero
+    regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
+    do {
       store1(regs.DE, get1(regs.HL));
       ++regs.HL;
       ++regs.DE;
       --regs.BC;
-      if (regs.BC != 0) regs.F |= BIT_P;
+    } while (regs.BC != 0);
     return(resGO);
-    case 0xA1: // CPI
-      // compare acc with mem(HL), if ACC=0 set Z flag.  Incr HL, decr BC.
-      {
-        unsigned char tmp;
-        tmp = get1(regs.HL);
-        cp_bytereg(tmp);
-        ++regs.HL;
-        --regs.BC;
-        if (regs.BC != 0) regs.F |= BIT_P;
-      }
-    return(resGO);
-
-    case 0xA2: // INI
-    return(resGO);
-    case 0xA3: // OUTI
-    return(resGO);
-
-    case 0xA8: // LDD
-      // BC - count, source=HL, dest=DE.  *DE-- = *HL--, --BC until zero
-      regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
+    
+  case 0xB8: // LDDR
+    // BC - count, source=HL, dest=DE.  *DE-- = *HL--, --BC until zero
+    regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
+    do {
       store1(regs.DE, get1(regs.HL));
       --regs.HL;
       --regs.DE;
       --regs.BC;
-      if (regs.BC != 0) regs.F |= BIT_P;
+    } while (regs.BC != 0);
     return(resGO);
-    case 0xA9: // CPD
-/* fixme: checkme, compare to other emul. */
-
-      regs.F &= ~(BIT_ALL);  /* clear these */
-      if ((regs.A - get1(regs.HL)) == 0) {
-        regs.F |= (BIT_Z | BIT_P);
-      }
-      ++regs.HL;
-      --regs.BC;
-      if (regs.BC != 0) regs.F |= BIT_P;
-
+    
+  case 0xEA: // CALL (HL)
+    push2(PC);
+    PC = regs.HL;
     return(resGO);
-
-    case 0xAA: // IND
-    return(resGO);
-    case 0xAB: // OUTD
-    return(resGO);
-
-    case 0xB0: // LDIR
-      // BC - count, sourc=HL, dest=DE.  *DE++ = *HL++, --BC until zero
-      regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
-      do {
-        store1(regs.DE, get1(regs.HL));
-        ++regs.HL;
-        ++regs.DE;
-        --regs.BC;
-      } while (regs.BC != 0);
-    return(resGO);
-
-    case 0xB1: // CPIR
-      // compare acc with mem(HL), if ACC=0 set Z flag.  Incr HL, decr BC.
-      regs.F &= ~(BIT_P | BIT_A | BIT_Z | BIT_S);  /* clear these */
-      regs.F |= BIT_N;
-      do {
-        if((regs.A - get1(regs.HL)) == 0)
-          regs.F |= BIT_Z;
-        else
-          regs.F &= ~BIT_Z;
-        if((regs.A - get1(regs.HL)) & 0x80)
-          regs.F |= BIT_S;
-        else
-          regs.F &= ~BIT_S;
-/* fixme: set BIT_A correctly. */
-        ++regs.HL;
-        --regs.BC;
-      } while (regs.BC != 0 && (regs.F & BIT_Z) == 0);
-      if(regs.BC != 0)
-        regs.F |= BIT_P;
-
-    return(resGO);
-#if 0
-    case 0xB2: // INIR
-    return(resGO);
-    case 0xB3: // OTIR
-    return(resGO);
-#endif
-    case 0xB8: // LDDR
-      // BC - count, source=HL, dest=DE.  *DE-- = *HL--, --BC until zero
-      regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */
-      do {
-        store1(regs.DE, get1(regs.HL));
-        --regs.HL;
-        --regs.DE;
-        --regs.BC;
-      } while (regs.BC != 0);
-    return(resGO);
-    case 0xB9: // CPDR
-      // compare acc with mem(HL), if ACC=0 set Z flag.  Incr HL, decr BC.
-      regs.F &= ~(BIT_ALL);  /* clear these */
-      do {
-        if ((regs.A - get1(regs.HL)) == 0) {
-          regs.F |= (BIT_Z | BIT_P);
-          break;
-        }
-        --regs.HL;
-        --regs.BC;
-      } while (regs.BC != 0);
-    return(resGO);
-
+    
+  
   default:
     return(resINV_INST);
   }
