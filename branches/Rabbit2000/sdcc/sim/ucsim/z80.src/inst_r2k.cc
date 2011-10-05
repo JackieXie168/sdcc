@@ -287,7 +287,7 @@ int cl_r2k::inst_mul(t_mem code) {
     m2 -= (1 << 14);
   m = m1 * m2;
   regs.BC = ((unsigned long)(m) & 0xffff);
-  regs.HL = m / (1 << 15);
+  regs.HL = ((unsigned long)(m) >> 16) & 0xffff;
   return(resGO);
 }
 
