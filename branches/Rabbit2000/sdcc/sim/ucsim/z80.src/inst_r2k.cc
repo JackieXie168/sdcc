@@ -282,9 +282,9 @@ int cl_r2k::inst_mul(t_mem code) {
   long m1 = (long)(regs.BC & 0x7fff);
   long m2 = (long)(regs.DE & 0x7fff);
   if (regs.BC & 0x8000)
-    m1 -= (1 << 14);
+    m1 -= (1 << 15);
   if (regs.DE & 0x8000)
-    m2 -= (1 << 14);
+    m2 -= (1 << 15);
   m = m1 * m2;
   regs.BC = ((unsigned long)(m) & 0xffff);
   regs.HL = ((unsigned long)(m) >> 16) & 0xffff;
