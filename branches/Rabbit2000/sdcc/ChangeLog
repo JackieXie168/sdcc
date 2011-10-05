@@ -1,7 +1,7 @@
 2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
-	  More flexible use of r2k-pecific and hl, de instruction.
+	  More flexible use of r2k-specific and hl, de instruction.
 
 2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
@@ -37,7 +37,7 @@
 	  sim/ucsim/z80.src/inst_xd.cc,
 	  sim/ucsim/z80.src/r2kcl.h,
 	  sim/ucsim/z80.src/glob.cc:
-	  Leland Morrison's support for some more r2k-specific instrcutions.
+	  Leland Morrison's support for some more r2k-specific instructions.
 
 2011-10-04 Philipp Klaus Krause <pkk AT spth.de>
 
