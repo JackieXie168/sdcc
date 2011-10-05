@@ -7128,12 +7128,39 @@ emitRsh2 (asmop *aop, int size, int is_signed)
 /* shiftR2Left2Result - shift right two bytes from left to result  */
 /*-----------------------------------------------------------------*/
 static void
-shiftR2Left2Result (operand * left, int offl,
+shiftR2Left2Result (const iCode *ic, operand * left, int offl,
                     operand * result, int offr,
                     int shCount, int is_signed)
 {
   int size = 2;
   symbol *tlbl;
+  
+  if (IS_R2K && !is_signed && shCount >= 2 && isPairDead (PAIR_HL, ic) &&
+    ((isPair (AOP (left)) && getPairId (AOP (left)) == PAIR_HL || isPair (AOP (result)) && getPairId (AOP (result)) == PAIR_HL) && isPairDead (PAIR_DE, ic) ||
+    isPair (AOP (left)) && getPairId (AOP (left)) == PAIR_DE))
+    {
+      bool op_de = (getPairId (AOP (left)) == PAIR_DE);
+      if(op_de)
+        emit2 ("ld hl, !immedword", 0xffff >> shCount);
+      else
+        {
+          fetchPair (PAIR_HL, AOP (left));
+          emit2 ("ld de, !immedword", 0xffff >> shCount);
+        }
+      regalloc_dry_run_cost += 3;
+      while(shCount--)
+        {
+          if(op_de)
+            emit2 ("rr de");
+          else
+            emit2 ("rr hl");
+          regalloc_dry_run_cost++;
+        }
+      emit2 ("and hl, de");
+      regalloc_dry_run_cost += 1;
+      commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
+      return;
+    }
 
   movLeft2Result (left, offl, result, offr, 0);
   movLeft2Result (left, offl + 1, result, offr + 1, 0);
@@ -7612,7 +7639,7 @@ shiftR1Left2Result (operand * left, int offl,
 /* genrshTwo - right shift two bytes by known amount               */
 /*-----------------------------------------------------------------*/
 static void
-genrshTwo (operand * result, operand * left,
+genrshTwo (const iCode *ic, operand * result, operand * left,
            int shCount, int sign)
 {
   /* if shCount >= 8 */
@@ -7641,7 +7668,7 @@ genrshTwo (operand * result, operand * left,
     }
   /*  0 <= shCount <= 7 */
   else
-    shiftR2Left2Result (left, LSB, result, LSB, shCount, sign);
+    shiftR2Left2Result (ic, left, LSB, result, LSB, shCount, sign);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7687,7 +7714,7 @@ genRightShiftLiteral (operand *left,
           genrshOne (result, left, shCount, sign);
           break;
         case 2:
-          genrshTwo (result, left, shCount, sign);
+          genrshTwo (ic, result, left, shCount, sign);
           break;
         case 4:
           wassertl (0, "Asked to shift right a long which should be a function call");

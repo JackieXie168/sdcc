@@ -749,10 +749,10 @@ int z80instructionSize(lineNode *pl)
       return(1);
     }
 
-  /* 16 bit add / subtract */
-  if((ISINST(pl->line, "add") || ISINST(pl->line, "adc") || ISINST(pl->line, "sbc")) && !strncmp(op1start, "hl", 2))
+  /* 16 bit add / subtract / and */
+  if((ISINST(pl->line, "add") || ISINST(pl->line, "adc") || ISINST(pl->line, "sbc") || IS_R2K && ISINST(pl->line, "and")) && !strncmp(op1start, "hl", 2))
     {
-      if(ISINST(pl->line, "add"))
+      if(ISINST(pl->line, "add") || ISINST(pl->line, "and"))
         return(1);
       return(2);
     }

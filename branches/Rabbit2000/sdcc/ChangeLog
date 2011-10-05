@@ -1,5 +1,14 @@
 2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/z80/gen.c:
+	  Allow use of r2k-specific instructions in right shift.
+	* sim/ucsim/z80.src/inst.cc:
+	  Fix flag handling in z80/z180/r2k rrca instruction.
+	* sim/ucsim/z80.src/inst_r2k.cc:
+	  Fix handling of carry bit in r2k 16-bit rr and rl instructions.
+
+2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/peeph-z80.def,
 	  src/z80/peeph-r2k.def:
 	  Minor peephole improvement.
