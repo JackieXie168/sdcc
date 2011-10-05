@@ -6560,12 +6560,17 @@ genAnd (const iCode *ic, iCode * ifx)
       goto release;
     }
 
-  if (IS_R2K && isPair (AOP (left)) && isPair (AOP (right)) && isPair (AOP (result)) && getPairId (AOP (right)) == PAIR_DE &&
-     (getPairId (AOP (left)) == PAIR_HL && getPairId (AOP (result)) == PAIR_HL ||
-     getPairId (AOP (left)) == PAIR_IY && getPairId (AOP (result)) == PAIR_IY))
+  if (IS_R2K && isPair (AOP (result)) && 
+     (getPairId (AOP (result)) == PAIR_HL && isPair (AOP (right)) && getPairId (AOP (right)) == PAIR_DE ||
+     getPairId (AOP (result)) == PAIR_HL && isPair (AOP (left)) && getPairId (AOP (left)) == PAIR_DE ||
+     isPair (AOP (left)) && getPairId (AOP (left)) == PAIR_IY && getPairId (AOP (result)) == PAIR_IY && isPair (AOP (right)) && getPairId (AOP (right)) == PAIR_DE))
     {
+      if (isPair (AOP (left)) && getPairId (AOP (left)) == PAIR_DE)
+        fetchPair (PAIR_HL, AOP (right));
+      else /* right operand in DE */
+        fetchPair (getPairId (AOP (result)), AOP (left));
       emit2 ("and hl, de");
-      regalloc_dry_run_cost += (getPairId (AOP (left)) == PAIR_HL ? 2 : 3);
+      regalloc_dry_run_cost += (getPairId (AOP (result)) == PAIR_HL ? 1 : 2);
       goto release;
     }
 
