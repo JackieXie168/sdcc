@@ -387,6 +387,17 @@ replace restart {
 replace restart {
 	push	bc
 	inc	sp
+	push	de
+	inc	sp
+} by {
+	ld	c, d
+	; peephole 37a combined pushing of b and d.
+	push	bc
+} if notUsed('c')
+
+replace restart {
+	push	bc
+	inc	sp
 	ld	a, c
 	push	af
 	inc	sp
