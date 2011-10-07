@@ -142,7 +142,7 @@ replace restart {
 	ld	%7, %2 (%3)
 	; peephole 15 loaded %2 (%3) into %7 directly instead of going through %1.
 	ld	%4, %5
-} if canAssign(%7 %2 %3), notVolatile(%1), notUsed(%1), notSame(%1 %5), notSame(%7 %4), notSame(%4 '(hl)' '(de)' '(bc)')
+} if canAssign(%7 %2 %3), notVolatile(%1), notUsed(%1), notSame(%1 %5), notSame(%7 %4), notSame(%4 '(hl)' '(de)' '(bc)'), notSame(%5 '(hl)' '(de)' '(bc)' '(iy)')
 
 replace restart {
 	ld	%1,#%2
@@ -1223,6 +1223,33 @@ replace restart {
 	add	hl,%1
 	; peephole 109 moved decrement of hl to constant.
 } if notUsed(%1)
+
+//replace restart {
+//	inc	hl
+//	inc	hl
+//	inc	hl
+//	ld	hl, (hl)
+//} by {
+//	; peephole 109a moved decrement of hl to offset.
+//	ld	hl, 3 (hl)
+//}
+
+//replace restart {
+//	inc	hl
+//	inc	hl
+//	ld	hl, (hl)
+//} by {
+//	; peephole 109b moved decrement of hl to offset.
+//	ld	hl, 2 (hl)
+//}
+
+//replace restart {
+//	inc	hl
+//	ld	hl, (hl)
+//} by {
+//	; peephole 109c moved decrement of hl to offset.
+//	ld	hl, 1 (hl)
+//}
 
 replace restart {
 	inc	iy

@@ -2001,11 +2001,19 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
             case 2:
               // PENDING: Requires that you are only fetching two bytes.
             case 4:
-              emit2 ("ld a,!*hl");
-              emit2 ("inc hl");
-              emit2 ("ld h,!*hl");
-              emit2 ("ld l,a");
-              regalloc_dry_run_cost += 4;
+              if (IS_R2K)
+                {
+                  emit2 ("ld hl, (hl)");
+                  regalloc_dry_run_cost += 3;
+                }
+              else
+                {
+                  emit2 ("ld a,!*hl");
+                  emit2 ("inc hl");
+                  emit2 ("ld h,!*hl");
+                  emit2 ("ld l,a");
+                  regalloc_dry_run_cost += 4;
+                }
               break;
             default:
               wassertl (0, "Attempted to fetch too much data into HL");
@@ -8056,6 +8064,13 @@ genPointerGet (const iCode *ic)
 
   if (getPairId (AOP (left)) == PAIR_IY && !IS_BITVAR (retype))
     {
+      if (IS_R2K && getPairId (AOP (result)) == PAIR_HL)
+        {
+          emit2 ("ld hl, (iy)");
+          regalloc_dry_run_cost += 3;
+          goto release;
+        }
+
       /* Just do it */
       offset = 0;
       while (size--)
@@ -8091,13 +8106,21 @@ genPointerGet (const iCode *ic)
     }
   else if (getPairId (AOP (result)) == PAIR_HL || size == 2 && AOP_TYPE (result) == AOP_REG && (AOP (result)->aopu.aop_reg[0] == regsZ80 + L_IDX || AOP (result)->aopu.aop_reg[0] == regsZ80 + H_IDX))
     {
-      wassertl (size == 2, "HL must be of size 2");
-      emit2 ("ld a,!*hl");
-      emit2 ("inc hl");
-      if(!regalloc_dry_run)
-        aopPut (AOP (result), "!*hl", 1);
-      regalloc_dry_run_cost += 3;
-      cheapMove (AOP (result), 0, ASMOP_A, 0);
+       wassertl (size == 2, "HL must be of size 2");
+      if (IS_R2K && getPairId (AOP (result)) == PAIR_HL)
+        {
+          emit2 ("ld hl, (hl)");
+          regalloc_dry_run_cost += 3;
+        }
+      else
+        {
+          emit2 ("ld a,!*hl");
+          emit2 ("inc hl");
+          if(!regalloc_dry_run)
+            aopPut (AOP (result), "!*hl", 1);
+          regalloc_dry_run_cost += 3;
+          cheapMove (AOP (result), 0, ASMOP_A, 0);
+        }
       spillPair (PAIR_HL);
     }
   else if (pair == PAIR_HL || (!IS_GB && (getPairId (AOP (left)) == PAIR_BC || getPairId (AOP (left)) == PAIR_DE) && AOP_TYPE (result) == AOP_STK))
