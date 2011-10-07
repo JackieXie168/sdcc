@@ -2033,11 +2033,11 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
         }
         else if (pairId == PAIR_IY)
           {
-            if (isPair (aop) && IS_R2K && getPairId(aop) == PAIR_HL)
+            /*if (isPair (aop) && IS_R2K && getPairId (aop) == PAIR_HL) ld iy, hl is not yet supported by the assembler
               {
                 emit2 ("ld iy, hl");
                 regalloc_dry_run_cost += 2;
-              }
+              }*/
             if (isPair (aop))
               {
                 emit2 ("push %s", _pairs[getPairId(aop)].name);
@@ -2055,11 +2055,20 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
                   {
                     emit2 ("ld %s,%s", _pairs[id].l, aopGet (aop, offset, FALSE));
                     emit2 ("ld %s,%s", _pairs[id].h, aopGet (aop, offset + 1, FALSE));
-                    emit2 ("push %s", _pairs[id].name);
+                    
                   }
-                regalloc_dry_run_cost += ld_cost(ASMOP_L, aop) + ld_cost(ASMOP_H, aop) + 1;
-                emit2 ("pop iy");
-                regalloc_dry_run_cost += 2;
+                regalloc_dry_run_cost += ld_cost(ASMOP_L, aop) + ld_cost(ASMOP_H, aop);
+                /*if (IS_R2K && id == PAIR_HL) ld iy, hl is not yet supported by the assembler
+                  {
+                    emit2 ("ld iy, hl");
+                    regalloc_dry_run_cost += 2;
+                  }
+                else*/
+                  {
+                    emit2 ("push %s", _pairs[id].name);
+                    emit2 ("pop iy");
+                    regalloc_dry_run_cost += 3;
+                  }
                 if (isUsed)
                   _pop (id);
               }

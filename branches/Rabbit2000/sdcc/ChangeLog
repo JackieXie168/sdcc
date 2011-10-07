@@ -1,5 +1,10 @@
 2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/gen.c:
+	  Preparations for use of r2k-specific ld iy,hl.
+
+2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/gen.c,
 	  src/z80/peeph-r2k.def,
 	  src/z80/peeph-z80.def:
