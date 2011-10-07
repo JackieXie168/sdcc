@@ -3839,7 +3839,7 @@ emitCall (const iCode *ic, bool ispcall)
       else
         {
           spillCached ();
-          if (i > 8)
+          if (IS_R2K ? i > 127 * 4 - 1 : i > 8)
             {
               emit2 ("ld iy,!immedword", i);
               emit2 ("add iy,sp");
@@ -3848,11 +3848,22 @@ emitCall (const iCode *ic, bool ispcall)
             }
           else
             {
+
               while (i > 1)
                 {
-                  emit2 ("pop af");
-                  regalloc_dry_run_cost += 1;
-                  i -= 2;
+                  if (IS_R2K && (!optimize.codeSize || i > 2))
+                    {
+                      int d = (i < 127 ? i : 127);
+                      emit2 ("add sp, #%d", d);
+                      regalloc_dry_run_cost += 2;
+                      i -= d;
+                    }
+                  else
+                    {
+                      emit2 ("pop af");
+                      regalloc_dry_run_cost += 1;
+                      i -= 2;
+                    }
                 }
               if (i)
                 {
@@ -4184,7 +4195,7 @@ genFunction (const iCode * ic)
             emit2 ("!enter");
           while (stack > 1)
             {
-              if (IS_R2K)
+              if (IS_R2K && (!optimize.codeSize || stack > 2))
                 {
                   int d = (stack < 127 ? -stack : -127);
                   emit2 ("add sp, #%d", d);

@@ -359,6 +359,7 @@ z80SurelyWrites(const lineNode *pl, const char *what)
     return TRUE;
   if(ISINST(pl->line, "ld\tiy") && strncmp(what, "iy", 2) == 0)
     return TRUE;
+
   return FALSE;
 }
 
