@@ -33,6 +33,12 @@ replace restart {
 // Should probably check for notVolatile(%2), too, but gives many false positives and no regression tests fail.
 
 replace restart {
+	add	ix,sp
+} by {
+	; peephole 1a removed dead frame pointer setup.
+} if notUsed('ix')
+
+replace restart {
 	ld	%1, %2 + %3
 } by {
 	; peephole 2 removed dead load from %2 + %3 into %1.

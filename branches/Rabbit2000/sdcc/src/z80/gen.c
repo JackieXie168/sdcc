@@ -1978,7 +1978,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
 {
     emitDebug(";fetchPairLong");
 
-    /* if this is remateriazable */
+    /* if this is rematerializable */
     if (isLitWord (aop))
       fetchLitPair (pairId, aop, offset);
     else
@@ -2033,11 +2033,13 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
         }
         else if (pairId == PAIR_IY)
           {
-            /*if (isPair (aop) && IS_R2K && getPairId (aop) == PAIR_HL) ld iy, hl is not yet supported by the assembler
+#ifdef ALL_RABBIT
+            if (isPair (aop) && IS_R2K && getPairId (aop) == PAIR_HL)
               {
                 emit2 ("ld iy, hl");
                 regalloc_dry_run_cost += 2;
-              }*/
+              }
+#endif
             if (isPair (aop))
               {
                 emit2 ("push %s", _pairs[getPairId(aop)].name);
@@ -2058,12 +2060,14 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
                     
                   }
                 regalloc_dry_run_cost += ld_cost(ASMOP_L, aop) + ld_cost(ASMOP_H, aop);
-                /*if (IS_R2K && id == PAIR_HL) ld iy, hl is not yet supported by the assembler
+#ifdef ALL_RABBIT
+                if (IS_R2K && id == PAIR_HL) ld iy, hl is not yet supported by the assembler
                   {
                     emit2 ("ld iy, hl");
                     regalloc_dry_run_cost += 2;
                   }
-                else*/
+                else
+#endif
                   {
                     emit2 ("push %s", _pairs[id].name);
                     emit2 ("pop iy");
@@ -2081,8 +2085,23 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
           }
         else
           {
+#ifdef ALL_RABBIT2
+            /* The Rabbit has the ld hl, n (sp) and ld hl, n (ix) instructions. */
+            int fp_offset = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
+            int sp_offset = fp_offset + _G.stack.pushed;
+            if (IS_R2K && pairId == PAIR_HL && abs (fp_offset) <= 127 || abs (sp_offset) <= 127)
+              {
+                if (abs (sp_offset) <= 127)
+                  emit2 ("ld hl, %d (sp)", sp_offset); /* Fetch relative to stack pointer. */
+                else
+                  emit2 ("ld hl, %d (ix)", fp_offset); /* Fetch relative to frame pointer. */
+                regalloc_dry_run_cost += 2;
+              }
+
             /* Operand resides (partially) in the pair */
-            if (!regalloc_dry_run && !strcmp(aopGet (aop, offset + 1, FALSE), _pairs[pairId].l))	// Todo: Exact cost
+            else
+#endif
+if (!regalloc_dry_run && !strcmp(aopGet (aop, offset + 1, FALSE), _pairs[pairId].l))	// Todo: Exact cost
               {
                 _moveA3 (aop, offset + 1);
                 if(!regalloc_dry_run)
@@ -2202,12 +2221,8 @@ setupPair (PAIR_ID pairId, asmop *aop, int offset)
     case AOP_STK:
       {
         /* Doesnt include _G.stack.pushed */
-        int abso = aop->aopu.aop_stk + offset + _G.stack.offset;
+        int abso = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
 
-        if (aop->aopu.aop_stk > 0)
-          {
-            abso += _G.stack.param_offset;
-          }
         assert (pairId == PAIR_HL);
         /* In some cases we can still inc or dec hl */
         if (_G.pairs[pairId].last_type == AOP_STK && abs (_G.pairs[pairId].offset - abso) < 3)
