@@ -717,6 +717,11 @@ int z80instructionSize(lineNode *pl)
          strncmp(op2start, "hl", 2) && strncmp(op2start, "a", 2))
         return(4);
 
+      if(IS_R2K && !strncmp(op1start, "hl", 2) && (argCont(op2start, "(hl)") || argCont(op2start, "(iy)")))
+        return(4);
+      if(IS_R2K && !strncmp(op1start, "hl", 2) && (argCont(op2start, "(sp)") || argCont(op2start, "(ix)")))
+        return(3);
+
       /* These 4 are the only remaining cases of 3 byte long ld instructions. */
       if(argCont(op2start, "(ix)") || argCont(op2start, "(iy)"))
         return(3);

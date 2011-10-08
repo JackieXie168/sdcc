@@ -2085,22 +2085,23 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
           }
         else
           {
-#ifdef ALL_RABBIT2
+//#ifdef ALL_RABBIT2
             /* The Rabbit has the ld hl, n (sp) and ld hl, n (ix) instructions. */
             int fp_offset = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
             int sp_offset = fp_offset + _G.stack.pushed;
-            if (IS_R2K && pairId == PAIR_HL && abs (fp_offset) <= 127 || abs (sp_offset) <= 127)
+            if (IS_R2K && aop->size - offset >= 2 && aop->type == AOP_STK && (pairId == PAIR_HL || pairId == PAIR_IY) &&
+              (abs (fp_offset) <= 127 && pairId == PAIR_HL || abs (sp_offset) <= 127))
               {
                 if (abs (sp_offset) <= 127)
-                  emit2 ("ld hl, %d (sp)", sp_offset); /* Fetch relative to stack pointer. */
+                  emit2 ("ld %s, %d (sp)", pairId == PAIR_IY ? "iy" : "hl", sp_offset); /* Fetch relative to stack pointer. */
                 else
                   emit2 ("ld hl, %d (ix)", fp_offset); /* Fetch relative to frame pointer. */
-                regalloc_dry_run_cost += 2;
+                regalloc_dry_run_cost += (pairId == PAIR_HL ? 2 : 3);
               }
 
             /* Operand resides (partially) in the pair */
             else
-#endif
+//#endif
 if (!regalloc_dry_run && !strcmp(aopGet (aop, offset + 1, FALSE), _pairs[pairId].l))	// Todo: Exact cost
               {
                 _moveA3 (aop, offset + 1);
@@ -2786,8 +2787,20 @@ cheapMove (asmop *to, int to_offset, asmop *from, int from_offset)
 static void
 commitPair (asmop * aop, PAIR_ID id)
 {
+  int fp_offset = aop->aopu.aop_stk + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
+  int sp_offset = fp_offset + _G.stack.pushed;
+  if (IS_R2K && aop->type == AOP_STK && (id == PAIR_HL || id == PAIR_IY) &&
+    (id == PAIR_HL && abs (fp_offset) <= 127 || abs (sp_offset) <= 127))
+    {
+      if (abs (sp_offset) <= 127)
+        emit2 ("ld %d (sp), %s", sp_offset, id == PAIR_IY ? "iy" : "hl"); /* Relative to stack pointer. */
+      else
+        emit2 ("ld %d (ix), hl", fp_offset); /* Relative to frame pointer. */
+      regalloc_dry_run_cost += (id == PAIR_HL ? 2 : 3);
+    }
+
   /* PENDING: Verify this. */
-  if (id == PAIR_HL && requiresHL (aop) && (IS_GB || IY_RESERVED))
+  else if (id == PAIR_HL && requiresHL (aop) && (IS_GB || IY_RESERVED))
     {
       if(!regalloc_dry_run)
         {
