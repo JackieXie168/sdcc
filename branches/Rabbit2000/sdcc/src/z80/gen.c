@@ -2085,7 +2085,6 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
           }
         else
           {
-//#ifdef ALL_RABBIT2
             /* The Rabbit has the ld hl, n (sp) and ld hl, n (ix) instructions. */
             int fp_offset = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
             int sp_offset = fp_offset + _G.stack.pushed;
@@ -2100,9 +2099,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
               }
 
             /* Operand resides (partially) in the pair */
-            else
-//#endif
-if (!regalloc_dry_run && !strcmp(aopGet (aop, offset + 1, FALSE), _pairs[pairId].l))	// Todo: Exact cost
+            else if (!regalloc_dry_run && !strcmp(aopGet (aop, offset + 1, FALSE), _pairs[pairId].l))	// Todo: Exact cost
               {
                 _moveA3 (aop, offset + 1);
                 if(!regalloc_dry_run)
