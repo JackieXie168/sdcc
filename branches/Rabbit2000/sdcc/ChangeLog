@@ -1,3 +1,20 @@
+2011-10-09 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/z80/z180.h,
+	  device/include/z80/types.h,
+	  device/include/z80/README,
+	  device/include/z80/z180.h:
+	  Move z180 include file.
+
+2011-10-09 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCmain.c:
+	  Cleanup z180 library handling.
+
+2011-10-08 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/scripts/sdcc.nsi: add Z180 lib and include files to package
+
 2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c,
