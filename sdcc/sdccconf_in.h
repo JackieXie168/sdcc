@@ -135,6 +135,9 @@
 #undef OPT_DISABLE_PIC16
 
 /* XXX */
+#undef OPT_DISABLE_R2K
+
+/* XXX */
 #undef OPT_DISABLE_SDCDB
 
 /* XXX */
@@ -148,6 +151,9 @@
 
 /* XXX */
 #undef OPT_DISABLE_XA51
+
+/* XXX */
+#undef OPT_DISABLE_Z180
 
 /* XXX */
 #undef OPT_DISABLE_Z80

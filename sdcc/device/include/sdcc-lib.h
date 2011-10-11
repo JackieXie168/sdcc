@@ -33,6 +33,12 @@
 #if defined(__z80)
 #include <asm/z80/features.h>
 
+#elif defined(__z180)
+#include <asm/z180/features.h>
+
+#elif defined(__r2k)
+#include <asm/r2k/features.h>
+
 #elif defined(__gbz80)
 #include <asm/gbz80/features.h>
 

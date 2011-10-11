@@ -507,7 +507,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
           OP_KEY (IC_RESULT (ic)) == OP_KEY (IC_LEFT (ic)))
         return(true);
 
-      if(ic->op == '=' && !POINTER_SET (ic) && isOperandEqual(IC_RESULT(ic), IC_RIGHT(ic)))
+      if((ic->op == '=' || ic->op == CAST) && !POINTER_SET (ic) && isOperandEqual(IC_RESULT(ic), IC_RIGHT(ic)))
         return(true);
 
       if(ic->op == GOTO || ic->op == LABEL)
@@ -523,7 +523,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
     {
       if(ic->op != IFX &&
         !((ic->op == RIGHT_OP || ic->op == LEFT_OP) && (IS_OP_LITERAL(IC_RIGHT(ic)) || operand_in_reg(IC_RIGHT(ic), REG_A, ia, i, G))) &&
-        !(ic->op == '=' && !(IY_RESERVED && POINTER_SET(ic))) &&
+        !((ic->op == '=' || ic->op == CAST) && !(IY_RESERVED && POINTER_SET(ic))) &&
         !IS_BITWISE_OP (ic) &&
         !(ic->op == '~') &&
         !(ic->op == '*' && IS_ITEMP(IC_LEFT(ic)) && IS_ITEMP(IC_RIGHT(ic))) &&
@@ -653,7 +653,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
        ic->op == GET_VALUE_AT_ADDRESS ||
        ic->op == '+' ||
        ic->op == '*' ||
-       ic->op == '='))
+       ic->op == '=' ||
+       ic->op == CAST))
     return(true);
 
   if(IC_RESULT(ic) && IS_SYMOP(result) && isOperandInDirSpace(IC_RESULT(ic)))
@@ -680,7 +681,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if((!POINTER_SET(ic) && !POINTER_GET(ic) && (
         (ic->op == '=' ||
          ic->op == CAST ||
-         /*ic->op == UNARYMINUS ||*/
+         ic->op == UNARYMINUS ||
          ic->op == RIGHT_OP ||
          /*ic->op == '-' ||*/
          IS_BITWISE_OP(ic) ||
@@ -701,10 +702,10 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(result_only_HL && (ic->op == CALL || ic->op == PCALL))
     return(true);
 
-  if(ic->op == '=' && POINTER_SET(ic) && !result_only_HL)	// loads result pointer into (hl) first.
+  if((ic->op == '=' || ic->op == CAST) && POINTER_SET(ic) && !result_only_HL)	// loads result pointer into (hl) first.
     return(false);
 
-  if(ic->op == '=' && !POINTER_GET(ic) && !input_in_HL)
+  if((ic->op == '=' || ic->op == CAST) && !POINTER_GET(ic) && !input_in_HL)
     return(true);
 
 #if 0
@@ -800,6 +801,7 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   if(result_in_IY &&
     (ic->op == '=' ||
+    ic->op == CAST && getSize(operandType(IC_RESULT(ic))) <= getSize(operandType(IC_RIGHT(ic))) || 
     ic->op == '+')) // todo: More instructions that can write iy.
     return(true);
 
@@ -820,7 +822,9 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     !(IC_LEFT(ic) && isOperandInDirSpace(IC_LEFT(ic))))
     return(true);
 
-  if(!result_in_IY && !input_in_IY && ic->op == '=' && operand_is_pair(IC_RESULT(ic), a, i, G))	// DirSpace access won't use iy here.
+  if(!result_in_IY && !input_in_IY &&
+    (ic->op == '=' || ic->op == CAST && (getSize(operandType(IC_RESULT (ic))) <= getSize(operandType(IC_RIGHT (ic))) || !IS_SPEC(operandType(IC_RIGHT (ic))) || SPEC_USIGN(operandType(IC_RIGHT(ic))))) &&
+    operand_is_pair(IC_RESULT(ic), a, i, G))	// DirSpace access won't use iy here.
     return(true);
 
   if(ic->op == IPUSH)	// todo: More instructions that can use IY.
@@ -831,6 +835,7 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   if(input_in_IY && !result_in_IY &&
     (ic->op == '=' && !POINTER_SET(ic) ||
+     ic->op == CAST && getSize(operandType(IC_RESULT(ic))) <= getSize(operandType(IC_RIGHT(ic))) ||
      ic->op == GET_VALUE_AT_ADDRESS))
     return(true);
 
