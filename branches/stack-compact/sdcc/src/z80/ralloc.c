@@ -1630,9 +1630,9 @@ regTypeNum (void)
 
           D (D_ALLOC, ("regTypeNum: setup to assign regs sym %p\n", sym));
 
-          if (sym->nRegs > 4)
+          if (sym->nRegs > 8)
             {
-              fprintf (stderr, "allocated more than 4 or 0 registers for type ");
+              fprintf (stderr, "allocated more than 8 egisters for type ");
               printTypeChain (sym->type, stderr);
               fprintf (stderr, "\n");
             }
@@ -2776,7 +2776,7 @@ packRegisters (eBBlock * ebp)
         if (!IS_GB && !IY_RESERVED)
           packRegsForHLUse3 (ic, IC_RESULT (ic), ebp);
 
-      if ((z80_opts.oldralloc || !OPTRALLOC_IY) && !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && IS_Z80)
+      if ((z80_opts.oldralloc || !OPTRALLOC_IY) && !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && !IS_GB)
         packRegsForIYUse (ic, IC_RESULT (ic), ebp);
 
       if ((z80_opts.oldralloc || !OPTRALLOC_A) && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&

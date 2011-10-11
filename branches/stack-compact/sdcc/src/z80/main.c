@@ -38,7 +38,6 @@
 #define OPTION_ASM             "--asm="
 #define OPTION_NO_STD_CRT0     "--no-std-crt0"
 #define OPTION_RESERVE_IY      "--reserve-regs-iy"
-#define OPTION_OPTRALLOC_REMAT "--optralloc-remat"
 #define OPTION_DUMP_GRAPHS     "--dump-graphs"
 #define OPTION_MAX_ALLOCS_NODE "--max-allocs-per-node"
 #define OPTION_OLDRALLOC       "--oldralloc"
@@ -54,6 +53,11 @@ static char _gbz80_defaultRules[] = {
 #include "peeph-gbz80.rul"
 };
 
+static char _r2k_defaultRules[] = {
+#include "peeph.rul"
+#include "peeph-r2k.rul"
+};
+
 Z80_OPTS z80_opts;
 
 static OPTION _z80_options[] = {
@@ -65,7 +69,6 @@ static OPTION _z80_options[] = {
   {0, OPTION_NO_STD_CRT0,     &options.no_std_crt0, "For the z80/gbz80 do not link default crt0.rel"},
   {0, OPTION_RESERVE_IY,      &z80_opts.reserveIY, "Do not use IY (incompatible with --fomit-frame-pointer)"},
   {0, OPTION_MAX_ALLOCS_NODE, &options.max_allocs_per_node, "Maximum number of register assignments considered at each node of the tree decomposition", CLAT_INTEGER},
-  {0, OPTION_OPTRALLOC_REMAT, &z80_opts.optralloc_remat, "Handle rematerializeable variables in new register allocator"},
   {0, OPTION_DUMP_GRAPHS,     &z80_opts.dump_graphs, "Dump control flow graph, conflict graph and tree decomposition in register allocator"},
   {0, OPTION_OLDRALLOC,       &z80_opts.oldralloc, "Use old register allocator"},
   {0, OPTION_SALLOC,          &z80_opts.salloc, "Choose stack allocator: 0 btree, 1 chaitin, 2 aligned chaitin, 3 simpl. th/k, 4 th/k", CLAT_INTEGER},
@@ -115,6 +118,7 @@ static char *_keywords[] = {
 
 extern PORT gbz80_port;
 extern PORT z80_port;
+extern PORT r2k_port;
 
 #include "mappings.i"
 
@@ -128,6 +132,20 @@ _z80_init (void)
 {
   z80_opts.sub = SUB_Z80;
   asm_addTree (&_asxxxx_z80);
+}
+
+static void
+_z180_init (void)
+{
+  z80_opts.sub = SUB_Z180;
+  asm_addTree (&_asxxxx_z80);
+}
+
+static void
+_r2k_init (void)
+{
+  z80_opts.sub = SUB_R2K;
+  asm_addTree (&_asxxxx_r2k);
 }
 
 static void
@@ -579,7 +597,7 @@ _setValues (void)
   setMainValue ("z80bases", dbuf_c_str (&dbuf));
   dbuf_destroy (&dbuf);
 
-  if (IS_Z80 && options.omitFramePtr)
+  if ((IS_Z80 || IS_Z180) && options.omitFramePtr)
     z80_port.stack.call_overhead = 2;
 }
 
@@ -616,7 +634,6 @@ _setDefaultOptions (void)
   optimize.label4 = 1;
   optimize.loopInvariant = 1;
   optimize.loopInduction = 1;
-  z80_opts.optralloc_remat = 0;
   z80_opts.dump_graphs = 0;
 }
 
@@ -668,6 +685,7 @@ _hasNativeMulFor (iCode * ic, sym_link * left, sym_link * right)
 {
   sym_link *test = NULL;
   value *val;
+  int result_size = IS_SYMOP(IC_RESULT(ic)) ? getSize(OP_SYM_TYPE(IC_RESULT(ic))) : 4;
 
   if (ic->op != '*')
     {
@@ -687,6 +705,11 @@ _hasNativeMulFor (iCode * ic, sym_link * left, sym_link * right)
   /* 8x8 unsigned multiplication code is shorter than
      call overhead for the multiplication routine. */
   else if (IS_CHAR (right) && IS_UNSIGNED (right) && IS_CHAR (left) && IS_UNSIGNED (left) && !IS_GB)
+    {
+      return TRUE;
+    }
+  /* Same for any multiplication with 8 bit result. */
+  else if (result_size == 1 && !IS_GB)
     {
       return TRUE;
     }
@@ -753,8 +776,14 @@ static const char *_gbAsmCmd[] = {
   "sdasgb", "$l", "$3", "\"$2\"", "\"$1.asm\"", NULL
 };
 
+static const char *_r2kAsmCmd[] = {
+  "sdasrab", "$l", "$3", "\"$2\"", "\"$1.asm\"", NULL
+};
+
 static const char *const _crt[] = { "crt0.rel", NULL, };
 static const char *const _libs_z80[] = { "z80", NULL, };
+static const char *const _libs_z180[] = { "z180", NULL, };
+static const char *const _libs_r2k[] = { "r2k", NULL, };
 static const char *const _libs_gb[] = { "gbz80", NULL, };
 
 /* Globals */
@@ -797,8 +826,8 @@ PORT z80_port = {
    z80notUsedFrom,
    },
   {
-   /* Sizes: char, short, int, long, ptr, fptr, gptr, bit, float, max */
-   1, 2, 2, 4, 2, 2, 2, 1, 4, 4},
+   /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
+   1, 2, 2, 4, 8, 2, 2, 2, 1, 4, 4},
   /* tags for generic pointers */
   {0x00, 0x40, 0x60, 0x80},     /* far, near, xstack, code */
   {
@@ -882,6 +911,130 @@ PORT z80_port = {
   PORT_MAGIC
 };
 
+PORT z180_port = {
+  TARGET_ID_Z180,
+  "z180",
+  "Zilog Z180",                  /* Target name */
+  NULL,                         /* Processor name */
+  {
+   glue,
+   FALSE,
+   NO_MODEL,
+   NO_MODEL,
+   NULL,                        /* model == target */
+   },
+  {                             /* Assembler */
+   _z80AsmCmd,
+   NULL,
+   "-plosgffwzc",               /* Options with debug */
+   "-plosgffwz",                /* Options without debug */
+   0,
+   ".asm"},
+  {                             /* Linker */
+   _z80LinkCmd,                 //NULL,
+   NULL,                        //LINKCMD,
+   NULL,
+   ".rel",
+   1,
+   _crt,                        /* crt */
+   _libs_z180,                  /* libs */
+   },
+  {                             /* Peephole optimizer */
+   _z80_defaultRules,
+   z80instructionSize,
+   0,
+   0,
+   0,
+   z80notUsed,
+   z80canAssign,
+   z80notUsedFrom,
+   },
+  {
+   /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
+   1, 2, 2, 4, 8, 2, 2, 2, 1, 4, 4},
+  /* tags for generic pointers */
+  {0x00, 0x40, 0x60, 0x80},     /* far, near, xstack, code */
+  {
+   "XSEG",
+   "STACK",
+   "CODE",
+   "DATA",
+   "ISEG",
+   NULL,                        /* pdata */
+   "XSEG",
+   "BSEG",
+   "RSEG (ABS)",
+   "GSINIT",
+   "OVERLAY",
+   "GSFINAL",
+   "HOME",
+   NULL,                        /* xidata */
+   NULL,                        /* xinit */
+   NULL,                        /* const_name */
+   "CABS",                      /* cabs_name */
+   NULL,                        /* xabs_name */
+   NULL,                        /* iabs_name */
+   NULL,
+   NULL,
+   1                            /* CODE  is read-only */
+   },
+  {NULL, NULL},
+  {
+   -1, 0, 0, 4, 0, 2},
+  /* Z80 has no native mul/div commands */
+  {
+   0, 2},
+  {
+   z80_emitDebuggerSymbol},
+  {
+   255,                         /* maxCount */
+   3,                           /* sizeofElement */
+   /* The rest of these costs are bogus. They approximate */
+   /* the behavior of src/SDCCicode.c 1.207 and earlier.  */
+   {4, 4, 4},                   /* sizeofMatchJump[] */
+   {0, 0, 0},                   /* sizeofRangeCompare[] */
+   0,                           /* sizeofSubtract */
+   3,                           /* sizeofDispatch */
+   },
+  "_",
+  _z180_init,
+  _parseOptions,
+  _z80_options,
+  NULL,
+  _finaliseOptions,
+  _setDefaultOptions,
+  z80_assignRegisters,
+  _getRegName,
+  _keywords,
+  0,                            /* no assembler preamble */
+  NULL,                         /* no genAssemblerEnd */
+  0,                            /* no local IVT generation code */
+  0,                            /* no genXINIT code */
+  NULL,                         /* genInitStartup */
+  _reset_regparm,
+  _reg_parm,
+  _process_pragma,
+  _mangleSupportFunctionName,
+  _hasNativeMulFor,
+  hasExtBitOp,                  /* hasExtBitOp */
+  oclsExpense,                  /* oclsExpense */
+  TRUE,
+  TRUE,                         /* little endian */
+  0,                            /* leave lt */
+  0,                            /* leave gt */
+  1,                            /* transform <= to ! > */
+  1,                            /* transform >= to ! < */
+  1,                            /* transform != to !(a == b) */
+  0,                            /* leave == */
+  FALSE,                        /* Array initializer support. */
+  0,                            /* no CSE cost estimation yet */
+  _z80_builtins,                /* builtin functions */
+  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  1,                            /* reset labelKey to 1 */
+  1,                            /* globals & local static allowed */
+  PORT_MAGIC
+};
+
 /* Globals */
 PORT gbz80_port = {
   TARGET_ID_GBZ80,
@@ -923,8 +1076,8 @@ PORT gbz80_port = {
    0,
    },
   {
-   /* Sizes: char, short, int, long, ptr, fptr, gptr, bit, float, max */
-   1, 2, 2, 4, 2, 2, 2, 1, 4, 4},
+   /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
+   1, 2, 2, 4, 8, 2, 2, 2, 1, 4, 4},
   /* tags for generic pointers */
   {0x00, 0x40, 0x60, 0x80},     /* far, near, xstack, code */
   {
@@ -1002,6 +1155,132 @@ PORT gbz80_port = {
   FALSE,                        /* Array initializer support. */
   0,                            /* no CSE cost estimation yet */
   NULL,                         /* no builtin functions */
+  GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
+  1,                            /* reset labelKey to 1 */
+  1,                            /* globals & local static allowed */
+  PORT_MAGIC
+};
+
+
+
+PORT r2k_port = {
+  TARGET_ID_R2K,
+  "r2k",
+  "Rabbit 2000",                  /* Target name */
+  NULL,                         /* Processor name */
+  {
+   glue,
+   FALSE,
+   NO_MODEL,
+   NO_MODEL,
+   NULL,                        /* model == target */
+   },
+  {                             /* Assembler */
+   _r2kAsmCmd,
+   NULL,
+   "-plosgffwzc",               /* Options with debug */
+   "-plosgffwz",                /* Options without debug */
+   0,
+   ".asm"},
+  {                             /* Linker */
+   _z80LinkCmd,                 //NULL,
+   NULL,                        //LINKCMD,
+   NULL,
+   ".rel",
+   1,
+   _crt,                        /* crt */
+   _libs_r2k,                   /* libs */
+   },
+  {                             /* Peephole optimizer */
+   _r2k_defaultRules,
+   z80instructionSize,
+   0,
+   0,
+   0,
+   z80notUsed,
+   z80canAssign,
+   z80notUsedFrom,
+   },
+  {
+   /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
+   1, 2, 2, 4, 8, 2, 2, 2, 1, 4, 4},
+  /* tags for generic pointers */
+  {0x00, 0x40, 0x60, 0x80},     /* far, near, xstack, code */
+  {
+   "XSEG",
+   "STACK",
+   "CODE",
+   "DATA",
+   "ISEG",
+   NULL,                        /* pdata */
+   "XSEG",
+   "BSEG",
+   "RSEG (ABS)",
+   "GSINIT",
+   "OVERLAY",
+   "GSFINAL",
+   "HOME",
+   NULL,                        /* xidata */
+   NULL,                        /* xinit */
+   NULL,                        /* const_name */
+   "CABS",                      /* cabs_name */
+   NULL,                        /* xabs_name */
+   NULL,                        /* iabs_name */
+   NULL,
+   NULL,
+   1                            /* CODE  is read-only */
+   },
+  {NULL, NULL},
+  {
+   -1, 0, 0, 4, 0, 2},
+  /* Z80 has no native mul/div commands */
+  {
+   0, 2},
+  {
+   z80_emitDebuggerSymbol},
+  {
+   255,                         /* maxCount */
+   3,                           /* sizeofElement */
+   /* The rest of these costs are bogus. They approximate */
+   /* the behavior of src/SDCCicode.c 1.207 and earlier.  */
+   {4, 4, 4},                   /* sizeofMatchJump[] */
+   {0, 0, 0},                   /* sizeofRangeCompare[] */
+   0,                           /* sizeofSubtract */
+   3,                           /* sizeofDispatch */
+   },
+  "_",
+  _r2k_init,
+  _parseOptions,
+  _z80_options,
+  NULL,
+  _finaliseOptions,
+  _setDefaultOptions,
+  z80_assignRegisters,
+  _getRegName,
+  _keywords,
+  0,                            /* no assembler preamble */
+  NULL,                         /* no genAssemblerEnd */
+  0,                            /* no local IVT generation code */
+  0,                            /* no genXINIT code */
+  NULL,                         /* genInitStartup */
+  _reset_regparm,
+  _reg_parm,
+  _process_pragma,
+  _mangleSupportFunctionName,
+  _hasNativeMulFor,
+  hasExtBitOp,                  /* hasExtBitOp */
+  oclsExpense,                  /* oclsExpense */
+  TRUE,
+  TRUE,                         /* little endian */
+  0,                            /* leave lt */
+  0,                            /* leave gt */
+  1,                            /* transform <= to ! > */
+  1,                            /* transform >= to ! < */
+  1,                            /* transform != to !(a == b) */
+  0,                            /* leave == */
+  FALSE,                        /* Array initializer support. */
+  0,                            /* no CSE cost estimation yet */
+  _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   1,                            /* reset labelKey to 1 */
   1,                            /* globals & local static allowed */

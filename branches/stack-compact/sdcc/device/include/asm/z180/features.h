@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
-   types.h - Z80 specific hack
+   features.h - Z80 specific features.
 
-   Copyright (C) 2000, Michael Hope
+   Copyright (C) 2001, Michael Hope
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -26,10 +26,25 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef TYPES_INCLUDE
-#define TYPES_INCLUDE
+#ifndef __SDCC_ASM_Z180_FEATURES_H
+#define __SDCC_ASM_Z180_FEATURES_H   1
 
-typedef unsigned char BYTE;
-typedef unsigned WORD;
+#define _REENTRANT
+#define _CODE
+#define _AUTOMEM
+#define _STATMEM
+
+#define _SDCC_MANGLES_SUPPORT_FUNS	1
+#define _SDCC_Z80_STYLE_LIB_OPT		1
+
+/* The following are disabled to make the dhrystone test more authentic.
+ */
+#define _SDCC_PORT_PROVIDES_MEMCPY	0
+#define _SDCC_PORT_PROVIDES_STRCMP	0
+/* Register allocator is as good as hand coded asm.  Cool. */
+#define _SDCC_PORT_PROVIDES_STRCPY	0
+
+#define _SDCC_MALLOC_TYPE_MLH		1
 
 #endif
+

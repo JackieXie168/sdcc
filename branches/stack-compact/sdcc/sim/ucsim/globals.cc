@@ -407,5 +407,19 @@ struct cpu_entry cpus_51[]=
   {NULL, 0, 0}
 };
 
+struct cpu_entry cpus_z80[]=
+{
+  {"Z80"   , CPU_Z80, 0},
+  {"Z180"  , CPU_Z180,0},
+  {"R2K"   , CPU_R2K, 0},
+  {NULL, 0, 0}
+};
+
+struct cpu_entry cpus_hc08[]=
+{
+  {"HC08"   , CPU_HC08, 0},
+  {"HCS08"  , CPU_HCS08,0},
+  {NULL, 0, 0}
+};
 
 /* End of globals.cc */

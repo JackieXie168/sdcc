@@ -1,3 +1,506 @@
+2011-10-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* sdas/asrab/rabbit.h,
+	  sdas/asrab/rabbitadr.c,
+	  sdas/asrab/rabbitmch.c:
+	  Leland Morrison's fix for ld n (hl), hl and ld hl, n (hl).
+	* src/z80/peeph-r2k.def:
+	  Enable peepholes using ld hl, n (hl).
+
+2011-10-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/main.c,
+	  src/z80/main.c,
+	  src/z80/z80.h:
+	  Fix code generation for handling of rematerialization by the new register allocator, enable it for the ports with exact cost function and remove the option.
+
+2011-10-10 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/sdcc.nsi: removed include/z80 added include/z180
+
+2011-10-09 Raphael Neider <rneider AT web.de>
+
+	* src/SDCCval.c (constVal): avoid compiler warning
+	* src/pic16/gen.c (genPcall): do not clobber interrupt flags in
+	  INTCON during indirect function call, closes #3420588
+
+2011-10-09 Philipp Klaus Krause <pkk AT spth.de>
+
+	* Merge the Rabbit2000 branch.
+
+2011-10-09 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/z80/z180.h,
+	  device/include/z80/types.h,
+	  device/include/z80/README,
+	  device/include/z80/z180.h:
+	  Move z180 include file.
+
+2011-10-09 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCmain.c:
+	  Cleanup z180 library handling.
+
+2011-10-08 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/scripts/sdcc.nsi: add Z180 lib and include files to package
+
+2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Use r2k-specific ld n (sp), hl,  ld n (sp), iy, ld n (ix), ld iy, n (sp), ld hl, n (sp) and ld hl, n (ix).
+
+2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c,
+	  src/z80/peeph-r2k.def,
+	  src/z80/peeph-z80.def:
+	  Preparations for use of r2k-specific ld hl, n (sp) and ld hl, n (ix).
+
+2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Preparations for use of r2k-specific ld iy,hl.
+
+2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  src/z80/peeph-r2k.def,
+	  src/z80/peeph-z80.def:
+	  Allow use of r2k-specific ld hl, (hl) instruction.
+
+2011-10-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Make better use of the r2k-specific add sp, d instruction.
+
+2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  More flexible use of r2k-specific and hl, de instruction.
+
+2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Allow use of r2k-specific instructions in right shift.
+	* sim/ucsim/z80.src/inst.cc:
+	  Fix flag handling in z80/z180/r2k rrca instruction.
+	* sim/ucsim/z80.src/inst_r2k.cc:
+	  Fix handling of carry bit in r2k 16-bit rr and rl instructions.
+
+2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/peeph-z80.def,
+	  src/z80/peeph-r2k.def:
+	  Minor peephole improvement.
+
+2011-10-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/z80.src/inst_r2k.cc:
+	  Fix signed multiplication to use two's complement instead of sign-magnitude, 3rd attempt.
+
+2011-10-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/z80.src/inst_r2k.cc:
+	  Fix signed multiplication to use two's complement instead of sign-magnitude, 2nd attempt.
+
+2011-10-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* sim/ucsim/z80.src/inst_r2k.cc,
+	  sim/ucsim/z80.src/r2k.cc,
+	  sim/ucsim/z80.src/z80cl.h,
+	  sim/ucsim/z80.src/inst_ed_r2k.cc,
+	  sim/ucsim/z80.src/inst_xd.cc,
+	  sim/ucsim/z80.src/r2kcl.h,
+	  sim/ucsim/z80.src/glob.cc:
+	  Leland Morrison's support for some more r2k-specific instructions.
+
+2011-10-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/z80.src/inst_r2k.cc:
+	  Fix signed multiplication to use two's complement instead of sign-magnitude.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/z80.src/r2k.cc,
+	  sim/ucsim/z80.src/r2kcl.h:
+	  Forgotten files from Leland Morrison's Rabbit 2000 ucsim port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  sim/ucsim/z80.src/inst_r2k.cc:
+	  Fixed multiplication using r2k mul instruction.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sdas/asrab/rabbitmch.c:
+	  Leland Morrison's support for ld iy, hl.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/z80.src/inst_r2k.cc,
+	  sim/ucsim/z80.src/glob_r2k.cc,
+	  sim/ucsim/z80.src/inst_ed_r2k.cc:
+	  Forgotten files from Leland Morrison's Rabbit 2000 ucsim port, support for r2k mul and ld iy, hl instructions in ucsim.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/peep.c:
+	  Handle r2k mul instruction in code size calculation.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/z80.src/Makefile.in,
+	  sim/ucsim/z80.src/z80cl.h,
+	  sim/ucsim/z80.src/regsz80.h,
+	  sim/ucsim/z80.src/sz80.cc,
+	  sim/ucsim/z80.src/z80mac.h,
+	  sim/ucsim/z80.src/inst_xd.cc,
+	  sim/ucsim/z80.src/z80.cc,
+	  sim/ucsim/z80.src/glob.cc,
+	  sim/ucsim/z80.src/inst_dd.cc,
+	  sim/ucsim/z80.src/glob.h,
+	  sim/ucsim/z80.src/inst_fd.cc,
+	  sim/ucsim/z80.src/simz80.cc,
+	  sim/ucsim/stypes.h,
+	  sim/ucsim/sim.src/uc.cc,
+	  sim/ucsim/globals.cc:
+	  Leland Morrison's Rabbit 2000 ucsim port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Use add sp, #n in function entry in r2k port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Use Rabbit-specific instructions in and, multiplication and assignment for r2k port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  src/z80/peep.c:
+	  Preparations for use of add sp, #n in function entry in r2k port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/bug1115321.c
+	  support/regression/Makefile.in
+	  support/regression/fwk/include/testfwk.h
+	  support/regression/ports/ucr2k
+	  Leland Morrison's Rabbit 2000 regression test port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCmain.c:
+	  Fix library path. r2k port works now.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/stdint.h:
+	  Enable 64 bit integer types for r2k port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/asm/r2k,
+	  device/include/asm/r2k/features.h,
+	  device/lib/r2k/Makefile.in,
+	  Makefile.in,
+	  src/SDCCmain.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  device/lib/Makefile.in,
+	  configure.in,
+	  device/lib/r2k/Makefile.in,
+	  device/lib/r2k/strlen.s:
+	  r2k library cleanup.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/lib/r2k,
+	  device/include/sdcc-lib.h,
+	  device/include/math.h,
+	  device/include/stdarg.h:
+	  Leland Morrison's Rabbit 2000 library port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* configure.in:
+	  Add r2k port.
+	* src/port.h,
+	  src/z80/gen.c
+	  src/z80/main.c
+	  src/z80/z80.h:
+	  Code cleanup.
+	* src/z80/peep.c:
+	  Fix code size for ex (sp), hl in r2k port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCralloc.hpp,
+	  src/SDCCmain.c,
+	  src/SDCCglue.c,
+	  src/port.h,
+	  src/z80/peeph-r2k.def,
+	  src/z80/gen.c,
+	  src/z80/mappings.i,
+	  src/z80/main.c,
+	  src/z80/z80.h,
+	  src/z80/peep.c:
+	  Leland Morrison's Rabbit 2000 compiler port.
+
+2011-10-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sdas/asrab,
+	  sdas/asrab/Makefile.in,
+	  sdas/asrab/rabbitext.c,
+	  sdas/asrab/clean.mk,
+	  sdas/asrab/rabbit.h,
+	  sdas/asrab/rabbitadr.c,
+	  sdas/asrab/rabbitpst.c,
+	  sdas/asrab/rabbitmch.c:
+	  Leland Morrison's assembler for Rabbit 2000 and Rabbit 4000.
+
+2011-10-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* sim/ucsim/hc08.src/glob.cc: add HCS08 instructions to disassembler
+	* src/SDCCval.c: fixed constant to avoid unintended long long literal
+
+2011-10-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/stdint.h:
+	  Added typedefs for 64-bit integer types.
+
+2011-10-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCval.c:
+	  Error for invalid integer suffix, as in 1ullul.
+
+2011-10-01 Raphael Neider <rneider AT web.de>
+
+	* device/non-free/include/pic14/pic12f1822.h,
+	  device/non-free/lib/pic14/libdev/pic12f1822.c,
+	  device/include/pic14/pic14devices.txt,
+	  device/lib/pic14/libdev/devices.txt:
+	  Add support for 12f1822 devices, requires --enable-new-pics to be
+	  passed to configure, closes #3416092.
+
+	* device/non-free/lib/pic14/libdev/Makefile.in,
+	  device/non-free/lib/pic14/configure.in:
+	  Add --enable-new-pics switch to build device libs for devices added
+	  to gputils only after the 0.13.7 release; by default, only libs for
+	  devices that are supported in gputils 0.13.7 are built to avoid build
+	  failures.
+
+	* device/non-free/lib/pic14/configure:
+	  Regenerated.
+
+2011-10-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCopt.c:
+	  Slightly more informative error message when attempting to multiply, etc long long.
+
+2011-10-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Reorganized pointer access functions, fixed the remaining warning in the z80 port.
+
+2011-10-01 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCerr.c, src/SDCCerr.h, src/SDCC.lex:
+	  SDCCerr code cleanup
+
+2011-10-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Reorganized pointer access functions, fixed the remaining warning in the z80 port.
+
+2011-10-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCsymt.c:
+	  Enable long long for gbz80 and z180 ports.
+	* src/pic14/gen.c:
+	  Fixed use of pic16 functions in pic14 port.
+
+2011-10-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/src/izt/tlcs900h.c,
+	  src/izt/i186.c,
+	  src/z80/main.c:
+	  Added missing long long type size entries.
+
+2011-10-01 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/ds390/main.c: added missing long long type size entries
+
+2011-10-01 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* sim/ucsim/z80.src/sz80.cc: enable sz80 -H option
+	* sim/ucsim/globals.cc,
+	* sim/ucsim/globals.h,
+	* sim/ucsim/stypes.h,
+	* sim/ucsim/hc08.src/shc08.cc,
+	* sim/ucsim/hc08.src/hc08.cc,
+	* sim/ucsim/hc08.src/hc08cl.h,
+	* sum/ucsim/hc08.src/inst.cc,
+	* sum/ucsim/hc08.src/instcl.h,
+	* sum/ucsim/hc08.src/hc08mac.h: Add support for HCS08 instructions
+
+2011-09-30 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/xa51/main.c
+	  src/mcs51/main.c
+	  src/SDCCsymt.c
+	  src/SDCCsymt.h
+	  src/avr/main.c
+	  src/port.h
+	  src/pic14/main.c
+	  src/z80/gen.c
+	  src/z80/ralloc.c
+	  src/z80/main.c
+	  src/pic16/main.c
+	  src/SDCCglobl.h
+	  src/hc08/main.c
+	  src/ds390/main.c:
+	  Very basic (no multiplication/division/shift/return) support for long long for the Z80.
+
+2011-09-30 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCsymt.c:
+	  Drop support for declarations like "long short short long short int x;".
+
+2011-09-30 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* configure.in,
+	  configure: create device/lib/z180/Makefile during configuration
+
+2011-09-28 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/gen.c:
+	  Handle the trivial casts more like assignments, allow hl in operands for unary minus.
+
+2011-09-28 Philipp Klaus Krause <pkk AT spth.de>
+
+	* ChangeLog:
+	  Reconstruct ChangeLog entries lost during the z180 branch merge.
+
+2011-09-25 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/main.c:
+	  Always use native multiplication for Z80 and Z180 when the result is 8 bits.
+
+2011-09-25 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Always use of Z180 mlt instruction for unsigned 8x8 multiplication,
+	  fixed bug in register-to-register cast.
+
+2011-09-24 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/peep.c:
+	  Handle Z180 mlt instruction in peephole optimizer.
+
+2011-09-24 Philipp Klaus Krause <pkk AT spth.de>
+
+	* Merged z180 branch.
+
+2011-09-24 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* device/lib/printf_large.c: accept int modifiers
+
+2011-09-24 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/globals.cc,
+	  sim/ucsim/z80.src/inst_ed.cc:
+	  Report mlt instructions as invalid in simulator when running in Z80 mode.
+
+2011-09-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCglue.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  sim/ucsim/z80.src/inst_ed.cc:
+	  Enable use of Z180 multiplication instructions.
+
+2011-09-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/bug1115321.c:
+	  Fix last remaining ucz180 regression test failure.
+
+2011-09-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/string.h,
+	  device/include/sdcc-lib.h,
+	  device/include/math.h,
+	  device/include/stdarg.h,
+	  device/lib/_malloc.c,
+	  device/lib/_realloc.c,
+	  device/lib/_free.c,
+	  device/lib/Makefile.in,
+	  sim/ucsim/z80.src/z80cl.h,
+	  sim/ucsim/z80.src/z80.cc,
+	  sim/ucsim/z80.src/simz80.cc,
+	  sim/ucsim/stypes.h,
+	  sim/ucsim/globals.cc,
+	  sim/ucsim/globals.h,
+	  sdas/linksrc/lkarea.c,
+	  sdas/linksrc/sdld.c,
+	  sdas/linksrc/sdld.h,
+	  sdas/linksrc/lkrloc.c,
+	  support/regression/Makefile.in,
+	  support/regression/fwk/include/testfwk.h,
+	  device/include/asm/z180,
+	  device/include/asm/z180/features.h,
+	  device/lib/z180,
+	  device/lib/z180/divunsigned.s,
+	  device/lib/z180/Makefile.in,
+	  device/lib/z180/crtcall.s,
+	  device/lib/z180/mulchar.s,
+	  device/lib/z180/README,
+	  device/lib/z180/mul.s,
+	  device/lib/z180/stubs.s,
+	  device/lib/z180/setjmp.s,
+	  device/lib/z180/abs.s,
+	  device/lib/z180/memmove.s,
+	  device/lib/z180/fstubs.s,
+	  device/lib/z180/modmixed.s,
+	  device/lib/z180/putchar.s,
+	  device/lib/z180/strlen.s,
+	  device/lib/z180/crt0.s,
+	  device/lib/z180/divmixed.s,
+	  device/lib/z180/modsigned.s,
+	  device/lib/z180/crt0_rle.s,
+	  device/lib/z180/Makefile,
+	  device/lib/z180/modunsigned.s,
+	  device/lib/z180/divsigned.s,
+	  device/lib/z180/heap.s,
+	  device/lib/z180/shift.s,
+	  support/regression/ports/ucz180,
+	  support/regression/ports/ucz180/spec.mk,
+	  support/regression/ports/ucz180/uCsim.cmd,
+	  support/regression/ports/ucz180/support.asm:
+	  Z180 port passes all regression tests except for one.
+
+2011-09-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCicode.c,
+	  support/regression/tests/bug2942247.c:
+	  Fixed bug #2942247.
+
+2011-09-22 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/SDCC.y (abstract_declarator2): fixed bug 3190029
+	* support/regression/tests/bug3190029.c: new, added
+
 2011-09-20 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* Merge from trunk.
@@ -122,6 +625,28 @@
 	* support/regression/tests/bug3397636.c: fixed line endings and svn props
 	* support/regression/tests/bug3401973.c: put large struct in large memory
 	* support/regression/tests/bug3403429.c: fixed warnings, explained bug
+
+2011-09-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCmain.c:
+	  Basic working z180 port.
+
+2011-09-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* configure.in,
+	  configure,
+	  sdccconf_in.h,
+	  src/SDCCmain.c,
+	  src/SDCCglue.c,
+	  src/SDCCopt.c,
+	  src/port.h,
+	  src/SDCCopt.c,
+	  src/SDCCralloc.hpp,
+	  src/z80/z80.h,
+	  src/z80/main.c,
+	  src/z80/gen.c,
+	  src/z80/ralloc.c:
+	  Basic infrastructure for z180 port.
 
 2011-09-02 Philipp Klaus Krause <pkk AT spth.de>
 
@@ -7241,7 +7766,7 @@
 
 2008-02-26 Borut Razem <borut.razem AT siol.net>
 
-	* src/SDCCast.c, doc/sdccman.lyx: fixed RFE #1901171: inerger promotion
+	* src/SDCCast.c, doc/sdccman.lyx: fixed RFE #1901171: integer promotion
 	  of casted varargs
 	* support/scripts/sdcc.nsi: added MULTIUSER page,
 	  NSIS upgraded to version 2.35
