@@ -1,17 +1,9 @@
-#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
 \textclass book
 \begin_preamble
-% Added by lyx2lyx
-%  for proper underlining
-\PassOptionsToPackage{normalem}{ulem}
-\usepackage{ulem}
-\let\cite@rig\cite
-\newcommand{\b@xcite}[2][\%]{\def\def@pt{\%}\def\pas@pt{#1}
-  \mbox{\ifx\def@pt\pas@pt\cite@rig{#2}\else\cite@rig[#1]{#2}\fi}}
-\renewcommand{\underbar}[1]{{\let\cite\b@xcite\uline{#1}}}
 \pdfoptionpdfminorversion=3
 \usepackage[
   pdftitle={SDCC Compiler User Guide},
@@ -65,6 +57,7 @@
 \paperpagestyle fancy
 \tracking_changes false
 \output_changes false
+\author "" 
 \author "" 
 \end_header
 
@@ -124,9 +117,9 @@ SDCC Compiler User Guide
 \begin_layout Date
 
 \size normal
-SDCC 3.0.
+SDCC 3.1.0
 \size footnotesize
-5
+
 \begin_inset Newline newline
 \end_inset
 
@@ -206,7 +199,17 @@ status collapsed
 \end_inset
 
 , etc.), Dallas DS80C390 variants, Freescale (formerly Motorola) HC08 and
- Zilog Z80 based MCUs.
+ Zilog Z80 based MCUs (z80, z180, gbz80, Rabbit 2000/3000
+\begin_inset Index
+status open
+
+\begin_layout Plain Layout
+Z80, Z180, GBZ80, Rabbit 2000/3000 CPU
+\end_layout
+
+\end_inset
+
+).
  It can be retargeted for other microprocessors, support for Microchip PIC
  is under development.
  The entire source code for the compiler is distributed under GPL.
@@ -234,6 +237,16 @@ sdld
  SDCC has extensive language extensions suitable for utilizing various microcont
 rollers and underlying hardware effectively.
  
+\begin_inset Newline newline
+\end_inset
+
+
+\emph on
+Warning: Large parts of this manual apply to the mc51 port only
+\emph default
+.
+ Further information on the z80, z180, r2k and gbz80 ports and standard
+ compliance can be found in the sdcc wiki.
 \begin_inset Newline newline
 \end_inset
 
@@ -300,7 +313,7 @@ Supported data-types are:
 
 \begin_layout Standard
 \begin_inset Tabular
-<lyxtabular version="3" rows="8" columns="5">
+<lyxtabular version="3" rows="9" columns="5">
 <features>
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -543,7 +556,7 @@ signed
 </cell>
 </row>
 <row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -552,11 +565,68 @@ long
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
 32 bits, 4 bytes
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+signed
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-2.147.483.648, +2.147.483.647
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0, +4.294.967.295
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+long long
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+only supported in the z80, z180, r2k and gbz80 ports as of sdcc 3.1.0
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+64 bits, 8 bytes
 \end_layout
 
 \end_inset
@@ -574,7 +644,7 @@ signed
 \begin_inset Text
 
 \begin_layout Plain Layout
--2.147.483.648, +2.147.483.647
+
 \end_layout
 
 \end_inset
@@ -583,7 +653,7 @@ signed
 \begin_inset Text
 
 \begin_layout Plain Layout
-0, +4.294.967.295
+
 \end_layout
 
 \end_inset
@@ -1965,6 +2035,10 @@ in sdcc version 3.0 and higher sdldgb and sdldz80 don't support generation
  no$gmb file formats.
 \end_layout
 
+\begin_layout Itemize
+asranlib utility was renamed to sdranlib in sdcc version 3.1.0.
+\end_layout
+
 \begin_layout Section
 System Requirements
 \end_layout
@@ -2565,8 +2639,13 @@ status collapsed
 \end_inset
 
 -enable-new-pics Enables support for PIC devices that are not supported
- by the current 0.13.7 release of gputils, namely 18f[24][3456]k22.
- Enabling this probably requires gputils to be built from recent SVN sources!
+ by the current 0.13.7 release of gputils, namely 12f1822, 16f1933, 16f1934,
+ 16f1936, and 16f1937 for the PIC14 target and 18f[24][3456]k22 for PIC16.
+ Enabling this probably requires gputils
+\begin_inset Formula $\geq$
+\end_inset
+
+0.14.0 or a recent SVN revision!
 \begin_inset Newline newline
 \end_inset
 
@@ -6262,7 +6341,7 @@ tabulator spacing (8 columns)
 \end_layout
 
 \begin_layout Subsection
-Building SDCC Using Microsoft Visual C++ 6.0/NET (MSVC)
+Building SDCC Using Microsoft Visual C++ 2010 (MSVC)
 \end_layout
 
 \begin_layout Standard
@@ -6291,9 +6370,9 @@ http://sdcc.sourceforge.net/snap.php
 -yyyymmdd-rrrr.tar.bz2.
 
 \series default
- SDCC is distributed with all the projects, workspaces, and files you need
- to build it using Visual C++ 6.0/NET (except for SDCDB and ucSim).
- The workspace name is 'sdcc.dsw'.
+ SDCC is distributed with all the project, solution and other files you
+ need to build it using Visual C++ 2010 (except for ucSim).
+ The solution name is 'sdcc.sln'.
  Please note that as it is now, all the executables are created in a folder
  called sdcc
 \backslash
@@ -6304,55 +6383,6 @@ bin_vc to sdcc
 \backslash
 bin before running SDCC.
  
-\begin_inset Newline newline
-\end_inset
-
-
-\begin_inset Newline newline
-\end_inset
-
-WARNING: Visual studio is very picky with line terminations; it expects
- the 0x0d, 0x0a DOS style line endings, not the 0x0a Unix style line endings.
- When using the Subversion repository it's easiest to configure the svn
- client to convert automatically for you.
- If however you are getting a message such as "This makefile was not generated
- by Developer Studio etc.
- etc.
-\begin_inset Quotes srd
-\end_inset
-
- when opening the sdcc.dsw workspace or any of the *.dsp projects, then you
- need to convert the Unix style line endings to DOS style line endings.
- To do so you can use the 
-\begin_inset Quotes sld
-\end_inset
-
-unix2dos
-\begin_inset Quotes srd
-\end_inset
-
- utility freely available on the internet.
- Doug Hawkins reported in the sdcc-user list that this works:
-\begin_inset Newline newline
-\end_inset
-
-
-\begin_inset Newline newline
-\end_inset
-
-C:
-\backslash
-Programming
-\backslash
-SDCC> unix2dos sdcc.dsw
-\begin_inset Newline newline
-\end_inset
-
-C:
-\backslash
-Programming
-\backslash
-SDCC> for /R %I in (*.dsp) do @unix2dos "%I"
 \begin_inset Newline newline
 \end_inset
 
@@ -6417,15 +6447,13 @@ a) Extract UnxUtils.zip to your C:
 \begin_inset Newline newline
 \end_inset
 
-b) In the Visual C++ IDE click Tools, Options, select the Directory tab,
- in 'Show directories for:' select 'Executable files', and in the directories
- window add a new path: 'C:
+b) Add 'C:
 \backslash
 user
 \backslash
 local
 \backslash
-wbin', click ok.
+wbin' to VC++ Directories / Executable Directories.
 \begin_inset Newline newline
 \end_inset
 
@@ -6554,12 +6582,10 @@ Steps 'c' and 'd' are needed because bison requires by default that the
 \begin_inset Newline newline
 \end_inset
 
-e) In the Visual C++ IDE click Tools, Options, select the Directory tab,
- in 'Show directories for:' select 'Executable files', and in the directories
- window add a new path: 'c:
+e) Add 'C:
 \backslash
-util', click ok.
- Note that you can use any other path instead of 'c:
+util' to VC++ Directories / Executable Directories.
+ Note that you can use any other path instead of 'C:
 \backslash
 util', even the path where the Visual C++ tools are, probably: 'C:
 \backslash
@@ -6575,7 +6601,7 @@ Tools'.
 
 \begin_layout Standard
 That is it.
- Open 'sdcc.dsw' in Visual Studio, click 'build all', when it finishes copy
+ Open 'sdcc.sln' in Visual Studio, click 'build all', when it finishes copy
  the executables from sdcc
 \backslash
 bin_vc to sdcc
@@ -6602,15 +6628,15 @@ http://sdcc.sf.net/snap.php
  and unpack it using your favorite unpacking tool (gunzip, WinZip, etc).
  This should unpack to a group of sub-directories.
  An example directory structure after unpacking the mingw32 package is:
- c:
+ C:
 \backslash
 sdcc
 \backslash
-bin for the executables, c:
+bin for the executables, C:
 \backslash
 sdcc
 \backslash
-include and c:
+include and C:
 \backslash
 sdcc
 \backslash
@@ -7996,7 +8022,7 @@ sdcclib - A tool for creating sdcc libraries
 \end_layout
 
 \begin_layout Itemize
-asranlib - A tool for indexing sdcc ar libraries
+sdranlib - A tool for indexing sdcc ar libraries
 \end_layout
 
 \begin_layout Itemize
@@ -9915,7 +9941,7 @@ http://www.mingw.org/
 \series default
 Both the GNU and BSD ar format variants are supported by sdld linkers.
  Ar doesn't natively understand the sdas object file format, so there is
- a special version of ranlib distributed with sdcc, called asranlib, which
+ a special version of ranlib distributed with sdcc, called sdranlib, which
  produces the ar symbol lookup table.
 \series bold
 
@@ -9949,7 +9975,7 @@ ar -Sq <library name>.lib <list of .rel files>
 
 \family sans
 \series bold
-asranlib <library name>.lib
+sdranlib <library name>.lib
 \end_layout
 
 \begin_layout Standard
@@ -42045,11 +42071,11 @@ ftp://ftp.dalsemi.com/pub/tini/ds80c400/c_libraries/sdcc/index.html
 \end_layout
 
 \begin_layout Section
-The Z80 and gbz80 port
+The Z80, Z180, Rabbit 2000/3000 and GBZ80 ports
 \end_layout
 
 \begin_layout Standard
-SDCC can target both the Zilog Z80
+SDCC can target the Z80
 \begin_inset Index
 status collapsed
 
@@ -42059,7 +42085,7 @@ Z80
 
 \end_inset
 
- and the Nintendo GameBoy's Z80-like gbz80
+, Z180, Rabbit 2000/3000 and the Nintendo GameBoy's Z80-like gbz80
 \begin_inset Index
 status collapsed
 
@@ -42277,6 +42303,20 @@ Currently supported devices include:
 
 \begin_layout Standard
 \noindent
+\align left
+Supported devices with enhanced cores:
+\end_layout
+
+\begin_layout Standard
+12F: 1822
+\end_layout
+
+\begin_layout Standard
+16F: 1933, 1934, 1936, 1937
+\end_layout
+
+\begin_layout Standard
+\noindent
 An up-to-date list of currently supported devices can be obtained via 
 \family typewriter
 sdcc -mpic14 -phelp foo.c
@@ -42466,6 +42506,84 @@ T0IF = 0; /* Clear timer interrupt */
 \end_inset
 
 }
+\end_layout
+
+\begin_layout Subsection
+Configuration Bits
+\end_layout
+
+\begin_layout Standard
+Configuration bits (also known as fuses) can be configured using `
+\family typewriter
+__code
+\family default
+' and `
+\family typewriter
+__at
+\family default
+' modifiers.
+ Possible options should be ANDed and can be found in your processor header
+ file.
+ Example for PIC16F88:
+\end_layout
+
+\begin_layout LyX-Code
+
+\family typewriter
+#include <pic16f88.h> //Contains config addresses and options
+\begin_inset Newline newline
+\end_inset
+
+#include <stdint.h> //Needed for uint16_t
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+static __code uint16_t __at (_CONFIG1) configword1 = _INTRC_IO &
+\begin_inset Newline newline
+\end_inset
+
+  _CP_ALL & _WDT_OFF & [...];
+\begin_inset Newline newline
+\end_inset
+
+static __code uint16_t __at (_CONFIG2) configword2 = [...];
+\end_layout
+
+\begin_layout Standard
+Although data type is ignored if the address (
+\family typewriter
+__at()
+\family default
+) refers to a config word location, using a type large enough for the configurat
+ion word (
+\family typewriter
+uint16_t
+\family default
+ in this case) is recommended to prevent changes in the compiler (implicit,
+ early range check and enforcement) from breaking the definition.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+If your processor header file doesn't contain config addresses you can declare
+ it manually or use a literal address:
+\end_layout
+
+\begin_layout LyX-Code
+
+\family typewriter
+static __code uint16_t __at (0x2007) configword1 = _INTRC_IO &
+\begin_inset Newline newline
+\end_inset
+
+  _CP_ALL & _WDT_OFF & [...];
 \end_layout
 
 \begin_layout Subsection
@@ -42990,6 +43108,47 @@ status collapsed
  sets the size if the argument passing stack (default: 16, minimum: 4)
 \end_layout
 
+\begin_layout Description
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-use-non-free
+\begin_inset Index
+status collapsed
+
+\begin_layout Plain Layout
+PIC14!Options!-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-use-non-free
+\end_layout
+
+\end_inset
+
+ make non-free device headers and libraries available in the compiler's
+ search paths (implicit -I and -L options)
+\end_layout
+
 \begin_layout Subsection
 Environment Variables
 \end_layout
@@ -43116,6 +43275,60 @@ The PIC14 library currently only contains support routines required by the
 device/lib
 \family default
 ) should also compile with the PIC14 port.
+\end_layout
+
+\begin_layout Subsubsection
+Enhanced cores
+\end_layout
+
+\begin_layout Standard
+SDCC/PIC14 has experimental support for devices with the enhanced 14-bit
+ cores (such as pic12f1822).
+ Due to differences in required code, the libraries provided with SDCC (
+\family typewriter
+libm.lib
+\family default
+ and 
+\family typewriter
+libsdcc.lib
+\family default
+) are now provided in two variants: 
+\family typewriter
+libm.lib
+\family default
+ and 
+\family typewriter
+libsdcc.lib
+\family default
+ are compiled for the regular, non-enhanced devices.
+ 
+\family typewriter
+libme.lib
+\family default
+ and 
+\family typewriter
+libsdcce.lib
+\family default
+ (note the trailing '
+\family typewriter
+e
+\family default
+') are compiled for enhanced devices.
+ When linking manually, make sure to select the proper variant!
+\end_layout
+
+\begin_layout Standard
+When SDCC is used to invoke the linker, SDCC will automatically select the
+ 
+\family typewriter
+libsdcc.lib
+\family default
+-variant suitable for the target device.
+ However, no such magic has been conjured up for 
+\family typewriter
+libm.lib
+\family default
+!
 \end_layout
 
 \begin_layout Subsubsection
@@ -43450,6 +43663,47 @@ status collapsed
 \end_inset
 
  Frame pointer will be omitted when the function uses no local variables.
+\end_layout
+
+\begin_layout Description
+-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-use-non-free
+\begin_inset Index
+status collapsed
+
+\begin_layout Plain Layout
+PIC16!Options!-
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+/
+\end_layout
+
+\end_inset
+
+-use-non-free
+\end_layout
+
+\end_inset
+
+ Make non-free device headers and libraries available in the compiler's
+ search paths (implicit -I and -L options).
 \end_layout
 
 \begin_layout Subsection
@@ -47349,6 +47603,61 @@ unimplemented pointer type
 \noindent
 Generic pointer are read and written with a set of library functions which
  read/write 1, 2, 3, 4 bytes.
+\end_layout
+
+\begin_layout Subsection
+Configuration Bits
+\end_layout
+
+\begin_layout Standard
+Configuration bits (also known as fuses) can be configured using `
+\family typewriter
+__code
+\family default
+' and `
+\family typewriter
+__at
+\family default
+' modifiers.
+ Possible options should be ANDed and can be found in your processor header
+ file.
+ Example for PIC18F2550:
+\end_layout
+
+\begin_layout LyX-Code
+
+\family typewriter
+#include <pic18fregs.h> //Contains config addresses and options
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+static __code char __at(__CONFIG1L) configword1l = 
+\begin_inset Newline newline
+\end_inset
+
+  _USBPLL_CLOCK_SRC_FROM_96MHZ_PLL_2_1L &
+\end_layout
+
+\begin_layout LyX-Code
+
+\family typewriter
+  _PLLDIV_NO_DIVIDE__4MHZ_INPUT__1L & [...];
+\begin_inset Newline newline
+\end_inset
+
+static __code char __at(__CONFIG1H) configword1h = [...];
+\begin_inset Newline newline
+\end_inset
+
+static __code char __at(__CONFIG2L) configword2l = [...];
+\begin_inset Newline newline
+\end_inset
+
+//More configuration words
 \end_layout
 
 \begin_layout Subsection

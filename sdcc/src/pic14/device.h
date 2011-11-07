@@ -31,6 +31,8 @@
 
 #include "common.h"
 
+#define MAX_NUM_CONFIGS 16
+
 /*
  * Imports
  */
@@ -66,12 +68,14 @@ typedef struct PIC_device {
 	int defMaxRAMaddrs;         /* default maximum value for a data address */
 	int bankMask;               /* Bitmask that is ANDed with address to extract banking bits */
 	//  int hasAliasedRAM:1;        /* True if there are bank independent registers */
-	int hasSecondConfigReg;     /* True if there is a second configuration register */
+	int num_configs;                /* number of config words for this device */
+	int config[MAX_NUM_CONFIGS];    /* addresses of config word(s) */
 	
 	int programMemSize;         /* program memory size in words - for device listing only */
 	int dataMemSize;            /* data (RAM) memory size in bytes - for device listing only */
 	int eepromMemSize;          /* EEPROM memory size in bytes - for device listing only */
 	int ioPins;                 /* number of I/O pins - for device listing only */
+        int isEnhancedCore;         /* enhanced cores (19f1934) feature automatic context saving */
 
 } PIC_device;
 

@@ -2028,7 +2028,7 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
               break;
             }
           }
-        else if (!IS_GB && aop->type == AOP_IY) {
+        else if (!IS_GB && aop->type == AOP_IY && !(pairId == PAIR_IY && aop->size < 2)) {
           /* Instead of fetching relative to IY, just grab directly
              from the address IY refers to */
           emit2 ("ld %s,(%s)", _pairs[pairId].name, aopGetLitWordLong (aop, offset, FALSE));
@@ -2096,7 +2096,11 @@ fetchPairLong (PAIR_ID pairId, asmop *aop, const iCode *ic, int offset)
             /* The Rabbit has the ld hl, n (sp) and ld hl, n (ix) instructions. */
             int fp_offset = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
             int sp_offset = fp_offset + _G.stack.pushed;
-            if (IS_R2K && aop->size - offset >= 2 && aop->type == AOP_STK && (pairId == PAIR_HL || pairId == PAIR_IY) &&
+            if (IS_GB && aop->size - offset >= 2 && aop->type == AOP_STK && pairId == PAIR_HL && abs (sp_offset) <= 127)
+              {
+                emit2 ("ld hl, %d (sp)", sp_offset); /* Fetch relative to stack pointer. */
+              }
+            else if (IS_R2K && aop->size - offset >= 2 && aop->type == AOP_STK && (pairId == PAIR_HL || pairId == PAIR_IY) &&
               (abs (fp_offset) <= 127 && pairId == PAIR_HL || abs (sp_offset) <= 127))
               {
                 if (abs (sp_offset) <= 127)
@@ -9747,9 +9751,9 @@ genBuiltInMemcpy (const iCode *ic, int nParams, operand **pparams)
   operand *from, *to, *count;
 
   wassertl (nParams == 3, "Built-in memcpy() must have three parameters");
-  to = pparams[2];
+  count = pparams[2];
   from = pparams[1];
-  count = pparams[0];
+  to = pparams[0];
 
   _saveRegsForCall (ic, 0, TRUE);
 
@@ -9764,6 +9768,59 @@ genBuiltInMemcpy (const iCode *ic, int nParams, operand **pparams)
   freeAsmop (from, NULL, ic);
 
   spillPair (PAIR_HL);
+
+  _restoreRegsAfterCall ();
+
+  /* No need to assign result - would have used ordinary memcpy() call instead. */
+}
+
+static void
+genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
+{
+  operand *dst, *c, *n;
+  bool direct_c;
+
+  wassertl (nParams == 3, "Built-in memset() must have three parameters");
+
+  dst = pparams[0];
+  c = pparams[1];
+  n = pparams[2];
+
+  _saveRegsForCall (ic, 0, TRUE);
+
+  aopOp (c, ic, FALSE, FALSE);
+  aopOp (dst, ic, FALSE, FALSE);
+  aopOp (n, ic, FALSE, FALSE);
+
+  wassertl (AOP_TYPE (n) == AOP_LIT, "Last parameter to builtin memset() must be literal.");
+  if (!(ulFromVal (AOP (n)->aopu.aop_lit)))
+    goto done;
+
+  direct_c = (AOP_TYPE (c) == AOP_LIT || AOP_TYPE (c) == AOP_REG && AOP (c)->aopu.aop_reg[1]->rIdx != H_IDX && AOP (c)->aopu.aop_reg[1]->rIdx != L_IDX);
+
+  if (!direct_c)
+    cheapMove(ASMOP_A, 0, AOP (c), 0);
+  fetchPair (PAIR_HL, AOP (dst));
+  if (!regalloc_dry_run)
+    emit2 ( "ld (hl), %s", aopGet(direct_c ? AOP (c) : ASMOP_A, 0, FALSE));
+  regalloc_dry_run_cost += (direct_c && AOP_TYPE (c) == AOP_LIT) ? 2 : 1;
+  if (ulFromVal (AOP (n)->aopu.aop_lit) <= 1)
+    goto done;
+
+  emit2 ("ld e, l");
+  emit2 ("ld d, h");
+  emit2 ("inc de");
+  regalloc_dry_run_cost += 3;
+  emit2 ("ld bc, #%d", ulFromVal (AOP (n)->aopu.aop_lit) - 1);
+  emit2 ("ldir");
+  regalloc_dry_run_cost += 5;
+
+done:
+  spillPair (PAIR_HL);
+
+  freeAsmop (n, NULL, ic->next->next);
+  freeAsmop (c, NULL, ic->next);
+  freeAsmop (dst, NULL, ic);
 
   _restoreRegsAfterCall ();
 
@@ -9791,6 +9848,10 @@ genBuiltIn (iCode *ic)
     if (!strcmp(bif->name, "__builtin_memcpy"))
       {
         genBuiltInMemcpy(bi_iCode, nbi_parms, bi_parms);
+      }
+    else if (!strcmp(bif->name, "__builtin_memset"))
+      {
+        genBuiltInMemset(bi_iCode, nbi_parms, bi_parms);
       }
     else
       {

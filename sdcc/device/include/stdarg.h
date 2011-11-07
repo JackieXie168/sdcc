@@ -2,6 +2,7 @@
    stdarg.h - ANSI macros for variable parameter list
 
    Copyright (C) 2000, Michael Hope
+   Copyright (C) 2011, Philipp Klaus Krause pkk@spth.de
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -55,6 +56,7 @@ typedef unsigned char __data * va_list;
 
 #endif
 
-#define va_end(marker) marker = (va_list) 0;
+#define va_copy(dest, src)      { dest = src; }
+#define va_end(marker)          { marker = (va_list) 0; };
 
 #endif
