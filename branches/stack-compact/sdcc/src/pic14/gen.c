@@ -37,6 +37,7 @@
  * routines may be reusable, will have to see.
  */
 
+#include "device.h"
 #include "gen.h"
 #include "glue.h"
 
@@ -2311,22 +2312,30 @@ static void genFunction (iCode *ic)
     pic14_inISR = 0;
     if (IFFUNC_ISISR(sym->type)) {
         pic14_inISR = 1;
-        emitpcode(POC_MOVWF,  popCopyReg(&pc_wsave));
-        emitpcode(POC_SWAPFW, popCopyReg(&pc_status));
-        /* XXX: Why? Does this assume that ssave and psave reside
-         * in a shared bank or bank0? We cannot guarantee the
-         * latter...
-         */
-        emitpcode(POC_CLRF,   popCopyReg(&pc_status));
-        emitpcode(POC_MOVWF,  popCopyReg(&pc_ssave));
-        //emitpcode(POC_MOVWF,  popGetExternal("___sdcc_saved_status",1 ));
-        emitpcode(POC_MOVFW,  popCopyReg(&pc_pclath));
-        /* during an interrupt PCLATH must be cleared before a goto or call statement */
-        emitpcode(POC_CLRF,   popCopyReg(&pc_pclath));
-        emitpcode(POC_MOVWF,  popCopyReg(&pc_psave));
-        //emitpcode(POC_MOVWF,  popGetExternal("___sdcc_saved_pclath", 1));
-        emitpcode(POC_MOVFW,  popCopyReg(&pc_fsr));
-        emitpcode(POC_MOVWF,  popGetExternal("___sdcc_saved_fsr", 1));
+        if (pic14_getPIC()->isEnhancedCore) {
+            /* 
+             * Enhanced CPUs have automatic context saving for W,
+             * STATUS, BSR, FSRx, and PCLATH in shadow registers.
+             */
+            emitpcode(POC_CLRF,   popCopyReg(&pc_pclath));
+        } else {
+            emitpcode(POC_MOVWF,  popCopyReg(&pc_wsave));
+            emitpcode(POC_SWAPFW, popCopyReg(&pc_status));
+            /* XXX: Why? Does this assume that ssave and psave reside
+             * in a shared bank or bank0? We cannot guarantee the
+             * latter...
+             */
+            emitpcode(POC_CLRF,   popCopyReg(&pc_status));
+            emitpcode(POC_MOVWF,  popCopyReg(&pc_ssave));
+            //emitpcode(POC_MOVWF,  popGetExternal("___sdcc_saved_status",1 ));
+            emitpcode(POC_MOVFW,  popCopyReg(&pc_pclath));
+            /* during an interrupt PCLATH must be cleared before a goto or call statement */
+            emitpcode(POC_CLRF,   popCopyReg(&pc_pclath));
+            emitpcode(POC_MOVWF,  popCopyReg(&pc_psave));
+            //emitpcode(POC_MOVWF,  popGetExternal("___sdcc_saved_pclath", 1));
+            emitpcode(POC_MOVFW,  popCopyReg(&pc_fsr));
+            emitpcode(POC_MOVWF,  popGetExternal("___sdcc_saved_fsr", 1));
+        } // if
 
         pBlockConvert2ISR(pb);
         pic14_hasInterrupt = 1;
@@ -2479,17 +2488,21 @@ registers :-) */
             debugFile->writeEndFunction (currFunc, ic, 1);
         }
 
-        emitpcode(POC_MOVFW,  popGetExternal("___sdcc_saved_fsr", 1));
-        emitpcode(POC_MOVWF,  popCopyReg(&pc_fsr));
-        //emitpcode(POC_MOVFW,  popGetExternal("___sdcc_saved_pclath", 1));
-        emitpcode(POC_MOVFW,  popCopyReg(&pc_psave));
-        emitpcode(POC_MOVWF,  popCopyReg(&pc_pclath));
-        emitpcode(POC_CLRF,   popCopyReg(&pc_status)); // see genFunction
-        //emitpcode(POC_SWAPFW, popGetExternal("___sdcc_saved_status", 1));
-        emitpcode(POC_SWAPFW, popCopyReg(&pc_ssave));
-        emitpcode(POC_MOVWF,  popCopyReg(&pc_status));
-        emitpcode(POC_SWAPF,  popCopyReg(&pc_wsave));
-        emitpcode(POC_SWAPFW, popCopyReg(&pc_wsave));
+        if (pic14_getPIC()->isEnhancedCore) {
+            /* Nothing to do. */
+        } else {
+            emitpcode(POC_MOVFW,  popGetExternal("___sdcc_saved_fsr", 1));
+            emitpcode(POC_MOVWF,  popCopyReg(&pc_fsr));
+            //emitpcode(POC_MOVFW,  popGetExternal("___sdcc_saved_pclath", 1));
+            emitpcode(POC_MOVFW,  popCopyReg(&pc_psave));
+            emitpcode(POC_MOVWF,  popCopyReg(&pc_pclath));
+            emitpcode(POC_CLRF,   popCopyReg(&pc_status)); // see genFunction
+            //emitpcode(POC_SWAPFW, popGetExternal("___sdcc_saved_status", 1));
+            emitpcode(POC_SWAPFW, popCopyReg(&pc_ssave));
+            emitpcode(POC_MOVWF,  popCopyReg(&pc_status));
+            emitpcode(POC_SWAPF,  popCopyReg(&pc_wsave));
+            emitpcode(POC_SWAPFW, popCopyReg(&pc_wsave));
+        } // if
         addpCode2pBlock(pb,newpCodeLabel("END_OF_INTERRUPT",-1));
         emitpcodeNULLop(POC_RETFIE);
     }
@@ -5167,11 +5180,64 @@ static void SetIrp(operand *result)
 static void
 setup_fsr (operand *ptr)
 {
-  mov2w_op(ptr, 0);
-  emitpcode(POC_MOVWF, popCopyReg (&pc_fsr));
+  if (pic14_getPIC()->isEnhancedCore)
+    {
+      mov2w_op(ptr, 0);
+      emitpcode(POC_MOVWF, popCopyReg (&pc_fsr0l));
+      mov2w_op(ptr, 1);
+      emitpcode(POC_MOVWF, popCopyReg (&pc_fsr0h));
+    }
+  else
+    {
+      mov2w_op(ptr, 0);
+      emitpcode(POC_MOVWF, popCopyReg (&pc_fsr));
 
-  /* also setup-up IRP */
-  SetIrp (ptr);
+      /* also setup-up IRP */
+      SetIrp (ptr);
+    }
+}
+
+static void
+inc_fsr (int delta)
+{
+  if (0 == delta) {
+      /* Nothing to do. */
+      return;
+  } // if
+
+  if (pic14_getPIC()->isEnhancedCore)
+    {
+      assert(delta >= -32);
+      assert(delta < 32);
+      /* Hack: Turn this into a PCI (not that easy due to the argument structure). */
+      addpCode2pBlock(pb,newpCodeAsmDir("ADDFSR", "FSR0, %d", delta));
+    }
+  else
+    {
+      switch (delta)
+        {
+          case 1:
+                emitpcode(POC_INCF, popCopyReg(&pc_fsr));
+                break;
+          case -1:
+                emitpcode(POC_DECF, popCopyReg(&pc_fsr));
+                break;
+          case 0:
+                break;
+          default:
+              while (delta > 0)
+                {
+                  inc_fsr (1);
+                  --delta;
+                }
+              while (delta < 0)
+                {
+                  inc_fsr(-1);
+                  ++delta;
+                }
+              break;
+        } // switch
+    } // if
 }
 
 /*-----------------------------------------------------------------*/
@@ -5187,7 +5253,7 @@ emitPtrByteGet (operand *src, int p_type, bool alreadyAddressed)
     case POINTER:
     case FPOINTER:
       if (!alreadyAddressed) setup_fsr (src);
-      emitpcode(POC_MOVFW, popCopyReg (&pc_fsr));
+      emitpcode(POC_MOVFW, popCopyReg (pc_indf));
       break;
 
     case CPOINTER:
@@ -5229,7 +5295,7 @@ emitPtrByteSet (operand *dst, int p_type, bool alreadyAddressed)
     case POINTER:
     case FPOINTER:
       if (!alreadyAddressed) setup_fsr (dst);
-      emitpcode(POC_MOVWF, popCopyReg (&pc_fsr));
+      emitpcode(POC_MOVWF, popCopyReg (pc_indf));
       break;
 
     case CPOINTER:
@@ -5285,7 +5351,7 @@ genUnpackBits (operand *result, operand *left, int ptype, iCode *ifx)
           else
             {
               setup_fsr (left);
-              pcop = newpCodeOpBit (pc_indf.pcop.name, bstr, 0);
+              pcop = newpCodeOpBit (pc_indf->pcop.name, bstr, 0);
             }
           emitpcode ((rIfx.condition) ? POC_BTFSC : POC_BTFSS, pcop);
           emitpcode (POC_GOTO, popGetLabel (rIfx.lbl->key));
@@ -5481,14 +5547,16 @@ static void genNearPointerGet (operand *left,
             if (direct)
                 emitpcode(POC_MOVWF,popGet(AOP(left),0));
             else
-                emitpcode(POC_MOVFW,popCopyReg(&pc_indf));
+                emitpcode(POC_MOVFW,popCopyReg(pc_indf));
             if (AOP_TYPE(result) == AOP_LIT) {
                 emitpcode(POC_MOVLW,popGet(AOP(result),offset));
             } else {
                 emitpcode(POC_MOVWF,popGet(AOP(result),offset));
             }
             if (size && !direct)
-                emitpcode(POC_INCF,popCopyReg(&pc_fsr));
+              {
+                inc_fsr(1);
+              }
             offset++;
         }
     }
@@ -5498,6 +5566,8 @@ static void genNearPointerGet (operand *left,
         /* we had to allocate for this iCode */
         DEBUGpic14_emitcode ("; ***","%s  %d",__FUNCTION__,__LINE__);
         freeAsmop(NULL,aop,ic,TRUE);
+    } else if (!direct) {
+        /* nothing to do */
     } else {
         /* we did not allocate which means left
         already in a pointer register, then
@@ -5510,8 +5580,7 @@ static void genNearPointerGet (operand *left,
             ( OP_SYMBOL(left)->liveTo > ic->seq ||
             ic->depth )) {
             int size = AOP_SIZE(result) - 1;
-            while (size--)
-                emitpcode(POC_DECF, popCopyReg(&pc_fsr));
+            inc_fsr(-size);
         }
     }
 
@@ -5758,7 +5827,7 @@ static void genPackBits(sym_link *etype,operand *result,operand *right,int p_typ
     case POINTER:
     case FPOINTER:
       setup_fsr (result);
-      emitpcode(lit?POC_BSF:POC_BCF,newpCodeOpBit(PCOP(&pc_indf)->name,bstr,0));
+      emitpcode(lit?POC_BSF:POC_BCF,newpCodeOpBit(PCOP(pc_indf)->name,bstr,0));
       break;
 
     case CPOINTER:
@@ -6035,7 +6104,7 @@ static void genNearPointerSet (operand *right,
         while (size--) {
             char *l = aopGet(AOP(right),offset,FALSE,TRUE);
             if (*l == '@' ) {
-                emitpcode(POC_MOVFW,popCopyReg(&pc_indf));
+                emitpcode(POC_MOVFW,popCopyReg(pc_indf));
             } else {
                 if (AOP_TYPE(right) == AOP_LIT) {
                     emitpcode(POC_MOVLW,popGet(AOP(right),offset));
@@ -6045,10 +6114,10 @@ static void genNearPointerSet (operand *right,
                 if (direct)
                     emitpcode(POC_MOVWF,popGet(AOP(result),0));
                 else
-                    emitpcode(POC_MOVWF,popCopyReg(&pc_indf));
+                    emitpcode(POC_MOVWF,popCopyReg(pc_indf));
             }
             if (size && !direct)
-                emitpcode(POC_INCF,popCopyReg(&pc_fsr));
+              inc_fsr(1);
             offset++;
         }
     }
@@ -6058,6 +6127,8 @@ static void genNearPointerSet (operand *right,
     if (aop) {
         /* we had to allocate for this iCode */
         freeAsmop(NULL,aop,ic,TRUE);
+    } else if (!direct) {
+        /* nothing to do */
     } else {
         /* we did not allocate which means left
         already in a pointer register, then
@@ -6070,8 +6141,7 @@ static void genNearPointerSet (operand *right,
             ( OP_SYMBOL(result)->liveTo > ic->seq ||
             ic->depth )) {
             int size = AOP_SIZE(right) - 1;
-            while (size--)
-                emitpcode(POC_DECF, popCopyReg(&pc_fsr));
+            inc_fsr(-size);
         }
     }
 

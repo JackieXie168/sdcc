@@ -2,7 +2,7 @@
    string.h - ISO header for string library functions
 
    Copyright (C) 1998, Sandeep Dutta
-   Copyright (C) 2009, Philipp Klaus Krause . pkk@spth.de
+   Copyright (C) 2009-2011, Philipp Klaus Krause pkk@spth.de
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -34,8 +34,8 @@
 # define NULL (void *)0
 #endif
 
-#ifndef _SIZE_T_DEFINED
-# define _SIZE_T_DEFINED
+#ifndef __SIZE_T_DEFINED
+# define __SIZE_T_DEFINED
   typedef unsigned int size_t;
 #endif
 
@@ -97,8 +97,9 @@ extern size_t strlen (const char *s);
 extern void __xdata * memcpyx(void __xdata *, void __xdata *, int) __naked;
 #endif
 
-#ifdef SDCC_z80
+#if defined(SDCC_z80) || defined(SDCC_z180) || defined(SDCC_r2k)
 #define memcpy(dst, src, n) __builtin_memcpy(dst, src, n)
+#define memset(dst, c, n) __builtin_memset(dst, c, n)
 #endif
 
 #endif

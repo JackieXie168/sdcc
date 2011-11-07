@@ -1,3 +1,355 @@
+2011-11-05 Borut Razem <borut.razem AT gmail.com>
+
+	* src/port.mk: fixed bug #3401455: Missing dependency
+	* .version, sdcc.spec, doc/sdccman.lyx, doc/INSTALL.txt:
+	  changed sdcc version to 3.1.0
+	* doc/README.txt, support/scripts/sdcc.nsi: updated, small textual fix
+
+2011-11-05 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* device/include/mcs51/cc2430.h: applied patch 3114002, thanks to
+	  George Oikonomou
+
+2011-11-05 Raphael Neider <rneider AT web.de>
+
+	* device/include/pic14/pic14devices.txt: add descriptions for a number
+	  of devices with enhanced cores; support for most of them remains
+	  incomplete due to lacking support by gputils
+	* device/non-free/include/pic14/pic16f1826.h,
+	* device/non-free/include/pic14/pic16f1827.h,
+	* device/non-free/include/pic14/pic16f1933.h,
+	* device/non-free/lib/pic14/libdev/Makefile.in,
+	* device/non-free/lib/pic14/libdev/devices.txt,
+	* device/non-free/lib/pic14/libdev/pic16f1826.c,
+	* device/non-free/lib/pic14/libdev/pic16f1827.c,
+	* device/non-free/lib/pic14/libdev/pic16f1933.c: add support for some
+	  of the newly described devices; 16f1826/7 libraries are disabled in
+	  the Makefile due to lacking support from gputils
+	* doc/sdccman.lyx: fix list of supported devices
+
+2011-11-04 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/mcs51/ralloc.c (isFree),
+	* src/ds390/ralloc.c (isFree): fixed bug #3400845
+	* src/SDCCast.c (decorateTree),
+	* src/mcs51/gen.c (assignResultValue): fixed bug #3419769
+	* sdas/linksrc/lkmain.c (main): fixed bug #3362385
+	* src/ds390/ralloc.c (packRegisters): fixed bug #3432159
+	* support/regression/tests/condopptr.c: enable for all targets
+
+2011-11-03 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/sdcc.nsi: updated to support pic14 enhanced devices
+
+2011-11-02 Raphael Neider <rneider AT web.de>
+
+	* device/include/pic14/pic14devices.txt: prevent SDCC from assuming
+	  a single data bank by specifying more memmap records (per device)
+
+2011-11-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCast.c (decorateType): allow array/integral type
+	  combination in conditional operator (will promote to pointer)
+	* support/regression/tests/condopptr.c: new regression
+	  test to check pointer operand cases in conditional operator
+
+2011-11-01 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/gen.c (inc_fsr): new code to handle FSR{,0} increments,
+	  (emitPtrByteGet,emitPtrByteSet): fix pointer derefence,
+	  (genNearPointerGet,genNearPointerSet): fixed for enhanced cores,
+	  really closes #3431024
+	* src/pic14/pcode.c (pCodeInitRegisters):
+	  declare all "core registers" to reside in all banks to avoid
+	  unnecessary BANKSELs
+	* doc/sdccman.lyx: document definition of config words and the use
+	  of libsdcce.lib and libme.lib for enhanced pic14 devices
+
+2011-11-01 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/main.c (_pic14_do_link):
+	  link with libsdcce.lib for enhanced devices
+
+	* device/lib/Makefile.in:
+	  find, copy, and rename enhanced core libraries as well
+
+	* device/lib/pic14/NEWS:
+	  document structural changes and support for enhanced cores
+
+	* device/lib/pic14/Makefile.am,
+	* device/lib/pic14/Makefile.common,
+	* device/lib/pic14/Makefile.common.in (removed),
+	* device/lib/pic14/Makefile.rules (removed),
+	* device/lib/pic14/Makefile.subdir (removed),
+	* device/lib/pic14/configure.in:
+	  switch pic14 library to Autotools-based build system,
+	  support --enable-new-pics
+
+	* device/lib/pic14/libm/Makefile.am,
+	* device/lib/pic14/libsdcc/Makefile.in (removed),
+	* device/lib/pic14/libsdcc/enhanced/Makefile.am,
+	* device/lib/pic14/libsdcc/regular/Makefile.am:
+	  build separate libm and libsdcc for regular and enhanced cores
+
+	* device/lib/pic14/libsdcc/{ => regular/,enhanced/}_gptrget{1,2,3,4}.S,
+	* device/lib/pic14/libsdcc/{ => regular/,enhanced/}_gptrput{1,2,3,4}.S,
+	* device/lib/pic14/libsdcc/{ => regular/,enhanced/}macros.inc:
+	  separated implementation of generic pointer routines and
+	  reimplemented for enhanced devices
+
+	* device/lib/pic14/libsdcc/{ => regular/}shadowregs.c:
+	  moved to be included only in the non-enhanced devices' libsdcc.lib
+
+	* device/{ => non-free/}lib/pic14/libdev/devices.txt,
+	* device/{ => non-free/}lib/pic14/libdev/pic14ports.txt:
+	  make libdev/ more self-contained
+
+	* device/non-free/lib/pic14/libdev/mkall.sh:
+	  interactively update device library files (.c and .h)
+
+	* device/non-free/include/pic14/pic12f635.h,
+	* device/non-free/include/pic14/pic16f616.h,
+	* device/non-free/include/pic14/pic16f688.h,
+	* device/non-free/include/pic14/pic16f785.h,
+	* device/non-free/include/pic14/pic16f913.h,
+	* device/non-free/include/pic14/pic16f914.h,
+	* device/non-free/include/pic14/pic16f916.h,
+	* device/non-free/include/pic14/pic16f917.h,
+	* device/non-free/include/pic14/pic16hv616.h,
+	* device/non-free/lib/pic14/libdev/pic12f1822.c,
+	* device/non-free/lib/pic14/libdev/pic16f616.c,
+	* device/non-free/lib/pic14/libdev/pic16f688.c,
+	* device/non-free/lib/pic14/libdev/pic16f785.c,
+	* device/non-free/lib/pic14/libdev/pic16f886.c,
+	* device/non-free/lib/pic14/libdev/pic16f887.c,
+	* device/non-free/lib/pic14/libdev/pic16f913.c,
+	* device/non-free/lib/pic14/libdev/pic16f914.c,
+	* device/non-free/lib/pic14/libdev/pic16f916.c,
+	* device/non-free/lib/pic14/libdev/pic16f917.c,
+	* device/non-free/lib/pic14/libdev/pic16hv616.c:
+	  updated from recent gputils' headers
+
+	* device/non-free/include/pic14/pic16f193{4,6,7}.h,
+	* device/non-free/lib/pic14/libdev/Makefile.in,
+	* device/non-free/lib/pic14/libdev/devices.txt,
+	* device/non-free/lib/pic14/libdev/pic16f193{4,6,7}.c:
+	  add support for 16f1934/16f1936/16f1937 devices
+
+	* device/lib/pic14/Makefile.in,
+	* device/lib/pic14/aclocal.m4,
+	* device/lib/pic14/config.h.in,
+	* device/lib/pic14/configure,
+	* device/lib/pic14/depcomp,
+	* device/lib/pic14/install-sh,
+	* device/lib/pic14/libm/Makefile.in,
+	* device/lib/pic14/libsdcc/enhanced/Makefile.in,
+	* device/lib/pic14/libsdcc/regular/Makefile.in,
+	* device/lib/pic14/missing,
+	* device/lib/pic16/configure,
+	* device/non-free/lib/pic14/configure,
+	* device/non-free/lib/pic16/configure:
+	  automatically (re)generated files
+
+2011-10-30 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCsymt.c (computeType): fixed bug #3431210
+
+2011-10-31 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/device.c (init_pic): reformatted,
+	  fixup enhanced cores' name for INDF
+	* src/pic14/pcode.c, src/pic14/pcode.h, src/pic14/ralloc.h:
+	  provide indirect memory access registers for enhanced cores
+	* src/pic14/gen.c (setup_fsr):
+	  setup FSR0L and FSR0H on enhanced cores,
+	  fix access to INDF vs. INDF0, closes #3431024
+
+2011-10-30 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/device.c, src/pic14/device.h,
+	  device/include/pic14/pic14devices.txt:
+	  declare enhanced cores as such
+	* src/pic14/gen.c:
+	  do not save/restore W, STATUS, BSR, FSRx, or PCLATH around
+	  interrupts on enhanced devices, as these registers will be
+	  saved automatically and FSR is not present on these devices
+
+2011-10-30 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCast.c (processParams): fixed bug #3424385
+
+2011-10-29 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* sdas/linksrc/lkmain.c (main): fixed banking, bug 3420365
+	* src/SDCCast.c: cosmetics
+
+2011-10-25 Borut Razem <borut.razem AT gmail.com>
+
+	* configure.in, configure, Makefile.in, device/lib/z180/Makefile.in,
+	  device/lib/z180/Makefile, device/lib/z80/Makefile.in,
+	  device/lib/gbz80/Makefile.in, device/lib/ds390/Makefile.in,
+	  device/lib/Makefile.in, device/lib/ds400/Makefile.in,
+	  device/lib/ds400/ds400rom.c, device/lib/mcs51/Makefile.in,
+	  device/lib/r2k/Makefile.in, device/lib/hc08/Makefile.in,
+	  device/non-free/lib/Makefile.in, all.vcxproj,
+	  doc/sdccman.lyx, sdcc.sln, support/scripts/sdcc.nsi:
+	  asranlib renamed to sdranlib
+	* sdas/asranlib/*: sdas/asranlib moved to support/sdranlib
+
+2011-10-23 Raphael Neider <rneider AT web.de>
+
+	* device/include/pic14/pic14devices.txt:
+	  fix config word addresses for 12f1822/3, add 16f1934/6/7 family
+
+2011-10-21 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/device.c, src/pic14/device.h, src/pic14/ralloc.c:
+	  rewrite config word handling to support locations other than
+	  0x2007 and 0x2008 (16f1936 has config words at 0x8007, 0x8008)
+	* device/include/pic14/pic14devices.txt:
+	  replace confsiz directive with list of config word addresses
+
+2011-10-20 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* device/include/string.h,
+	  device/lib/_memcpy.c,
+	  device/lib/_memset.c:
+	  Reenable built-in memset() for z80, enable it and built-in memcpy() for z180 and r2k.
+
+2011-10-20 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* Makefile.common.in:
+	  Handle OPT_DISABLE_GBZ80.
+
+2011-10-20 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/string.h:
+	  Disable built-in memset until the library build problem is fixed.
+
+2011-10-19 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCopt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  device/include/string.h,
+	  support/regression/tests/memory.c:
+	  Built-in memset() for z80, z180 and r2k.
+
+2011-10-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Use ld hl, n (sp) on the gbz80.
+	* src/z80/ralloc2.cc:
+	  When in doubt, try to honour register keyword.
+
+2011-10-19 Borut Razem <borut.razem AT gmail.com>
+
+	* Makefile.common.in: added OPT_DISABLE_Z180, OPT_DISABLE_R2K
+
+2011-10-18 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/sdccman.lyx: changed MS Visual C++ 6.0 to MS Visual C++ 2010,
+	  reverted to LyX version 1.6.7 format, as prpbosed by Robert Larice
+	* support/cpp/sdcpp-opts.c: fixed bug #3388478:
+	  Preprocessor Error when Invoking sdcc with -E/-M/-MM and -o
+
+2011-10-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* Makefile.in:
+	  Fixed bug #3424968.
+
+2011-10-17 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/iso646.h,
+	  support/regression/tests/iso646.c:
+	  Added macros required by C99  (this header is now C99-compliant).
+	* device/include/limits.h:
+	  Removed UCHAR_MIN, added macros for long long (this header is now C99-compliant).
+	* device/include/stdint.h:
+	  Code cleanup, added macros for 64 bit integers, wchar_t and wint_t (this header is now C99-compliant except for intmax_t and uintmax_t having less than 64 bits).
+	* device/include/string.h:
+	  Renamed namespace-polluting _SIZE_T_DEFINED.
+	* device/include/stddef.h:
+	  Renamed namespace-polluting _SIZE_T_DEFINED, added ptrdiff_t and wchar_t (this header is now C99-compliant).
+	* device/include/stdio.h:
+	  Renamed namespace-polluting _SIZE_T_DEFINED.
+	* device/include/stdarg.h,
+	  support/regression/tests/vaargs.c:
+	  Fixed va_end, added va_copy (this header is now C99-compliant).
+
+2011-10-16 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/sdcc.nsi: added dedication to Dennis M. Ritchie
+	* support/cpp/c-ppoutput.c:
+	  fixed bug #3408654: SDCC shows wrong line number in warning 94:
+	  disabled # LINE directive generation in __asm __endasm block
+
+2011-10-16 Raphael Neider <rneider AT web.de>
+
+	* device/include/pic16/i2c.h,
+	* device/lib/pic16/libio/i2c/i2cwritec.c:
+	  addressed issues from #3413443
+	* device/include/pic16/adc.h,
+	* device/lib/pic16/libio/adc/adcopen.c:
+	  addressed issues from #3409666
+
+2011-10-16 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/collate-results.py,
+	  support/regression/compact-results.py: fixed bug #3413437
+
+2011-10-15 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  support/regression/tests/bug3424150.c:
+	  Fixed bug #3424150.
+
+2011-10-15 Philipp Klaus Krause <pkk AT spth.de>
+
+	* doc/sdccman.lyx:
+	  Mentioned z180 and r2k ports and long long data type in manual.
+
+2011-10-14 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/sdcc.nsi: remove include/asm/r2k directoriy
+	  during uninstallation
+	* */*.dsw, */*.dsw: removed obsolete VS6 project files
+	* support/Util: renamed to support/util
+
+2011-10-13 Borut Razem <borut.razem AT gmail.com>
+
+	* .version, doc/sdccman.lyx: bumped version to 3.0.6
+	* src/SDCCicode.c:
+	  disable -O2 optimization for i386 Linux and mingw platforms
+	  (solaris i386 is OK);
+	  see patch #3285611: Workaround gcc 4.6.0 bug with sdcc 3.0.0
+	* src/SDCCval.c:
+	  Microsoft C compiler doesn't support hexadecimal floating-point
+	  literals
+
+2011-10-12 Borut Razem <borut.razem AT gmail.com>
+
+	* device/include/Makefile.in:
+	  fixed detection if files with the given extension exist;
+	  specially treat z80 family: z180, r2k and gbz80 targets
+	* support/scripts/sdcc.nsi: added Rabbit 2000 support
+	* sdas/asrab/asrab.vcxproj, sdas/asrab/asrab.vcxproj.filters,
+	  sdcc.sln, src/src.vcxproj, src/src.vcxproj.filters,
+	  src/z80/z80.vcxproj, src/z80/z80.vcxproj.filters:
+	  added sdasrab assembler to the project
+	* debugger/mcs51/simi.c: cygwin doesn't support O_ASYNC
+
+2011-10-11 Borut Razem <borut.razem AT gmail.com>
+
+	* device/include/Makefile.in: install/copy only existing files
+	* src/SDCCicode.c: disable -O2 optimization for all i386 platforms;
+	  see patch #3285611: Workaround gcc 4.6.0 bug with sdcc 3.0.0
+
+2011-10-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* configure.in:
+	  Fixed bug #3413688.
+
 2011-10-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* sdas/asrab/rabbit.h,
@@ -12,7 +364,9 @@
 	* src/z80/main.c,
 	  src/z80/main.c,
 	  src/z80/z80.h:
-	  Fix code generation for handling of rematerialization by the new register allocator, enable it for the ports with exact cost function and remove the option.
+	  Fix code generation for handling of rematerialization by the new
+	  register allocator, enable it for the ports with exact cost function
+	  and remove the option.
 
 2011-10-10 Borut Razem <borut.razem AT gmail.com>
 
@@ -501,9 +855,53 @@
 	* src/SDCC.y (abstract_declarator2): fixed bug 3190029
 	* support/regression/tests/bug3190029.c: new, added
 
-2011-09-20 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2011-09-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* Merge from trunk.
+	* src/pic16/gen.c,
+	  src/pic14/gen.c,
+	  device/include/stdbool.h,
+	  support/regression/bool.c,
+	  src/SDCCsymt.c,
+	  src/SDCCast.c:
+	  _Bool support for the pics.
+
+2011-09-19 Raphael Neider <rneider AT web.de>
+
+	* device/lib/pic16/libio/adc/adcopen.c:
+	  suppress 'pcfg unused' compiler warning
+
+	* device/lib/pic16/Makefile.common
+	  device/non-free/lib/pic16/Makefile.common:
+	  move -Ipath to AM_CPPFLAGS for use by depmod
+
+	* device/lib/pic16/configure.ac,
+	  device/non-free/lib/pic16/configure.ac:
+	  add --enable-new-pics switch to build support libs for devices added
+	  to gputils only after the 0.13.7 release; by default, only libs for
+	  devices that are supported in gputils 0.13.7 are built to avoid build
+	  failures
+
+	* device/lib/pic16/libio/Makefile.am,
+	  device/non-free/lib/pic16/libdev/Makefile.am:
+	  honor --enable-new-pics switch to include/exclude certain devices
+
+	* doc/sdccman.lyx:
+	  document the new configure switch
+
+	* device/lib/pic16/Makefile.in,
+	* device/lib/pic16/aclocal.m4,
+	* device/lib/pic16/configure,
+	* device/lib/pic16/debug/Makefile.in,
+	* device/lib/pic16/libc/Makefile.in,
+	* device/lib/pic16/libio/Makefile.in,
+	* device/lib/pic16/libm/Makefile.in,
+	* device/lib/pic16/libsdcc/Makefile.in,
+	* device/lib/pic16/startup/Makefile.in,
+	* device/non-free/lib/pic16/Makefile.in,
+	* device/non-free/lib/pic16/aclocal.m4,
+	* device/non-free/lib/pic16/configure,
+	* device/non-free/lib/pic16/libdev/Makefile.in:
+	  regenerated
 
 2011-09-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
@@ -679,9 +1077,12 @@
 	  src/z80/ralloc2.cc:
 	  Preparations for tree-decomposition-based spilllocation allocation.
 
-2011-08-31 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2011-07-31 Maarten Brock <sourceforge.brock AT dse.nl>
 
-	* Merge from trunk.
+	* src/mcs51/gen.c(genEndFunction): added mov PSW removal based on patch
+	  2702889 by Hubert Sack
+	* src/mcs51/ralloc.c: added findAllBankregs, mcs51_allBankregs
+	* src/mcs51/ralloc.h: added mcs51_allBankregs
 
 2011-08-30 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
