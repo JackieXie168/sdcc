@@ -3,7 +3,8 @@
 	* src/SDCCsymt.c,
 	  src/SDCCsymt.h,
 	  src/SDCC.y,
-	  src/SDCC.lex:
+	  src/SDCC.lex,
+	  src/SDCCast.c:
 	  Preparations for named address space support.
 
 2011-11-05 Borut Razem <borut.razem AT gmail.com>

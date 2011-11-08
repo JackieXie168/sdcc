@@ -1783,7 +1783,14 @@ jump_statement
    ;
 
 addressmod
-   : ADDRESSMOD identifier ';'
+   : ADDRESSMOD identifier constant_expr identifier ';' {
+     symbol *sym;
+     if (sym = findSymWithLevel (AddrspaceTab, $4) && sym->level == $4->level)
+       {
+         werrorfl (sym->fileDef, sym->lineDef, E_PREVIOUS_DEF);
+       }
+     addSym (AddrspaceTab, $4, $4->name, $4->level, $4->block, 0);
+   }
    ;
 
 identifier

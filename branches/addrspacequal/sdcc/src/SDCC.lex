@@ -431,7 +431,7 @@ check_type (void)
       && SPEC_TYPEDEF (sym->etype) && findSym(TypedefTab, NULL, yytext))
     return (TYPE_NAME);
   /* check if it is a named address space */
-  else if (findSym(AddrspaceTab, NULL, yytext))
+  else if (findSym (AddrspaceTab, NULL, yytext))
     return (ADDRSPACE_NAME);
   else
     return(IDENTIFIER);
