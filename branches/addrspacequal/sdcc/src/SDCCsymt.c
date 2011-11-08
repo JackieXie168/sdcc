@@ -747,7 +747,6 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   SPEC_ABSA (dest) |= SPEC_ABSA (src);
   SPEC_VOLATILE (dest) |= SPEC_VOLATILE (src);
   SPEC_RESTRICT (dest) |= SPEC_RESTRICT (src);
-#warning merge address space
   SPEC_ADDR (dest) |= SPEC_ADDR (src);
   SPEC_OCLS (dest) = SPEC_OCLS (src);
   SPEC_BLEN (dest) |= SPEC_BLEN (src);
@@ -774,6 +773,11 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   FUNC_INTNO (dest) |= FUNC_INTNO (src);
   FUNC_REGBANK (dest) |= FUNC_REGBANK (src);
   FUNC_ISINLINE (dest) |= FUNC_ISINLINE (src);
+  
+  if (SPEC_ADDRSPACE (src) && SPEC_ADDRSPACE (dest))
+    werror (E_TWO_OR_MORE_STORAGE_CLASSES, name);
+  if (SPEC_ADDRSPACE (src))
+    SPEC_ADDRSPACE (dest) = SPEC_ADDRSPACE (src);
 
   return dest;
 }
