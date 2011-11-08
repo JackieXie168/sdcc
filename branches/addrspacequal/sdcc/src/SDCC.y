@@ -80,7 +80,7 @@ bool uselessDecl = TRUE;
     ast        *asts;      /* expression tree            */
 }
 
-%token <yychar> IDENTIFIER TYPE_NAME
+%token <yychar> IDENTIFIER TYPE_NAME ADDRSPACE_NAME
 %token <val> CONSTANT STRING_LITERAL
 %token SIZEOF TYPEOF OFFSETOF
 %token PTR_OP INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
@@ -88,7 +88,7 @@ bool uselessDecl = TRUE;
 %token <yyint> MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token <yyint> SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token <yyint> XOR_ASSIGN OR_ASSIGN
-%token TYPEDEF EXTERN STATIC AUTO REGISTER CODE EEPROM INTERRUPT SFR SFR16 SFR32
+%token TYPEDEF EXTERN STATIC AUTO REGISTER CODE EEPROM INTERRUPT SFR SFR16 SFR32 ADDRESSMOD
 %token AT SBIT REENTRANT USING  XDATA DATA IDATA PDATA VAR_ARGS CRITICAL
 %token NONBANKED BANKED SHADOWREGS SD_WPARAM
 %token SD_BOOL SD_CHAR SD_SHORT SD_INT SD_LONG SIGNED UNSIGNED SD_FLOAT DOUBLE FIXED16X16 SD_CONST VOLATILE SD_VOID BIT
@@ -109,6 +109,7 @@ bool uselessDecl = TRUE;
 %type <sym> declaration init_declarator_list init_declarator
 %type <sym> declaration_list identifier_list
 %type <sym> declarator2_function_attributes while do for critical
+%type <sym> addressmod
 %type <lnk> pointer type_specifier_list type_specifier_list_ type_specifier type_name
 %type <lnk> storage_class_specifier struct_or_union_specifier function_specifier
 %type <lnk> declaration_specifiers declaration_specifiers_ sfr_reg_bit sfr_attributes
@@ -174,6 +175,7 @@ external_definition
                                allocVariables ($1) ;
                                cleanUpLevel (SymbolTab,1);
                              }
+   | addressmod
    ;
 
 function_definition
@@ -670,6 +672,10 @@ type_specifier
    | RESTRICT  {
                   $$=newLink(SPECIFIER);
                   SPEC_RESTRICT($$) = 1 ;
+               }
+   | ADDRSPACE_NAME {
+                  $$=newLink(SPECIFIER);
+                  SPEC_ADDRSPACE($$) = 1;
                }
    | SD_FLOAT  {
                   $$=newLink(SPECIFIER);
@@ -1774,6 +1780,10 @@ jump_statement
            $$ = newNode(RETURN,NULL,$2);
        }
    }
+   ;
+
+addressmod
+   : ADDRESSMOD identifier ';'
    ;
 
 identifier

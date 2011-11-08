@@ -89,6 +89,7 @@ bucket *StructTab[256];         /* the structure table  */
 bucket *TypedefTab[256];        /* the typedef   table  */
 bucket *LabelTab[256];          /* the Label     table  */
 bucket *enumTab[256];           /* enumerated    table  */
+bucket *AddrspaceTab[256];      /* the named address space table  */
 
 /*------------------------------------------------------------------*/
 /* initSymt () - initialises symbol table related stuff             */
@@ -746,6 +747,7 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   SPEC_ABSA (dest) |= SPEC_ABSA (src);
   SPEC_VOLATILE (dest) |= SPEC_VOLATILE (src);
   SPEC_RESTRICT (dest) |= SPEC_RESTRICT (src);
+#warning merge address space
   SPEC_ADDR (dest) |= SPEC_ADDR (src);
   SPEC_OCLS (dest) = SPEC_OCLS (src);
   SPEC_BLEN (dest) |= SPEC_BLEN (src);
@@ -814,8 +816,9 @@ mergeDeclSpec (sym_link * dest, sym_link * src, const char *name)
   DCL_PTR_CONST (decl) |= SPEC_CONST (spec);
   DCL_PTR_VOLATILE (decl) |= SPEC_VOLATILE (spec);
   DCL_PTR_RESTRICT (decl) |= SPEC_RESTRICT (spec);
+#warning Merge address space
 
-  SPEC_CONST (spec) = SPEC_VOLATILE (spec) = SPEC_RESTRICT (spec) = 0;
+  SPEC_CONST (spec) = SPEC_VOLATILE (spec) = SPEC_RESTRICT (spec) = SPEC_ADDRSPACE (spec) = 0;
 
   lnk = decl;
   while (lnk && !IS_SPEC (lnk->next))
@@ -1683,6 +1686,7 @@ checkSClass (symbol * sym, int isProto)
       werrorfl (sym->fileDef, sym->lineDef, E_BAD_RESTRICT);
       SPEC_RESTRICT (sym->etype) = 0;
     }
+#warning check address space
   t = sym->type;
   while (t)
     {
