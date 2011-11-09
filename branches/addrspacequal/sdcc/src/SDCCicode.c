@@ -783,6 +783,9 @@ newiTempOperand (sym_link * type, char throwType)
       SPEC_SCLS (itmp->etype) = S_REGISTER;
       SPEC_OCLS (itmp->etype) = reg;
     }
+    
+  /* iTemps always live int he default address space */
+  SPEC_ADDRSPACE (itmp->etype) = 0;
 
   op->svt.symOperand = itmp;
   op->key = itmp->key = ++operandKey;

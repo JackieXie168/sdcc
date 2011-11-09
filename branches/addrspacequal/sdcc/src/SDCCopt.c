@@ -1192,11 +1192,11 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
           
           if (left && IS_SYMOP (left) && SPEC_ADDRSPACE (OP_SYMBOL (left)->etype))
-            leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->type);
+            leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->etype);
           if (right && IS_SYMOP (right) && SPEC_ADDRSPACE (OP_SYMBOL (right)->etype))
-            rightaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(right)->type);
+            rightaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(right)->etype);
           if (result && IS_SYMOP (result) && SPEC_ADDRSPACE (OP_SYMBOL (result)->etype))
-            resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->type);
+            resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->etype);
             
           if (leftaddrspace)
             printf("ic %d leftaddrspace %s\n", ic->key, leftaddrspace->name);
