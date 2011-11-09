@@ -1205,7 +1205,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           if (resultaddrspace)
             printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);
             
-          if (leftaddrspace != rightaddrspace)
+          if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
             {
               symbol *source;
               iCode *newic;
