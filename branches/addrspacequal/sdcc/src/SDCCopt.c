@@ -1204,6 +1204,32 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
             printf("ic %d rightaddrspace %s\n", ic->key, rightaddrspace->name);
           if (resultaddrspace)
             printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);
+            
+          if (leftaddrspace != rightaddrspace)
+            {
+              symbol *source;
+              iCode *newic;
+              operand *newop;
+              if (rightaddrspace == resultaddrspace)
+                source = OP_SYMBOL (left);
+              else
+                source = OP_SYMBOL (right);
+              newic = newiCode ('=', 0, rightaddrspace == resultaddrspace ? left : right);
+              IC_RESULT (newic) = newop = newiTempOperand (source->etype, 0);
+              if (rightaddrspace == resultaddrspace)
+                {
+                  IC_LEFT (ic) = newop;
+                  leftaddrspace = 0;
+                }
+              else
+                {
+                  IC_RIGHT (ic) = newop;
+                  rightaddrspace = 0;
+                }
+              newic->filename = filename;
+              newic->lineno = lineno;
+              addiCodeToeBBlock (ebbs[i], newic, ic);
+            }
         }
     }
 }

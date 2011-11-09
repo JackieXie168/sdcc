@@ -3,7 +3,8 @@
 	* src/SDCCsymt.h,
 	  src/SDCC.y,
 	  src/SDCCopt.c,
-	  src/SDCCicode.c:
+	  src/SDCCicode.c
+	  src/z80/ralloc.c:
 	  Preparations for named address space support.
 
 2011-11-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
