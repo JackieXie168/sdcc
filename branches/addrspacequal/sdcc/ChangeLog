@@ -1,5 +1,11 @@
 2011-11-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCsymt.h,
+	  src/SDCC.y:
+	  Preparations for named address space support.
+
+2011-11-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCsymt.c,
 	  src/SDCCsymt.h,
 	  src/SDCC.y,
