@@ -1164,6 +1164,51 @@ miscOpt (eBBlock ** ebbs, int count)
 }
 
 /*-----------------------------------------------------------------*/
+/* separateAddressSpaces - enforce restrictions on bank switching  */
+/* Operands of a singel iCode must may be in at most one           */
+/* named address space. Use temporaries and additional assignments */
+/* to enforce the rule.                                            */
+/*-----------------------------------------------------------------*/
+static void
+separateAddressSpaces (eBBlock ** ebbs, int count)
+{
+  
+  int i;
+
+  /* for all blocks do */
+  for (i = 0; i < count; ++i)
+    {
+      iCode *ic;
+
+      /* for all instructions in the block do */
+      for (ic = ebbs[i]->sch; ic; ic = ic->next)
+        {
+          operand *left, *right, *result;
+          const symbol *leftaddrspace = 0, *rightaddrspace = 0, *resultaddrspace = 0;
+          left = IC_LEFT(ic);
+          right = IC_RIGHT(ic);
+          result = IC_RESULT(ic);
+          
+          printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
+          
+          if (left && IS_SYMOP (left) && SPEC_ADDRSPACE (OP_SYMBOL (left)->etype))
+            leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->type);
+          if (right && IS_SYMOP (right) && SPEC_ADDRSPACE (OP_SYMBOL (right)->etype))
+            rightaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(right)->type);
+          if (result && IS_SYMOP (result) && SPEC_ADDRSPACE (OP_SYMBOL (result)->etype))
+            resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->type);
+            
+          if (leftaddrspace)
+            printf("ic %d leftaddrspace %s\n", ic->key, leftaddrspace->name);
+          if (rightaddrspace)
+            printf("ic %d rightaddrspace %s\n", ic->key, rightaddrspace->name);
+          if (resultaddrspace)
+            printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);
+        }
+    }
+}
+
+/*-----------------------------------------------------------------*/
 /* isLocalWithoutDef - return 1 if sym might be used without a     */
 /*                     defining iCode                              */
 /*-----------------------------------------------------------------*/
@@ -1841,6 +1886,9 @@ eBBlockFromiCode (iCode * ic)
             }
         }
     }
+    
+  /* enforce restrictions on acesses to named address spaces */
+  separateAddressSpaces (ebbi->bbOrder, ebbi->count);
 
   /* if cyclomatic info requested then print it */
   if (options.cyclomatic)

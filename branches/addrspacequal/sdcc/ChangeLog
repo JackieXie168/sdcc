@@ -1,7 +1,8 @@
 2011-11-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCsymt.h,
-	  src/SDCC.y:
+	  src/SDCC.y,
+	  src/SDCCopt.c:
 	  Preparations for named address space support.
 
 2011-11-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>

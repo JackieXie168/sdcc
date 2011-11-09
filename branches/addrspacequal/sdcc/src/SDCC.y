@@ -675,7 +675,7 @@ type_specifier
                }
    | ADDRSPACE_NAME {
                   $$=newLink(SPECIFIER);
-                  SPEC_ADDRSPACE($$) = $1;
+                  SPEC_ADDRSPACE($$) = findSym (AddrspaceTab, 0, $1);
                }
    | SD_FLOAT  {
                   $$=newLink(SPECIFIER);

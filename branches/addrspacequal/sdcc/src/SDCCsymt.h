@@ -217,6 +217,7 @@ typedef struct declarator
   unsigned ptr_const:1;             /* pointer is constant        */
   unsigned ptr_volatile:1;          /* pointer is volatile        */
   unsigned ptr_restrict:1;          /* pointer is resticted       */
+
   struct sym_link *tspec;           /* pointer type specifier     */
 }
 declarator;
