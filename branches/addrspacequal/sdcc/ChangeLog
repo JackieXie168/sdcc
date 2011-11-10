@@ -1,4 +1,11 @@
-2011-11-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2011-11-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCmem.h,
+	  src/SDCCmem.c,
+	  src/SDCCglue.c:
+	  Use named address space as segment name for the linker.
+	
+2011-11-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCsymt.h,
 	  src/SDCCsymt.c,
@@ -6,7 +13,7 @@
 	  src/SDCCopt.c:
 	  Basic compiler-side named address space support.
 
-2011-11-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2011-11-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCsymt.h,
 	  src/SDCC.y,
