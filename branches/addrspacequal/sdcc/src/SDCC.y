@@ -1788,7 +1788,7 @@ addressmod
      if (sym = findSymWithLevel (AddrspaceTab, $3) && sym->level == $3->level)
        werrorfl (sym->fileDef, sym->lineDef, E_PREVIOUS_DEF);
      if (!findSymWithLevel (SymbolTab, $2))
-       addSym (SymbolTab, $2, $2->name, $2->level, $2->block, 0);
+       werror (E_ID_UNDEF, $2->name);
      addSym (AddrspaceTab, $3, $3->name, $3->level, $3->block, 0);
      sym = findSymWithLevel (AddrspaceTab, $3);
      sym->addressmod[0] = findSymWithLevel (SymbolTab, $2);

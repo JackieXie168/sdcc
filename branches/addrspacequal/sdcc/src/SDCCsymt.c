@@ -957,6 +957,20 @@ newBoolLink ()
 }
 
 /*------------------------------------------------------------------*/
+/* newVoidLink() - creates an void type                             */
+/*------------------------------------------------------------------*/
+sym_link *
+newVoidLink ()
+{
+  sym_link *p;
+
+  p = newLink (SPECIFIER);
+  SPEC_NOUN (p) = V_VOID;
+
+  return p;
+}
+
+/*------------------------------------------------------------------*/
 /* getSize - returns size of a type chain in bytes                  */
 /*------------------------------------------------------------------*/
 unsigned int

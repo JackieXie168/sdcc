@@ -1,3 +1,11 @@
+2011-11-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCsymt.h,
+	  src/SDCCsymt.c,
+	  src/SDCC.y,
+	  src/SDCCopt.c:
+	  Basic compiler-side named address space support.
+
 2011-11-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCsymt.h,

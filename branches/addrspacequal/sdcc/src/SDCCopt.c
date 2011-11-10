@@ -1185,11 +1185,12 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
         {
           operand *left, *right, *result;
           const symbol *leftaddrspace = 0, *rightaddrspace = 0, *resultaddrspace = 0;
-          left = IC_LEFT(ic);
-          right = IC_RIGHT(ic);
-          result = IC_RESULT(ic);
           
-          printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
+          left = IC_LEFT (ic);
+          right = IC_RIGHT (ic);
+          result = IC_RESULT (ic);
+          
+          /*printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));*/
           
           if (left && IS_SYMOP (left) && SPEC_ADDRSPACE (OP_SYMBOL (left)->etype))
             leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->etype);
@@ -1198,12 +1199,12 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           if (result && IS_SYMOP (result) && SPEC_ADDRSPACE (OP_SYMBOL (result)->etype))
             resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->etype);
             
-          if (leftaddrspace)
+          /*if (leftaddrspace)
             printf("ic %d leftaddrspace %s\n", ic->key, leftaddrspace->name);
           if (rightaddrspace)
             printf("ic %d rightaddrspace %s\n", ic->key, rightaddrspace->name);
           if (resultaddrspace)
-            printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);
+            printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);*/
             
           if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
             {
@@ -1230,7 +1231,52 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
               newic->lineno = lineno;
               addiCodeToeBBlock (ebbs[i], newic, ic);
             }
+            
+           assert (!leftaddrspace || !resultaddrspace || leftaddrspace == resultaddrspace);
+           assert (!rightaddrspace || !resultaddrspace || rightaddrspace == resultaddrspace);
         }
+    }
+}
+
+/*-----------------------------------------------------------------*/
+/* switchAddressSpaces - insert instructions for bank switching    */
+/*-----------------------------------------------------------------*/
+static void
+switchAddressSpaces (iCode *ic)
+{
+  /* TODO: Do this optimally (will probably require use of tree-decompositions). */
+  for (; ic; ic = ic->next)
+    {
+      iCode *newic;
+      operand *left, *right, *result;
+      symbol *addrspace = 0;
+      
+      left = IC_LEFT (ic);
+      right = IC_RIGHT (ic);
+      result = IC_RESULT (ic);
+          
+      /* Previous transformations in separateAddressSpaces()
+         ensure that at most one addressspace occours in each iCode. */
+      if (left && IS_SYMOP (left) && SPEC_ADDRSPACE (OP_SYMBOL (left)->etype))
+        addrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->etype);
+      if (right && IS_SYMOP (right) && SPEC_ADDRSPACE (OP_SYMBOL (right)->etype))
+        addrspace = SPEC_ADDRSPACE (OP_SYMBOL(right)->etype);
+      if (result && IS_SYMOP (result) && SPEC_ADDRSPACE (OP_SYMBOL (result)->etype))
+        addrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->etype);
+        
+      if (!addrspace)
+        continue;
+        
+      newic = newiCode (CALL, operandFromSymbol (addrspace->addressmod[0]), 0);
+      IC_RESULT (newic) = newiTempOperand (newVoidLink (), 1);
+      newic->filename = ic->filename;
+      newic->lineno = ic->lineno;
+
+      newic->next = ic;
+      newic->prev = ic->prev;
+      if (ic->prev)
+        ic->prev->next = newic;
+      ic->prev = newic;
     }
 }
 
@@ -1915,6 +1961,14 @@ eBBlockFromiCode (iCode * ic)
     
   /* enforce restrictions on acesses to named address spaces */
   separateAddressSpaces (ebbi->bbOrder, ebbi->count);
+  
+  /* insert bank switching instructions. Do it here, before the
+     other support routines, since we can assume that there is no
+     bank switching happening in those other support routines
+     (but assume that it can happen in other functions) */
+  ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));   
+  switchAddressSpaces (ic);
+  ebbi = iCodeBreakDown (ic);
 
   /* if cyclomatic info requested then print it */
   if (options.cyclomatic)

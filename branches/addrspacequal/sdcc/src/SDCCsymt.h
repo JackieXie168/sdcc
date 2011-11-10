@@ -643,6 +643,7 @@ sym_link *newIntLink ();
 sym_link *newCharLink ();
 sym_link *newLongLink ();
 sym_link *newBoolLink ();
+sym_link *newVoidLink ();
 int compareType (sym_link *, sym_link *);
 int compareTypeExact (sym_link *, sym_link *, int);
 int checkFunction (symbol *, symbol *);
