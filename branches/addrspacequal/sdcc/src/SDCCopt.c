@@ -1190,7 +1190,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           right = IC_RIGHT (ic);
           result = IC_RESULT (ic);
           
-          /*printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));*/
+          printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
           
           if (left && IS_SYMOP (left) && SPEC_ADDRSPACE (OP_SYMBOL (left)->etype))
             leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->etype);
@@ -1199,12 +1199,12 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           if (result && IS_SYMOP (result) && SPEC_ADDRSPACE (OP_SYMBOL (result)->etype))
             resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->etype);
             
-          /*if (leftaddrspace)
+          if (leftaddrspace)
             printf("ic %d leftaddrspace %s\n", ic->key, leftaddrspace->name);
           if (rightaddrspace)
             printf("ic %d rightaddrspace %s\n", ic->key, rightaddrspace->name);
           if (resultaddrspace)
-            printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);*/
+            printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);
             
           if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
             {
