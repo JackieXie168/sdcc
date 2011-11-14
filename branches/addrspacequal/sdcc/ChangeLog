@@ -1,5 +1,10 @@
 2011-11-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCast.c:
+	  Keep global named address spaces alive over functions.
+
+2011-11-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCicode.c,
 	  src/SDCCopt.c:
 	  Debug message cleanup, reenable address space splitting.

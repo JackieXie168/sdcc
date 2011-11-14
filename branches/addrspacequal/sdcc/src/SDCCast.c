@@ -6672,7 +6672,7 @@ skipall:
   cleanUpLevel (LabelTab, 0);
   cleanUpBlock (StructTab, 1);
   cleanUpBlock (TypedefTab, 1);
-  cleanUpBlock (AddrspaceTab, 0);
+  cleanUpBlock (AddrspaceTab, 1);
 
   xstack->syms = NULL;
   istack->syms = NULL;
