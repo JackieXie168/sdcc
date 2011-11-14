@@ -1,6 +1,11 @@
 2011-11-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCopt.c:
+	  Improve handling of variables in named address space passed as parameters.
+
+2011-11-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCopt.c:
 	  Avoid emitting some unecessary bank switching calls.
 
 2011-11-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>

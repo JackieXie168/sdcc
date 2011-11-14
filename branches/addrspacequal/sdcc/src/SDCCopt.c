@@ -1187,10 +1187,12 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
   for (i = 0; i < count; ++i)
     {
       iCode *ic;
+      symbol *source;
 
       /* for all instructions in the block do */
       for (ic = ebbs[i]->sch; ic; ic = ic->next)
         {
+          iCode *iic = 0, *newic = 0;
           operand *left, *right, *result;
           const symbol *leftaddrspace = 0, *rightaddrspace = 0, *resultaddrspace = 0;
           
@@ -1230,11 +1232,21 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           if (resultaddrspace)
             printf("ic %d (dcl? %d) resultaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (result)->type)), resultaddrspace->name);*/
             
-          if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
+          if (ic->op == IPUSH && leftaddrspace)
             {
-              symbol *source;
-              iCode *newic;
               operand *newop;
+              
+              source = OP_SYMBOL (left); 
+              newic = newiCode ('=', 0, left);
+              IC_RESULT (newic) = newop = newiTempOperand (source->type, 0);          
+              IC_LEFT (ic) = newop;
+              leftaddrspace = 0;
+              for (iic = ic; iic->prev && iic->prev->op == IPUSH; iic = iic->prev);
+            }
+          else if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
+            {
+              operand *newop;
+              
               if (rightaddrspace == resultaddrspace)
                 source = OP_SYMBOL (left);
               else
@@ -1251,13 +1263,18 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
                   IC_RIGHT (ic) = newop;
                   rightaddrspace = 0;
                 }
-              newic->filename = filename;
-              newic->lineno = lineno;
-              addiCodeToeBBlock (ebbs[i], newic, ic);
+              iic = ic;
             }
             
-           assert (!leftaddrspace || !resultaddrspace || leftaddrspace == resultaddrspace);
-           assert (!rightaddrspace || !resultaddrspace || rightaddrspace == resultaddrspace);
+          if (newic)
+            {
+              newic->filename = filename;
+              newic->lineno = lineno;
+              addiCodeToeBBlock (ebbs[i], newic, iic);
+            } 
+            
+          assert (!leftaddrspace || !resultaddrspace || leftaddrspace == resultaddrspace);
+          assert (!rightaddrspace || !resultaddrspace || rightaddrspace == resultaddrspace);
         }
     }
 }
