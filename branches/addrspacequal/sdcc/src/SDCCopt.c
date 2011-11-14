@@ -1198,7 +1198,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           right = IC_RIGHT (ic);
           result = IC_RESULT (ic);
           
-          printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
+          //printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
           
           if (left && IS_SYMOP (left))
             { 
@@ -1223,14 +1223,14 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
                 resultaddrspace = getAddrspace (OP_SYMBOL (result)->type);
             }
             
-          if (leftaddrspace)
+          /*if (leftaddrspace)
             printf("ic %d (dcl? %d) leftaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (left)->type)), leftaddrspace->name);
           if (rightaddrspace)
             printf("ic %d (dcl? %d) rightaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (right)->type)), rightaddrspace->name);
           if (resultaddrspace)
-            printf("ic %d (dcl? %d) resultaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (result)->type)), resultaddrspace->name);
+            printf("ic %d (dcl? %d) resultaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (result)->type)), resultaddrspace->name);*/
             
-          /*if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
+          if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
             {
               symbol *source;
               iCode *newic;
@@ -1257,7 +1257,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
             }
             
            assert (!leftaddrspace || !resultaddrspace || leftaddrspace == resultaddrspace);
-           assert (!rightaddrspace || !resultaddrspace || rightaddrspace == resultaddrspace);*/
+           assert (!rightaddrspace || !resultaddrspace || rightaddrspace == resultaddrspace);
         }
     }
 }
@@ -1308,12 +1308,12 @@ switchAddressSpaces (iCode *ic)
       addrspace = leftaddrspace;
       if (rightaddrspace)
         {
-          wassertl (!addrspace, "Multiple named address spaces in icode");
+          wassertl (!addrspace || addrspace == rightaddrspace, "Multiple named address spaces in icode");
           addrspace = rightaddrspace;
         }
       if (resultaddrspace)
         {
-          wassertl (!addrspace, "Multiple named address spaces in icode");
+          wassertl (!addrspace || addrspace == resultaddrspace, "Multiple named address spaces in icode");
           addrspace = resultaddrspace;
         }
         

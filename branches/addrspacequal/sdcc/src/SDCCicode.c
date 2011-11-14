@@ -3132,16 +3132,6 @@ geniCodeAssign (operand * left, operand * right, int nosupdate, int strictLval)
       werror (E_LVALUE_REQUIRED, "assignment");
       return left;
     }
-    
-    printf("geniCodeAssign()\n");
-    if(IS_SYMOP(left)){
-    printf("left: %s (decl? %d)\n", OP_SYMBOL(left)->name, (int)(IS_DECL(OP_SYMBOL(left)->type)));
-    if(IS_DECL(OP_SYMBOL(left)->type))
-    printf("addrspace %d\n", (int)(DCL_PTR_ADDRSPACE(OP_SYMBOL(left)->type)));}
-    if(IS_SYMOP(right)){
-    printf("right: %s (decl? %d)\n", OP_SYMBOL(right)->name, (int)(IS_DECL(OP_SYMBOL(right)->type)));
-    if(IS_DECL(OP_SYMBOL(right)->type))
-    printf("addrspace %d\n", (int)(DCL_PTR_ADDRSPACE(OP_SYMBOL(right)->type)));}
 
   right = checkTypes (left, right);
 
