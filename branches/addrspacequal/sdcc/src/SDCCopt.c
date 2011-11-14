@@ -1268,6 +1268,8 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
 static void
 switchAddressSpaces (iCode *ic)
 {
+  const symbol *oldaddrspace = 0;
+
   /* TODO: Do this optimally (will probably require use of tree-decompositions). */
   for (; ic; ic = ic->next)
     {
@@ -1317,19 +1319,25 @@ switchAddressSpaces (iCode *ic)
           addrspace = resultaddrspace;
         }
         
-      if (!addrspace)
-        continue;
-        
-      newic = newiCode (CALL, operandFromSymbol (addrspace->addressmod[0]), 0);
-      IC_RESULT (newic) = newiTempOperand (newVoidLink (), 1);
-      newic->filename = ic->filename;
-      newic->lineno = ic->lineno;
+      if (addrspace && addrspace != oldaddrspace)
+        { 
+          newic = newiCode (CALL, operandFromSymbol (addrspace->addressmod[0]), 0);
+          IC_RESULT (newic) = newiTempOperand (newVoidLink (), 1);
+          newic->filename = ic->filename;
+          newic->lineno = ic->lineno;
 
-      newic->next = ic;
-      newic->prev = ic->prev;
-      if (ic->prev)
-        ic->prev->next = newic;
-      ic->prev = newic;
+          newic->next = ic;
+          newic->prev = ic->prev;
+          if (ic->prev)
+            ic->prev->next = newic;
+          ic->prev = newic;
+          
+          oldaddrspace = addrspace;
+        }
+        
+      /* Address space might not be preserved over these. */
+      if (ic->op == LABEL || ic->op == CALL || ic->op == PCALL)
+        oldaddrspace = 0;
     }
 }
 
