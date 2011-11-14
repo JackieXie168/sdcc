@@ -784,8 +784,15 @@ newiTempOperand (sym_link * type, char throwType)
       SPEC_OCLS (itmp->etype) = reg;
     }
     
-  /* iTemps always live int he default address space */
-  SPEC_ADDRSPACE (itmp->etype) = 0;
+  /* iTemps always live in the default address space */
+  if (IS_DECL (itmp->type))
+    DCL_PTR_ADDRSPACE (itmp->type) = 0;
+  else
+    SPEC_ADDRSPACE (itmp->etype) = 0;
+
+printf("Created iTmp %s, dcl? %d\n", itmp->name, (int)(IS_DECL(itmp->type)));
+if(IS_DECL(itmp->type) && DCL_PTR_ADDRSPACE(itmp->type))
+printf ("Created the itmp in named addrspace.\n");
 
   op->svt.symOperand = itmp;
   op->key = itmp->key = ++operandKey;
@@ -2787,6 +2794,7 @@ geniCodeDerefPtr (operand * op, int lvl)
   if (!isLvaluereq (lvl))
     op = geniCodeRValue (op, TRUE);
 
+  DCL_PTR_ADDRSPACE (rtype) = 0;
   setOperandType (op, rtype);
 
   return op;

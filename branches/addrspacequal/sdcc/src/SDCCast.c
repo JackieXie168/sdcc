@@ -2494,6 +2494,7 @@ gatherImplicitVariables (ast * tree, ast * block)
 
           assignee->type = copyLinkChain (TTYPE (dtr));
           assignee->etype = getSpec (assignee->type);
+          SPEC_ADDRSPACE (assignee->etype) = 0;
           SPEC_SCLS (assignee->etype) = S_AUTO;
           SPEC_OCLS (assignee->etype) = NULL;
           SPEC_EXTR (assignee->etype) = 0;
@@ -2917,6 +2918,7 @@ decorateType (ast * tree, RESULT_TYPE resultType)
         {
           setOClass (LTYPE (tree), TETYPE (tree));
           SPEC_SCLS (TETYPE (tree)) = sclsFromPtr (LTYPE (tree));
+          SPEC_ADDRSPACE (TETYPE (tree)) = DCL_PTR_ADDRSPACE (LTYPE (tree));
         }
       /* This breaks with extern declarations, bit-fields, and perhaps other */
       /* cases (gcse). Let's leave this optimization disabled for now and   */
@@ -6250,10 +6252,16 @@ inlineTempVar (sym_link * type, int level)
   SPEC_OCLS (sym->etype) = NULL;
   SPEC_EXTR (sym->etype) = 0;
   SPEC_STAT (sym->etype) = 0;
-  if IS_SPEC
-    (sym->type) SPEC_VOLATILE (sym->type) = 0;
+  if (IS_SPEC (sym->type))
+    { 
+      SPEC_VOLATILE (sym->type) = 0;
+      SPEC_ADDRSPACE (sym->type) = 0;
+    }
   else
-    DCL_PTR_VOLATILE (sym->type) = 0;
+    {
+      DCL_PTR_VOLATILE (sym->type) = 0;
+      DCL_PTR_ADDRSPACE (sym->type) = 0;
+    }
   SPEC_ABSA (sym->etype) = 0;
 
   return sym;

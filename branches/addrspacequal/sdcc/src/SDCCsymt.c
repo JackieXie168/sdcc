@@ -820,9 +820,14 @@ mergeDeclSpec (sym_link * dest, sym_link * src, const char *name)
   DCL_PTR_CONST (decl) |= SPEC_CONST (spec);
   DCL_PTR_VOLATILE (decl) |= SPEC_VOLATILE (spec);
   DCL_PTR_RESTRICT (decl) |= SPEC_RESTRICT (spec);
-#warning Merge address space
+  if (DCL_PTR_ADDRSPACE (decl) && SPEC_ADDRSPACE (spec) &&
+    strcmp (DCL_PTR_ADDRSPACE (decl)->name, SPEC_ADDRSPACE (spec)->name))
+    werror (E_SYNTAX_ERROR, yytext);
+  if (SPEC_ADDRSPACE (spec))
+    DCL_PTR_ADDRSPACE (decl) = SPEC_ADDRSPACE (spec);
 
-  SPEC_CONST (spec) = SPEC_VOLATILE (spec) = SPEC_RESTRICT (spec) = SPEC_ADDRSPACE (spec) = 0;
+  SPEC_CONST (spec) = SPEC_VOLATILE (spec) = SPEC_RESTRICT (spec) = 0;
+  SPEC_ADDRSPACE (spec) = 0;
 
   lnk = decl;
   while (lnk && !IS_SPEC (lnk->next))

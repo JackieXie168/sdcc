@@ -1192,19 +1192,34 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           
           printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
           
-          if (left && IS_SYMOP (left) && SPEC_ADDRSPACE (OP_SYMBOL (left)->etype))
-            leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->etype);
-          if (right && IS_SYMOP (right) && SPEC_ADDRSPACE (OP_SYMBOL (right)->etype))
-            rightaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(right)->etype);
-          if (result && IS_SYMOP (result) && SPEC_ADDRSPACE (OP_SYMBOL (result)->etype))
-            resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->etype);
+          if (left && IS_SYMOP (left))
+            { 
+              if (IS_DECL (OP_SYMBOL (left)->type))
+                leftaddrspace = DCL_PTR_ADDRSPACE (OP_SYMBOL (left)->type);
+              else if (SPEC_ADDRSPACE (OP_SYMBOL (left)->type))
+                leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL (left)->type);
+            }
+          if (right && IS_SYMOP (right))
+            { 
+              if (IS_DECL (OP_SYMBOL (right)->type))
+                rightaddrspace = DCL_PTR_ADDRSPACE (OP_SYMBOL (right)->type);
+              else if (SPEC_ADDRSPACE (OP_SYMBOL (right)->type))
+                rightaddrspace = SPEC_ADDRSPACE (OP_SYMBOL (right)->type);
+            }
+          if (result && IS_SYMOP (result))
+            { 
+              if (IS_DECL (OP_SYMBOL (result)->type))
+                resultaddrspace = DCL_PTR_ADDRSPACE (OP_SYMBOL (result)->type);
+              else if (SPEC_ADDRSPACE (OP_SYMBOL (result)->type))
+                resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL (result)->type);
+            }
             
           if (leftaddrspace)
-            printf("ic %d leftaddrspace %s\n", ic->key, leftaddrspace->name);
+            printf("ic %d (dcl? %d) leftaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (left)->type)), leftaddrspace->name);
           if (rightaddrspace)
-            printf("ic %d rightaddrspace %s\n", ic->key, rightaddrspace->name);
+            printf("ic %d (dcl? %d) rightaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (right)->type)), rightaddrspace->name);
           if (resultaddrspace)
-            printf("ic %d resultaddrspace %s\n", ic->key, resultaddrspace->name);
+            printf("ic %d (dcl? %d) resultaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (result)->type)), resultaddrspace->name);
             
           if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
             {
@@ -1216,7 +1231,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
               else
                 source = OP_SYMBOL (right);
               newic = newiCode ('=', 0, rightaddrspace == resultaddrspace ? left : right);
-              IC_RESULT (newic) = newop = newiTempOperand (source->etype, 0);
+              IC_RESULT (newic) = newop = newiTempOperand (source->/*e*/type, 0);
               if (rightaddrspace == resultaddrspace)
                 {
                   IC_LEFT (ic) = newop;

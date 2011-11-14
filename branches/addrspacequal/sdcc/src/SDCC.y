@@ -1227,6 +1227,7 @@ pointer
                  DCL_PTR_CONST($1) = SPEC_CONST($2);
                  DCL_PTR_VOLATILE($1) = SPEC_VOLATILE($2);
                  DCL_PTR_RESTRICT($1) = SPEC_RESTRICT($2);
+                 DCL_PTR_ADDRSPACE($1) = SPEC_ADDRSPACE($2);
              }
              else
                  werror (W_PTR_TYPE_INVALID);
@@ -1244,6 +1245,7 @@ pointer
                  DCL_PTR_CONST($1) = SPEC_CONST($2);
                  DCL_PTR_VOLATILE($1) = SPEC_VOLATILE($2);
                  DCL_PTR_RESTRICT($1) = SPEC_RESTRICT($2);
+                 DCL_PTR_ADDRSPACE($1) = SPEC_ADDRSPACE($2);
                  switch (SPEC_SCLS($2)) {
                  case S_XDATA:
                      DCL_TYPE($3) = FPOINTER;
@@ -1785,7 +1787,7 @@ jump_statement
 addressmod
    : ADDRESSMOD identifier identifier ';' {
      symbol *sym;
-     if (sym = findSymWithLevel (AddrspaceTab, $3) && sym->level == $3->level)
+     if ((sym = findSymWithLevel (AddrspaceTab, $3)) && sym->level == $3->level)
        werrorfl (sym->fileDef, sym->lineDef, E_PREVIOUS_DEF);
      if (!findSymWithLevel (SymbolTab, $2))
        werror (E_ID_UNDEF, $2->name);
