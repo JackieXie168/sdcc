@@ -1,5 +1,12 @@
 2011-11-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCcse.c,
+	  src/SDCCicode.c,
+	  src/SDCCopt.c:
+	  Basic support for pointers into named address spaces.
+
+2011-11-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCicode.c,
 	  src/SDCCsymt.c,
 	  src/SDCCsymt.h,

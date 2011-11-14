@@ -1163,6 +1163,14 @@ miscOpt (eBBlock ** ebbs, int count)
     } /* for */
 }
 
+static symbol *
+getAddrspace (sym_link *type)
+{
+  if (IS_DECL (type))
+    return (DCL_PTR_ADDRSPACE (type));
+  return (SPEC_ADDRSPACE (type));
+}
+
 /*-----------------------------------------------------------------*/
 /* separateAddressSpaces - enforce restrictions on bank switching  */
 /* Operands of a singel iCode must may be in at most one           */
@@ -1194,24 +1202,25 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           
           if (left && IS_SYMOP (left))
             { 
-              if (IS_DECL (OP_SYMBOL (left)->type))
-                leftaddrspace = DCL_PTR_ADDRSPACE (OP_SYMBOL (left)->type);
-              else if (SPEC_ADDRSPACE (OP_SYMBOL (left)->type))
-                leftaddrspace = SPEC_ADDRSPACE (OP_SYMBOL (left)->type);
+              if (POINTER_GET (ic))
+                {
+                  assert (!(IS_DECL (OP_SYMBOL (left)->type) && DCL_PTR_ADDRSPACE (OP_SYMBOL (left)->type)));
+                  leftaddrspace = getAddrspace (OP_SYMBOL (left)->type->next);
+                }
+              else
+                leftaddrspace = getAddrspace (OP_SYMBOL (left)->type);
             }
           if (right && IS_SYMOP (right))
-            { 
-              if (IS_DECL (OP_SYMBOL (right)->type))
-                rightaddrspace = DCL_PTR_ADDRSPACE (OP_SYMBOL (right)->type);
-              else if (SPEC_ADDRSPACE (OP_SYMBOL (right)->type))
-                rightaddrspace = SPEC_ADDRSPACE (OP_SYMBOL (right)->type);
-            }
+            rightaddrspace = getAddrspace (OP_SYMBOL (right)->type);
           if (result && IS_SYMOP (result))
             { 
-              if (IS_DECL (OP_SYMBOL (result)->type))
-                resultaddrspace = DCL_PTR_ADDRSPACE (OP_SYMBOL (result)->type);
-              else if (SPEC_ADDRSPACE (OP_SYMBOL (result)->type))
-                resultaddrspace = SPEC_ADDRSPACE (OP_SYMBOL (result)->type);
+              if (POINTER_SET (ic))
+                {
+                  assert (!(IS_DECL (OP_SYMBOL (result)->type) && DCL_PTR_ADDRSPACE (OP_SYMBOL (result)->type)));
+                  resultaddrspace = getAddrspace (OP_SYMBOL (result)->type->next);
+                }
+              else
+                resultaddrspace = getAddrspace (OP_SYMBOL (result)->type);
             }
             
           if (leftaddrspace)
@@ -1221,7 +1230,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           if (resultaddrspace)
             printf("ic %d (dcl? %d) resultaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (result)->type)), resultaddrspace->name);
             
-          if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
+          /*if (leftaddrspace && rightaddrspace && leftaddrspace != rightaddrspace)
             {
               symbol *source;
               iCode *newic;
@@ -1231,7 +1240,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
               else
                 source = OP_SYMBOL (right);
               newic = newiCode ('=', 0, rightaddrspace == resultaddrspace ? left : right);
-              IC_RESULT (newic) = newop = newiTempOperand (source->/*e*/type, 0);
+              IC_RESULT (newic) = newop = newiTempOperand (source->type, 0);
               if (rightaddrspace == resultaddrspace)
                 {
                   IC_LEFT (ic) = newop;
@@ -1248,7 +1257,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
             }
             
            assert (!leftaddrspace || !resultaddrspace || leftaddrspace == resultaddrspace);
-           assert (!rightaddrspace || !resultaddrspace || rightaddrspace == resultaddrspace);
+           assert (!rightaddrspace || !resultaddrspace || rightaddrspace == resultaddrspace);*/
         }
     }
 }
@@ -1264,20 +1273,49 @@ switchAddressSpaces (iCode *ic)
     {
       iCode *newic;
       operand *left, *right, *result;
-      symbol *addrspace = 0;
+      const symbol *leftaddrspace = 0, *rightaddrspace = 0, *resultaddrspace = 0;
+      const symbol *addrspace = 0;
       
       left = IC_LEFT (ic);
       right = IC_RIGHT (ic);
       result = IC_RESULT (ic);
-          
-      /* Previous transformations in separateAddressSpaces()
+
+      /* Previous transformations in separateAddressSpaces() should
          ensure that at most one addressspace occours in each iCode. */
-      if (left && IS_SYMOP (left) && SPEC_ADDRSPACE (OP_SYMBOL (left)->etype))
-        addrspace = SPEC_ADDRSPACE (OP_SYMBOL(left)->etype);
-      if (right && IS_SYMOP (right) && SPEC_ADDRSPACE (OP_SYMBOL (right)->etype))
-        addrspace = SPEC_ADDRSPACE (OP_SYMBOL(right)->etype);
-      if (result && IS_SYMOP (result) && SPEC_ADDRSPACE (OP_SYMBOL (result)->etype))
-        addrspace = SPEC_ADDRSPACE (OP_SYMBOL(result)->etype);
+       if (left && IS_SYMOP (left))
+            { 
+              if (POINTER_GET (ic))
+                {
+                  assert (!(IS_DECL (OP_SYMBOL (left)->type) && DCL_PTR_ADDRSPACE (OP_SYMBOL (left)->type)));
+                  leftaddrspace = getAddrspace (OP_SYMBOL (left)->type->next);
+                }
+              else
+                leftaddrspace = getAddrspace (OP_SYMBOL (left)->type);
+            }
+          if (right && IS_SYMOP (right))
+            rightaddrspace = getAddrspace (OP_SYMBOL (right)->type);
+          if (result && IS_SYMOP (result))
+            { 
+              if (POINTER_SET (ic))
+                {
+                  assert (!(IS_DECL (OP_SYMBOL (result)->type) && DCL_PTR_ADDRSPACE (OP_SYMBOL (result)->type)));
+                  resultaddrspace = getAddrspace (OP_SYMBOL (result)->type->next);
+                }
+              else
+                resultaddrspace = getAddrspace (OP_SYMBOL (result)->type);
+            }
+            
+      addrspace = leftaddrspace;
+      if (rightaddrspace)
+        {
+          wassertl (!addrspace, "Multiple named address spaces in icode");
+          addrspace = rightaddrspace;
+        }
+      if (resultaddrspace)
+        {
+          wassertl (!addrspace, "Multiple named address spaces in icode");
+          addrspace = resultaddrspace;
+        }
         
       if (!addrspace)
         continue;
@@ -1853,7 +1891,6 @@ eBBlockFromiCode (iCode * ic)
 
   /* break it down into basic blocks */
   ebbi = iCodeBreakDown (ic);
-
   /* hash the iCode keys so that we can quickly index */
   /* them in the rest of the optimization steps */
   setToNull ((void *) &iCodehTab);
@@ -1862,7 +1899,7 @@ eBBlockFromiCode (iCode * ic)
 
   /* compute the control flow */
   computeControlFlow (ebbi);
-
+ 
   /* dumpraw if asked for */
   if (options.dump_raw)
     dumpEbbsToFileExt (DUMP_RAW0, ebbi);

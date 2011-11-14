@@ -790,10 +790,6 @@ newiTempOperand (sym_link * type, char throwType)
   else
     SPEC_ADDRSPACE (itmp->etype) = 0;
 
-printf("Created iTmp %s, dcl? %d\n", itmp->name, (int)(IS_DECL(itmp->type)));
-if(IS_DECL(itmp->type) && DCL_PTR_ADDRSPACE(itmp->type))
-printf ("Created the itmp in named addrspace.\n");
-
   op->svt.symOperand = itmp;
   op->key = itmp->key = ++operandKey;
   return op;
@@ -2794,7 +2790,16 @@ geniCodeDerefPtr (operand * op, int lvl)
   if (!isLvaluereq (lvl))
     op = geniCodeRValue (op, TRUE);
 
-  DCL_PTR_ADDRSPACE (rtype) = 0;
+  if (IS_DECL (rtype))
+    {
+      DCL_PTR_ADDRSPACE (rtype) = 0;
+      DCL_PTR_VOLATILE (rtype) = 0;
+    }
+  else
+    {
+      SPEC_ADDRSPACE (rtype) = 0;
+      SPEC_VOLATILE (rtype) = 0;
+    }
   setOperandType (op, rtype);
 
   return op;
@@ -3127,6 +3132,16 @@ geniCodeAssign (operand * left, operand * right, int nosupdate, int strictLval)
       werror (E_LVALUE_REQUIRED, "assignment");
       return left;
     }
+    
+    printf("geniCodeAssign()\n");
+    if(IS_SYMOP(left)){
+    printf("left: %s (decl? %d)\n", OP_SYMBOL(left)->name, (int)(IS_DECL(OP_SYMBOL(left)->type)));
+    if(IS_DECL(OP_SYMBOL(left)->type))
+    printf("addrspace %d\n", (int)(DCL_PTR_ADDRSPACE(OP_SYMBOL(left)->type)));}
+    if(IS_SYMOP(right)){
+    printf("right: %s (decl? %d)\n", OP_SYMBOL(right)->name, (int)(IS_DECL(OP_SYMBOL(right)->type)));
+    if(IS_DECL(OP_SYMBOL(right)->type))
+    printf("addrspace %d\n", (int)(DCL_PTR_ADDRSPACE(OP_SYMBOL(right)->type)));}
 
   right = checkTypes (left, right);
 
