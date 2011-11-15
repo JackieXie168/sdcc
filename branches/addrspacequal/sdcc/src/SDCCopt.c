@@ -2046,7 +2046,7 @@ eBBlockFromiCode (iCode * ic)
      bank switching happening in those other support routines
      (but assume that it can happen in other functions) */
   ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));   
-  //switchAddressSpaces (ic);
+  switchAddressSpaces (ic);
   ebbi = iCodeBreakDown (ic);
   computeControlFlow (ebbi);
   computeDataFlow (ebbi);
