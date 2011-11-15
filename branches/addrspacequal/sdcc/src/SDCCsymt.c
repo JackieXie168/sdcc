@@ -1820,6 +1820,15 @@ checkSClass (symbol * sym, int isProto)
       werror (E_AUTO_ABSA, sym->name);
       SPEC_ABSA (sym->etype) = 0;
     }
+    
+  if (sym->level && !IS_STATIC (sym->etype) && (IS_DECL (sym->type) ? DCL_PTR_ADDRSPACE (sym->type) : SPEC_ADDRSPACE (sym->type)) && (options.stackAuto || reentrant))
+    {
+      werror (E_AUTO_ADDRSPACE, sym->name);
+      if (IS_DECL (sym->type))
+        DCL_PTR_ADDRSPACE (sym->type) = 0;
+      else
+        SPEC_ADDRSPACE (sym->type) = 0;
+    }
 
   /* arrays & pointers cannot be defined for bits   */
   /* SBITS or SFRs or BIT                           */
