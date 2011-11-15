@@ -1225,12 +1225,14 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
                 resultaddrspace = getAddrspace (OP_SYMBOL (result)->type);
             }
             
-          /*if (leftaddrspace)
+#if 0            
+          if (leftaddrspace)
             printf("ic %d (dcl? %d) leftaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (left)->type)), leftaddrspace->name);
           if (rightaddrspace)
             printf("ic %d (dcl? %d) rightaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (right)->type)), rightaddrspace->name);
           if (resultaddrspace)
-            printf("ic %d (dcl? %d) resultaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (result)->type)), resultaddrspace->name);*/
+            printf("ic %d (dcl? %d) resultaddrspace %s\n", ic->key, (int)(IS_DECL  (OP_SYMBOL (result)->type)), resultaddrspace->name);
+#endif
             
           if (ic->op == IPUSH && leftaddrspace)
             {
@@ -1335,7 +1337,7 @@ switchAddressSpaces (iCode *ic)
           wassertl (!addrspace || addrspace == resultaddrspace, "Multiple named address spaces in icode");
           addrspace = resultaddrspace;
         }
-        
+ 
       if (addrspace && addrspace != oldaddrspace)
         { 
           newic = newiCode (CALL, operandFromSymbol (addrspace->addressmod[0]), 0);
@@ -2044,8 +2046,10 @@ eBBlockFromiCode (iCode * ic)
      bank switching happening in those other support routines
      (but assume that it can happen in other functions) */
   ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));   
-  switchAddressSpaces (ic);
+  //switchAddressSpaces (ic);
   ebbi = iCodeBreakDown (ic);
+  computeControlFlow (ebbi);
+  computeDataFlow (ebbi);
 
   /* if cyclomatic info requested then print it */
   if (options.cyclomatic)
