@@ -2605,7 +2605,11 @@ checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit)
         }
       else                      // from a pointer to a pointer
         {
-          if (IS_GENPTR (newType) && IS_VOID (newType->next))
+          if (implicit && SPEC_ADDRSPACE (newType->next) != SPEC_ADDRSPACE (orgType->next))
+            {  
+              errors += werror (E_INCOMPAT_PTYPES);                 
+            }
+          else if (IS_GENPTR (newType) && IS_VOID (newType->next))
             {                   // cast to void* is always allowed
             }
           else if (IS_GENPTR (orgType) && IS_VOID (orgType->next))
