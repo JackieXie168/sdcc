@@ -1981,6 +1981,14 @@ cleanUpLevel (bucket ** table, int level)
     }
 }
 
+symbol *
+getAddrspace (sym_link *type)
+{
+  if (IS_DECL (type))
+    return (DCL_PTR_ADDRSPACE (type));
+  return (SPEC_ADDRSPACE (type));
+}
+
 /*------------------------------------------------------------------*/
 /* computeTypeOr - computes the resultant type from two types       */
 /*------------------------------------------------------------------*/
@@ -2392,7 +2400,7 @@ comparePtrType (sym_link * dest, sym_link * src, bool bMustCast)
 {
   int res;
 
-  if (SPEC_ADDRSPACE (src->next) != SPEC_ADDRSPACE (dest->next))
+  if (getAddrspace (src->next) != getAddrspace (dest->next))
     bMustCast = 1;
     
   if (IS_VOID (src->next) && IS_VOID (dest->next))

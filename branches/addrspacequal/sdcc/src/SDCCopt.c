@@ -1163,14 +1163,6 @@ miscOpt (eBBlock ** ebbs, int count)
     } /* for */
 }
 
-static symbol *
-getAddrspace (sym_link *type)
-{
-  if (IS_DECL (type))
-    return (DCL_PTR_ADDRSPACE (type));
-  return (SPEC_ADDRSPACE (type));
-}
-
 /*-----------------------------------------------------------------*/
 /* separateAddressSpaces - enforce restrictions on bank switching  */
 /* Operands of a singel iCode must may be in at most one           */
@@ -2015,6 +2007,22 @@ eBBlockFromiCode (iCode * ic)
   /* sort it back by block number */
   //qsort (ebbs, saveCount, sizeof (eBBlock *), bbNumCompare);
 
+  /* enforce restrictions on acesses to named address spaces */
+  separateAddressSpaces (ebbi->bbOrder, ebbi->count);
+  
+  /* insert bank switching instructions. Do it here, before the
+     other support routines, since we can assume that there is no
+     bank switching happening in those other support routines
+     (but assume that it can happen in other functions) */
+  ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
+  switchAddressSpaces (ic);
+
+  /* BReak done again and redo some steps to not confuse live range analysis. */
+  ebbi = iCodeBreakDown (ic);
+  computeControlFlow (ebbi);
+  loops = createLoopRegions (ebbi);
+  computeDataFlow (ebbi);
+
   if (!options.lessPedantic)
     {
       // this is a good place to check missing return values
@@ -2037,19 +2045,6 @@ eBBlockFromiCode (iCode * ic)
             }
         }
     }
-    
-  /* enforce restrictions on acesses to named address spaces */
-  separateAddressSpaces (ebbi->bbOrder, ebbi->count);
-  
-  /* insert bank switching instructions. Do it here, before the
-     other support routines, since we can assume that there is no
-     bank switching happening in those other support routines
-     (but assume that it can happen in other functions) */
-  ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));   
-  switchAddressSpaces (ic);
-  ebbi = iCodeBreakDown (ic);
-  computeControlFlow (ebbi);
-  computeDataFlow (ebbi);
 
   /* if cyclomatic info requested then print it */
   if (options.cyclomatic)

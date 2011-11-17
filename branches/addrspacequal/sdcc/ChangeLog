@@ -1,8 +1,10 @@
-2011-11-16 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2011-11-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/SDCCsymt.c,
-	  src/SDCCast.c:
-	  Error message for implicit casts between named address spaces.
+	* src/SDCCsymt.h,
+	  src/SDCCsymt.c,
+	  src/SDCCast.c,
+	  src/SDCCopt.c:
+	  Error message for implicit casts between named address spaces, fix live-range analysis (regression tests passing now).
 
 2011-11-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

@@ -651,6 +651,7 @@ int compareTypeExact (sym_link *, sym_link *, int);
 int checkFunction (symbol *, symbol *);
 void cleanUpLevel (bucket **, int);
 void cleanUpBlock (bucket **, int);
+symbol *getAddrspace (sym_link *type);
 int funcInChain (sym_link *);
 void addSymChain (symbol **);
 sym_link *structElemType (sym_link *, value *);

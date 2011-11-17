@@ -2605,7 +2605,7 @@ checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit)
         }
       else                      // from a pointer to a pointer
         {
-          if (implicit && SPEC_ADDRSPACE (newType->next) != SPEC_ADDRSPACE (orgType->next))
+          if (implicit && getAddrspace (newType->next) != getAddrspace (orgType->next))
             {  
               errors += werror (E_INCOMPAT_PTYPES);                 
             }
