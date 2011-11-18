@@ -2017,6 +2017,8 @@ eBBlockFromiCode (iCode * ic)
   ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
   switchAddressSpaces (ic);
 
+  switchAddressSpacesOptimally (ic);
+
   /* BReak done again and redo some steps to not confuse live range analysis. */
   ebbi = iCodeBreakDown (ic);
   computeControlFlow (ebbi);

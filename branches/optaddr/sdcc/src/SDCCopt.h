@@ -33,5 +33,6 @@ eBBlock **eBBlockFromiCode (iCode *);
 void printEbbs (eBBlock **);
 iCode *iCodeLabelOptimize (iCode *);
 eBBlock *iCode2eBBlock (iCode * ic);
+void switchAddressSpacesOptimally (iCode *ic);
 
 #endif

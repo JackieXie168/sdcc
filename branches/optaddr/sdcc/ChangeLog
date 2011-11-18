@@ -1,5 +1,14 @@
 2011-11-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/Makefile.in,
+	  src/SDCCnaddr.cc,
+	  src/SDCCnaddr.hpp,
+	  src/SDCCopt.c,
+	  src/SDCCopt.h:
+	  First preparations for optimal placement of bank switching calls.
+
+2011-11-17 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCsymt.h,
 	  src/SDCCsymt.c,
 	  src/SDCCast.c,
