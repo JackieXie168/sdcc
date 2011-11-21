@@ -1,3 +1,13 @@
+2011-11-21 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.h,
+	  src/SDCCnaddr.cc,
+	  src/SDCCnaddr.hpp,
+	  src/SDCCopt.c,
+	  src/z80/ralloc2.cc,
+	  src/SDCCopt.h:
+	  Preparations for optimal placement of bank switching calls.
+
 2011-11-21 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:

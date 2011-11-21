@@ -23,6 +23,7 @@
 -------------------------------------------------------------------------*/
 #include "SDCCbitv.h"
 #include "SDCCset.h"
+#include "SDCCy.h"
 
 #ifndef SDCCICODE_H
 #define SDCCICODE_H 1

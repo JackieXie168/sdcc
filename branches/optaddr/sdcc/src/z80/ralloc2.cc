@@ -1284,14 +1284,13 @@ void tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 {
   iCode *ic;
+  cfg_t control_flow_graph;
+  con_t conflict_graph;
+  tree_dec_t tree_decomposition;
 
 #ifdef DEBUG_RALLOC_DEC
   std::cout << "Processing " << currFunc->name << " from " << dstFileName << "\n"; std::cout.flush();
 #endif
-
-  cfg_t control_flow_graph;
-
-  con_t conflict_graph;
 
   ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
@@ -1301,7 +1300,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   if(z80_opts.dump_graphs)
     dump_con(conflict_graph);
 
-  tree_dec_t tree_decomposition;
+  
 
   thorup_tree_decomposition(tree_decomposition, control_flow_graph);
 
