@@ -280,8 +280,6 @@ void tree_dec_naddrswitch_forget(T_t &T, typename boost::graph_traits<T_t>::vert
 
   assignment_list_naddr_t::iterator ai, aif;
 
-  std::cout << "tree_dec_naddrswitch_forget\n";
-
   // Restrict assignments (locally) to current variables.
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     {
@@ -434,7 +432,7 @@ void tree_dec_address_switch(T_t &T, const G_t &G)
   std::cout.flush();
 }
 
-// Dump cfg, with numbered nodes, show posible address spaces at each node.
+// Dump cfg, with numbered nodes, show possible address spaces at each node.
 void dump_cfg_naddr(const cfg_t &cfg)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpnaddrcfg" + currFunc->rname + ".dot").c_str());
