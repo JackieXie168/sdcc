@@ -34,5 +34,7 @@ switchAddressSpacesOptimally (iCode *ic, ebbIndex *ebbi)
 
   thorup_tree_decomposition(tree_decomposition, control_flow_graph);
   nicify(tree_decomposition);
+
+  tree_dec_address_switch(tree_decomposition, control_flow_graph);
 }
 

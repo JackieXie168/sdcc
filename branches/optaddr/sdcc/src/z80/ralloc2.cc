@@ -1300,8 +1300,6 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   if(z80_opts.dump_graphs)
     dump_con(conflict_graph);
 
-  
-
   thorup_tree_decomposition(tree_decomposition, control_flow_graph);
 
   nicify(tree_decomposition);
