@@ -2495,6 +2495,7 @@ gatherImplicitVariables (ast * tree, ast * block)
 
           assignee->type = copyLinkChain (TTYPE (dtr));
           assignee->etype = getSpec (assignee->type);
+          SPEC_ADDRSPACE (assignee->etype) = 0;
           SPEC_SCLS (assignee->etype) = S_AUTO;
           SPEC_OCLS (assignee->etype) = NULL;
           SPEC_EXTR (assignee->etype) = 0;
@@ -2605,7 +2606,11 @@ checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit)
         }
       else                      // from a pointer to a pointer
         {
-          if (IS_GENPTR (newType) && IS_VOID (newType->next))
+          if (implicit && getAddrspace (newType->next) != getAddrspace (orgType->next))
+            {  
+              errors += werror (E_INCOMPAT_PTYPES);                 
+            }
+          else if (IS_GENPTR (newType) && IS_VOID (newType->next))
             {                   // cast to void* is always allowed
             }
           else if (IS_GENPTR (orgType) && IS_VOID (orgType->next))
@@ -2918,6 +2923,7 @@ decorateType (ast * tree, RESULT_TYPE resultType)
         {
           setOClass (LTYPE (tree), TETYPE (tree));
           SPEC_SCLS (TETYPE (tree)) = sclsFromPtr (LTYPE (tree));
+          SPEC_ADDRSPACE (TETYPE (tree)) = DCL_PTR_ADDRSPACE (LTYPE (tree));
         }
       /* This breaks with extern declarations, bit-fields, and perhaps other */
       /* cases (gcse). Let's leave this optimization disabled for now and   */
@@ -6253,10 +6259,16 @@ inlineTempVar (sym_link * type, int level)
   SPEC_OCLS (sym->etype) = NULL;
   SPEC_EXTR (sym->etype) = 0;
   SPEC_STAT (sym->etype) = 0;
-  if IS_SPEC
-    (sym->type) SPEC_VOLATILE (sym->type) = 0;
+  if (IS_SPEC (sym->type))
+    { 
+      SPEC_VOLATILE (sym->type) = 0;
+      SPEC_ADDRSPACE (sym->type) = 0;
+    }
   else
-    DCL_PTR_VOLATILE (sym->type) = 0;
+    {
+      DCL_PTR_VOLATILE (sym->type) = 0;
+      DCL_PTR_ADDRSPACE (sym->type) = 0;
+    }
   SPEC_ABSA (sym->etype) = 0;
 
   return sym;
@@ -6667,6 +6679,7 @@ skipall:
   cleanUpLevel (LabelTab, 0);
   cleanUpBlock (StructTab, 1);
   cleanUpBlock (TypedefTab, 1);
+  cleanUpBlock (AddrspaceTab, 1);
 
   xstack->syms = NULL;
   istack->syms = NULL;

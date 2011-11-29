@@ -368,6 +368,10 @@ z80_init_asmops(void)
 extern bool regalloc_dry_run;
 unsigned char regalloc_dry_run_cost; 
 
+/* WARNING: This function is dangerous to use. It works literally:
+   It will return true if ic the the last use of op, even if ic might
+   be executed again, e.g. due to a loop. Most of the time you will want
+   to use isPairDead(), or ic->rSurv instead of this function. */
 static bool
 isLastUse (const iCode *ic, operand *op)
 {
@@ -4891,9 +4895,16 @@ genPlus (iCode * ic)
       pair = getPairId (AOP (IC_RIGHT (ic)));
       if (pair != PAIR_BC && pair != PAIR_DE)
         {
-          pair = isPairDead (PAIR_DE, ic) ? PAIR_DE : PAIR_BC;
-          if (!isPairDead (pair, ic))
-            save_pair = TRUE;
+          if (AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue (ic->rSurv, B_IDX))
+            pair = PAIR_BC;
+          else if (AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX && !bitVectBitValue (ic->rSurv, D_IDX))
+            pair = PAIR_DE;
+          else
+            {
+              pair = isPairDead (PAIR_DE, ic) ? PAIR_DE : PAIR_BC;
+              if (!isPairDead (pair, ic))
+                save_pair = TRUE;
+            }
         }
       fetchPair (PAIR_IY, AOP (IC_LEFT (ic)));
       if (save_pair)
@@ -4945,7 +4956,7 @@ genPlus (iCode * ic)
     }
 
   if (getPairId (AOP (IC_RESULT (ic))) == PAIR_HL && AOP_TYPE (IC_RIGHT (ic)) == AOP_REG &&
-    AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue(ic->rSurv, B_IDX))
+    AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX && !bitVectBitValue (ic->rSurv, B_IDX))
     {
       if (AOP (IC_RIGHT (ic))->aopu.aop_reg[1] && (AOP (IC_RIGHT (ic))->aopu.aop_reg[1]->rIdx == H_IDX || AOP (IC_RIGHT (ic))->aopu.aop_reg[1]->rIdx == L_IDX))
         {
@@ -7253,9 +7264,10 @@ shiftR2Left2Result (const iCode *ic, operand * left, int offl,
     }
   else
     {
+      bool use_b = (!bitVectBitValue (ic->rSurv, B_IDX) && !(AOP_TYPE (result) == AOP_REG && (AOP (result)->aopu.aop_reg[0]->rIdx == B_IDX || AOP (result)->aopu.aop_reg[1]->rIdx == B_IDX)));
       if(!regalloc_dry_run)
         {
-          emit2 ("ld a,!immedbyte", shCount);
+          emit2 ("ld %s,!immedbyte", use_b ? "b" : "a", shCount);
           emitLabelNoSpill (tlbl->key + 100);
         }
       regalloc_dry_run_cost += 2;
@@ -7264,10 +7276,15 @@ shiftR2Left2Result (const iCode *ic, operand * left, int offl,
 
       if(!regalloc_dry_run)
         {
-          emit2 ("dec a");
-          emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+          if (use_b)
+            emit2 ("djnz !tlabel", tlbl->key + 100);
+          else
+            {
+              emit2 ("dec a");
+              emit2 ("jp NZ,!tlabel", tlbl->key + 100);
+            }
         }
-      regalloc_dry_run_cost += 4;
+      regalloc_dry_run_cost += use_b ? 2 : 4;
     }
 }
 
@@ -8268,7 +8285,7 @@ genPointerGet (const iCode *ic)
             }
         }
       /* Fixup HL back down */
-      if (getPairId (AOP (left)) == pair && !isLastUse (ic, left))
+      if (getPairId (AOP (left)) == pair && !isPairDead (pair, ic))
         for (size = AOP_SIZE (result)-1; size; size--)
           {
             emit2 ("dec %s", _pairs[pair].name);
@@ -8595,7 +8612,7 @@ genPointerSet (iCode * ic)
         }
       goto release;
     }
-  else if (getPairId (AOP (result)) == PAIR_HL && !isLastUse (ic, result)
+  else if (getPairId (AOP (result)) == PAIR_HL && !isPairDead (PAIR_HL, ic)
            && !isBitvar)
     {
       offset = 0;
@@ -8637,7 +8654,7 @@ genPointerSet (iCode * ic)
   if (AOP_TYPE (result) != AOP_STR)
     {
       if (isBitvar && getPairId( AOP (result)) != PAIR_INVALID &&
-        (getPairId( AOP (result)) != PAIR_IY || SPEC_BLEN (IS_BITVAR (retype) ? retype : letype) < 8 || isLastUse (ic, result))) /* Avoid destroying result by increments */
+        (getPairId( AOP (result)) != PAIR_IY || SPEC_BLEN (IS_BITVAR (retype) ? retype : letype) < 8 || isPairDead (getPairId (AOP (result)), ic))) /* Avoid destroying result by increments */
         pairId = getPairId( AOP (result));
       else
         fetchPair (pairId, AOP (result));
@@ -8773,24 +8790,39 @@ genAddrOf (const iCode *ic)
     }
   else
     {
-      spillPair (PAIR_HL);
+      PAIR_ID pair;
+
       if (sym->onStack)
         {
+          if (getPairId (AOP ( IC_RESULT (ic))) == PAIR_IY)
+            pair = PAIR_IY;
+          else
+            {
+              pair = PAIR_HL;
+              spillPair (PAIR_HL);
+            }
+
           /* if it has an offset  then we need to compute it */
           if (sym->stack > 0)
-            emit2 ("ld hl,!immedword", sym->stack + _G.stack.pushed + _G.stack.offset + _G.stack.param_offset);
+            emit2 ("ld %s,!immedword", _pairs[pair].name, sym->stack + _G.stack.pushed + _G.stack.offset + _G.stack.param_offset);
           else
-            emit2 ("ld hl,!immedword", sym->stack + _G.stack.pushed + _G.stack.offset);
-          regalloc_dry_run_cost += 3;
-          emit2 ("add hl,sp");
-          regalloc_dry_run_cost += 1;
+            emit2 ("ld %s,!immedword", _pairs[pair].name, sym->stack + _G.stack.pushed + _G.stack.offset);
+          regalloc_dry_run_cost += (pair == PAIR_IY ? 4 : 3);
+          emit2 ("add %s,sp", _pairs[pair].name);
+          regalloc_dry_run_cost += (pair == PAIR_IY ? 2 : 1);
         }
       else
         {
-          emit2 ("ld hl,!hashedstr", sym->rname);
-          regalloc_dry_run_cost += 3;
+          pair = getPairId (AOP ( IC_RESULT (ic)));
+          if (pair == PAIR_INVALID)
+            {
+              pair = PAIR_HL;
+              spillPair (PAIR_HL);
+            }
+          emit2 ("ld %s,!hashedstr", _pairs[pair].name, sym->rname);
+          regalloc_dry_run_cost += (pair == PAIR_IY ? 4 : 3);
         }
-      commitPair (AOP (IC_RESULT (ic)), PAIR_HL);
+      commitPair (AOP (IC_RESULT (ic)), pair);
     }
   freeAsmop (IC_RESULT (ic), NULL, ic);
 }

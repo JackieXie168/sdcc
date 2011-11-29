@@ -673,6 +673,11 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(true);
   if(ic->op == IPUSH && input_in_H && (getSize(operandType(IC_LEFT(ic))) <= 2 || I[ia.registers[REG_L][1]].byte == 2 && I[ia.registers[REG_H][1]].byte == 3))
     return(true);
+  if(ic->op == IPUSH && getSize(operandType(IC_LEFT(ic))) <= 2 &&
+    (operand_in_reg(left, REG_C, ia, i, G) && I[ia.registers[REG_C][1]].byte == 0 && (getSize(operandType(IC_LEFT(ic))) < 2 || operand_in_reg(left, REG_B, ia, i, G))||
+    operand_in_reg(left, REG_E, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && (getSize(operandType(IC_LEFT(ic))) < 2 || operand_in_reg(left, REG_D, ia, i, G)) ||
+    operand_in_reg(left, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && (getSize(operandType(IC_LEFT(ic))) < 2 || operand_in_reg(left, REG_IYH, ia, i, G))))
+    return(true);
   if(POINTER_GET(ic) && input_in_L && input_in_H && (getSize(operandType(IC_RESULT(ic))) == 1 || !result_in_HL))
     return(true);
   if(ic->op == LEFT_OP && isOperandLiteral(IC_RIGHT(ic)))
@@ -860,7 +865,7 @@ static void set_surviving_regs(const assignment &a, unsigned short int i, const 
   std::set<var_t>::const_iterator v, v_end;
   for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
     if(G[i].dying.find(*v) == G[i].dying.end())
-      if(!(IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)) && OP_SYMBOL_CONST(IC_RESULT(ic))->key == I[*v].v))
+      if(!((IC_RESULT(ic) && !POINTER_SET(ic)) && IS_SYMOP(IC_RESULT(ic)) && OP_SYMBOL_CONST(IC_RESULT(ic))->key == I[*v].v))
         ic->rSurv = bitVectSetBit(ic->rSurv, a.global[*v]);
 }
 
@@ -1284,7 +1289,7 @@ void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
           sym->isspilt = false;
         }
     }
-    
+
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
       set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
     
