@@ -85,7 +85,7 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
   if(cssize > *ssize)
     *ssize = cssize;
     
-  typename boost::graph_traits<btree_t>::out_edge_iterator e, e_end;
+  boost::graph_traits<btree_t>::out_edge_iterator e, e_end;
   for(boost::tie(e, e_end) = boost::out_edges(v, btree); e != e_end; ++e)
     btree_alloc_subtree(boost::target(*e, btree), sPtr, cssize, ssize);
 }
