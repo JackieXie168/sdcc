@@ -3,7 +3,7 @@
  *   ED escaped multi-byte opcodes for Z80.
  *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
- * 
+ *
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
  *
  */
@@ -42,7 +42,7 @@ cl_z80::inst_ed_(t_mem code)
   return(resGO);
 }
 
-/******** start CB codes *****************/
+/******** start ED codes *****************/
 int
 cl_z80::inst_ed(void)
 {
@@ -69,11 +69,13 @@ cl_z80::inst_ed(void)
     return(resGO);
     case 0x44: // NEG
       regs.F &= ~(BIT_ALL);  /* clear these */
+      if (regs.A != 0)    regs.F |= BIT_C;
+      if (regs.A == 0x80) regs.F |= BIT_P;
+      if ((regs.A & 0x0F) != 0) regs.F |= BIT_A;
       regs.A -= regs.A;
       regs.F |= BIT_N; /* not addition */
-      if (regs.A == 0) regs.F |= BIT_Z;
-      if (regs.A & 0x80) regs.F |= BIT_S;
-      /* Skip BIT_A for now */
+      if (regs.A == 0)    regs.F |= BIT_Z;
+      if (regs.A & 0x80)  regs.F |= BIT_S;
     return(resGO);
     case 0x45: // RETN (return from non-maskable interrupt)
       pop2(PC);
@@ -98,6 +100,11 @@ cl_z80::inst_ed(void)
     case 0x4B: // LD BC,(nnnn)
       tw = fetch2();
       regs.BC = get2(tw);
+    return(resGO);
+	case 0x4C: // MLT BC
+      if(type != CPU_Z180)
+        return(resINV_INST);
+      regs.BC = (unsigned long)(regs.bc.h) * (unsigned long)(regs.bc.l);
     return(resGO);
     case 0x4D: // RETI (return from interrupt)
       pop2(PC);
@@ -138,7 +145,11 @@ cl_z80::inst_ed(void)
       tw = fetch2();
       regs.DE = get2(tw);
     return(resGO);
-
+    case 0x5C: // MLT DE
+      if(type != CPU_Z180)
+        return(resINV_INST);
+      regs.DE = (unsigned long)(regs.de.h) * (unsigned long)(regs.de.l);
+    return(resGO);
 #if 0
     case 0x5E: // IM 2
     return(resGO);
@@ -173,7 +184,11 @@ cl_z80::inst_ed(void)
       tw = fetch2();
       regs.HL = get2(tw);
     return(resGO);
-
+    case 0x6C: // MLT HL
+      if(type != CPU_Z180)
+        return(resINV_INST);
+      regs.HL = (unsigned long)(regs.hl.h) * (unsigned long)(regs.hl.l);
+    return(resGO);
 #if 0
     case 0x6F: // RLD
       /* rotate 1 bcd digit left between ACC and memory location */
@@ -206,6 +221,11 @@ cl_z80::inst_ed(void)
       regs.SP = get2(tw);
     return(resGO);
 
+    case 0x7C: // MLT SP
+      //if(type != CPU_Z180)
+        return(resINV_INST);
+      //regs.SP = (unsigned long)(regs.sp.h) * (unsigned long)(regs.sp.l);
+    return(resGO);
     case 0xA0: // LDI
       // BC - count, sourc=HL, dest=DE.  *DE++ = *HL++, --BC until zero
       regs.F &= ~(BIT_P | BIT_N | BIT_A);  /* clear these */

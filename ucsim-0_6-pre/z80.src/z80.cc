@@ -57,10 +57,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
  * Base type of Z80 controllers
  */
 
-cl_z80::cl_z80(class cl_sim *asim):
+cl_z80::cl_z80(int Itype, int Itech, class cl_sim *asim):
   cl_uc(asim)
 {
-  type= CPU_Z80;
+  type= Itype;
 }
 
 int
@@ -393,15 +393,16 @@ cl_z80::disass(t_addr addr, const char *sep)
 void
 cl_z80::print_regs(class cl_console *con)
 {
-  con->dd_printf("SZ-A--P-C  Flags= 0x%02x %3d %c  ",
+  con->dd_printf("SZ-A-PNC  Flags= 0x%02x %3d %c  ",
 		 regs.F, regs.F, isprint(regs.F)?regs.F:'.');
   con->dd_printf("A= 0x%02x %3d %c\n",
 		 regs.A, regs.A, isprint(regs.A)?regs.A:'.');
-  con->dd_printf("%c%c-%c--%c-%c\n",
+  con->dd_printf("%c%c-%c-%c%c%c\n",
 		 (regs.F&BIT_S)?'1':'0',
 		 (regs.F&BIT_Z)?'1':'0',
 		 (regs.F&BIT_A)?'1':'0',
 		 (regs.F&BIT_P)?'1':'0',
+		 (regs.F&BIT_N)?'1':'0',
 		 (regs.F&BIT_C)?'1':'0');
   con->dd_printf("BC= 0x%04x [BC]= %02x %3d %c  ",
 		 regs.BC, ram->get(regs.BC), ram->get(regs.BC),
@@ -625,5 +626,38 @@ cl_z80::exec_inst(void)
   return(resINV_INST);
 }
 
+void cl_z80::store1( TYPE_UWORD addr, t_mem val ) {
+  ram->set(addr, val);
+}
+
+void cl_z80::store2( TYPE_UWORD addr, TYPE_UWORD val ) {
+  ram->set(addr,   val & 0xff);
+  ram->set(addr+1, (val >> 8) & 0xff);
+}
+
+TYPE_UBYTE  cl_z80::get1( TYPE_UWORD addr ) {
+  return ram->get(addr);
+}
+
+TYPE_UWORD  cl_z80::get2( TYPE_UWORD addr ) {
+  TYPE_UWORD  l, h;
+  
+  l = ram->get(addr  );
+  h = ram->get(addr+1);
+  
+  return (h << 8) | l;
+}
+
+t_mem       cl_z80::fetch1( void ) {
+  return fetch( );
+}
+
+TYPE_UWORD  cl_z80::fetch2( void ) {
+  TYPE_UWORD  c1, c2;
+  
+  c1 = fetch( );
+  c2 = fetch( );
+  return (c2 << 8) | c1;
+}
 
 /* End of z80.src/z80.cc */

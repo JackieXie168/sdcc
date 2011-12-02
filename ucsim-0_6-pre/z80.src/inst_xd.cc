@@ -9,7 +9,7 @@
  *
  * Copyright (C) 1999,2002 Drotos Daniel, Talker Bt.
  * some z80 coding from Karl Bongers karl@turbobit.com
- * 
+ *
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
  *
  */
@@ -181,13 +181,6 @@ cl_z80::inst_Xd_ld(t_mem code)
 int
 cl_z80::inst_Xd_add(t_mem code)
 {
-#define add_IX_Word(wr) { \
-      unsigned int tmp; \
-      regs.F &= ~(BIT_A | BIT_N | BIT_C);  /* clear these */ \
-      tmp = (unsigned int)regs_IX_OR_IY + (unsigned int)(wr); \
-      if (tmp > 0xffff) regs.F |= BIT_C; \
-      regs_IX_OR_IY = (unsigned short) tmp; }
-
   switch (code) {
     case 0x09: // ADD IX,BC
       add_IX_Word(regs.BC);
@@ -268,7 +261,7 @@ cl_z80::inst_Xd_dec(t_mem code)
       dec(regs_iX_h);
     break;
     case 0x2B: // DEC IX
-      --regs.IX;
+      --regs_IX_OR_IY;
     break;
     case 0x2D: // DEC LX
       dec(regs_iX_l);
@@ -453,11 +446,6 @@ cl_z80::inst_Xd(void)
       case 0x2C: // INC LX
       case 0x34: // INC (IX+dd)
         return(inst_Xd_inc(code));
-      {
-        t_addr addr;
-        addr = add_u16_disp(regs_IX_OR_IY,fetch());
-        store1(addr, get1(addr)+1);
-      }
 
       case 0x09: // ADD IX,BC
       case 0x19: // ADD IX,DE
