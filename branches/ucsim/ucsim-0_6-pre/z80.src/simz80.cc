@@ -25,11 +25,12 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA. */
 /*@1@*/
 
+#include "globals.h"
 
 // local
 #include "simz80cl.h"
 #include "z80cl.h"
-
+#include "r2kcl.h"
 
 cl_simz80::cl_simz80(class cl_app *the_app):
   cl_sim(the_app)
@@ -38,7 +39,38 @@ cl_simz80::cl_simz80(class cl_app *the_app):
 class cl_uc *
 cl_simz80::mk_controller(void)
 {
-  return(new cl_z80(this));
+  int i;
+  const char *typ= NIL;
+  class cl_optref type_option(this);
+
+  type_option.init();
+  type_option.use("cpu_type");
+  i= 0;
+  if ((typ= type_option.get_value(typ)) == NIL)
+    typ= "Z80";
+
+  while ((cpus_z80[i].type_str != NULL) &&
+	 (strcmp(typ, cpus_z80[i].type_str) != 0))
+    i++;
+  if (cpus_z80[i].type_str == NULL)
+    {
+      fprintf(stderr, "Unknown processor type. "
+	      "Use -H option to see known types.\n");
+      return(NULL);
+    }
+
+  switch (cpus_z80[i].type)
+    {
+    case CPU_Z80:
+    case CPU_Z180:
+      return(new cl_z80(cpus_z80[i].type, cpus_z80[i].technology, this));
+    // Add Rabbits, etc here.
+
+    case CPU_R2K:
+      return(new cl_r2k(cpus_z80[i].type, cpus_z80[i].technology, this));
+    }
+
+  return(NULL);
 }
 
 

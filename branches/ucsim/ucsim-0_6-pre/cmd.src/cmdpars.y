@@ -1,24 +1,12 @@
-%name cl_ucsim_parser
-
 %{
 #include "cmdlexcl.h"
 #include "memcl.h"
 #include "globals.h"
 #include "stypes.h"
+
+static void yyerror (const char *msg);
 %}
-
-%pure_parser
-
-%define INHERIT : public cl_base
-
-%define MEMBERS class cl_ucsim_lexer *lexer_object;\
-virtual ~YY_cl_ucsim_parser_CLASS(void) { delete lexer_object; }
-
-%define CONSTRUCTOR_PARAM \
-class cl_ucsim_lexer *the_lexer
-
-%define CONSTRUCTOR_CODE \
-lexer_object= the_lexer;
+%expect 6
 
 %token PTOK_PLUS PTOK_MINUS PTOK_ASTERIX PTOK_SLASH PTOK_EQUAL
 %token PTOK_LEFT_PAREN PTOK_RIGHT_PAREN
@@ -140,15 +128,8 @@ bit:
 
 %%
 
-int
-YY_cl_ucsim_parser_CLASS::yylex(YY_cl_ucsim_parser_STYPE *yylval)
+static void
+yyerror (const char *msg)
 {
-  lexer_object->activate_lexer_to_parse_into(yylval);
-  return(lexer_object->yylex());
-}
-
-void
-YY_cl_ucsim_parser_CLASS::yyerror(char *msg)
-{
-  application->dd_printf("Parser error: %s\n", msg);
+  application->dd_printf ("Parser error: %s\n", msg);
 }
