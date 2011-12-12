@@ -53,12 +53,12 @@ public:
   int dir;
   //char *name;
 
-  cl_ticker(int adir, int in_isr, char *aname);
+  cl_ticker(int adir, int in_isr, const char *aname);
   virtual ~cl_ticker(void);
   
   virtual int tick(int nr);
   virtual double get_rtime(double xtal);
-  virtual void dump(int nr, double xtal, class cl_console *con);
+  virtual void dump(int nr, double xtal, class cl_console_base *con);
 };
 
 
@@ -158,11 +158,11 @@ public:
   virtual void do_extra_hw(int cycles);
   virtual int tick(int cycles);
   virtual class cl_ticker *get_counter(int nr);
-  virtual class cl_ticker *get_counter(char *nam);
+  virtual class cl_ticker *get_counter(const char *nam);
   virtual void add_counter(class cl_ticker *ticker, int nr);
-  virtual void add_counter(class cl_ticker *ticker, char *nam);
+  virtual void add_counter(class cl_ticker *ticker, const char *nam);
   virtual void del_counter(int nr);
-  virtual void del_counter(char *nam);
+  virtual void del_counter(const char *nam);
   virtual double get_rtime(void);
   virtual int clock_per_cycle(void);
 
@@ -200,8 +200,8 @@ public:
   virtual struct dis_entry *dis_tbl(void);
   virtual struct name_entry *sfr_tbl(void);
   virtual struct name_entry *bit_tbl(void);
-  virtual void print_disass(t_addr addr, class cl_console *con);
-  virtual void print_regs(class cl_console *con);
+  virtual void print_disass(t_addr addr, class cl_console_base *con);
+  virtual void print_regs(class cl_console_base *con);
   virtual int inst_length(t_addr addr);
   virtual int inst_branch(t_addr addr);
   virtual int longest_inst(void);
@@ -251,7 +251,7 @@ class cl_error_unknown_code: public cl_error
  public:
   cl_error_unknown_code(class cl_uc *the_uc);
 
-  virtual void print(class cl_commander *c);
+  virtual void print(class cl_commander_base *c);
 };
 
 class cl_uc_error_registry: public cl_error_registry

@@ -70,7 +70,7 @@ public:
   bool hidden;
 
 public:
-  cl_option(class cl_base *the_creator, char *aname, const char *Ihelp);
+  cl_option(class cl_base *the_creator, const char *aname, const char *Ihelp);
   virtual class cl_option &operator=(class cl_option &o);
   virtual ~cl_option(void);
   virtual void pre_remove(void);
@@ -79,7 +79,7 @@ public:
   virtual void hide(void) { hidden= DD_TRUE; }
   virtual void show(void) { hidden= DD_FALSE; }
 
-  virtual void print(class cl_console *con) {}
+  virtual void print(class cl_console_base *con) {}
   virtual char *get_type_name(void) { return(cchars("non")); }
 
   virtual union option_value *get_value(void) { return(&value); }
@@ -142,16 +142,16 @@ public:
 
   virtual class cl_option *create(class cl_base *creator,
 				  enum option_type type,
-				  char *the_name, char *help);
-  virtual void default_option(char *the_name);
+				  const char *the_name, const char *help);
+  virtual void default_option(const char *the_name);
   virtual class cl_option *use(void);
-  virtual class cl_option *use(char *the_name);
+  virtual class cl_option *use(const char *the_name);
   virtual void option_changed(void) {}
   virtual void option_removing(void);
   virtual class cl_base *get_owner(void) { return(owner); }
 
   virtual bool get_value(bool);
-  virtual char *get_value(char *);
+  virtual char *get_value(const char *);
   virtual void *get_value(void *);
   virtual long get_value(long);
   virtual double get_value(double);
@@ -161,8 +161,8 @@ public:
 class cl_bool_option: public cl_option
 {
 public:
-  cl_bool_option(class cl_base *the_creator, char *aname, const char *Ihelp);
-  virtual void print(class cl_console *con);
+  cl_bool_option(class cl_base *the_creator, const char *aname, const char *Ihelp);
+  virtual void print(class cl_console_base *con);
   virtual char *get_type_name(void) { return(cchars("boolean")); }
   virtual void set_value(char *s);
 };
@@ -171,9 +171,9 @@ public:
 class cl_string_option: public cl_option
 {
 public:
-  cl_string_option(class cl_base *the_creator, char *aname, const char *Ihelp);
+  cl_string_option(class cl_base *the_creator, const char *aname, const char *Ihelp);
   virtual class cl_option &operator=(class cl_option &o);
-  virtual void print(class cl_console *con);
+  virtual void print(class cl_console_base *con);
   virtual char *get_type_name(void) { return(cchars("string")); }
 };
 
@@ -181,9 +181,9 @@ public:
 class cl_pointer_option: public cl_option
 {
 public:
-  cl_pointer_option(class cl_base *the_creator, char *aname, const char *Ihelp);
+  cl_pointer_option(class cl_base *the_creator, const char *aname, const char *Ihelp);
   virtual class cl_option &operator=(class cl_option &o);
-  virtual void print(class cl_console *con);
+  virtual void print(class cl_console_base *con);
   virtual char *get_type_name(void) { return(cchars("pointer")); }
 };
 
@@ -191,8 +191,8 @@ public:
 class cl_number_option: public cl_option
 {
 public:
-  cl_number_option(class cl_base *the_creator, char *aname, const char *Ihelp);
-  virtual void print(class cl_console *con);
+  cl_number_option(class cl_base *the_creator, const char *aname, const char *Ihelp);
+  virtual void print(class cl_console_base *con);
   virtual char *get_type_name(void) { return(cchars("integer")); }
   virtual void set_value(char *s);
 };
@@ -201,8 +201,8 @@ public:
 class cl_float_option: public cl_option
 {
 public:
-  cl_float_option(class cl_base *the_creator, char *aname, const char *Ihelp);
-  virtual void print(class cl_console *con);
+  cl_float_option(class cl_base *the_creator, const char *aname, const char *Ihelp);
+  virtual void print(class cl_console_base *con);
   virtual char *get_type_name(void) { return(cchars("float")); }
   virtual void set_value(char *s);
 };
@@ -215,7 +215,7 @@ public:
 public:
   cl_cons_debug_opt(class cl_app *the_app, char *Iid, const char *Ihelp);
 
-  virtual void print(class cl_console *con);
+  virtual void print(class cl_console_base *con);
 
   virtual void get_value(bool *val);
 

@@ -32,7 +32,18 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 
 // CONF
-COMMAND_ON(uc,cl_conf_cmd);
+//COMMAND_ON(uc,cl_conf_cmd);
+class cl_conf_cmd: public cl_cmd
+{
+ public:
+ cl_conf_cmd(const char *aname,
+	     int  can_rep,
+	     const char *short_help,
+	     const char *long_help):
+  cl_cmd(operate_on_uc, aname, can_rep, short_help, long_help) {}
+  virtual int do_work(class cl_uc *uc ,
+		      class cl_cmdline *cmdline, class cl_console_base *con);
+};
 
 // CONF OBJECTS
 COMMAND_ON(app,cl_conf_objects_cmd);

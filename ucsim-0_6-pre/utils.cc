@@ -110,7 +110,7 @@ get_string_id(struct id_element *ids, char *str, int def)
 
 
 static char *
-vformat_string(char *format, va_list ap)
+vformat_string(const char *format, va_list ap)
 {
   char *msg= NULL;
 #ifdef HAVE_VASPRINTF
@@ -133,7 +133,7 @@ vformat_string(char *format, va_list ap)
 }
 
 char *
-format_string(char *format, ...)
+format_string(const char *format, ...)
 {
   va_list ap;
 
@@ -166,10 +166,10 @@ print_char_octal(char c, FILE *f)
 }
 
 
-char *
+const char *
 object_name(class cl_base *o)
 {
-  char *name= 0;
+  const char *name= 0;
 
   if (o)
     name= o->get_name();

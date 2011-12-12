@@ -28,12 +28,25 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #ifndef CMD_CMDUTIL_HEADER
 #define CMD_CMDUTIL_HEADER
 
+#ifdef SOCKET_AVAIL
+# include HEADER_SOCKET
+#endif
+
 #include "ddconfig.h"
 
 #include "uccl.h"
 
 
-extern int make_server_socket(unsigned short int port);
+#ifdef SOCKET_AVAIL
+extern UCSOCKET_T make_server_socket(unsigned short int port);
+#endif
+#ifdef _WIN32
+enum e_handle_type { CH_UNDEF, CH_FILE, CH_SOCKET, CH_CONSOLE, CH_SERIAL,};
+enum e_handle_type get_handle_type(HANDLE handle);
+bool input_avail(HANDLE handle, e_handle_type type = CH_UNDEF);
+#else
+bool input_avail(UCSOCKET_T handle);
+#endif
 //extern void print_bin(long data, int bits, class cl_console *con);
 extern struct name_entry *get_name_entry(struct name_entry tabl[],
 					 char *name,

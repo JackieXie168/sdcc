@@ -53,9 +53,9 @@ protected:
   //char *name;
   enum error_on_off on;
 public:
-  cl_error_class(enum error_type typ, char *aname,
+  cl_error_class(enum error_type typ, const char *aname,
 		 enum error_on_off be_on= ERROR_PARENT);
-  cl_error_class(enum error_type typ, char *aname,
+  cl_error_class(enum error_type typ, const char *aname,
 		 class cl_error_class *parent,
 		 enum error_on_off be_on= ERROR_PARENT);
   
@@ -71,11 +71,11 @@ class cl_error_registry
 {
 public:
   cl_error_registry(void);
-  class cl_error_class *find(char *type_name)
+  class cl_error_class *find(const char *type_name)
   {
     if (NIL == registered_errors)
       return NIL;
-    return static_cast<class cl_error_class *>(registered_errors->first_that(compare, static_cast<void *>(type_name)));
+    return static_cast<class cl_error_class *>(registered_errors->first_that(compare, static_cast<void *>((void*)type_name)));
   }
   static class cl_list *get_list(void)
   {
@@ -99,7 +99,7 @@ private:
   }
 };
 
-class cl_commander; //forward
+class cl_commander_base; //forward
 
 class cl_error: public cl_base
 {
@@ -119,7 +119,7 @@ public:
   virtual bool is_on(void);
   virtual class cl_error_class *get_class(void) { return(classification); }
 
-  virtual void print(class cl_commander *c);
+  virtual void print(class cl_commander_base *c);
   virtual char *get_type_name();
 };
 

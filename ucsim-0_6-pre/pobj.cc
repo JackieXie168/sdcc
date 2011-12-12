@@ -61,7 +61,7 @@ cl_base::cl_base(void)
 cl_base::~cl_base(void)
 {
   if (name)
-    free(name);
+    free((void*)name);
   if (children)
     {
       int i;
@@ -76,27 +76,19 @@ cl_base::~cl_base(void)
 
 int cl_base::init(void) {return(0);}
 
-char *
-cl_base::get_name(char *def)
+const char *
+cl_base::get_name(const char *def)
 {
   if (!name)
     return(def);
   return(name);
 }
 
-/*char *
-cl_base::get_name(const char *def)
-{
-  if (!name)
-    return((char*)def);
-  return(name);
-  }*/
-
-char *
-cl_base::set_name(char *new_name)
+const char *
+cl_base::set_name(const char *new_name)
 {
   if (name)
-    free(name);
+    free((void*)name);
   if (!new_name)
     name= 0;
   else if (*new_name)
@@ -106,8 +98,8 @@ cl_base::set_name(char *new_name)
   return(name);
 }
 
-char *
-cl_base::set_name(char *new_name, char *def_name)
+const char *
+cl_base::set_name(const char *new_name, const char *def_name)
 {
   char *def;
 
@@ -117,7 +109,7 @@ cl_base::set_name(char *new_name, char *def_name)
   else
     def= strdup(def_name);
   if (name)
-    free(name);
+    free((void*)name);
   if (!new_name)
     name= def;
   else if (*new_name)
@@ -128,7 +120,7 @@ cl_base::set_name(char *new_name, char *def_name)
 }
 
 bool
-cl_base::is_named(char *the_name)
+cl_base::is_named(const char *the_name)
 {
   if (!name ||
       !*name ||
@@ -139,7 +131,7 @@ cl_base::is_named(char *the_name)
 }
 
 bool
-cl_base::is_inamed(char *the_name)
+cl_base::is_inamed(const char *the_name)
 {
   if (!name ||
       !*name ||

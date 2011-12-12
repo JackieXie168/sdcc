@@ -62,6 +62,11 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "showcl.h"
 #include "getcl.h"
 #include "setcl.h"
+#ifdef _WIN32
+#include "newcmdwin32cl.h"
+#else
+#include "newcmdposixcl.h"
+#endif
 
 
 /*
@@ -732,7 +737,7 @@ cl_app::mk_options(void)
 
 
 int
-cl_app::dd_printf(char *format, ...)
+cl_app::dd_printf(const char *format, ...)
 {
   va_list ap;
 

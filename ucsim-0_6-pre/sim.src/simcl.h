@@ -72,7 +72,7 @@ public:
   //virtual void mem_cell_changed(class cl_address_space *m, t_addr addr);
   
   virtual int main(void);
-  virtual void start(class cl_console *con);
+  virtual void start(class cl_console_base *con);
   virtual void stop(int reason);
   virtual void stop(class cl_ev_brk *brk);
   virtual int step(void);
