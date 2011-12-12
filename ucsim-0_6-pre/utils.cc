@@ -176,7 +176,7 @@ object_name(class cl_base *o)
   if (name &&
       *name)
     return(name);
-  return(cchars("(unkown)"));
+  return(cchars("(unknown)"));
 }
 
 
