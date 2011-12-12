@@ -37,11 +37,11 @@ public:
   enum brk_perm perm;
 COMMAND_METHODS_ON(uc,cl_break_cmd)
   virtual void do_fetch(class cl_uc *uc,
-			t_addr addr, int hit, class cl_console *con);
+			t_addr addr, int hit, class cl_console_base *con);
   virtual void do_event(class cl_uc *uc,
 			class cl_address_space *mem,
 			char op, t_addr addr, int hit,
-			class cl_console *con);
+			class cl_console_base *con);
 COMMAND_TAIL;
 
 // TBREAK

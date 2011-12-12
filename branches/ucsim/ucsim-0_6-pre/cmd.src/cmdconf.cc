@@ -41,10 +41,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
  *----------------------------------------------------------------------------
  */
 
-//int
-//cl_conf_cmd::do_work(class cl_sim *sim,
-//		     class cl_cmdline *cmdline, class cl_console *con)
-COMMAND_DO_WORK_UC(cl_conf_cmd)
+int
+cl_conf_cmd::do_work(class cl_uc *uc,
+		     class cl_cmdline *cmdline, class cl_console_base *con)
 {
   int i;
 
@@ -66,7 +65,7 @@ COMMAND_DO_WORK_UC(cl_conf_cmd)
  */
 
 static void
-conf_objects_cmd_print_node(class cl_console *con,
+conf_objects_cmd_print_node(class cl_console_base *con,
 			    int indent, class cl_base *node)
 {
   if (!node)
@@ -74,7 +73,7 @@ conf_objects_cmd_print_node(class cl_console *con,
   int i;
   for (i= 0; i < indent; i++)
     con->dd_printf(" ");
-  char *name= node->get_name("unknown");
+  const char *name= node->get_name("unknown");
   con->dd_printf("%s\n", name);
   class cl_base *c= node->first_child();
   while (c)

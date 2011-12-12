@@ -91,7 +91,7 @@ COMMAND_DO_WORK_UC(cl_break_cmd)
 
 void
 cl_break_cmd::do_fetch(class cl_uc *uc,
-		       t_addr addr, int hit, class cl_console *con)
+		       t_addr addr, int hit, class cl_console_base *con)
 {
   if (hit > 99999)
     {
@@ -117,7 +117,7 @@ void
 cl_break_cmd::do_event(class cl_uc *uc,
 		       class cl_address_space *mem,
 		       char op, t_addr addr, int hit,
-		       class cl_console *con)
+		       class cl_console_base *con)
 {
   class cl_ev_brk *b= NULL;
 

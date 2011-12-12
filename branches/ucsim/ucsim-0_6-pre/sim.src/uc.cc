@@ -64,7 +64,7 @@ static class cl_uc_error_registry uc_error_registry;
  * Clock counter
  */
 
-cl_ticker::cl_ticker(int adir, int in_isr, char *aname)
+cl_ticker::cl_ticker(int adir, int in_isr, const char *aname)
 {
   options= TICK_RUN;
   if (in_isr)
@@ -1414,7 +1414,7 @@ cl_uc::get_counter(int nr)
 }
 
 class cl_ticker *
-cl_uc::get_counter(char *nam)
+cl_uc::get_counter(const char *nam)
 {
   int i;
 
@@ -1440,7 +1440,7 @@ cl_uc::add_counter(class cl_ticker *ticker, int nr)
 }
 
 void
-cl_uc::add_counter(class cl_ticker *ticker, char */*nam*/)
+cl_uc::add_counter(class cl_ticker *ticker, const char */*nam*/)
 {
   int i;
 
@@ -1471,7 +1471,7 @@ cl_uc::del_counter(int nr)
 }
 
 void
-cl_uc::del_counter(char *nam)
+cl_uc::del_counter(const char *nam)
 {
   int i;
 

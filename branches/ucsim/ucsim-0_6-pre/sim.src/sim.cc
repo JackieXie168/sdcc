@@ -139,7 +139,7 @@ cl_sim::do_cmd(char *cmdstr, class cl_console *console)
 }*/
 
 void
-cl_sim::start(class cl_console *con)
+cl_sim::start(class cl_console_base *con)
 {
   state|= SIM_GO;
   con->flags|= CONS_FROZEN;
@@ -150,7 +150,7 @@ cl_sim::start(class cl_console *con)
 void
 cl_sim::stop(int reason)
 {
-  class cl_commander *cmd= app->get_commander();
+  class cl_commander_base *cmd= app->get_commander();
 
   state&= ~SIM_GO;
   if (cmd->frozen_console)
@@ -210,12 +210,12 @@ cl_sim::stop(int reason)
 void
 cl_sim::stop(class cl_ev_brk *brk)
 {
-  class cl_commander *cmd= app->get_commander();
+  class cl_commander_base *cmd= app->get_commander();
 
   state&= ~SIM_GO;
   if (cmd->frozen_console)
     {
-      class cl_console *con= cmd->frozen_console;
+      class cl_console_base *con= cmd->frozen_console;
       /*
       if (reason == resUSER &&
 	  cmd->frozen_console->input_avail())

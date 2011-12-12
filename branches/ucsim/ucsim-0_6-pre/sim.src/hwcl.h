@@ -113,7 +113,7 @@ public:
   virtual t_mem read(class cl_memory_cell *cell) { return(cell->get()); }
   virtual void write(class cl_memory_cell * /*cell*/, t_mem * /*val*/) {}
 
-  virtual void set_cmd(class cl_cmdline *cmdline, class cl_console *con);
+  virtual void set_cmd(class cl_cmdline *cmdline, class cl_console_base *con);
   virtual class cl_memory_cell *register_cell(class cl_address_space *mem,
 					      t_addr addr,
 					      class cl_memory_cell **store,
@@ -134,7 +134,7 @@ public:
                       void * /*params*/) {}
   virtual void inform_partners(enum hw_event he, void *params);
 
-  virtual void print_info(class cl_console *con);
+  virtual void print_info(class cl_console_base *con);
 };
 
 class cl_hws: public cl_list

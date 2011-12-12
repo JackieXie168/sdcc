@@ -80,7 +80,7 @@ COMMAND_DO_WORK_UC(cl_state_cmd)
 //		     class cl_cmdline *cmdline, class cl_console *con)
 COMMAND_DO_WORK_UC(cl_file_cmd)
 {
-  char *fname= 0;
+  const char *fname= 0;
   long l;
   
   if ((cmdline->param(0) == 0) ||
@@ -485,7 +485,7 @@ COMMAND_DO_WORK_UC(cl_fill_cmd)
 
 int
 cl_where_cmd::do_real_work(class cl_uc *uc,
-			   class cl_cmdline *cmdline, class cl_console *con,
+			   class cl_cmdline *cmdline, class cl_console_base *con,
 			   bool case_sensitive)
 {
   class cl_memory *mem= 0;

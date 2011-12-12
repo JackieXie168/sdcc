@@ -45,17 +45,17 @@ public:
     double f_value;
     void *p_value;
   };
-  char *s_value;
+  const char *s_value;
 
 public:  
   cl_arg(long lv);
-  cl_arg(char *lv);
+  cl_arg(const char *lv);
   cl_arg(double fv);
   cl_arg(void *pv);
   virtual ~cl_arg(void);
 
   virtual bool get_ivalue(long *value);
-  virtual char *get_svalue(void);
+  virtual const char *get_svalue(void);
   virtual double get_fvalue(void);
   virtual void *get_pvalue(void);
   virtual bool get_bit_address(class cl_uc *uc, // input
@@ -100,10 +100,10 @@ public:
   } value;
 
 public:
-  cl_cmd_arg(/*class cl_uc *iuc,*/ long i): cl_arg(i)
-  { /*uc= iuc;*/ interpreted_as_string= DD_FALSE; }
-  cl_cmd_arg(/*class cl_uc *iuc,*/ char *s): cl_arg(s)
-  { /*uc= iuc;*/ interpreted_as_string= DD_FALSE; }
+  cl_cmd_arg(long i): cl_arg(i)
+  { interpreted_as_string= DD_FALSE; }
+  cl_cmd_arg(const char *s): cl_arg(s)
+  { interpreted_as_string= DD_FALSE; }
   virtual ~cl_cmd_arg(void);
 
   virtual int is_string(void) { return(DD_FALSE); }
@@ -120,7 +120,7 @@ public:
 class cl_cmd_int_arg: public cl_cmd_arg
 {
 public:
-  cl_cmd_int_arg(/*class cl_uc *iuc,*/ long addr);
+  cl_cmd_int_arg(long addr);
 
   virtual bool get_address(class cl_uc *uc, t_addr *addr);
   virtual bool get_bit_address(class cl_uc *uc, // input
@@ -133,7 +133,7 @@ public:
 class cl_cmd_sym_arg: public cl_cmd_arg
 {
 public:
-  cl_cmd_sym_arg(/*class cl_uc *iuc,*/ char *sym);
+  cl_cmd_sym_arg(const char *sym);
 
   virtual bool get_address(class cl_uc *uc, t_addr *addr);
   virtual bool get_bit_address(class cl_uc *uc, // input
@@ -149,7 +149,7 @@ public:
 class cl_cmd_str_arg: public cl_cmd_arg
 {
 public:
-  cl_cmd_str_arg(/*class cl_uc *iuc,*/ char *str);
+  cl_cmd_str_arg(const char *str);
 
   virtual int is_string(void) { return(1); }
   virtual bool as_number(void) { return(DD_FALSE); }
@@ -161,8 +161,7 @@ public:
   class cl_cmd_arg *sfr, *bit;
 
 public:
-  cl_cmd_bit_arg(/*class cl_uc *iuc,*/
-		 class cl_cmd_arg *asfr, class cl_cmd_arg *abit);
+  cl_cmd_bit_arg(class cl_cmd_arg *asfr, class cl_cmd_arg *abit);
   virtual ~cl_cmd_bit_arg(void);
 
   virtual bool get_address(class cl_uc *uc, t_addr *addr);
@@ -178,8 +177,7 @@ public:
   class cl_cmd_arg *name_arg, *index;
 
 public:
-  cl_cmd_array_arg(/*class cl_uc *iuc,*/
-		   class cl_cmd_arg *aname, class cl_cmd_arg *aindex);
+  cl_cmd_array_arg(class cl_cmd_arg *aname, class cl_cmd_arg *aindex);
   virtual ~cl_cmd_array_arg(void);
   virtual bool as_hw(class cl_uc *uc);
 };

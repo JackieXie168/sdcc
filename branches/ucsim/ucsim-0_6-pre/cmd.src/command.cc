@@ -42,7 +42,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
  */
 
 cl_cmdline::cl_cmdline(class cl_app *the_app,
-		       char *acmd, class cl_console *acon):
+		       char *acmd, class cl_console_base *acon):
   cl_base()
 {
   app= the_app;
@@ -347,7 +347,7 @@ cl_cmdline::shift(void)
 int
 cl_cmdline::repeat(void)
 {
-  char *n;
+  const char *n;
   return((n= get_name()) &&
 	 *n == '\n');
 }
@@ -370,7 +370,7 @@ cl_cmdline::insert_param(int pos, class cl_cmd_arg *param)
 }
 
 bool
-cl_cmdline::syntax_match(class cl_uc *uc, char *syntax)
+cl_cmdline::syntax_match(class cl_uc *uc, const char *syntax)
 {
   if (!syntax)
     return(DD_FALSE);
@@ -383,7 +383,7 @@ cl_cmdline::syntax_match(class cl_uc *uc, char *syntax)
   if (!params->count)
     return(DD_FALSE);
   //printf("syntax %s?\n",syntax);
-  char *p= syntax;
+  const char *p= syntax;
   int iparam= 0;
   class cl_cmd_arg *parm= (class cl_cmd_arg *)(params->at(iparam));
   while (*p &&
@@ -511,10 +511,10 @@ cl_cmdline::set_data_list(class cl_cmd_arg *parm, int *iparm)
  */
 
 cl_cmd::cl_cmd(enum cmd_operate_on op_on,
-	       char *aname,
+	       const char *aname,
 	       int can_rep,
-	       char *short_hlp,
-	       char *long_hlp):
+	       const char *short_hlp,
+	       const char *long_hlp):
   cl_base()
 {
   operate_on= op_on;
@@ -537,20 +537,20 @@ cl_cmd::~cl_cmd(void)
 {
   delete names;
   if (short_help)
-    free(short_help);
+    free((void*)short_help);
   if (long_help)
-    free(long_help);
+    free((void*)long_help);
 }
 
 void
-cl_cmd::add_name(char *nam)
+cl_cmd::add_name(const char *nam)
 {
   if (nam)
     names->add(strdup(nam));
 }
 
 int
-cl_cmd::name_match(char *aname, int strict)
+cl_cmd::name_match(const char *aname, int strict)
 {
   int i;
   
@@ -594,7 +594,7 @@ cl_cmd::syntax_ok(class cl_cmdline *cmdline)
 
 int
 cl_cmd::work(class cl_app *app,
-	     class cl_cmdline *cmdline, class cl_console *con)
+	     class cl_cmdline *cmdline, class cl_console_base *con)
 {
   if (!syntax_ok(cmdline))
     return(0);
@@ -631,7 +631,7 @@ cl_cmd::work(class cl_app *app,
 }
 
 int
-cl_cmd::do_work(class cl_cmdline *cmdline, class cl_console *con)
+cl_cmd::do_work(class cl_cmdline *cmdline, class cl_console_base *con)
 {
   con->dd_printf("Command \"%s\" does nothing.\n",
 		 (char*)(names->at(0)));
@@ -640,7 +640,7 @@ cl_cmd::do_work(class cl_cmdline *cmdline, class cl_console *con)
 
 int
 cl_cmd::do_work(class cl_app *app,
-		class cl_cmdline *cmdline, class cl_console *con)
+		class cl_cmdline *cmdline, class cl_console_base *con)
 {
   con->dd_printf("Command \"%s\" does nothing on application.\n",
 		 (char*)(names->at(0)));
@@ -649,7 +649,7 @@ cl_cmd::do_work(class cl_app *app,
 
 int
 cl_cmd::do_work(class cl_sim *sim,
-		class cl_cmdline *cmdline, class cl_console *con)
+		class cl_cmdline *cmdline, class cl_console_base *con)
 {
   con->dd_printf("Command \"%s\" does nothing on simulator.\n",
 		 (char*)(names->at(0)));
@@ -658,7 +658,7 @@ cl_cmd::do_work(class cl_sim *sim,
 
 int
 cl_cmd::do_work(class cl_uc *uc,
-		class cl_cmdline *cmdline, class cl_console *con)
+		class cl_cmdline *cmdline, class cl_console_base *con)
 {
   con->dd_printf("Command \"%s\" does nothing on microcontroller.\n",
 		 (char*)(names->at(0)));
@@ -715,7 +715,7 @@ cl_cmdset::get_cmd(class cl_cmdline *cmdline, bool accept_last)
 }
 
 class cl_cmd *
-cl_cmdset::get_cmd(char *cmd_name)
+cl_cmdset::get_cmd(const char *cmd_name)
 {
   int i;
 
@@ -767,10 +767,10 @@ cl_cmdset::replace(char *nam, class cl_cmd *cmd)
  *____________________________________________________________________________
  */
 
-cl_super_cmd::cl_super_cmd(char *aname,
+cl_super_cmd::cl_super_cmd(const char *aname,
 			   int  can_rep,
-			   char *short_hlp,
-			   char *long_hlp,
+			   const char *short_hlp,
+			   const char *long_hlp,
 			   class cl_cmdset *acommands):
   cl_cmd(operate_on_none, aname, can_rep, short_hlp, long_hlp)
 {
@@ -785,7 +785,7 @@ cl_super_cmd::~cl_super_cmd(void)
 
 int
 cl_super_cmd::work(class cl_app *app,
-		   class cl_cmdline *cmdline, class cl_console *con)
+		   class cl_cmdline *cmdline, class cl_console_base *con)
 {
   class cl_cmd *cmd= 0;
 

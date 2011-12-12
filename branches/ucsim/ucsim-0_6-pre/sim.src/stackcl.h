@@ -57,13 +57,13 @@ public:
 	      t_addr iPC, t_addr iSP_before, t_addr iSP_after);
   virtual ~cl_stack_op(void);
   virtual class cl_stack_op *mk_copy(void);
-  static void info_head(class cl_console *con);
-  virtual void info(class cl_console *con, class cl_uc *uc);
+  static void info_head(class cl_console_base *con);
+  virtual void info(class cl_console_base *con, class cl_uc *uc);
 protected:
-  virtual void print_info(class cl_console *con);
+  virtual void print_info(class cl_console_base *con);
 public:
-  virtual char *get_op_name(void);
-  virtual char *get_matching_name(void) { return(cchars("unknown")); }
+  virtual const char *get_op_name(void);
+  virtual const char *get_matching_name(void) { return(cchars("unknown")); }
   virtual bool sp_increased(void);
   virtual int data_size(void);
   virtual bool match(class cl_stack_op *op);
@@ -86,10 +86,10 @@ public:
 		t_addr iSP_before, t_addr iSP_after);
   virtual class cl_stack_op *mk_copy(void);
 protected:
-  virtual char *get_op_name(void);
-  virtual void print_info(class cl_console *con);
+  virtual const char *get_op_name(void);
+  virtual void print_info(class cl_console_base *con);
 public:
-  virtual char *get_matching_name(void);
+  virtual const char *get_matching_name(void);
   virtual enum stack_op get_matching_op(void);
   virtual bool match(class cl_stack_op *op);
 };
@@ -102,10 +102,10 @@ public:
 		t_addr iSP_before, t_addr iSP_after);
   virtual class cl_stack_op *mk_copy(void);
 protected:
-  virtual char *get_op_name(void);
-  virtual void print_info(class cl_console *con);
+  virtual const char *get_op_name(void);
+  virtual void print_info(class cl_console_base *con);
 public:
-  virtual char *get_matching_name(void);
+  virtual const char *get_matching_name(void);
   virtual enum stack_op get_matching_op(void);
   virtual bool match(class cl_stack_op *op);
 };
@@ -119,10 +119,10 @@ public:
   cl_stack_push(t_addr iPC, t_mem idata, t_addr iSP_before, t_addr iSP_after);
   virtual class cl_stack_op *mk_copy(void);
 protected:
-  virtual char *get_op_name(void);
-  virtual void print_info(class cl_console *con);
+  virtual const char *get_op_name(void);
+  virtual void print_info(class cl_console_base *con);
 public:
-  virtual char *get_matching_name(void);
+  virtual const char *get_matching_name(void);
   virtual enum stack_op get_matching_op(void);
   virtual bool match(class cl_stack_op *op);
 };
@@ -134,9 +134,9 @@ public:
   cl_stack_ret(t_addr iPC, t_addr iaddr, t_addr iSP_before, t_addr iSP_after);
   virtual class cl_stack_op *mk_copy(void);
 protected:
-  virtual char *get_op_name(void);
+  virtual const char *get_op_name(void);
 public:
-  virtual char *get_matching_name(void);
+  virtual const char *get_matching_name(void);
   virtual enum stack_op get_matching_op(void);
   virtual bool match(class cl_stack_op *op);
 };
@@ -148,9 +148,9 @@ public:
   cl_stack_iret(t_addr iPC, t_addr iaddr, t_addr iSP_before, t_addr iSP_after);
   virtual class cl_stack_op *mk_copy(void);
 protected:
-  virtual char *get_op_name(void);
+  virtual const char *get_op_name(void);
 public:
-  virtual char *get_matching_name(void);
+  virtual const char *get_matching_name(void);
   virtual enum stack_op get_matching_op(void);
   virtual bool match(class cl_stack_op *op);
 };
@@ -162,9 +162,9 @@ public:
   cl_stack_pop(t_addr iPC, t_mem idata, t_addr iSP_before, t_addr iSP_after);
   virtual class cl_stack_op *mk_copy(void);
 protected:
-  virtual char *get_op_name(void);
+  virtual const char *get_op_name(void);
 public:
-  virtual char *get_matching_name(void);
+  virtual const char *get_matching_name(void);
   virtual enum stack_op get_matching_op(void);
   virtual bool match(class cl_stack_op *op);
 };
@@ -197,7 +197,7 @@ public:
 public:
   cl_error_stack_tracker_wrong_handle(bool write_op);
 
-  virtual void print(class cl_commander *c);
+  virtual void print(class cl_commander_base *c);
 };
 
 class cl_error_stack_tracker_empty: public cl_error_stack_tracker
@@ -208,7 +208,7 @@ public:
   cl_error_stack_tracker_empty(class cl_stack_op *op);
   virtual ~cl_error_stack_tracker_empty(void);
 
-  virtual void print(class cl_commander *c);
+  virtual void print(class cl_commander_base *c);
 };
 
 class cl_error_stack_tracker_unmatch: public cl_error_stack_tracker
@@ -220,7 +220,7 @@ public:
                                 class cl_stack_op *op);
   virtual ~cl_error_stack_tracker_unmatch(void);
 
-  virtual void print(class cl_commander *c);
+  virtual void print(class cl_commander_base *c);
 };
 
 class cl_error_stack_tracker_inconsistent: public cl_error_stack_tracker
@@ -233,7 +233,7 @@ public:
 				      int the_unread_data_size);
   virtual ~cl_error_stack_tracker_inconsistent(void);
 
-  virtual void print(class cl_commander *c);
+  virtual void print(class cl_commander_base *c);
 };
 
 class cl_stack_error_registry: public cl_error_registry

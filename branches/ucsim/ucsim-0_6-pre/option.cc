@@ -60,7 +60,7 @@
  *
  */
 
-cl_option::cl_option(class cl_base *the_creator, char *aname, const char *Ihelp):
+cl_option::cl_option(class cl_base *the_creator, const char *aname, const char *Ihelp):
   cl_base()
 {
   creator= the_creator;
@@ -226,7 +226,7 @@ cl_option::set_value(double opt)
 void *
 cl_options::key_of(void *item)
 {
-  return(((class cl_base *)item)->get_name());
+  return (void*)(((class cl_base *)item)->get_name());
 }
 
 int
@@ -262,7 +262,7 @@ cl_options::get_option(const char *the_name)
 {
   t_index idx;
 
-  if (search(the_name, idx))
+  if (search((void*)the_name, idx))
     return((class cl_option *)(at(idx)));
   return(0);
 }
@@ -273,33 +273,33 @@ cl_options::get_option(const char *the_name, class cl_base *creator)
   t_index idx;
   class cl_option *o;
 
-  if (!search(the_name, idx))
+  if (!search((void*)the_name, idx))
     return(0);
   if (idx > 0)
     {
       idx--;
       o= (class cl_option *)(at(idx));
-      while (compare(the_name, key_of(o)) == 0 &&
+      while (compare((void*)the_name, key_of(o)) == 0 &&
 	     idx > 0)
 	{
 	  idx--;
 	  o= (class cl_option *)(at(idx));
 	}
-      if (compare(the_name, key_of(o)) != 0)
+      if (compare((void*)the_name, key_of(o)) != 0)
 	idx++;
     }
   o= (class cl_option *)(at(idx));
-  while (compare(the_name, key_of(o)) == 0 &&
+  while (compare((void*)the_name, key_of(o)) == 0 &&
 	 o->get_creator() != creator &&
 	 idx < count)
     {
       idx++;
       o= (class cl_option *)(at(idx));
-      if (compare(the_name, key_of(o)) == 0 &&
+      if (compare((void*)the_name, key_of(o)) == 0 &&
 	  o->get_creator() == creator)
 	return(o);
     }
-  if (compare(the_name, key_of(o)) == 0 &&
+  if (compare((void*)the_name, key_of(o)) == 0 &&
       o->get_creator() == creator)
     return(o);
   return(0);
@@ -311,33 +311,33 @@ cl_options::get_option(const char *the_name, char *creator)
   t_index idx;
   class cl_option *o;
 
-  if (!search(the_name, idx))
+  if (!search((void*)the_name, idx))
     return(0);
   if (idx > 0)
     {
       idx--;
       o= (class cl_option *)(at(idx));
-      while (compare(the_name, key_of(o)) == 0 &&
+      while (compare((void*)the_name, key_of(o)) == 0 &&
 	     idx > 0)
 	{
 	  idx--;
 	  o= (class cl_option *)(at(idx));
 	}
-      if (compare(the_name, key_of(o)) != 0)
+      if (compare((void*)the_name, key_of(o)) != 0)
 	idx++;
     }
   o= (class cl_option *)(at(idx));
-  while (compare(the_name, key_of(o)) == 0 &&
+  while (compare((void*)the_name, key_of(o)) == 0 &&
 	 strcmp(object_name(o->get_creator()), creator) != 0 &&
 	 idx < count)
     {
       idx++;
       o= (class cl_option *)(at(idx));
-      if (compare(the_name, key_of(o)) == 0 &&
+      if (compare((void*)the_name, key_of(o)) == 0 &&
 	  strcmp(object_name(o->get_creator()), creator) == 0)
 	return(o);
     }
-  if (compare(the_name, key_of(o)) == 0 &&
+  if (compare((void*)the_name, key_of(o)) == 0 &&
       strcmp(object_name(o->get_creator()), creator) == 0)
     return(o);
   return(0);
@@ -466,7 +466,7 @@ cl_optref::~cl_optref(void)
 class cl_option *
 cl_optref::create(class cl_base *creator,
 		  enum option_type type,
-		  char *the_name, char *help)
+		  const char *the_name, const char *help)
 {
   if (option)
     option->del_reference(this);
@@ -505,7 +505,7 @@ cl_optref::create(class cl_base *creator,
 }
 
 void
-cl_optref::default_option(char *the_name)
+cl_optref::default_option(const char *the_name)
 {
   class cl_option *o= application->options->get_option(the_name, application);
 
@@ -532,7 +532,7 @@ cl_optref::use(void)
 }
 
 class cl_option *
-cl_optref::use(char *the_name)
+cl_optref::use(const char *the_name)
 {
   if (option)
     option->del_reference(this);
@@ -569,7 +569,7 @@ cl_optref::get_value(bool)
 }
 
 char *
-cl_optref::get_value(char *)
+cl_optref::get_value(const char *)
 {
   if (!option)
     {
@@ -644,12 +644,12 @@ cl_optref::get_value(double)
  */
 
 cl_bool_option::cl_bool_option(class cl_base *the_creator,
-			       char *aname, const char *Ihelp):
+			       const char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
 void
-cl_bool_option::print(class cl_console *con)
+cl_bool_option::print(class cl_console_base *con)
 {
   if (/**(bool *)option*/value.bval)
     con->dd_printf("TRUE");
@@ -683,7 +683,7 @@ cl_bool_option::set_value(char *s)
  */
 
 cl_string_option::cl_string_option(class cl_base *the_creator,
-				   char *aname, const char *Ihelp):
+				   const char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
@@ -697,7 +697,7 @@ cl_string_option::operator=(class cl_option &o)
 }
 
 void
-cl_string_option::print(class cl_console *con)
+cl_string_option::print(class cl_console_base *con)
 {
   if (/**(bool *)option*/value.sval)
     con->dd_printf("\"%s\"", value.sval);
@@ -713,7 +713,7 @@ cl_string_option::print(class cl_console *con)
  */
 
 cl_pointer_option::cl_pointer_option(class cl_base *the_creator,
-				     char *aname, const char *Ihelp):
+				     const char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
@@ -725,7 +725,7 @@ cl_pointer_option::operator=(class cl_option &o)
 }
 
 void
-cl_pointer_option::print(class cl_console *con)
+cl_pointer_option::print(class cl_console_base *con)
 {
   if (value.pval)
     con->dd_printf("\"%p\"", value.pval);
@@ -747,7 +747,7 @@ cl_cons_debug_opt::cl_cons_debug_opt(class cl_app *the_app,
 }
 
 void
-cl_cons_debug_opt::print(class cl_console *con)
+cl_cons_debug_opt::print(class cl_console_base *con)
 {
   if (con->flags & CONS_DEBUG)
     con->dd_printf("TRUE");
@@ -802,12 +802,12 @@ cl_cons_debug_opt::set_value(char *s)
  */
 
 cl_number_option::cl_number_option(class cl_base *the_creator,
-				   char *aname, const char *Ihelp):
+				   const char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
 void
-cl_number_option::print(class cl_console *con)
+cl_number_option::print(class cl_console_base *con)
 {
   con->dd_printf("%ld", value.ival);
 }
@@ -828,12 +828,12 @@ cl_number_option::set_value(char *s)
  */
 
 cl_float_option::cl_float_option(class cl_base *the_creator,
-				 char *aname, const char *Ihelp):
+				 const char *aname, const char *Ihelp):
   cl_option(the_creator, aname, Ihelp)
 {}
 
 void
-cl_float_option::print(class cl_console *con)
+cl_float_option::print(class cl_console_base *con)
 {
   con->dd_printf("%.3f", value.fval);
 }
