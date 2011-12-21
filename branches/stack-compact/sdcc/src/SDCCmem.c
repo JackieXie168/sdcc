@@ -396,13 +396,15 @@ initMem ()
 void
 allocIntoSeg (symbol *sym)
 {
+  memmap *segment;
+
   if (SPEC_ADDRSPACE (sym->etype))
     {
       namedspacemap *nm;
       for (nm = namedspacemaps; nm; nm = nm->next)
         if (!strcmp (nm->name, SPEC_ADDRSPACE (sym->etype)->name))
           break;
-          
+
       if (!nm)
         {
           nm = Safe_alloc (sizeof (namedspacemap));
@@ -412,12 +414,12 @@ allocIntoSeg (symbol *sym)
           nm->next = namedspacemaps;
           namedspacemaps = nm;
         }
-        
+
       addSet (&nm->map->syms, sym);
-      
+
       return;
     }
-  memmap *segment = SPEC_OCLS (sym->etype);
+  segment = SPEC_OCLS (sym->etype);
   addSet (&segment->syms, sym);
   if (segment == pdata)
     sym->iaccess = 1;
@@ -956,7 +958,6 @@ allocVariables (symbol * symChain)
   /* go thru the symbol chain   */
   for (sym = symChain; sym; sym = sym->next)
     {
-
       /* if this is a typedef then add it */
       /* to the typedef table             */
       if (IS_TYPEDEF (sym->etype))
@@ -1052,8 +1053,7 @@ redoStackOffsets (void)
      on the stack. We will eliminate those variables
      which do not have the allocReq flag thus reducing
      the stack space */
-  for (sym = setFirstItem (istack->syms); sym;
-       sym = setNextItem (istack->syms))
+  for (sym = setFirstItem (istack->syms); sym; sym = setNextItem (istack->syms))
     {
       int size = getSize (sym->type);
       /* nothing to do with parameters so continue */
@@ -1097,8 +1097,7 @@ redoStackOffsets (void)
 
   /* do the same for the external stack */
 
-  for (sym = setFirstItem (xstack->syms); sym;
-       sym = setNextItem (xstack->syms))
+  for (sym = setFirstItem (xstack->syms); sym; sym = setNextItem (xstack->syms))
     {
       int size = getSize (sym->type);
       /* nothing to do with parameters so continue */
@@ -1117,7 +1116,6 @@ redoStackOffsets (void)
       SPEC_STAK (sym->etype) = sym->stack = (xsPtr + 1);
       xsPtr += size;
     }
-
 }
 
 #define SP_BP(sp, bp) (options.omitFramePtr ? sp : bp)
