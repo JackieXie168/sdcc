@@ -959,7 +959,7 @@ positionRegs (symbol * result, symbol * opsym)
   int i, j = 0, shared = 0;
   int change = 0;
 
-  D (D_ALLOC, ("positionRegs: on result %p opsum %p line %u\n", result, opsym, lineno));
+  D (D_ALLOC, ("positionRegs: on result %p opsym %p line %u\n", result, opsym, lineno));
 
   /* if the result has been spilt then cannot share */
   if (opsym->isspilt)
@@ -967,6 +967,7 @@ positionRegs (symbol * result, symbol * opsym)
 again:
   shared = 0;
   /* first make sure that they actually share */
+
   for (i = 0; i < count; i++)
     {
       for (j = 0; j < count; j++)
@@ -1358,7 +1359,7 @@ fillGaps ()
                 continue;
               if (SKIP_IC (ic))
                 continue;
-              if (!IS_ASSIGN_ICODE (ic))
+              if (IS_ASSIGN_ICODE (ic))
                 continue;
 
               /* if result is assigned to registers */

@@ -772,20 +772,6 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
   else
     functype = func->ftype;
 
-  /* if the function is being called via a pointer &  */
-  /* it has not been defined reentrant then we cannot */
-  /* have parameters                                  */
-  /* PIC16 port can... */
-  if (!TARGET_IS_PIC16)
-    {
-      if (func->type != EX_VALUE && !IFFUNC_ISREENT (functype) && !options.stackAuto)
-        {
-          werror (E_NONRENT_ARGS);
-          fatalError++;
-          return 1;
-        }
-    }
-
   /* if defined parameters ended but actual parameters */
   /* exist and this is not defined as a variable arg   */
   if (!defParm && *actParm && !IFFUNC_HASVARARGS (functype))
@@ -2607,8 +2593,8 @@ checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit)
       else                      // from a pointer to a pointer
         {
           if (implicit && getAddrspace (newType->next) != getAddrspace (orgType->next))
-            {  
-              errors += werror (E_INCOMPAT_PTYPES);                 
+            {
+              errors += werror (E_INCOMPAT_PTYPES);
             }
           else if (IS_GENPTR (newType) && IS_VOID (newType->next))
             {                   // cast to void* is always allowed
@@ -3087,9 +3073,14 @@ decorateType (ast * tree, RESULT_TYPE resultType)
       /*----------------------------*/
       /*  address of                */
       /*----------------------------*/
-      p = newLink (DECLARATOR);
+      if (IS_FUNC (LTYPE (tree)))
+        {
+          // this ought to be ignored
+          return (tree->left);
+        }
+
       /* if bit field then error */
-      if (IS_BITFIELD (tree->left->etype) || (IS_BITVAR (tree->left->etype) && (TARGET_IS_MCS51 || TARGET_IS_XA51 || TARGET_IS_DS390)))
+      if (IS_BITFIELD (tree->left->etype) || (IS_BITVAR (tree->left->etype) && TARGET_MCS51_LIKE))
         {
           werrorfl (tree->filename, tree->lineno, E_ILLEGAL_ADDR, "address of bit variable");
           goto errorTreeReturn;
@@ -3099,12 +3090,6 @@ decorateType (ast * tree, RESULT_TYPE resultType)
         {
           werrorfl (tree->filename, tree->lineno, E_ILLEGAL_ADDR, "address of register variable");
           goto errorTreeReturn;
-        }
-
-      if (IS_FUNC (LTYPE (tree)))
-        {
-          // this ought to be ignored
-          return (tree->left);
         }
 
       if (IS_LITERAL (LTYPE (tree)))
@@ -3118,6 +3103,8 @@ decorateType (ast * tree, RESULT_TYPE resultType)
           werrorfl (tree->filename, tree->lineno, E_LVALUE_REQUIRED, "address of");
           goto errorTreeReturn;
         }
+
+      p = newLink (DECLARATOR);
       if (!LETYPE (tree))
         DCL_TYPE (p) = POINTER;
       else if (SPEC_SCLS (LETYPE (tree)) == S_CODE)
@@ -4027,7 +4014,6 @@ decorateType (ast * tree, RESULT_TYPE resultType)
                   break;
                 default:
                   gptype = 0;
-
                   if (TARGET_IS_PIC16 && (SPEC_SCLS (sym->etype) == S_FIXED))
                     gptype = GPTYPE_NEAR;
                 }
@@ -6260,7 +6246,7 @@ inlineTempVar (sym_link * type, int level)
   SPEC_EXTR (sym->etype) = 0;
   SPEC_STAT (sym->etype) = 0;
   if (IS_SPEC (sym->type))
-    { 
+    {
       SPEC_VOLATILE (sym->type) = 0;
       SPEC_ADDRSPACE (sym->type) = 0;
     }
@@ -7530,12 +7516,12 @@ astErrors (ast * t)
  * >   info node:   (gcc-4.1)Offsetof
  * >
  * >      primary:
- * >      	"__builtin_offsetof" "(" `typename' "," offsetof_member_designator ")"
+ * >        "__builtin_offsetof" "(" `typename' "," offsetof_member_designator ")"
  * >
  * >      offsetof_member_designator:
- * >      	  `identifier'
- * >      	| offsetof_member_designator "." `identifier'
- * >      	| offsetof_member_designator "[" `expr' "]"
+ * >          `identifier'
+ * >        | offsetof_member_designator "." `identifier'
+ * >        | offsetof_member_designator "[" `expr' "]"
  * >
  * >  This extension is sufficient such that
  * >
