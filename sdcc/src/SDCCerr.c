@@ -236,7 +236,7 @@ struct
   { E_EXTERN_MISMATCH, ERROR_LEVEL_ERROR,
      "extern definition for '%s' mismatches with declaration.", 0 },
   { E_NONRENT_ARGS, ERROR_LEVEL_ERROR,
-     "Functions called via pointers must be 'reentrant' to take this many arguments", 0 },
+     "Functions called via pointers must be 'reentrant' to take this many (bytes for) arguments", 0 },
   { W_DOUBLE_UNSUPPORTED, ERROR_LEVEL_WARNING,
      "type 'double' not supported assuming 'float'", 0 },
   { W_COMP_RANGE, ERROR_LEVEL_WARNING,
@@ -472,6 +472,8 @@ struct
      "Invalid integer suffix '%s' in integer constant", 0},
   { E_AUTO_ADDRSPACE, ERROR_LEVEL_ERROR,
      "named address space not allowed for automatic var '%s'", 0},
+  { W_NORETURNRETURN, ERROR_LEVEL_WARNING,
+     "return in _Noreturn function", 0},
 };
 
 /*
@@ -511,13 +513,13 @@ vwerror (int errNum, va_list marker)
 
   if (errNum > NELEM (ErrTab))
     {
-      fprintf (_SDCCERRG.out, 
+      fprintf (_SDCCERRG.out,
               "Internal error: bad error number %d.", errNum);
       return 0;
     }
   if (NELEM (ErrTab) != NUMBER_OF_ERROR_MESSAGES || ErrTab[errNum].errIndex != errNum)
     {
-      fprintf (_SDCCERRG.out, 
+      fprintf (_SDCCERRG.out,
               "Internal error: error table entry for %d inconsistent.", errNum);
       return 0;
     }
@@ -525,8 +527,8 @@ vwerror (int errNum, va_list marker)
   if ((ErrTab[errNum].errType >= _SDCCERRG.logLevel) && (!ErrTab[errNum].disabled))
     {
       if (ErrTab[errNum].errType == ERROR_LEVEL_ERROR || _SDCCERRG.werror)
-        fatalError++ ;
-  
+        fatalError++;
+
       if (filename && lineno)
         {
           if (_SDCCERRG.style)
@@ -562,12 +564,12 @@ vwerror (int errNum, va_list marker)
           break;
 
         default:
-          break;                  
+          break;
         }
-    
-        vfprintf (_SDCCERRG.out, ErrTab[errNum].errText,marker);
-        fprintf (_SDCCERRG.out, "\n");
-        return 1;
+
+      vfprintf (_SDCCERRG.out, ErrTab[errNum].errText,marker);
+      fprintf (_SDCCERRG.out, "\n");
+      return 1;
     }
   else
     {
