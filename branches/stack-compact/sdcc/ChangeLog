@@ -1,3 +1,50 @@
+2011-12-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCralloc.hpp:
+	  Reduce stack space usage in recursion.
+
+2011-12-25 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* device/lib/r2k/setjmp.s,
+	* device/lib/z180/setjmp.s,
+	* device/lib/z80/setjmp.s: optimized
+	* device/lib/r2k/*,
+	* device/lib/z180/*,
+	* device/lib/z80/*: use native eol
+
+2011-12-24 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* device/include/setjmp.h: changed longjmp return type to void
+	* device/lib/_setjmp.c: but use int for the implementation
+
+2011-12-24 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCopt.c (replaceRegEqv): fixed bug 2938101
+
+2011-12-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCicode.c:
+	  Warn about return statements in _Noreturn functions.
+	* device/include/setjmp.h,
+	  device/lib/_setjmp.c:
+	  Make longjmp() a _Noreturn function, as required by the C11 standard.
+	* src/SDCClabel.c,
+	  src/z80/gen.c:
+	  Do some basic optimizations for _Noreturn functions.
+
+2011-12-23 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCClabel.c (labelIfx): fixed bug 3463455
+	* support/regression/tests/gcc-torture-execute-loop-12.c:
+	  reenable tests for hc08 and ds390
+	* support/regression/compact-results.py: wider test name field
+
+2011-12-22 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/SDCCerr.c: changed E_NONRENT_ARGS description
+
 2011-12-22 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCmain.c,

@@ -28,6 +28,7 @@
 
 #include <8051.h>
 #include <sdcc-lib.h>
+#define HIDE_LONGJMP
 #include <setjmp.h>
 
 #if defined(SDCC_STACK_AUTO) && defined(SDCC_USE_XSTACK)
@@ -189,7 +190,7 @@ _longjmp:
 	mov	@r0,a
 #ifdef SDCC_MODEL_HUGE
 	inc	dptr
-;../../device/lib/_setjmp.c:199:*((unsigned char __data *) lsp - 1) = *buf;
+;../../device/lib/_setjmp.c:199:*((unsigned char __data *) lsp - 2) = *buf;
 ;     genMinus
 ;     genMinusDec
 	dec	r0
