@@ -77,7 +77,7 @@ struct dis_entry DISASS_NAME() []= {
   { 0x001b, 0x00ff, ' ', 1, "DEC DE" },
   { 0x001c, 0x00ff, ' ', 1, "INC E" },
   { 0x001d, 0x00ff, ' ', 1, "DEC E" },
-  { 0x001e, 0x00ff, ' ', 2, "LD E" },
+  { 0x001e, 0x00ff, ' ', 2, "LD E,%b" },
   { 0x001f, 0x00ff, ' ', 1, "RRA" },
 
   { 0x0020, 0x00ff, 'R', 2, "JR NZ,%d" },
