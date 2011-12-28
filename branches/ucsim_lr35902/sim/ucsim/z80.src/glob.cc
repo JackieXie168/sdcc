@@ -106,8 +106,8 @@ struct dis_entry DISASS_NAME() []= {
   { 0x0031, 0x00ff, ' ', 3, "LD SP,%w" },
   { 0x0032, 0x00ff, ' ', 3, "LD (%w),A" },
   { 0x0033, 0x00ff, ' ', 1, "INC SP" },
-  { 0x0034, 0x00ff, ' ', 1, "INC HL" },
-  { 0x0035, 0x00ff, ' ', 1, "DEC HL" },
+  { 0x0034, 0x00ff, ' ', 1, "INC (HL)" },
+  { 0x0035, 0x00ff, ' ', 1, "DEC (HL)" },
   { 0x0036, 0x00ff, ' ', 2, "LD (HL),%b" },
   { 0x0037, 0x00ff, ' ', 1, "SCF" },
 

@@ -167,24 +167,24 @@ cl_lr35902::get_disasm_info(t_addr addr,
     case 0xcb:  /* ESC code to lots of op-codes, all 2-byte */
       code= get_mem(MEM_ROM_ID, addr++);
       i= 0;
-      while ((code & disass_r2k_cb[i].mask) != disass_r2k_cb[i].code &&
-        disass_r2k_cb[i].mnemonic)
+      while ((code & disass_lr35902_cb[i].mask) != disass_lr35902_cb[i].code &&
+        disass_lr35902_cb[i].mnemonic)
         i++;
-      dis_e = &disass_r2k_cb[i];
-      b= disass_r2k_cb[i].mnemonic;
+      dis_e = &disass_lr35902_cb[i];
+      b= disass_lr35902_cb[i].mnemonic;
       if (b != NULL)
-        len += (disass_r2k_cb[i].length + 1);
+        len += (disass_lr35902_cb[i].length + 1);
     break;
 
     default:
       i= 0;
-      while ((code & disass_r2k[i].mask) != disass_r2k[i].code &&
-             disass_r2k[i].mnemonic)
+      while ((code & disass_lr35902[i].mask) != disass_lr35902[i].code &&
+             disass_lr35902[i].mnemonic)
         i++;
-      dis_e = &disass_r2k[i];
-      b= disass_r2k[i].mnemonic;
+      dis_e = &disass_lr35902[i];
+      b= disass_lr35902[i].mnemonic;
       if (b != NULL)
-        len += (disass_r2k[i].length);
+        len += (disass_lr35902[i].length);
     break;
   }
 

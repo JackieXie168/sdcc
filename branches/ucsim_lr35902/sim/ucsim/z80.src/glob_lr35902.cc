@@ -100,8 +100,8 @@ struct dis_entry DISASS_NAME() []= {
   { 0x0031, 0x00ff, ' ', 3, "LD SP,%w" },
   { 0x0032, 0x00ff, ' ', 1, "LDD (HL),A" },  // unique to LR35902
   { 0x0033, 0x00ff, ' ', 1, "INC SP" },
-  { 0x0034, 0x00ff, ' ', 1, "INC HL" },
-  { 0x0035, 0x00ff, ' ', 1, "DEC HL" },
+  { 0x0034, 0x00ff, ' ', 1, "INC (HL)" },
+  { 0x0035, 0x00ff, ' ', 1, "DEC (HL)" },
   { 0x0036, 0x00ff, ' ', 2, "LD (HL),%b" },
   { 0x0037, 0x00ff, ' ', 1, "SCF" },
 
@@ -322,7 +322,7 @@ struct dis_entry DISASS_NAME() []= {
   { 0x00f6, 0x00ff, ' ', 2, "OR %b" },
   { 0x00f7, 0x00ff, ' ', 1, "RST 30H" },
 
-  { 0x00f8, 0x00ff, ' ', 2, "LD HL,(SP+%d)" },  // unique to LR35902
+  { 0x00f8, 0x00ff, ' ', 2, "LD HL,SP+%d" },  // unique to LR35902
   { 0x00f9, 0x00ff, ' ', 1, "LD SP,HL" },
   { 0x00fa, 0x00ff, ' ', 3, "LD A,(%w)" },  // unique to LR35902
   { 0x00fb, 0x00ff, ' ', 1, "EI" },
