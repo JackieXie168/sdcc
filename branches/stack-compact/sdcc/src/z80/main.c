@@ -836,20 +836,20 @@ PORT z80_port = {
    "STACK",
    "CODE",
    "DATA",
-   "ISEG",
+   NULL,                        /* idata */
    NULL,                        /* pdata */
-   "XSEG",
-   "BSEG",
+   NULL,                        /* xdata */
+   NULL,                        /* bit */
    "RSEG (ABS)",
    "GSINIT",
-   "OVERLAY",
+   NULL,                        /* overlay */
    "GSFINAL",
    "HOME",
    NULL,                        /* xidata */
    NULL,                        /* xinit */
    NULL,                        /* const_name */
-   "CABS",                      /* cabs_name */
-   NULL,                        /* xabs_name */
+   "CABS (ABS)",                /* cabs_name */
+   "DABS (ABS)",                /* xabs_name */
    NULL,                        /* iabs_name */
    NULL,
    NULL,
@@ -960,20 +960,20 @@ PORT z180_port = {
    "STACK",
    "CODE",
    "DATA",
-   "ISEG",
+   NULL,                        /* idata */
    NULL,                        /* pdata */
-   "XSEG",
-   "BSEG",
+   NULL,                        /* xdata */
+   NULL,                        /* bit */
    "RSEG (ABS)",
    "GSINIT",
-   "OVERLAY",
+   NULL,                        /* overlay */
    "GSFINAL",
    "HOME",
    NULL,                        /* xidata */
    NULL,                        /* xinit */
    NULL,                        /* const_name */
-   "CABS",                      /* cabs_name */
-   NULL,                        /* xabs_name */
+   "CABS (ABS)",                /* cabs_name */
+   "DABS (ABS)",                /* xabs_name */
    NULL,                        /* iabs_name */
    NULL,
    NULL,
@@ -1086,20 +1086,20 @@ PORT gbz80_port = {
    "STACK",
    "CODE",
    "DATA",
-   "ISEG",
+   NULL,                        /* idata */
    NULL,                        /* pdata */
-   "XSEG",
-   "BSEG",
+   NULL,                        /* xdata */
+   NULL,                        /* bit */
    "RSEG",
    "GSINIT",
-   "OVERLAY",
+   NULL,                        /* overlay */
    "GSFINAL",
    "HOME",
    NULL,                        /* xidata */
    NULL,                        /* xinit */
    NULL,                        /* const_name */
-   "CABS",                      /* cabs_name */
-   NULL,                        /* xabs_name */
+   "CABS (ABS)",                /* cabs_name */
+   "DABS (ABS)",                /* xabs_name */
    NULL,                        /* iabs_name */
    NULL,
    NULL,
@@ -1212,20 +1212,20 @@ PORT r2k_port = {
    "STACK",
    "CODE",
    "DATA",
-   "ISEG",
+   NULL,                        /* idata */
    NULL,                        /* pdata */
-   "XSEG",
-   "BSEG",
+   NULL,                        /* xdata */
+   NULL,                        /* bit */
    "RSEG (ABS)",
    "GSINIT",
-   "OVERLAY",
+   NULL,                        /* overlay */
    "GSFINAL",
    "HOME",
    NULL,                        /* xidata */
    NULL,                        /* xinit */
    NULL,                        /* const_name */
-   "CABS",                      /* cabs_name */
-   NULL,                        /* xabs_name */
+   "CABS (ABS)",                /* cabs_name */
+   "DABS (ABS)",                /* xabs_name */
    NULL,                        /* iabs_name */
    NULL,
    NULL,
