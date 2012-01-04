@@ -26,14 +26,42 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #include "z80cl.h"
 
+class cl_lr35902;
+
+const t_addr  lr35902_rom_start = 0x0000;
+const t_addr  lr35902_rom_size  = 0x4000;
+
+const t_addr  lr35902_ram_start = 0xA000;
+const t_addr  lr35902_ram_size  = 0x5F80;
+
+class lr35902_memory
+{
+ protected:
+  cl_uc  &uc_r;
+  
+ public:
+  cl_memory *rom;
+  cl_memory *ram;
+  
+  lr35902_memory( cl_uc &uc_p );
+  
+  virtual void init( void );
+  
+  
+  virtual void store1( TYPE_UWORD addr, t_mem val );
+  virtual void store2( TYPE_UWORD addr, TYPE_UWORD val );
+  
+  virtual TYPE_UBYTE  get1( TYPE_UWORD addr );
+  virtual TYPE_UWORD  get2( TYPE_UWORD addr );
+  
+  // fetch not included b/c it only uses the rom
+};
+
 
 class cl_lr35902: public cl_z80
 {
 public:
-  // from cl_z80:
-  //class cl_memory *ram;
-  //class cl_memory *rom;
-  //struct t_regs regs;  
+  lr35902_memory    mem;
   
 public:
   cl_lr35902(int Itype, int Itech, class cl_sim *asim);
@@ -57,6 +85,14 @@ public:
                         int *ret_len,
                         int *ret_branch,
                         int *immed_offset);
+  
+
+  // memory access altered to use the 'mem' object
+  virtual void store1( TYPE_UWORD addr, t_mem val );
+  virtual void store2( TYPE_UWORD addr, TYPE_UWORD val );
+  
+  virtual TYPE_UBYTE  get1( TYPE_UWORD addr );
+  virtual TYPE_UWORD  get2( TYPE_UWORD addr );
   
   
   // see #include "instcl.h" for Z80 versions

@@ -47,9 +47,10 @@
 
 /*******************************************************************/
 
+lr35902_memory::lr35902_memory( cl_uc &uc_parent_ref ):uc_r(uc_parent_ref) { }
 
 cl_lr35902::cl_lr35902(int Itype, int Itech, class cl_sim *asim):
-  cl_z80(Itype, Itech, asim)
+  cl_z80(Itype, Itech, asim), mem(*this)
 {
   type= Itype;
 }
@@ -59,12 +60,14 @@ cl_lr35902::init(void)
 {
   cl_uc::init(); /* Memories now exist */
 
-  rom= address_space(MEM_ROM_ID);
+  rom= address_space(MEM_ROM_ID);  // code goes here...
+  
   //  ram= mem(MEM_XRAM);
-  ram= rom;
+  ram= address_space(MEM_XRAM_ID);  // data goes here...
+  
   
   // zero out ram(this is assumed in regression tests)
-  for (int i=0x8000; i<0x10000; i++) {
+  for (int i=0xA000; i<0xFF80; i++) {
     ram->set((t_addr) i, 0);
   }
 
@@ -85,28 +88,87 @@ cl_lr35902::mk_hw_elements(void)
   /* t_uc::mk_hw() does nothing */
 }
 
+void lr35902_memory::init(void) {
+  cl_address_space *as_rom;
+  cl_address_space *as_ram;
+  
+  as_rom = new cl_address_space(MEM_ROM_ID,
+				lr35902_rom_start, lr35902_rom_size, 8);
+  as_rom->init();
+  uc_r.address_spaces->add(as_rom);
+  rom = as_rom;
+  
+  as_ram = new cl_address_space(MEM_XRAM_ID,
+				lr35902_ram_start, lr35902_ram_size, 8);
+  as_ram->init();
+  uc_r.address_spaces->add(as_ram);
+  ram = as_ram;
+}
+
 void
 cl_lr35902::make_memories(void)
 {
-  class cl_address_space *as;
-
-  as= new cl_address_space("rom", 0, 0x10000, 8);
-  as->init();
-  address_spaces->add(as);
-
-  class cl_address_decoder *ad;
-  class cl_memory_chip *chip;
-
-  chip= new cl_memory_chip("rom_chip", 0x10000, 8);
-  chip->init();
-  memchips->add(chip);
-  ad= new cl_address_decoder(as= address_space("rom"), chip, 0, 0xffff, 0);
-  ad->init();
-  as->decoders->add(ad);
-  ad->activate(0);
+  mem.init( );
 }
 
 
+void cl_lr35902::store1( TYPE_UWORD addr, t_mem val ) {
+  mem.store1( addr, val );
+}
+
+void cl_lr35902::store2( TYPE_UWORD addr, TYPE_UWORD val ) {
+  mem.store2( addr, val );
+}
+
+TYPE_UBYTE  cl_lr35902::get1( TYPE_UWORD addr ) {
+  return mem.get1( addr );
+}
+
+TYPE_UWORD  cl_lr35902::get2( TYPE_UWORD addr ) {
+  return mem.get2( addr );
+}
+
+void lr35902_memory::store1( TYPE_UWORD addr, t_mem val ) {
+  if (addr < lr35902_ram_start) {
+    /* flag illegal operation ? */
+    return;
+  }
+  
+  if ((addr- lr35902_ram_start) < lr35902_ram_size) {
+    ram->set(addr, val);
+  }
+}
+
+void lr35902_memory::store2( TYPE_UWORD addr, TYPE_UWORD val ) {
+  store1(addr,   val & 0xff);
+  store1(addr+1, (val >> 8) & 0xff);
+}
+
+TYPE_UBYTE  lr35902_memory::get1( TYPE_UWORD addr ) {
+  if (addr < lr35902_rom_size) {
+    return rom->get(addr);    
+  }
+  
+  if (addr < lr35902_ram_start) {
+    /* flag illegal operation ? */
+    return (addr & 0xff);
+  }
+  
+  if ((addr-lr35902_ram_start) < lr35902_ram_size) {
+    return ram->get(addr);
+  }
+  
+  return (addr & 0xff);
+}
+
+TYPE_UWORD  lr35902_memory::get2( TYPE_UWORD addr ) {
+  TYPE_UWORD  l, h;
+  
+  l = get1(addr  );
+  h = get1(addr+1);
+  
+  return (h << 8) | l;
+}
 
 /*
  * Help command interpreter
