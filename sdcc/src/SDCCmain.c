@@ -595,6 +595,7 @@ setDefaultOptions (void)
   options.stack10bit = 0;
   options.out_fmt = 0;
   options.max_allocs_per_node = 3000;
+  options.salloc = 0;
 
   /* now for the optimizations */
   /* turn on the everything */
