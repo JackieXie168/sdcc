@@ -25,7 +25,6 @@ typedef struct
     int reserveIY;
     int dump_graphs;
     int oldralloc;
-    int salloc;
   }
 Z80_OPTS;
 
@@ -43,11 +42,6 @@ extern Z80_OPTS z80_opts;
 #define OPTRALLOC_HL (!IS_GB)
 #define OPTRALLOC_A 1
 #define OPTRALLOC_IY !IY_RESERVED
-
-#define SALLOC_CH (z80_opts.salloc == 1 || z80_opts.salloc == 2) // Chaitin
-#define SALLOC_CHA (z80_opts.salloc == 2) // Chaitin with alignment
-#define SALLOC_TD (z80_opts.salloc == 3 || z80_opts.salloc == 4)
-#define SALLOC_TDS (z80_opts.salloc == 3) // Simplified
 
 enum
   {
