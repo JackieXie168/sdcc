@@ -150,6 +150,7 @@ char buffer[PATH_MAX * 2];
 #define OPTION_PEEP_RETURN      "--peep-return"
 #define OPTION_NO_PEEP_RETURN   "--no-peep-return"
 #define OPTION_NO_OPTSDCC_IN_ASM "--no-optsdcc-in-asm"
+#define OPTION_SALLOC           "--salloc"
 
 static const OPTION optionsTable[] = {
   {0,   NULL, NULL, "General options"},
@@ -230,6 +231,7 @@ static const OPTION optionsTable[] = {
   {0,   OPTION_PEEP_FILE, &options.peep_file, "<file> use this extra peephole file", CLAT_STRING},
   {0,   OPTION_OPT_CODE_SPEED, NULL, "Optimize for code speed rather than size"},
   {0,   OPTION_OPT_CODE_SIZE, NULL, "Optimize for code size rather than speed"},
+  {0, OPTION_SALLOC,          &options.salloc, "Choose stack allocator: 0 btree, 1 chaitin, 2 aligned chaitin, 3 simpl. th/k, 4 th/k", CLAT_INTEGER},
 
   {0,   NULL, NULL, "Internal debugging options"},
   {0,   "--dumpraw", &options.dump_raw, "Dump the internal structure after the initial parse"},

@@ -314,6 +314,7 @@ struct options
 /*  set *olaysSet;               * not implemented yet: overlay segments used in #pragma OVERLAY */
     int max_allocs_per_node;    /* Maximum number of allocations considered at each node in the tree-decomposition based register allocator */
     int noOptsdccInAsm;         /* Do not emit .optsdcc in asm */
+    int salloc;
   };
 
 /* forward definition for variables accessed globally */

@@ -1,5 +1,15 @@
 2012-01-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCglobl.h,
+	  src/z80/z80.h,
+	  src/z80/main.c,
+	  src/z80/ralloc.c,
+	  src/SDCCmain.c,
+	  src/SDCCsalloc.hpp:
+	  Preparations for enabling better stack handling for all ports.
+
+2012-01-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/ds390/ralloc.c,
 	  src/hc08/ralloc.c,
 	  src/SDCCmem.c,

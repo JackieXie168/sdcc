@@ -24,7 +24,13 @@
 extern "C"
 {
 #include "SDCCmem.h"
+#include "SDCCglobl.h"
 }
+
+#define SALLOC_CH (options.salloc == 1 || options.salloc == 2) // Chaitin
+#define SALLOC_CHA (options.salloc == 2) // Chaitin with alignment
+#define SALLOC_TD (options.salloc == 3 || options.salloc == 4)
+#define SALLOC_TDS (options.salloc == 3) // Simplified
 
 #if defined(TD_SALLOC) || defined(CH_SALLOC)
 template<class G_t, class I_t, class SI_t>
