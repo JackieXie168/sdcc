@@ -438,19 +438,18 @@ createStackSpil (symbol * sym)
   struct dbuf_s dbuf;
 
   D (D_ALLOC, ("createStackSpil: for sym %p\n", sym));
-//printf("Creating new spilllocation.\n");
   /* first go try and find a free one that is already
      existing on the stack */
      
 
-  if (!SALLOC_TD && ! SALLOC_CH && applyToSet (_G.stackSpil, isFree, &sloc, sym))
+  if (!SALLOC_TD && !SALLOC_CH && applyToSet (_G.stackSpil, isFree, &sloc, sym))
     {
       /* found a free one : just update & return */
       sym->usl.spillLoc = sloc;
       sym->stackSpil = 1;
       sloc->isFree = 0;
-      addSetHead (&sloc->usl.itmpStack, sym);
       sloc->block = btree_lowest_common_ancestor(sloc->block, sym->block);
+      addSetHead (&sloc->usl.itmpStack, sym);
       D (D_ALLOC, ("createStackSpil: found existing\n"));
       return sym;
     }

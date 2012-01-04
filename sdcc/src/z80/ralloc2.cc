@@ -29,6 +29,7 @@
 
 extern "C"
 {
+  #include "z80.h"
   unsigned char dryZ80iCode (iCode * ic);
 };
 

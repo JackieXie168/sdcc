@@ -3882,7 +3882,9 @@ genFunction (iCode * ic)
               else
                 emitcode ("push", fReturn[ofs]); /* without pushed++ */
             }
+#if 0
           stackAdjust -= sym->recvSize;
+#endif
           if (stackAdjust < 0)
             {
               assert (stackAdjust >= 0);
