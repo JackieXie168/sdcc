@@ -21,6 +21,11 @@
 #ifndef SDCCSALLOC_HH
 #define SDCCSALLOC_HH 1
 
+extern "C"
+{
+#include "SDCCmem.h"
+}
+
 #if defined(TD_SALLOC) || defined(CH_SALLOC)
 template<class G_t, class I_t, class SI_t>
 static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
@@ -51,8 +56,9 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
   for(unsigned int i = 0; i < boost::num_vertices(scon); i++)
      for(unsigned int j = i + 1; j < boost::num_vertices(scon); j++)
         {
-          short p = btree_lowest_common_ancestor(scon[i].sym->block, scon[j].sym->block);
-          if(p == scon[i].sym->block || p == scon[j].sym->block)
+          // block tree is broken.
+          //short p = btree_lowest_common_ancestor(scon[i].sym->block, scon[j].sym->block);
+          //if(p == scon[i].sym->block || p == scon[j].sym->block)
             boost::add_edge(i, j, scon);
         }
 

@@ -1637,6 +1637,7 @@ createStackSpil (symbol * sym)
       SYM_SPIL_LOC (sym) = sloc;
       sym->stackSpil = 1;
       sloc->isFree = 0;
+      sloc->block = btree_lowest_common_ancestor(sloc->block, sym->block);
       addSetHead (&sloc->usl.itmpStack, sym);
       return sym;
     }
@@ -1657,6 +1658,7 @@ createStackSpil (symbol * sym)
   /* set the type to the spilling symbol */
   sloc->type = copyLinkChain (sym->type);
   sloc->etype = getSpec (sloc->type);
+  sloc->block = sym->block;
   SPEC_SCLS (sloc->etype) = S_DATA;
   SPEC_EXTR (sloc->etype) = 0;
   SPEC_STAT (sloc->etype) = 0;

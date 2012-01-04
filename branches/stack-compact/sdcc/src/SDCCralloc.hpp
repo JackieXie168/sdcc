@@ -57,8 +57,11 @@ extern "C"
 #include "SDCCicode.h"
 #include "SDCCBBlock.h"
 #include "SDCCbtree.h"
+#include "SDCCopt.h"
+#include "SDCClrange.h"
+#include "SDCCy.h"
 
-#include "z80.h"
+#include "port.h"
 #include "ralloc.h"
 
 iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
@@ -77,7 +80,7 @@ typedef short int var_t;
 typedef signed char reg_t;
 
 // Todo: Move this port-dependency somewehere else?
-#define NUM_REGS ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT) ? (4 + (OPTRALLOC_A ? 1 : 0) + (OPTRALLOC_HL ? 2 : 0) + (OPTRALLOC_IY ? 2 : 0)) : (TARGET_IS_GBZ80 ? 3 : 0))
+#define NUM_REGS ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT) ? 9 : ((TARGET_IS_GBZ80 || TARGET_IS_HC08)? 3 : 0))
 // Upper bound on NUM_REGS
 #define MAX_NUM_REGS 9
 

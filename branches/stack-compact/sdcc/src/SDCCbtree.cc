@@ -30,7 +30,7 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, s
 
 static btree_t btree;
 
-void btree_init(void)
+void btree_init()
 {
   btree.clear();
   boost::add_vertex(btree);

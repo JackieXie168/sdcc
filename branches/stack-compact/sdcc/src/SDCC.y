@@ -153,7 +153,8 @@ program
 external_definition
    : function_definition
         {
-          // blockNo = 0;
+          //blockNo = 0;
+          //btree_init ();
         }
    | declaration
         {

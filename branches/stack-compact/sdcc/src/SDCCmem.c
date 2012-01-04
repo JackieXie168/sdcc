@@ -1013,7 +1013,7 @@ clearStackOffsets (void)
     }
 }
 
-#define BTREE_STACK
+#define BTREE_STACK (TARGET_Z80_LIKE || TARGET_IS_HC08)
 
 /*-----------------------------------------------------------------*/
 /* redoStackOffsets :- will reassign the values for stack offsets  */
@@ -1037,40 +1037,41 @@ redoStackOffsets (void)
       if ((sym->_isparm && !IS_REGPARM (sym->etype)))
         continue;
 
-#ifdef BTREE_STACK
-      /* Remove them all, and let btree_alloc() below put them back in more efficiently. */
-      currFunc->stack -= size;
-      SPEC_STAK (currFunc->etype) -= size;
-      
-      if(IS_AGGREGATE (sym->type) || sym->allocreq)
-        btree_add_symbol (sym);
-#else
-      /* if allocation not required then subtract
-         size from overall stack size & continue */
-      if (!IS_AGGREGATE (sym->type) && !sym->allocreq)
+      if (BTREE_STACK)
         {
+          /* Remove them all, and let btree_alloc() below put them back in more efficiently. */
           currFunc->stack -= size;
           SPEC_STAK (currFunc->etype) -= size;
-          continue;
+      
+          if(IS_AGGREGATE (sym->type) || sym->allocreq)
+            btree_add_symbol (sym);
         }
+       else
+        {
+          /* if allocation not required then subtract
+             size from overall stack size & continue */
+          if (!IS_AGGREGATE (sym->type) && !sym->allocreq)
+            {
+              currFunc->stack -= size;
+              SPEC_STAK (currFunc->etype) -= size;
+              continue;
+            }
 
-      if (port->stack.direction > 0)
-        {
-          SPEC_STAK (sym->etype) = sym->stack = (sPtr + 1);
-          sPtr += size;
+          if (port->stack.direction > 0)
+            {
+              SPEC_STAK (sym->etype) = sym->stack = (sPtr + 1);
+              sPtr += size;
+            }
+          else
+            {
+              sPtr -= size;
+              SPEC_STAK (sym->etype) = sym->stack = sPtr;
+            }
         }
-      else
-        {
-          sPtr -= size;
-          SPEC_STAK (sym->etype) = sym->stack = sPtr;
-        }
-#endif
     }
     
-#ifdef BTREE_STACK
-  if (elementsInSet (istack->syms))
+  if (BTREE_STACK && elementsInSet (istack->syms))
     btree_alloc ();
-#endif
 
   /* do the same for the external stack */
 

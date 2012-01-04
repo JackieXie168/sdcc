@@ -493,6 +493,7 @@ createStackSpil (symbol * sym)
       sym->stackSpil = 1;
       sloc->isFree = 0;
       addSetHead (&sloc->usl.itmpStack, sym);
+      sloc->block = btree_lowest_common_ancestor(sloc->block, sym->block);
       return sym;
     }
 
@@ -508,6 +509,7 @@ createStackSpil (symbol * sym)
   /* set the type to the spilling symbol */
   sloc->type = copyLinkChain (sym->type);
   sloc->etype = getSpec (sloc->type);
+  sloc->block = sym->block;
   if (!IS_BIT (sloc->etype))
     {
       if (options.model == MODEL_SMALL)
