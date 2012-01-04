@@ -1,3 +1,10 @@
+2012-01-03 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCC.y,
+	  src/SDCCopt.c,
+	  src/SDCCbtree.cc:
+	  Fix assignment of block numbers.
+
 2012-01-04 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* src/SDCCopt.c (killDeadCode): fixed bug 2862308
