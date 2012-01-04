@@ -55,6 +55,9 @@ short btree_lowest_common_ancestor(short a, short b)
 
 void btree_add_symbol(struct symbol *s)
 {
+  wassert(s);
+  wassert(s->block >= 0);
+  wassert(s->block < boost::num_vertices(btree));
   btree[s->block].first.insert(s);
 }
 

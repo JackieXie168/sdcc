@@ -1562,7 +1562,8 @@ start_block
         {
           NestLevel++;
           STACK_PUSH(blockNum, currBlockno);
-          currBlockno = ++blockNo;
+          btree_add_child(currBlockno, ++blockNo);
+          currBlockno = blockNo;
           ignoreTypedefType = 0;
         }
    ;

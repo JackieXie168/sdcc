@@ -1290,8 +1290,9 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
             
           if (newic)
             {
-              newic->filename = filename;
-              newic->lineno = lineno;
+              newic->filename = ic->filename;
+              newic->lineno = ic->lineno;
+              newic->block = ic->block;
               addiCodeToeBBlock (ebbs[i], newic, iic);
             } 
             
@@ -1364,6 +1365,7 @@ switchAddressSpaces (iCode *ic)
           IC_RESULT (newic) = newiTempOperand (newVoidLink (), 1);
           newic->filename = ic->filename;
           newic->lineno = ic->lineno;
+          newic->block = ic->block;
 
           newic->next = ic;
           newic->prev = ic->prev;
