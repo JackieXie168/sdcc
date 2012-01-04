@@ -5,7 +5,8 @@
 	  src/z80/main.c,
 	  src/z80/ralloc.c,
 	  src/SDCCmain.c,
-	  src/SDCCsalloc.hpp:
+	  src/SDCCsalloc.hpp,
+	  src/SDCCmem.c:
 	  Preparations for enabling better stack handling for all ports.
 
 2012-01-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>

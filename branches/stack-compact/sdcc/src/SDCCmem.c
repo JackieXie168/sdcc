@@ -1013,7 +1013,7 @@ clearStackOffsets (void)
     }
 }
 
-#define BTREE_STACK (TARGET_Z80_LIKE || TARGET_IS_HC08)
+#define BTREE_STACK (options.salloc)
 
 /*-----------------------------------------------------------------*/
 /* redoStackOffsets :- will reassign the values for stack offsets  */
