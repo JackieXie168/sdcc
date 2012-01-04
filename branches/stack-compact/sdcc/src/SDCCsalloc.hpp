@@ -47,7 +47,7 @@ static void set_spilt(const assignment &a, G_t &G, const I_t &I, SI_t &scon)
     }
   j_mark = j;
   
-  // Add edges due to scope (see C99 standard, verse 1233, which requires things to have different addresses, not allowing us to allocate them to the same location, even if weotherwise could).
+  // Add edges due to scope (see C99 standard, verse 1233, which requires things to have different addresses, not allowing us to allocate them to the same location, even if we otherwise could).
   for(unsigned int i = 0; i < boost::num_vertices(scon); i++)
      for(unsigned int j = i + 1; j < boost::num_vertices(scon); j++)
         {
