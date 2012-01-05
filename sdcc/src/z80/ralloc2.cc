@@ -1305,8 +1305,8 @@ int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
       set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
     
-#ifdef TD_SALLOC
-  set_spilt(winner, G, I, SI);
+#if defined(TD_SALLOC) || defined(CH_SALLOC)
+  set_spilt(G, I, SI);
 #endif
 
   return(!assignment_optimal);
