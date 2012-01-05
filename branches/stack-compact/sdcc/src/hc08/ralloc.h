@@ -22,10 +22,12 @@
    You are forbidden to forbid anyone else to use, share and improve
    what you give them.   Help stamp out software-hoarding!  
 -------------------------------------------------------------------------*/
-#include "SDCCicode.h"
-#include "SDCCBBlock.h"
+
 #ifndef SDCCRALLOC_H
 #define SDCCRALLOC_H 1
+
+#include "SDCCicode.h"
+#include "SDCCBBlock.h"
 
 enum
   {
@@ -69,5 +71,7 @@ void hc08_useReg (reg_info * reg);
 void hc08_freeReg (reg_info * reg);
 void hc08_dirtyReg (reg_info * reg, bool freereg);
 bitVect *hc08_rUmaskForOp (operand * op);
+iCode *hc08_ralloc2_cc(ebbIndex *ebbi);
 
 #endif
+

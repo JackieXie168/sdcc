@@ -1,9 +1,20 @@
+2012-01-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCralloc.hpp,
+	  src/SDCCsalloc.hpp,
+	  src/z80/ralloc2.cc,
+	  src/z80/gen.c,
+	  src/z80/gen.h,
+	  src/hc08/ralloc.h,
+	  src/hc08/ralloc.c:
+	  Preparations for enabling better stack handling for all ports.
+
 2012-01-04 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/hc08/gen.c:
 	  More explicit stack size reporting for hc08.
 
-2012-01-04 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2012-01-04 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCglobl.h,
 	  src/z80/z80.h,

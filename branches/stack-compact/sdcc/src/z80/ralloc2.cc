@@ -31,6 +31,7 @@ extern "C"
 {
   #include "z80.h"
   unsigned char dryZ80iCode (iCode * ic);
+  bool z80_assignment_optimal;
 };
 
 #define REG_C 0
@@ -1216,14 +1217,17 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
   return(c);
 }
 
+// Returns 0 iff the found assignment is provably optimal.
 #ifndef TD_SALLOC
 template <class T_t, class G_t, class I_t>
-void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
+int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 #else
 template <class T_t, class G_t, class I_t, class SI_t>
-void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
+int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
 #endif
 {
+  bool assignment_optimal;
+
   con2_t I2(boost::num_vertices(I));
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
     {
@@ -1238,7 +1242,7 @@ void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
 
   assignment ac;
   assignment_optimal = true;
-  tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac);
+  tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac, &assignment_optimal);
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
 
@@ -1304,6 +1308,8 @@ void tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
 #ifdef TD_SALLOC
   set_spilt(winner, G, I, SI);
 #endif
+
+  return(!assignment_optimal);
 }
 
 iCode *z80_ralloc2_cc(ebbIndex *ebbi)
@@ -1355,9 +1361,9 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 
   // Allocate registers
 #if !defined(TD_SALLOC) && !defined(CH_SALLOC)
-  tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
+  z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
 #else
-  tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
+  z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
 #endif
 
 #ifdef TD_SALLOC
