@@ -27,6 +27,49 @@ extern "C"
   #include "ralloc.h"
 };
 
+template <class I_t> void
+hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
+{
+  const iCode *ic = n.ic;
+  
+  const operand *result = IC_RESULT(ic);
+  const operand *left = IC_LEFT(ic);
+  const operand *right = IC_RIGHT(ic);
+	
+  if(!result || !IS_SYMOP(result))
+    return;
+    
+  // Todo: Identify operations, code generation can always handle and exclude them (as done for the z80-like ports).
+   
+  operand_map_t::const_iterator oir, oir_end, oirs; 
+  boost::tie(oir, oir_end) = n.operands.equal_range(OP_SYMBOL_CONST(result)->key);
+  if(oir == oir_end)
+    return;
+    
+  operand_map_t::const_iterator oio, oio_end;
+  
+  if(left && IS_SYMOP(left))
+    for(boost::tie(oio, oio_end) = n.operands.equal_range(OP_SYMBOL_CONST(left)->key); oio != oio_end; ++oio)
+      for(oirs = oir; oirs != oir_end; ++oirs)
+        {
+          var_t rvar = oirs->second;
+          var_t ovar = oio->second;
+          if(I[rvar].byte < I[ovar].byte)
+            boost::add_edge(rvar, ovar, I);
+        }
+        
+  if(right && IS_SYMOP(right))
+    for(boost::tie(oio, oio_end) = n.operands.equal_range(OP_SYMBOL_CONST(right)->key); oio != oio_end; ++oio)
+      for(oirs = oir; oirs != oir_end; ++oirs)
+        {
+          var_t rvar = oirs->second;
+          var_t ovar = oio->second;
+          if(I[rvar].byte < I[ovar].byte)
+            boost::add_edge(rvar, ovar, I);
+        }
+}
+
+
 // Does not really do register allocation yet. For now this is just a dummy needed for stack allocation.
 template <class T_t, class G_t, class I_t, class SI_t>
 int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)

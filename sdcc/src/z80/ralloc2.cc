@@ -384,7 +384,7 @@ jumptab_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t 
 }
 
 template <class I_t> void
-add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
+z80_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
   const iCode *ic = n.ic;
   

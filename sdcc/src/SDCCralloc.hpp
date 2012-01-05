@@ -252,7 +252,9 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 
 // Avoid overwriting operands that are still needed by the result. Port-specific.
 template <class I_t> void
-add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
+z80_add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
+template <class I_t> void
+hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
 
 inline void
 add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
@@ -373,7 +375,10 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
       add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_LEFT(ic), sym_to_index);
       add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RIGHT(ic), sym_to_index);
       
-      add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
+      if (TARGET_Z80_LIKE)
+        z80_add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
+      else
+        hc08_add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
     }
 
 #if 0
