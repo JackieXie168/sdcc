@@ -1295,6 +1295,9 @@ serialRegAssign (eBBlock ** ebbs, int count)
                   spillThis (sym);
                   continue;
                 }
+
+              sym->for_newralloc = 1;
+
               /* if trying to allocate this will cause
                  a spill and there is nothing to spill
                  or this one is rematerializable then
