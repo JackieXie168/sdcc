@@ -278,6 +278,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
   std::map<std::pair<int, reg_t>, var_t> sym_to_index;
 
   start_ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbs, ebbi->count));
+
   //start_ic = joinPushes(start_ic);
   {
     int i;
@@ -297,7 +298,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
         if(ic->op == '>' || ic->op == '<' || ic->op == EQ_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)
           {
             iCode *ifx;
-            if (ifx = ifxForOp (IC_RESULT (ic), ic))
+            if (!TARGET_IS_HC08 && ifx = ifxForOp (IC_RESULT (ic), ic)) // Todo: Have a look at this for hc08 again when using the new register allocator. For now (stack allcoator only) it works this way.
               ifx->generated = 1;
           }
 
@@ -477,7 +478,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
             ;
         }
     }
-  
+ 
   return(start_ic);
 }
 
