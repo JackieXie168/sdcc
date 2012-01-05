@@ -1334,10 +1334,10 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 
   ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
 
-  if(z80_opts.dump_graphs)
+  if(options.dump_graphs)
     dump_cfg(control_flow_graph);
 
-  if(z80_opts.dump_graphs)
+  if(options.dump_graphs)
     dump_con(conflict_graph);
 
   tree_dec_t tree_decomposition;
@@ -1356,7 +1356,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   nicify(tree_decomposition);
   alive_tree_dec(tree_decomposition, control_flow_graph);
 
-  if(z80_opts.dump_graphs)
+  if(options.dump_graphs)
     dump_tree_decomposition(tree_decomposition);
 
   // Allocate registers
@@ -1366,14 +1366,14 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
 #endif
 
-#ifdef TD_SALLOC
-  if(z80_opts.dump_graphs)
+#if defined(TD_SALLOC) || defined(CH_SALLOC)
+  if(options.dump_graphs)
     dump_scon(stack_conflict_graph);
 #endif
 
   RegFix (ebbs, count);
   
-#if defined(TD_SALLOC) && defined(CH_SALLOC)
+#if defined(TD_SALLOC) || defined(CH_SALLOC)
   if (SALLOC_TD)
     tree_dec_salloc(control_flow_graph, stack_conflict_graph, ordering, separators);
   else if(SALLOC_CH)

@@ -35,14 +35,37 @@ iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
 
   con_t conflict_graph;
 
-  ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
-
 #ifdef TD_SALLOC
-
+  scon_t stack_conflict_graph;
+  std::list<unsigned int> ordering;
+  std::map<unsigned int, std::set<unsigned int> > separators;
 #endif
 
-//eBBlock **ebbs = ebbi->bbOrder;
-//ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbs, ebbi->count));
+  ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
+
+  if(options.dump_graphs)
+    dump_cfg(control_flow_graph);
+
+  if(options.dump_graphs)
+    dump_con(conflict_graph);
+
+  tree_dec_t tree_decomposition;
+
+#ifndef TD_SALLOC
+  thorup_tree_decomposition(tree_decomposition, control_flow_graph);
+#else
+  thorup_tree_decomposition(tree_decomposition, control_flow_graph, &ordering, &separators);
+#endif
+
+#if defined(TD_SALLOC) || defined(CH_SALLOC)
+  if(options.dump_graphs)
+    dump_scon(stack_conflict_graph);
+
+  if (SALLOC_TD)
+    tree_dec_salloc(control_flow_graph, stack_conflict_graph, ordering, separators);
+  else if(SALLOC_CH)
+    chaitin_salloc(stack_conflict_graph);
+#endif
 
   if(!SALLOC_TD && !SALLOC_CH)
     redoStackOffsets ();

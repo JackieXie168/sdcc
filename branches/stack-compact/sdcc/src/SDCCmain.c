@@ -151,6 +151,7 @@ char buffer[PATH_MAX * 2];
 #define OPTION_NO_PEEP_RETURN   "--no-peep-return"
 #define OPTION_NO_OPTSDCC_IN_ASM "--no-optsdcc-in-asm"
 #define OPTION_SALLOC           "--salloc"
+#define OPTION_DUMP_GRAPHS     "--dump-graphs"
 
 static const OPTION optionsTable[] = {
   {0,   NULL, NULL, "General options"},
@@ -244,6 +245,7 @@ static const OPTION optionsTable[] = {
   {0,   "--dumptree", &options.dump_tree, "dump front-end AST before generating iCode"},
   {0,   OPTION_DUMP_ALL, NULL, "Dump the internal structure at all stages"},
   {0,   OPTION_ICODE_IN_ASM, &options.iCodeInAsm, "include i-code as comments in the asm file"},
+  {0,   OPTION_DUMP_GRAPHS, &options.dump_graphs, "Dump graphs from register and stack allocator"},
 
   {0,   NULL, NULL, "Linker options"},
   {'l', NULL, NULL, "Include the given library in the link"},
@@ -596,6 +598,7 @@ setDefaultOptions (void)
   options.out_fmt = 0;
   options.max_allocs_per_node = 3000;
   options.salloc = 0;
+  options.dump_graphs = 0;
 
   /* now for the optimizations */
   /* turn on the everything */
