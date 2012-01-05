@@ -24,6 +24,7 @@
 -------------------------------------------------------------------------*/
 
 #include "common.h"
+#include "SDCCbtree.h"
 #include "ralloc.h"
 #include "gen.h"
 
@@ -3175,6 +3176,7 @@ hc08_assignRegisters (ebbIndex * ebbi)
      for each of the instruction */
   createRegMask (ebbs, count);
 
+#if 0
   /* redo that offsets for stacked automatic variables */
   if (currFunc)
     {
@@ -3192,6 +3194,18 @@ hc08_assignRegisters (ebbIndex * ebbi)
 
   /* now get back the chain */
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbs, count));
+#else
+  ic = hc08_ralloc2_cc(ebbi);
+
+  if (options.dump_rassgn)
+    {
+      dumpEbbsToFileExt (DUMP_RASSGN, ebbi);
+      dumpLiveRanges (DUMP_LRANGE, liveRanges);
+    }
+
+  /* do the overlaysegment stuff SDCCmem.c */
+  doOverlays (ebbs, count);
+#endif
 
   genhc08Code (ic);
 

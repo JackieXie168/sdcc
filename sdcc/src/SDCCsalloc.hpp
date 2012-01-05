@@ -426,6 +426,7 @@ void chaitin_salloc(SI_t &SI)
 
 #if defined(TD_SALLOC) || defined (CH_SALLOC)
 // Dump stack conflict graph, with numbered and named nodes.
+static
 void dump_scon(const scon_t &scon)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpscon" + currFunc->rname + ".dot").c_str());

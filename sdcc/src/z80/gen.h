@@ -93,6 +93,6 @@ asmop;
 void genZ80Code (iCode *);
 void z80_emitDebuggerSymbol (const char *);
 
-extern bool assignment_optimal;
+extern bool z80_assignment_optimal;
 
 #endif
