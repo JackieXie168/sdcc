@@ -6,7 +6,8 @@
 	  src/z80/gen.c,
 	  src/z80/gen.h,
 	  src/hc08/ralloc.h,
-	  src/hc08/ralloc.c:
+	  src/hc08/ralloc.c,
+	  src/hc08/ralloc2.cc:
 	  Preparations for enabling better stack handling for all ports.
 
 2012-01-04 Philipp Klaus Krause <pkk AT spth.de>
