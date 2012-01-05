@@ -27,6 +27,21 @@ extern "C"
   #include "ralloc.h"
 };
 
+// Does not really do register allocation yet. For now this is just a dummy needed for stack allocation.
+template <class T_t, class G_t, class I_t, class SI_t>
+int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
+{
+  bool assignment_optimal;
+
+  assignment_optimal = true;
+    
+#if defined(TD_SALLOC) || defined(CH_SALLOC)
+  set_spilt(G, I, SI);
+#endif
+
+  return(!assignment_optimal);
+}
+
 iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
 {
   iCode *ic;
@@ -56,6 +71,9 @@ iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
 #else
   thorup_tree_decomposition(tree_decomposition, control_flow_graph, &ordering, &separators);
 #endif
+
+
+  tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
 
 #if defined(TD_SALLOC) || defined(CH_SALLOC)
   if(options.dump_graphs)
