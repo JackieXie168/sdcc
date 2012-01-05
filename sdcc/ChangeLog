@@ -11,7 +11,8 @@
 	  src/SDCCglobl.h,
 	  src/z80/z80.h,
 	  src/z80/main.c,
-	  src/SDCCmain.c:
+	  src/SDCCmain.c,
+	  src/SDCCmem.c:
 	  Preparations for enabling better stack handling for all ports.
 
 2012-01-04 Philipp Klaus Krause <pkk AT spth.de>

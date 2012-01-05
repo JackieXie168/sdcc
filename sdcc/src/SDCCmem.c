@@ -1013,7 +1013,8 @@ clearStackOffsets (void)
     }
 }
 
-#define BTREE_STACK (options.salloc)
+// Currently broken.
+#define BTREE_STACK 0
 
 /*-----------------------------------------------------------------*/
 /* redoStackOffsets :- will reassign the values for stack offsets  */
@@ -1069,7 +1070,8 @@ redoStackOffsets (void)
             }
         }
     }
-    
+ 
+   
   if (BTREE_STACK && elementsInSet (istack->syms))
     btree_alloc ();
 
