@@ -144,6 +144,8 @@ _hc08_setDefaultOptions (void)
 
   options.omitFramePtr = 1;     /* no frame pointer (we use SP */
                                 /* offsets instead)            */
+
+  options.stackAuto = 1;
 }
 
 static const char *
