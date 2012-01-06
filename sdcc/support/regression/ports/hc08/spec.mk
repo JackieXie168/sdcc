@@ -16,7 +16,7 @@ else
   AS = $(WINE) $(top_builddir)/bin/sdas6808$(EXEEXT)
 
 ifndef CROSSCOMPILING
-  SDCCFLAGS += --nostdinc -I$(top_srcdir)
+  SDCCFLAGS += --nostdinc -I$(top_srcdir) --salloc 4 --dump-graphs --i-code-in-asm
   LINKFLAGS += --nostdlib -L$(top_builddir)/device/lib/build/hc08
 endif
 endif

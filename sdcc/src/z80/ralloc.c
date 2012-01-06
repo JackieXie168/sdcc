@@ -523,9 +523,7 @@ spillThis (symbol * sym)
      we are okay, else we need to create a spillLocation
      for it */
   if (!(sym->remat || (!SALLOC_TD && !SALLOC_CH && sym->usl.spillLoc)))
-    {
-      createStackSpil (sym);
-    }
+    createStackSpil (sym);
 
   /* mark it has spilt & put it in the spilt set */
   sym->isspilt = sym->spillA = 1;

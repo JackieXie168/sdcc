@@ -28,6 +28,11 @@
 #include "ralloc.h"
 #include "gen.h"
 
+#define SALLOC_CH (options.salloc == 1 || options.salloc == 2) // Chaitin
+#define SALLOC_CHA (options.salloc == 2) // Chaitin with alignment
+#define SALLOC_TD (options.salloc == 3 || options.salloc == 4)
+#define SALLOC_TDS (options.salloc == 3) // Simplified
+
 /*-----------------------------------------------------------------*/
 /* At this point we start getting processor specific although      */
 /* some routines are non-processor specific & can be reused when   */
@@ -537,7 +542,7 @@ createStackSpil (symbol * sym)
 
   /* first go try and find a free one that is already
      existing on the stack */
-  if (/*!SALLOC_TD && !SALLOC_CH &&*/ applyToSet (_G.stackSpil, isFree, &sloc, sym))
+  if (!SALLOC_TD && !SALLOC_CH && applyToSet (_G.stackSpil, isFree, &sloc, sym))
     {
       /* found a free one : just update & return */
       sym->usl.spillLoc = sloc;
@@ -648,7 +653,7 @@ spillThis (symbol * sym)
   /* if this is rematerializable or has a spillLocation
      we are okay, else we need to create a spillLocation
      for it */
-  if (!(sym->remat || sym->usl.spillLoc))
+  if (!(sym->remat || (!SALLOC_TD && !SALLOC_CH && sym->usl.spillLoc)))
     createStackSpil (sym);
 
   /* mark it as spilt & put it in the spilt set */
