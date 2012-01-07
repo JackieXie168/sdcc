@@ -125,6 +125,27 @@ static void set_spilt(G_t &G, const I_t &I, SI_t &scon)
         if(p == scon[i].sym->block || p == scon[j].sym->block)
           boost::add_edge(i, j, scon);
       }
+
+  // Ugly hack: Regparms.
+  for(sym = static_cast<symbol *>(setFirstItem(istack->syms)), j = boost::num_vertices(scon); sym; sym = static_cast<symbol *>(setNextItem(istack->syms)))
+    {
+      if(!sym->_isparm || !IS_REGPARM(sym->etype) || !sym->onStack || !sym->allocreq)
+        continue;
+      
+      boost::add_vertex(scon);
+      scon[j].sym = sym;
+      scon[j].color = -1;
+
+      // Extend liverange to cover everything.
+      for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+        G[i].stack_alive.insert(j);
+
+      // Conflict with everything.
+      for(unsigned int i = 0; i < j; i++)
+        boost::add_edge(i, j, scon);
+
+      j++;
+    }
 }
 #endif
 
@@ -250,7 +271,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
         
       if(i_to_i.find(v) != i_to_i.end())
         continue; // Already added to bipartite graph.
-    
+  
       boost::add_vertex(b);
       b[j].v = v;
       i_to_i[v] = j++;
