@@ -1,4 +1,9 @@
-1012-01-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2012-01-07 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCsalloc.hpp:
+	  Fix handling of register parameters in stack allcoation.
+
+2012-01-06 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/ralloc.c,
 	  src/hc08/ralloc.c:
