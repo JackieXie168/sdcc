@@ -1,3 +1,13 @@
+2012-01-06 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Fixed width of lower part of large literals.
+
+2012-01-06 Borut Razem <borut.razem AT gmail.com>
+
+	* sdas/linksrc/Makefile.in: removed LKLIB
+	* device/non-free/lib/Makefile.in: removed SOURCES
+
 2012-01-07 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCsalloc.hpp:
@@ -8,15 +18,6 @@
 	* src/z80/ralloc.c,
 	  src/hc08/ralloc.c:
 	  Preparations for enabling better stack handling for all ports.
-
-2012-01-06 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
-
-	* src/z80/gen.c:
-	  Fixed width of lower part of large literals.
-
-2012-01-06 Borut Razem <borut.razem AT gmail.com>
-
-	* sdas/linksrc/Makefile.in: removed LKLIB
 
 2012-01-05 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
