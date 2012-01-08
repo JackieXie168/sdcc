@@ -18,6 +18,9 @@
 //
 // A stack allocator.
 
+// void thorup_C_p(p_t &p, const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S)
+// Constructs the partial map p used in Thorup's coloring heuristic algorithm C from the underlying graph G and the separators S.
+
 #ifndef SDCCSALLOC_HH
 #define SDCCSALLOC_HH 1
 
@@ -149,6 +152,40 @@ static void set_spilt(G_t &G, const I_t &I, SI_t &scon)
 }
 #endif
 
+#ifdef TD_SALLOC
+#include <boost/graph/max_cardinality_matching.hpp>
+#include <boost/graph/filtered_graph.hpp>
+
+// Construct the partial map p used in Thorup's algorithm C from the underlying graph G and the separators S.
+template <class p_t, class G_t>
+void thorup_C_p(p_t &p, const G_t &G, const std::list<unsigned int> &ordering, const std::map<unsigned int, std::set<unsigned int> > &S)
+{
+  typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> F_t;
+  F_t F(boost::num_vertices(G));
+  std::list<unsigned int>::const_iterator i, i_end;
+
+  for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
+
+  //for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+    {
+      in_separator_edge<F_t> edge_filter(S.find(*i)->second, F);
+      in_separator_node node_filter(S.find(*i)->second);
+      
+      boost::filtered_graph<F_t, in_separator_edge<F_t>, in_separator_node > f(F, edge_filter, node_filter);
+
+      std::vector<typename boost::graph_traits<G_t>::vertex_descriptor> M(boost::num_vertices(G));
+
+      boost::edmonds_maximum_cardinality_matching(f, &M[0]);
+
+      if(boost::matching_size(f, &M[0]) * 2 < S.find(*i)->second.size())
+        {
+          boost::add_edge(*i, *S.find(*i)->second.begin(), F);
+          p[*i] = *S.find(*i)->second.begin();
+        }
+    }
+}
+#endif
+
 #if defined(TD_SALLOC) || defined(CH_SALLOC)
 template <class SI_t>
 void color_stack_var(var_t v, SI_t &SI, int start, int *ssize)
@@ -166,7 +203,7 @@ void color_stack_var(var_t v, SI_t &SI, int start, int *ssize)
   if(ssize)
     *ssize = (start + size > *ssize) ? start + size : *ssize;
     
-  //std::cout << "Placing " << sym->name << " at [" << start << ", " << (start + size - 1) << "]\n";
+  std::cout << "Placing " << sym->name << " at [" << start << ", " << (start + size - 1) << "]\n";
     
   // Mark stack location as used for all conflicting variables.
   typename boost::graph_traits<SI_t>::adjacency_iterator n, n_end;
@@ -245,7 +282,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
   unsigned int j;
   
   bpt_t b;
-
+std::cout << "Coloring biclique.\n";
   // Add nodes to bipartite graph b.
   std::set<var_t>::const_iterator s;
   for(s = G[i].stack_alive.begin(), j = 0; s != G[i].stack_alive.end(); ++s)
@@ -257,7 +294,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
         
       if(i_to_i.find(v) != i_to_i.end())
         continue; // Already added to bipartite graph.
-
+std::cout << SI[v].sym->name << " in biclique.\n";
       boost::add_vertex(b);
       b[j].v = v;
       i_to_i[v] = j++;
@@ -271,7 +308,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
         
       if(i_to_i.find(v) != i_to_i.end())
         continue; // Already added to bipartite graph.
-  
+std::cout << SI[v].sym->name << " in biclique.\n";  
       boost::add_vertex(b);
       b[j].v = v;
       i_to_i[v] = j++;
@@ -317,6 +354,7 @@ void color_biclique(unsigned int i, unsigned int pi, const G_t &G, SI_t &SI, int
         vc = v1, vu = v2;
       else
         vu = v1, vc = v2;
+std::cout << "Coloring " << SI[vu].sym->name << " to " << SI[vc].sym->name << ".\n";
       color_stack_var(vu, SI, SI[vc].color, ssize);
     }
 }
@@ -332,11 +370,11 @@ void thorup_C_color(const p_t &p, const G_t &G, SI_t &SI, const std::list<unsign
     {
       std::set<symbol *>::const_iterator s;
       
-      //std::cout << "Coloring at " << *i << "\n";
+      std::cout << "Coloring at " << *i << "\n";
     
       typename p_t::const_iterator pi = p.find(*i);
       if(SALLOC_TDS || pi == p.end()) // Just color all uncolored variables at X_{v_i} greedily.
-        {
+        {std::cout << "Coloring clique.\n";
           std::set<var_t>::const_iterator s;    
           for(s = G[*i].stack_alive.begin(); s != G[*i].stack_alive.end(); ++s)
             if(getSize(SI[*s].sym->type) == size && SI[*s].color < 0)
@@ -353,7 +391,7 @@ void tree_dec_salloc(const G_t &G, SI_t &SI, const std::list<unsigned int> &orde
   std::map<unsigned int, unsigned int> p;
   std::set<int> sizes;
   
-  thorup_C_p(p, G, S);
+  thorup_C_p(p, G, ordering, S);
 
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {

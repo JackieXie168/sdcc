@@ -43,9 +43,7 @@
 //
 // void thorup_elimination_ordering(l_t &l, const J_t &J)
 // Creates an elimination ordering l of a graph J using Thorup's heuristic.
-//
-// void thorup_C_p(p_t &p, const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S)
-// Constructs the partial map p used in Thorup's coloring heuristic algorithm C from the underlying graph G and the separators S.
+
 
 #ifndef SDCCTREE_DEC_HH
 #define SDCCTREE_DEC_HH 1
@@ -512,37 +510,6 @@ struct in_separator_node {
   
   std::set<unsigned int> s;
 };
-
-#ifdef TD_SALLOC
-#include <boost/graph/max_cardinality_matching.hpp>
-#include <boost/graph/filtered_graph.hpp>
-
-// Construct the partial map p used in Thorup's algorithm C from the underlying graph G and the separators S.
-template <class p_t, class G_t>
-void thorup_C_p(p_t &p, const G_t &G, const std::map<unsigned int, std::set<unsigned int> > &S)
-{
-  typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> F_t;
-  F_t F(boost::num_vertices(G));
-
-  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
-    {
-      in_separator_edge<F_t> edge_filter(S.find(i)->second, F);
-      in_separator_node node_filter(S.find(i)->second);
-      
-      boost::filtered_graph<F_t, in_separator_edge<F_t>, in_separator_node > f(F, edge_filter, node_filter);
-
-      std::vector<typename boost::graph_traits<G_t>::vertex_descriptor> M(boost::num_vertices(G));
-
-      boost::edmonds_maximum_cardinality_matching(f, &M[0]);
-
-      if(boost::matching_size(f, &M[0]) * 2 < S.find(i)->second.size())
-        {
-          boost::add_edge(i, *S.find(i)->second.begin(), F);
-          p[i] = *S.find(i)->second.begin();
-        }
-    }
-}
-#endif
 
 #endif
 
