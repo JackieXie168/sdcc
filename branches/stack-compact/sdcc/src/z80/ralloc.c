@@ -50,7 +50,7 @@
 
 #define SALLOC_CH (options.salloc == 1 || options.salloc == 2) // Chaitin
 #define SALLOC_CHA (options.salloc == 2) // Chaitin with alignment
-#define SALLOC_TD (options.salloc == 3 || options.salloc == 4)
+#define SALLOC_TD (options.salloc == 3 || options.salloc == 4 || options.salloc == 5)
 #define SALLOC_TDS (options.salloc == 3) // Simplified
 #define SALLOC_TDR (options.salloc == 5) // With greedy post-recoloring.
 
