@@ -1,3 +1,8 @@
+2012-01-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCsalloc.hpp:
+	  Fix broken (too greedy) coloring of bicliques.
+
 2012-01-08 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* src/SDCC.lex: included io.h for read() declaration with MSVC,
