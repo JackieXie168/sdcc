@@ -398,7 +398,7 @@ void nicify_diffs(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t
   boost::add_edge(t, d, T);
 }
 
-// // Ensure that all nodes' bags' sizes differ by at most one to their successors'.
+// Ensure that all nodes' bags' sizes differ by at most one to their successors'.
 template <class T_t>
 void nicify_diffs_more(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 {
