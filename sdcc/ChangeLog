@@ -1,6 +1,8 @@
 2012-01-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/SDCCsalloc.hpp:
+	* src/SDCCsalloc.hpp,
+	  src/z80/ralloc.c,
+	  src/hc08/ralloc.c:
 	  Add greedy recoloring post-processing.
 
 2012-01-09 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
