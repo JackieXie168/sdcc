@@ -1978,15 +1978,7 @@ geniCodeCast (sym_link *type, operand *op, bool implicit)
   ic = newiCode (CAST, operandFromLink (type), geniCodeRValue (op, FALSE));
   IC_RESULT (ic) = newiTempOperand (type, 0);
 
-  /* preserve the storage class & output class */
-  /* of the original variable                  */
   restype = getSpec (operandType (IC_RESULT (ic)));
-  if (!IS_LITERAL (opetype) && !IS_BIT (opetype))
-    {
-      SPEC_SCLS (restype) = SPEC_SCLS (opetype);
-      SPEC_OCLS (restype) = SPEC_OCLS (opetype);
-    }
-
   /* Convert cast to _Bool bitfield members to casts to _Bool. */
   if (SPEC_NOUN (restype) == V_BBITFIELD)
     SPEC_NOUN (restype) = V_BOOL;
@@ -2286,8 +2278,7 @@ geniCodeAdd (operand * left, operand * right, RESULT_TYPE resultType, int lvl)
   IC_RESULT (ic) = newiTempOperand (resType, 1);
   IC_RESULT (ic)->isaddr = (isarray ? 1 : 0);
 
-  /* if left or right is a float then support
-     routine */
+  /* if left or right is a float then support routine */
   if (IS_FLOAT (ltype) || IS_FLOAT (rtype) || IS_FIXED (ltype) || IS_FIXED (rtype))
     ic->supportRtn = 1;
 
@@ -2402,8 +2393,9 @@ geniCodeArray (operand * left, operand * right, int lvl)
 
   ic = newiCode ('+', left, right);
 
-  IC_RESULT (ic) = newiTempOperand (((IS_PTR (ltype) &&
-                                      !IS_AGGREGATE (ltype->next) && !IS_PTR (ltype->next)) ? ltype : ltype->next), 0);
+  IC_RESULT (ic) = newiTempOperand ((IS_PTR (ltype) &&
+                                     !IS_AGGREGATE (ltype->next) &&
+                                     !IS_PTR (ltype->next)) ? ltype : ltype->next, 0);
 
   if (!IS_AGGREGATE (ltype->next))
     {
@@ -3091,7 +3083,7 @@ checkTypes (operand * left, operand * right)
   /* left is integral type and right is literal then
      check if the literal value is within bounds */
   if (IS_INTEGRAL (ltype) && right->type == VALUE && IS_LITERAL (rtype) &&
-      checkConstantRange (ltype, rtype, '=', FALSE) == CCR_OVL && !options.lessPedantic)
+      checkConstantRange (ltype, rtype, '=', FALSE) == CCR_OVL)
     {
       werror (W_LIT_OVERFLOW);
     }
@@ -3842,7 +3834,6 @@ geniCodeSwitch (ast * tree, int lvl)
       ADDTOCHAIN (ic);
       caseVals = caseVals->next;
     }
-
 
 defaultOrBreak:
   /* if default is present then goto break else break */

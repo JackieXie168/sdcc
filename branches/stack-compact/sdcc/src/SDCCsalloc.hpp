@@ -156,6 +156,30 @@ static void set_spilt(G_t &G, const I_t &I, SI_t &scon)
 #include <boost/graph/max_cardinality_matching.hpp>
 #include <boost/graph/filtered_graph.hpp>
 
+template <class F_t>
+struct in_separator_edge {
+  in_separator_edge() { }
+  in_separator_edge(const std::set<unsigned int> &S, const F_t &F) : s(S) { f = &F; }
+  template <typename Edge>
+  bool operator()(const Edge& e) const {
+    return(s.count(boost::source(e, *f)) && s.count(boost::source(e, *f)));
+  }
+  
+  std::set<unsigned int> s;
+  const F_t *f;
+};
+
+struct in_separator_node {
+  in_separator_node() { }
+  in_separator_node(const std::set<unsigned int> &S) : s(S) { }
+  template <typename node>
+  bool operator()(const node& n) const {
+    return(s.count(n));
+  }
+  
+  std::set<unsigned int> s;
+};
+
 // Construct the partial map p used in Thorup's algorithm C from the underlying graph G and the separators S.
 template <class p_t, class G_t>
 void thorup_C_p(p_t &p, const G_t &G, const std::list<unsigned int> &ordering, const std::map<unsigned int, std::set<unsigned int> > &S)
@@ -165,8 +189,6 @@ void thorup_C_p(p_t &p, const G_t &G, const std::list<unsigned int> &ordering, c
   std::list<unsigned int>::const_iterator i, i_end;
 
   for(i = ordering.begin(), i_end = ordering.end(); i != i_end; ++i)
-
-  //for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
       in_separator_edge<F_t> edge_filter(S.find(*i)->second, F);
       in_separator_node node_filter(S.find(*i)->second);

@@ -487,29 +487,5 @@ void nicify(T_t &T)
   nicify_diffs_more(T, t);
 }
 
-template <class F_t>
-struct in_separator_edge {
-  in_separator_edge() { }
-  in_separator_edge(const std::set<unsigned int> &S, const F_t &F) : s(S) { f = &F; }
-  template <typename Edge>
-  bool operator()(const Edge& e) const {
-    return(s.count(boost::source(e, *f)) && s.count(boost::source(e, *f)));
-  }
-  
-  std::set<unsigned int> s;
-  const F_t *f;
-};
-
-struct in_separator_node {
-  in_separator_node() { }
-  in_separator_node(const std::set<unsigned int> &S) : s(S) { }
-  template <typename node>
-  bool operator()(const node& n) const {
-    return(s.count(n));
-  }
-  
-  std::set<unsigned int> s;
-};
-
 #endif
 
