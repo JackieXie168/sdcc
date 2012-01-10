@@ -1,3 +1,14 @@
+2011-01-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.h,
+	  src/SDCCnaddr.cc,
+	  src/SDCCnaddr.hpp,
+	  src/SDCCopt.c,
+	  src/z80/ralloc2.cc,
+	  src/SDCCopt.h,
+	  src/Makefile.in:
+	  Preparations for optimal placement of bank switching calls.
+
 2011-01-10 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/SDCCicode.c: fixed bug 3466784
