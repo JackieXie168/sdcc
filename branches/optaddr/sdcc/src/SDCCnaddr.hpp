@@ -234,7 +234,7 @@ void tree_dec_naddrswitch_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex
 
 // Handle introduce nodes in the nice tree decomposition
 template <class T_t, class G_t>
-void tree_dec_naddrswitch_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
+int tree_dec_naddrswitch_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
   adjacency_iter_t c, c_end;
@@ -261,6 +261,8 @@ void tree_dec_naddrswitch_introduce(T_t &T, typename boost::graph_traits<T_t>::v
     }
 
   alist.clear();
+
+  return(alist2.size() <= 3000 ? 0 : -1);
 }
 
 // Handle forget nodes in the nice tree decomposition
@@ -384,7 +386,7 @@ void tree_dec_naddrswitch_join(T_t &T, typename boost::graph_traits<T_t>::vertex
 }
 
 template <class T_t, class G_t>
-void tree_dec_naddrswitch_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
+int tree_dec_naddrswitch_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
 
@@ -401,7 +403,13 @@ void tree_dec_naddrswitch_nodes(T_t &T, typename boost::graph_traits<T_t>::verte
     case 1:
       c0 = *c;
       tree_dec_naddrswitch_nodes(T, c0, G);
-      T[c0].bag.size() < T[t].bag.size() ? tree_dec_naddrswitch_introduce(T, t, G) : tree_dec_naddrswitch_forget(T, t, G);
+      if (T[c0].bag.size() < T[t].bag.size())
+        {
+        if (tree_dec_naddrswitch_introduce(T, t, G))
+          return(-1);
+        }
+      else
+        tree_dec_naddrswitch_forget(T, t, G);
       break;
     case 2:
       c0 = *c++;
@@ -414,15 +422,44 @@ void tree_dec_naddrswitch_nodes(T_t &T, typename boost::graph_traits<T_t>::verte
       std::cerr << "Not nice.\n";
       break;
     }
+  return(0);
+}
+
+template <class G_t>
+void implement_assignment(const assignment_naddr &a, const G_t &G)
+{
+  typedef typename boost::graph_traits<G_t>::vertex_descriptor vertex_t;
+  typedef typename boost::graph_traits<G_t>::edge_iterator ei_t;
+  ei_t e, e_end;
+
+  for(boost::tie(e, e_end) = boost::edges(G); e != e_end; ++e)
+    {
+      const vertex_t source = boost::source(*e, G);
+      const vertex_t target = boost::target(*e, G);
+      const naddrspace_t sourcespace = a.global[source];
+      const naddrspace_t targetspace = a.global[target];
+
+      // Nothing to do if the space doesn't change, or we just forget it.
+      if(targetspace == -1 || sourcespace == targetspace)
+        continue;
+
+      // This shouldn't happen with the CFGs sdcc generates and a cost function based on code size.
+      if(G[source].ic->next != G[target].ic)
+        std::cerr << "Trying to switch address space at weird edge in CFG.";
+
+      switchAddressSpaceAt(G[target].ic);
+    }
 }
 
 template <class T_t, class G_t>
 int tree_dec_address_switch(T_t &T, const G_t &G)
 {
-  tree_dec_naddrswitch_nodes(T, find_root(T), G);
+  if(tree_dec_naddrswitch_nodes(T, find_root(T), G))
+    return(-1);
 
   const assignment_naddr &winner = *(T[find_root(T)].assignments.begin());
 
+#if 0
   std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
   {
@@ -431,8 +468,11 @@ int tree_dec_address_switch(T_t &T, const G_t &G)
   std::cout << "\n";
   std::cout << "Cost: " << winner.s << "\n";
   std::cout.flush();
+#endif
 
-  return(-1);
+  implement_assignment(winner, G);
+
+  return(0);
 }
 
 // Dump cfg, with numbered nodes, show possible address spaces at each node.
