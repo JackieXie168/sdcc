@@ -417,7 +417,7 @@ void tree_dec_naddrswitch_nodes(T_t &T, typename boost::graph_traits<T_t>::verte
 }
 
 template <class T_t, class G_t>
-void tree_dec_address_switch(T_t &T, const G_t &G)
+int tree_dec_address_switch(T_t &T, const G_t &G)
 {
   tree_dec_naddrswitch_nodes(T, find_root(T), G);
 
@@ -431,11 +431,16 @@ void tree_dec_address_switch(T_t &T, const G_t &G)
   std::cout << "\n";
   std::cout << "Cost: " << winner.s << "\n";
   std::cout.flush();
+
+  return(-1);
 }
 
 // Dump cfg, with numbered nodes, show possible address spaces at each node.
 void dump_cfg_naddr(const cfg_t &cfg)
 {
+  if(!currFunc)
+    return;
+
   std::ofstream dump_file((std::string(dstFileName) + ".dumpnaddrcfg" + currFunc->rname + ".dot").c_str());
 
   std::string *name = new std::string[num_vertices(cfg)];
