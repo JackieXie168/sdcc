@@ -29,7 +29,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 class cl_lr35902;
 
 const t_addr  lr35902_rom_start = 0x0000;
-const t_addr  lr35902_rom_size  = 0x4000;
+const t_addr  lr35902_rom_size  = 0x6000;
 
 const t_addr  lr35902_ram_start = 0xA000;
 const t_addr  lr35902_ram_size  = 0x5F80;
