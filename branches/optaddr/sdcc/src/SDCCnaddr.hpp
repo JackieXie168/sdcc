@@ -262,7 +262,7 @@ int tree_dec_naddrswitch_introduce(T_t &T, typename boost::graph_traits<T_t>::ve
 
   alist.clear();
 
-  return(alist2.size() <= 3000 ? 0 : -1);
+  return(alist2.size() <= options.max_allocs_per_node ? 0 : -1);
 }
 
 // Handle forget nodes in the nice tree decomposition

@@ -1,3 +1,14 @@
+2011-01-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCglobl.h,
+	  src/z80/z80.h,
+	  src/z80/main.c,
+	  src/z80/ralloc2.cc,
+	  src/SDCCnaddr.hpp,
+	  src/SDCCmain.c,
+	  src/SDCCnaddr.cc:
+	  Make optimal placement of bank-selection instructions configurable using --max-allocs-per-node and --dump-graphs options.
+
 2011-01-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCnaddr.hpp,

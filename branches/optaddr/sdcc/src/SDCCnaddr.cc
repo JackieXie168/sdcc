@@ -30,7 +30,8 @@ switchAddressSpacesOptimally (iCode *ic, ebbIndex *ebbi)
   create_cfg_naddr(control_flow_graph, ic, ebbi);
   annotate_cfg_naddr(control_flow_graph);
 
-  dump_cfg_naddr(control_flow_graph);
+  if(options.dump_graphs)
+    dump_cfg_naddr(control_flow_graph);
 
   thorup_tree_decomposition(tree_decomposition, control_flow_graph);
   nicify(tree_decomposition);
