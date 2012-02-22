@@ -51,6 +51,8 @@ extern set *externs;
 static pCodeOp *popGetImmd(char *name, unsigned int offset, int index,int is_func);
 static pCodeOp *popRegFromString(char *str, int size, int offset);
 static int aop_isLitLike(asmop *aop);
+static void genCritical (iCode *ic);
+static void genEndCritical (iCode *ic);
 
 /* The PIC port(s) need not differentiate between POINTER and FPOINTER. */
 #define PIC_IS_DATA_PTR(x)  (IS_DATA_PTR(x) || IS_FARPTR(x))
@@ -419,7 +421,6 @@ static asmop *aopForRemat (operand *op) // x symbol *sym)
     iCode *ic = NULL;
     asmop *aop = newAsmop(AOP_PCODE);
     int val = 0;
-    int offset = 0;
 
     ic = sym->rematiCode;
 
@@ -438,7 +439,6 @@ static asmop *aopForRemat (operand *op) // x symbol *sym)
         ic = OP_SYMBOL(IC_LEFT(ic))->rematiCode;
     }
 
-    offset = OP_SYMBOL(IC_LEFT(ic))->offset;
     aop->aopu.pcop = popGetImmd(OP_SYMBOL(IC_LEFT(ic))->rname,0,val,0);
     PCOI(aop->aopu.pcop)->_const = IS_PTR_CONST(operandType(op));
     PCOI(aop->aopu.pcop)->index = val;
@@ -1624,7 +1624,7 @@ genUminusFloat(operand *op, operand *result)
 static void genUminus (iCode *ic)
 {
     int size, i;
-    sym_link *optype, *rtype;
+    sym_link *optype;
 
     FENTRY;
 
@@ -1646,7 +1646,6 @@ static void genUminus (iCode *ic)
     }
 
     optype = operandType(IC_LEFT(ic));
-    rtype = operandType(IC_RESULT(ic));
 
     /* if float then do float stuff */
     if (IS_FLOAT(optype)) {
@@ -1733,46 +1732,46 @@ static void saverbank (int bank, iCode *ic, bool pushPsw)
 /*-----------------------------------------------------------------*/
 static void saveRegisters(iCode *lic)
 {
-    iCode *ic;
-    bitVect *rsave;
-    sym_link *dtype;
+  iCode *ic;
+  sym_link *dtype;
 
-    FENTRY;
+  FENTRY;
 
-    DEBUGpic14_emitcode ("; ***","%s  %d",__FUNCTION__,__LINE__);
-    /* look for call */
-    for (ic = lic ; ic ; ic = ic->next)
-        if (ic->op == CALL || ic->op == PCALL)
-            break;
+  DEBUGpic14_emitcode ("; ***","%s  %d",__FUNCTION__,__LINE__);
 
-        if (!ic) {
-            fprintf(stderr,"found parameter push with no function call\n");
-            return ;
-        }
+  /* look for call */
+  for (ic = lic ; ic ; ic = ic->next)
+    if (ic->op == CALL || ic->op == PCALL)
+      break;
 
-        /* if the registers have been saved already then
-        do nothing */
-        if (ic->regsSaved || IFFUNC_CALLEESAVES(OP_SYMBOL(IC_LEFT(ic))->type))
-            return ;
+  if (!ic)
+    {
+      fprintf(stderr,"found parameter push with no function call\n");
+      return ;
+    }
 
-            /* find the registers in use at this time
-        and push them away to safety */
-        rsave = bitVectCplAnd(bitVectCopy(ic->rMask),
-            ic->rUsed);
+  /* if the registers have been saved already then do nothing */
+  if (ic->regsSaved || IFFUNC_CALLEESAVES(OP_SYMBOL(IC_LEFT(ic))->type))
+    return ;
 
-        ic->regsSaved = 1;
+  /* find the registers in use at this time
+     and push them away to safety */
+  bitVectCplAnd(bitVectCopy(ic->rMask), ic->rUsed);
 
-        //fprintf(stderr, "ERROR: saveRegisters did not do anything to save registers, please report this as a bug.\n");
+  ic->regsSaved = 1;
 
-        dtype = operandType(IC_LEFT(ic));
-        if (currFunc && dtype &&
-            (FUNC_REGBANK(currFunc->type) != FUNC_REGBANK(dtype)) &&
-            IFFUNC_ISISR(currFunc->type) &&
-            !ic->bankSaved)
+  //fprintf(stderr, "ERROR: saveRegisters did not do anything to save registers, please report this as a bug.\n");
 
-            saverbank(FUNC_REGBANK(dtype),ic,TRUE);
-
+  dtype = operandType(IC_LEFT(ic));
+  if (currFunc && dtype &&
+      (FUNC_REGBANK(currFunc->type) != FUNC_REGBANK(dtype)) &&
+      IFFUNC_ISISR(currFunc->type) &&
+      !ic->bankSaved)
+    {
+      saverbank(FUNC_REGBANK(dtype),ic,TRUE);
+    }
 }
+
 /*-----------------------------------------------------------------*/
 /* unsaveRegisters - pop the pushed registers                      */
 /*-----------------------------------------------------------------*/
@@ -2283,10 +2282,6 @@ static void genFunction (iCode *ic)
 
     ftype = operandType(IC_LEFT(ic));
 
-    /* if critical function then turn interrupts off */
-    if (IFFUNC_ISCRITICAL(ftype))
-        pic14_emitcode("clr","ea");
-
         /* here we need to generate the equates for the
     register bank if required */
 #if 0
@@ -2357,6 +2352,17 @@ static void genFunction (iCode *ic)
             }
         }
     }
+
+    /* if critical function then turn interrupts off */
+    if (IFFUNC_ISCRITICAL(ftype))
+      {
+        genCritical(NULL);
+        if (IFFUNC_ARGS (sym->type))
+          {
+            fprintf(stderr, "PIC14: Functions with __critical (%s) must not have arguments for now.\n", sym->name);
+            exit (1);
+          } // if
+      } // if
 
     /* set the register bank to the desired value */
     if (FUNC_REGBANK(sym->type) || FUNC_ISISR(sym->type)) {
@@ -2450,6 +2456,12 @@ static void genEndFunction (iCode *ic)
     /* restore the register bank    */
     if (FUNC_REGBANK(sym->type) || FUNC_ISISR(sym->type))
         pic14_emitcode ("pop","psw");
+
+    /* if critical function then turn interrupts off */
+    if (IFFUNC_ISCRITICAL (sym->type))
+      {
+        genEndCritical (NULL);
+      } // if
 
     if (IFFUNC_ISISR(sym->type)) {
 
@@ -2574,6 +2586,44 @@ jumpret:
         emitpcode(POC_GOTO,popGetLabel(returnLabel->key));
     }
 
+}
+
+static set *critical_temps = NULL;
+
+static void genCritical (iCode *ic)
+{
+  pCodeOp *saved_intcon;
+
+  (void)ic;
+
+  if (!critical_temps)
+    critical_temps = newSet();
+
+  saved_intcon = popGetTempReg ();
+  addSetHead (&critical_temps, saved_intcon);
+
+  /* This order saves one BANKSEL back to INTCON. */
+  emitpcode (POC_MOVFW, popCopyReg (&pc_intcon));
+  emitpcode (POC_BCF, popCopyGPR2Bit (popCopyReg (&pc_intcon), 7));
+  emitpcode (POC_MOVWF, pCodeOpCopy (saved_intcon));
+}
+
+static void genEndCritical (iCode *ic)
+{
+  pCodeOp *saved_intcon = NULL;
+
+  (void)ic;
+
+  saved_intcon = getSet (&critical_temps);
+  if (!saved_intcon)
+    {
+      fprintf(stderr, "Critical section left, but none entered -- ignoring for now.\n");
+      return;
+    } // if
+
+  emitpcode (POC_BTFSC, popCopyGPR2Bit (pCodeOpCopy (saved_intcon), 7));
+  emitpcode (POC_BSF, popCopyGPR2Bit (popCopyReg (&pc_intcon), 7));
+  popReleaseTempReg (saved_intcon);
 }
 
 /*-----------------------------------------------------------------*/
@@ -2762,7 +2812,6 @@ static void genDivOneByte (operand *left,
                            operand *right,
                            operand *result)
 {
-    int size;
     int sign;
 
     FENTRY;
@@ -2771,7 +2820,6 @@ static void genDivOneByte (operand *left,
     assert (AOP_SIZE(right) == 1);
     assert (AOP_SIZE(left) == 1);
 
-    size = min(AOP_SIZE(result),AOP_SIZE(left));
     sign = !(SPEC_USIGN(operandType(left))
         && SPEC_USIGN(operandType(right)));
 
@@ -2890,7 +2938,6 @@ static void genModOneByte (operand *left,
                            operand *right,
                            operand *result)
 {
-    int size;
     int sign;
 
     FENTRY;
@@ -2899,7 +2946,6 @@ static void genModOneByte (operand *left,
     assert (AOP_SIZE(right) == 1);
     assert (AOP_SIZE(left) == 1);
 
-    size = min(AOP_SIZE(result),AOP_SIZE(left));
     sign = !(SPEC_USIGN(operandType(left))
         && SPEC_USIGN(operandType(right)));
 
@@ -4597,6 +4643,55 @@ static void genRLC (iCode *ic)
     freeAsmop(result,NULL,ic,TRUE);
 }
 
+static void genGetABit (iCode *ic)
+{
+  operand *left, *right, *result;
+  int shCount;
+  int offset;
+  int i;
+
+  left = IC_LEFT (ic);
+  right = IC_RIGHT (ic);
+  result = IC_RESULT (ic);
+
+  aopOp (left, ic, FALSE);
+  aopOp (right, ic, FALSE);
+  aopOp (result, ic, TRUE);
+
+  shCount = (int) ulFromVal (AOP (right)->aopu.aop_lit);
+  offset = shCount / 8;
+  shCount %= 8;
+
+  /* load and mask the source byte */
+  mov2w (AOP (left), offset);
+  emitpcode (POC_ANDLW, popGetLit (1 << shCount));
+
+  /* move selected bit to bit 0 */
+  switch (shCount)
+    {
+      case 0:
+          /* nothing more to do */
+          break;
+      default:
+          /* keep W==0, force W=0x01 otherwise */
+          emitSKPZ;
+          emitpcode (POC_MOVLW, popGetLit (1));
+          break;
+    } // switch
+
+  /* write result */
+  emitpcode (POC_MOVWF, popGet (AOP (result), 0));
+
+  for (i = 1; i < AOP_SIZE (result); ++i)
+    {
+      emitpcode (POC_CLRF, popGet (AOP (result), i));
+    } // for
+
+  freeAsmop (left, NULL, ic, TRUE);
+  freeAsmop (right, NULL, ic, TRUE);
+  freeAsmop (result, NULL, ic, TRUE);
+}
+
 /*-----------------------------------------------------------------*/
 /* genGetHbit - generates code get highest order bit               */
 /*-----------------------------------------------------------------*/
@@ -5019,14 +5114,12 @@ static void loadSignToC (operand *op)
 static void genGenericShift (iCode *ic, int shiftRight)
 {
     operand *right, *left, *result;
-    sym_link *retype ;
     int size;
     symbol *tlbl, *tlbl1, *inverselbl;
 
     FENTRY;
     /* if signed then we do it the hard way preserve the
     sign bit moving it inwards */
-    retype = getSpec(operandType(IC_RESULT(ic)));
     DEBUGpic14_emitcode ("; ***","%s  %d",__FUNCTION__,__LINE__);
 
     /* signed & unsigned types are treated the same : i.e. the
@@ -5324,7 +5417,6 @@ emitPtrByteSet (operand *dst, int p_type, bool alreadyAddressed)
 static void
 genUnpackBits (operand *result, operand *left, int ptype, iCode *ifx)
 {
-  int rsize;            /* result size */
   sym_link *etype;      /* bitfield type information */
   int blen;             /* bitfield length */
   int bstr;             /* bitfield starting bit within byte */
@@ -5332,7 +5424,6 @@ genUnpackBits (operand *result, operand *left, int ptype, iCode *ifx)
   FENTRY;
   DEBUGpic14_emitcode ("; ***", "%s  %d", __FUNCTION__, __LINE__);
   etype = getSpec (operandType (result));
-  rsize = getSize (operandType (result));
   blen = SPEC_BLEN (etype);
   bstr = SPEC_BSTR (etype);
 
@@ -5652,22 +5743,18 @@ static void genConstPointerGet (operand *left,
     symbol *albl, *blbl;//, *clbl;
     pCodeOp *pcop;
     #endif
-    PIC_OPCODE poc;
-    int i, size, lit;
+    int i, lit;
 
     FENTRY;
     DEBUGpic14_emitcode ("; ***","%s  %d",__FUNCTION__,__LINE__);
     aopOp(left,ic,FALSE);
     aopOp(result,ic,FALSE);
 
-    size = AOP_SIZE(result);
-
     DEBUGpic14_AopType(__LINE__,left,NULL,result);
 
     DEBUGpic14_emitcode ("; "," %d getting const pointer",__LINE__);
 
     lit = op_isLitLike (left);
-    poc = lit ? POC_MOVLW : POC_MOVFW;
 
     if (IS_BITFIELD(getSpec(operandType(result))))
     {
@@ -6812,7 +6899,6 @@ release:
 /*-----------------------------------------------------------------*/
 static int genDjnz (iCode *ic, iCode *ifx)
 {
-    symbol *lbl, *lbl1;
     FENTRY;
     DEBUGpic14_emitcode ("; ***","%s  %d",__FUNCTION__,__LINE__);
 
@@ -6839,9 +6925,6 @@ static int genDjnz (iCode *ic, iCode *ifx)
         return 0;
 
     /* otherwise we can save BIG */
-    lbl = newiTempLabel(NULL);
-    lbl1= newiTempLabel(NULL);
-
     aopOp(IC_RESULT(ic),ic,FALSE);
 
     emitpcode(POC_DECFSZ,popGet(AOP(IC_RESULT(ic)),0));
@@ -7097,6 +7180,10 @@ void genpic14Code (iCode *lic)
             genRLC (ic);
             break;
 
+        case GETABIT:
+            genGetABit (ic);
+            break;
+
         case GETHBIT:
             genGetHbit (ic);
             break;
@@ -7146,6 +7233,14 @@ void genpic14Code (iCode *lic)
 
         case DUMMY_READ_VOLATILE:
             genDummyRead (ic);
+            break;
+
+        case CRITICAL:
+            genCritical (ic);
+            break;
+
+        case ENDCRITICAL:
+            genEndCritical (ic);
             break;
 
         default :

@@ -16,6 +16,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#ifndef SDCCBTREE_H
+#define SDCCBTREE_H
+
 // Init block tree. To be called for each new function.
 void btree_init();
 
@@ -33,4 +36,6 @@ void btree_alloc(void);
 
 // Get stack size for a given block. To be called after btree_alloc() only.
 //int btree_get_stack_size(short block);
+
+#endif
 

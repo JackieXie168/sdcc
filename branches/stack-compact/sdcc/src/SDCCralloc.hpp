@@ -1041,6 +1041,9 @@ void good_re_root(T_t &T)
 static
 void dump_con(const con_t &con)
 {
+  if(!currFunc)
+    return;
+
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());
 
   std::string *name = new std::string[boost::num_vertices(con)];
@@ -1060,6 +1063,9 @@ void dump_con(const con_t &con)
 static
 void dump_cfg(const cfg_t &cfg)
 {
+  if(!currFunc)
+    return;
+
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcfg" + currFunc->rname + ".dot").c_str());
 
   std::string *name = new std::string[boost::num_vertices(cfg)];
@@ -1081,6 +1087,9 @@ void dump_cfg(const cfg_t &cfg)
 static
 void dump_tree_decomposition(const tree_dec_t &tree_dec)
 {
+  if(!currFunc)
+    return;
+
   std::ofstream dump_file((std::string(dstFileName) + ".dumpdec" + currFunc->rname + ".dot").c_str());
 
   unsigned int w = 0;

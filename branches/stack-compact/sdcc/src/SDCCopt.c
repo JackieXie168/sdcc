@@ -1220,7 +1220,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           right = IC_RIGHT (ic);
           result = IC_RESULT (ic);
           
-          //printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));
+          /*printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));*/
           
           if (left && IS_SYMOP (left))
             { 
@@ -1341,23 +1341,29 @@ getAddrspaceiCode (const iCode *ic)
   addrspace = leftaddrspace;
   if (rightaddrspace)
     {
-      wassertl (!addrspace || addrspace == rightaddrspace, "Multiple named address spaces in icode");
+      wassertl (!addrspace || addrspace == rightaddrspace, "Multiple named address spaces in icode.");
       addrspace = rightaddrspace;
     }
   if (resultaddrspace)
     {
-      wassertl (!addrspace || addrspace == resultaddrspace, "Multiple named address spaces in icode");
+      wassertl (!addrspace || addrspace == resultaddrspace, "Multiple named address spaces in icode.");
       addrspace = resultaddrspace;
     }
 
   return (addrspace);
 }
 
+/*-----------------------------------------------------------------*/
+/* switchAddressSpaceAt - insert a bank selection instruction      */
+/*-----------------------------------------------------------------*/
 void
-switchAddressSpaceAt (iCode *ic)
+switchAddressSpaceAt (iCode *ic, const symbol *const addrspace)
 {
-  const symbol *const addrspace = getAddrspaceiCode (ic);
-  iCode *newic = newiCode (CALL, operandFromSymbol (addrspace->addressmod[0]), 0);
+  iCode *newic;
+  const symbol *const laddrspace = getAddrspaceiCode (ic);
+  wassertl(!laddrspace || laddrspace == addrspace, "Switching to invalid address space.");
+
+  newic = newiCode (CALL, operandFromSymbol (addrspace->addressmod[0]), 0);
 
   IC_RESULT (newic) = newiTempOperand (newVoidLink (), 1);
   newic->filename = ic->filename;
@@ -1387,7 +1393,7 @@ switchAddressSpaces (iCode *ic)
  
       if (addrspace && addrspace != oldaddrspace)
         { 
-          switchAddressSpaceAt (ic);
+          switchAddressSpaceAt (ic, addrspace);
           
           oldaddrspace = addrspace;
         }
@@ -2062,12 +2068,13 @@ eBBlockFromiCode (iCode * ic)
 
   /* enforce restrictions on acesses to named address spaces */
   separateAddressSpaces (ebbi->bbOrder, ebbi->count);
-  
+
   /* insert bank switching instructions. Do it here, before the
      other support routines, since we can assume that there is no
      bank switching happening in those other support routines
      (but assume that it can happen in other functions) */
-  ic = iCodeLabelOptimize(iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
+  adjustIChain(ebbi->bbOrder, ebbi->count);
+  ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
   if(switchAddressSpacesOptimally (ic, ebbi))
     switchAddressSpaces (ic); /* Fallback. Very unlikely to be triggered, unless --max-allocs-per-node is set to very small values or very weird control-flow graphs */
 

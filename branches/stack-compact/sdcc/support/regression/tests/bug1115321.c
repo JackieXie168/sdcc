@@ -49,10 +49,14 @@
 
 #define SUPPORT_CHAR_C
 
+/* Normally a char is promoted to int when passed as varargs parameter */
+/* but SDCC leaves it as char. */
 #ifndef SDCC
-#   define VA_ARG(args,type) (type)va_arg((args),int)
+#   define VA_ARG_CHAR int
+#   define VA_ARG(args,type) va_arg((args),type)
 #   define SDCC_SNPRINTF    sdcc_snprintf
 #else
+#   define VA_ARG_CHAR char
 #   define VA_ARG(args,type) va_arg((args),type)
 #   define SDCC_SNPRINTF    snprintf
 #endif
@@ -113,7 +117,7 @@ unsigned char SDCC_SNPRINTF( char *buffer, const unsigned char size,
             switch( *format ) {
 #ifdef SUPPORT_CHAR_C
                 case 'c':
-                    *buffer = VA_ARG( args, char );
+                    *buffer = VA_ARG( args, VA_ARG_CHAR );
                     buffer++;
                     break;
 #endif /* SUPPORT_CHAR_C */
@@ -246,7 +250,7 @@ void test_s( void )
     ASSERT (ret == 10);
 }
 
-#if defined SDCC && !defined SDCC_z80 && !defined SDCC_z180 && !defined SDCC_r2k
+#if defined SDCC && !defined SDCC_z80 && !defined SDCC_z180 && !defined SDCC_r2k && !defined SDCC_gbz80
 extern void _putchar(char c);
 
 void putchar(char c)

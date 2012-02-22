@@ -32,6 +32,7 @@ extern "C"
   #include "z80.h"
   unsigned char dryZ80iCode (iCode * ic);
   bool z80_assignment_optimal;
+  bool should_omit_frame_ptr;
 };
 
 #define REG_C 0
@@ -396,7 +397,7 @@ z80_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
     return;
     
   if(!(ic->op == '~' || ic->op == UNARYMINUS || ic->op == '+' || ic->op == '-' || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)) 
-    return; // Code generation can always handle all other operations. Todo: Handle ^, |, BITWISEAND there as well.
+    return; // Code generation can always handle all other operations. Todo: Handle ^, |, BITWISEAND and float UNARYMINUS there as well.
    
   operand_map_t::const_iterator oir, oir_end, oirs; 
   boost::tie(oir, oir_end) = n.operands.equal_range(OP_SYMBOL_CONST(result)->key);
@@ -441,6 +442,27 @@ bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, unsigne
   return(false);
 }
 
+// Return true, iff the operand is placed on the stack.
+template <class G_t>
+bool operand_on_stack(const operand *o, const assignment &a, unsigned short int i, const G_t &G)
+{
+  if(!o || !IS_SYMOP(o))
+    return(false);
+
+  if(OP_SYMBOL_CONST(o)->remat)
+    return(false);
+
+  if(OP_SYMBOL_CONST(o)->_isparm && !IS_REGPARM (OP_SYMBOL_CONST(o)->etype))
+    return(true);
+
+  operand_map_t::const_iterator oi, oi_end;
+  for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+    if(a.global[oi->second] < 0)
+      return(true);
+
+  return(false);
+}
+
 template <class G_t>
 bool operand_is_pair(const operand *o, const assignment &a, unsigned short int i, const G_t &G)
 {
@@ -473,6 +495,8 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 {
   const iCode *ic = G[i].ic;
   const i_assignment_t &ia = a.i_assignment;
+
+  const operand *left = IC_LEFT(ic);
 
   if(ia.registers[REG_A][1] < 0)
     return(true);	// Register A not in use.
@@ -513,6 +537,13 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
         return(true);
 
       if(ic->op == GOTO || ic->op == LABEL)
+        return(true);
+
+      if(ic->op == IPUSH && getSize(operandType(IC_LEFT(ic))) <= 2 &&
+        (operand_in_reg(left, REG_C, ia, i, G) && I[ia.registers[REG_C][1]].byte == 0 && (getSize(operandType(left)) < 2 || operand_in_reg(left, REG_B, ia, i, G))||
+        operand_in_reg(left, REG_E, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && (getSize(operandType(left)) < 2 || operand_in_reg(left, REG_D, ia, i, G)) ||
+        operand_in_reg(left, REG_L, ia, i, G) && I[ia.registers[REG_L][1]].byte == 0 && (getSize(operandType(left)) < 2 || operand_in_reg(left, REG_H, ia, i, G)) ||
+        operand_in_reg(left, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && (getSize(operandType(left)) < 2 || operand_in_reg(left, REG_IYH, ia, i, G))))
         return(true);
 
       //if(i == 15) std::cout << "Not Used: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
@@ -578,6 +609,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(TARGET_IS_GBZ80)
     return(true);
 
+  bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127) || IS_GB);
+
   const i_assignment_t &ia = a.i_assignment;
 
   bool unused_L = (ia.registers[REG_L][1] < 0);
@@ -636,19 +669,22 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if((IS_GB || IY_RESERVED) && (IS_TRUE_SYMOP(left) || IS_TRUE_SYMOP(right)))
     return(false);
 
-  if(options.omitFramePtr)	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
-	return(false);
+  if((IS_GB || IY_RESERVED) && IS_TRUE_SYMOP(result) && getSize(operandType(IC_RESULT(ic))) > 2)
+    return(false);
 
   if(result_only_HL && ic->op == PCALL)
     return(true);
+
+  if(exstk && (operand_on_stack(result, a, i, G) || operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)))	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
+    return(false);
 
   if(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) >= 2 &&
     (IS_TRUE_SYMOP (result) || IS_TRUE_SYMOP (left) || IS_TRUE_SYMOP (right))) // Might use (hl).
     return(false);
 
-  if(ic->op == '+' && input_in_HL && IS_TRUE_SYMOP (result)) // Might use (hl) for result.
+  if(ic->op == '+' && input_in_HL && (IS_TRUE_SYMOP (result) || operand_on_stack(result, a, i, G) && exstk)) // Might use (hl) for result.
     return(false);
-    
+  
   // HL overwritten by result.
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||
@@ -675,12 +711,22 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(true);
   if(ic->op == IPUSH && input_in_H && (getSize(operandType(IC_LEFT(ic))) <= 2 || I[ia.registers[REG_L][1]].byte == 2 && I[ia.registers[REG_H][1]].byte == 3))
     return(true);
-  if(ic->op == IPUSH && getSize(operandType(IC_LEFT(ic))) <= 2 &&
-    (operand_in_reg(left, REG_C, ia, i, G) && I[ia.registers[REG_C][1]].byte == 0 && (getSize(operandType(IC_LEFT(ic))) < 2 || operand_in_reg(left, REG_B, ia, i, G))||
-    operand_in_reg(left, REG_E, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && (getSize(operandType(IC_LEFT(ic))) < 2 || operand_in_reg(left, REG_D, ia, i, G)) ||
-    operand_in_reg(left, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && (getSize(operandType(IC_LEFT(ic))) < 2 || operand_in_reg(left, REG_IYH, ia, i, G))))
+  if(ic->op == IPUSH && ic->next && ic->next->op == CALL)
+    return(true);
+  if(ic->op == IPUSH && getSize(operandType(left)) == 2 &&
+    (ia.registers[REG_C][1] < 0 && ia.registers[REG_B][1] < 0 || ia.registers[REG_E][1] < 0 && ia.registers[REG_D][1] < 0)) // Can use pair other than HL.
+    return(true);
+  if(ic->op == IPUSH && getSize(operandType(left)) <= 2 &&
+    (operand_in_reg(left, REG_C, ia, i, G) && I[ia.registers[REG_C][1]].byte == 0 && (getSize(operandType(left)) < 2 || operand_in_reg(left, REG_B, ia, i, G))||
+    operand_in_reg(left, REG_E, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && (getSize(operandType(left)) < 2 || operand_in_reg(left, REG_D, ia, i, G)) ||
+    operand_in_reg(left, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && (getSize(operandType(left)) < 2 || operand_in_reg(left, REG_IYH, ia, i, G))))
     return(true);
   if(POINTER_GET(ic) && input_in_L && input_in_H && (getSize(operandType(IC_RESULT(ic))) == 1 || !result_in_HL))
+    return(true);
+  if(!IS_GB && ic->op == ADDRESS_OF &&
+    (operand_in_reg(result, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && operand_in_reg(result, REG_IYH, ia, i, G) ||
+    !OP_SYMBOL_CONST (left)->onStack && operand_in_reg(result, REG_C, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && operand_in_reg(result, REG_B, ia, i, G) ||
+    !OP_SYMBOL_CONST (left)->onStack && operand_in_reg(result, REG_E, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && operand_in_reg(result, REG_D, ia, i, G)))
     return(true);
 
   if(ic->op == LEFT_OP && isOperandLiteral(IC_RIGHT(ic)))
@@ -697,7 +743,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
          ic->op == '<' ||
          ic->op == EQ_OP ||*/
          (ic->op == '+' && getSize(operandType(IC_RESULT(ic))) == 1) ||
-         (ic->op == '+' && getSize(operandType(IC_RESULT(ic))) <= 2 && result_only_HL) ))))	// 16 bit addition might use add hl, rr
+         (ic->op == '+' && getSize(operandType(IC_RESULT(ic))) <= 2 && (result_only_HL || !IS_GB)) ))))	// 16 bit addition on gbz80 might need to use add hl, rr.
     return(true);
 
   if((ic->op == '<' || ic->op == '>') && (IS_ITEMP(left) || IS_OP_LITERAL(left) || IS_ITEMP(right) || IS_OP_LITERAL(right)))	// Todo: Fix for large stack.
@@ -706,14 +752,20 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(IS_VALOP(right) && ic->op == EQ_OP)
     return(true);
 
+  if(ic->op == CALL)
+    return(true);
+
   // HL overwritten by result.
-  if(result_only_HL && (ic->op == CALL || ic->op == PCALL))
+  if(result_only_HL && ic->op == PCALL)
     return(true);
 
   if(POINTER_GET(ic) && getSize(operandType(IC_RESULT(ic))) == 1 && !IS_BITVAR(getSpec(operandType(result))) &&
     (operand_in_reg(right, REG_C, ia, i, G) && I[ia.registers[REG_C][1]].byte == 0 && operand_in_reg(right, REG_B, ia, i, G) || // Uses ld a, (bc)
     operand_in_reg(right, REG_E, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && operand_in_reg(right, REG_D, ia, i, G) || // Uses ld a, (de)
     operand_in_reg(right, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && operand_in_reg(right, REG_IYH, ia, i, G))) // Uses ld r, 0 (iy)
+    return(true);
+
+  if((ic->op == '=') && POINTER_SET(ic) && operand_in_reg(result, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && operand_in_reg(result, REG_IYH, ia, i, G))	// Uses ld 0 (iy), l etc
     return(true);
 
   if((ic->op == '=' || ic->op == CAST) && POINTER_SET(ic) && !result_only_HL)	// loads result pointer into (hl) first.
@@ -744,6 +796,8 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   //if(ic->key == 118)
 //		std::cout << "1IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
+
+  bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127));
 
   bool unused_IYL = (ia.registers[REG_IYL][1] < 0);
   bool unused_IYH = (ia.registers[REG_IYH][1] < 0);
@@ -784,8 +838,8 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(unused_IYL && unused_IYH)
     return(true);	// Register IY not in use.
     
-  if(options.omitFramePtr)	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
-	return(false);
+  if(exstk && (operand_on_stack(result, a, i, G) || operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)))	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
+    return(false);
 
   // Code generator cannot handle variables that are only partially in IY.
   if(unused_IYL ^ unused_IYH)
@@ -1312,6 +1366,56 @@ int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
   return(!assignment_optimal);
 }
 
+// Omit the frame pointer for functions with low register pressure and few parameter accesses.
+template <class G_t>
+static bool omit_frame_ptr(const G_t &G)
+{
+  if(IS_GB)
+    return(false);
+
+  if(options.omitFramePtr)
+    return(true);
+    
+  signed char omitcost = -16;
+  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+    {
+      if(G[i].alive.size() > NUM_REGS - 4)
+        return(false);
+
+      const iCode *const ic = G[i].ic;
+      const operand *o;
+      o = IC_RESULT(ic);
+      if(o && IS_SYMOP(o) && OP_SYMBOL_CONST(o)->_isparm && !IS_REGPARM (OP_SYMBOL_CONST(o)->etype))
+        omitcost += 6;
+      o = IC_LEFT(ic);
+      if(o && IS_SYMOP(o) && OP_SYMBOL_CONST(o)->_isparm && !IS_REGPARM (OP_SYMBOL_CONST(o)->etype))
+        omitcost += 6;
+      o = IC_RIGHT(ic);
+      if(o && IS_SYMOP(o) && OP_SYMBOL_CONST(o)->_isparm && !IS_REGPARM (OP_SYMBOL_CONST(o)->etype))
+        omitcost += 6;
+
+      if(omitcost > 14) // Chosen greater than zero, since the peephole optimizer often can optimize the use of iy into use of hl, reducing the cost.
+        return(false);
+    }
+
+  return(true);
+}
+
+// Adjust stack location when deciding to omit frame pointer.
+void move_parms(void)
+{
+  if(!currFunc || IS_GB || options.omitFramePtr || !should_omit_frame_ptr)
+    return;
+
+  for(value *val = FUNC_ARGS (currFunc->type); val; val = val->next)
+    {
+      if(IS_REGPARM(val->sym->etype) || !val->sym->onStack)
+        continue;
+
+      val->sym->stack -= 2;
+    }
+}
+
 iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 {
   eBBlock **const ebbs = ebbi->bbOrder;
@@ -1333,6 +1437,9 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 #endif
 
   ic = create_cfg(control_flow_graph, conflict_graph, ebbi);
+
+  should_omit_frame_ptr = omit_frame_ptr(control_flow_graph);
+  move_parms();
 
   if(options.dump_graphs)
     dump_cfg(control_flow_graph);
@@ -1361,9 +1468,9 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
 
   // Allocate registers
 #if !defined(TD_SALLOC) && !defined(CH_SALLOC)
-  z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
+   z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
 #else
-  z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
+   z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph, stack_conflict_graph);
 #endif
 
 #if defined(TD_SALLOC) || defined(CH_SALLOC)

@@ -153,9 +153,10 @@ create_cfg_naddr(cfg_t &cfg, iCode *start_ic, ebbIndex *ebbi)
 }
 
 // Annotate nodes of the control flow graph with the set of possible named address spaces active there.
-void annotate_cfg_naddr(cfg_t &cfg)
+void annotate_cfg_naddr(cfg_t &cfg, std::map<naddrspace_t, const symbol *> &addrspaces)
 {
-  typedef typename boost::graph_traits<cfg_t>::vertex_descriptor vertex_t;
+  /* MSVC 2010 doesn't like the typename here, though it accepts it elsewhere */
+  typedef /*typename*/ boost::graph_traits<cfg_t>::vertex_descriptor vertex_t;
 
   std::map<const symbol *, naddrspace_t> sym_to_index;
   naddrspace_t na_max = -1;
@@ -180,6 +181,7 @@ void annotate_cfg_naddr(cfg_t &cfg)
           if (sym_to_index.find (addrspace) == sym_to_index.end ())
             sym_to_index[addrspace] = ++na_max;
           na = sym_to_index[addrspace];
+          addrspaces[na] = addrspace;
 
           cfg[i].possible_naddrspaces.insert (na);
           predetermined[i] = true;
@@ -189,35 +191,42 @@ void annotate_cfg_naddr(cfg_t &cfg)
     }
 
   // Extend.
-  for(bool change = true; change; change = false)
-    for (vertex_t i = 0; i < boost::num_vertices (cfg); i++)
+  bool change;
+  do
     {
-      if (predetermined[i])
-        continue;
-
-      size_t oldsize = cfg[i].possible_naddrspaces.size();
+      change = false;
+      for (vertex_t i = 0; i < boost::num_vertices (cfg); i++)
       {
-        typedef typename boost::graph_traits<cfg_t>::out_edge_iterator n_iter_t;
-        n_iter_t n, n_end;    
-        for (boost::tie(n, n_end) = boost::out_edges(i, cfg);  n != n_end; ++n)
-          {
-            vertex_t v = boost::target(*n, cfg);
-            cfg[i].possible_naddrspaces.insert(cfg[v].possible_naddrspaces.begin(), cfg[v].possible_naddrspaces.end());
-          }
-      }
-      {
-        typedef typename boost::graph_traits<cfg_t>::in_edge_iterator n_iter_t;
-        n_iter_t n, n_end;    
-        for (boost::tie(n, n_end) = boost::in_edges(i, cfg);  n != n_end; ++n)
-          {
-            vertex_t v = boost::source(*n, cfg);
-            cfg[i].possible_naddrspaces.insert(cfg[v].possible_naddrspaces.begin(), cfg[v].possible_naddrspaces.end());
-          }
-      }
+        if (predetermined[i])
+          continue;
 
-      if (oldsize != cfg[i].possible_naddrspaces.size())
+        size_t oldsize = cfg[i].possible_naddrspaces.size();
+        {
+          /* MSVC 2010 doesn't like the typename here, though it accepts it elsewhere */
+          typedef /*typename*/ boost::graph_traits<cfg_t>::out_edge_iterator n_iter_t;
+          n_iter_t n, n_end;    
+          for (boost::tie(n, n_end) = boost::out_edges(i, cfg);  n != n_end; ++n)
+            {
+              vertex_t v = boost::target(*n, cfg);
+              cfg[i].possible_naddrspaces.insert(cfg[v].possible_naddrspaces.begin(), cfg[v].possible_naddrspaces.end());
+            }
+        }
+        {
+          /* MSVC 2010 doesn't like the typename here, though it accepts it elsewhere */
+          typedef /*typename*/ boost::graph_traits<cfg_t>::in_edge_iterator n_iter_t;
+          n_iter_t n, n_end;    
+          for (boost::tie(n, n_end) = boost::in_edges(i, cfg);  n != n_end; ++n)
+            {
+              vertex_t v = boost::source(*n, cfg);
+              cfg[i].possible_naddrspaces.insert(cfg[v].possible_naddrspaces.begin(), cfg[v].possible_naddrspaces.end());
+            }
+        }
+
+        if (oldsize != cfg[i].possible_naddrspaces.size())
           change = true;
+      }
     }
+  while(change);
 }
 
 // Handle Leaf nodes in the nice tree decomposition
@@ -262,7 +271,7 @@ int tree_dec_naddrswitch_introduce(T_t &T, typename boost::graph_traits<T_t>::ve
 
   alist.clear();
 
-  return(alist2.size() <= options.max_allocs_per_node ? 0 : -1);
+  return((int)alist2.size() <= options.max_allocs_per_node ? 0 : -1);
 }
 
 // Handle forget nodes in the nice tree decomposition
@@ -426,7 +435,7 @@ int tree_dec_naddrswitch_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex
 }
 
 template <class G_t>
-void implement_assignment(const assignment_naddr &a, const G_t &G)
+void implement_assignment(const assignment_naddr &a, const G_t &G, const std::map<naddrspace_t, const symbol *> addrspaces)
 {
   typedef typename boost::graph_traits<G_t>::vertex_descriptor vertex_t;
   typedef typename boost::graph_traits<G_t>::edge_iterator ei_t;
@@ -447,12 +456,12 @@ void implement_assignment(const assignment_naddr &a, const G_t &G)
       if(G[source].ic->next != G[target].ic)
         std::cerr << "Trying to switch address space at weird edge in CFG.";
 
-      switchAddressSpaceAt(G[target].ic);
+      switchAddressSpaceAt(G[target].ic, addrspaces.find(targetspace)->second);
     }
 }
 
 template <class T_t, class G_t>
-int tree_dec_address_switch(T_t &T, const G_t &G)
+int tree_dec_address_switch(T_t &T, const G_t &G, const std::map<naddrspace_t, const symbol *> addrspaces)
 {
   if(tree_dec_naddrswitch_nodes(T, find_root(T), G))
     return(-1);
@@ -470,7 +479,7 @@ int tree_dec_address_switch(T_t &T, const G_t &G)
   std::cout.flush();
 #endif
 
-  implement_assignment(winner, G);
+  implement_assignment(winner, G, addrspaces);
 
   return(0);
 }
