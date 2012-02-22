@@ -303,6 +303,7 @@ typedef struct symbol
   unsigned isreqv:1;                /* is the register equivalent of a symbol */
   unsigned udChked:1;               /* use def checking has been already done */
   unsigned generated:1;             /* code generated (function symbols only) */
+  unsigned isinscope:1;             /* is in scope */
 
   /* following flags are used by the backend
      for code generation and can be changed
@@ -690,6 +691,7 @@ void promoteAnonStructs (int, structdef *);
 int isConstant (sym_link * type);
 int isVolatile (sym_link * type);
 int isRestrict (sym_link * type);
+value *aggregateToPointer (value *);
 
 
 extern char *nounName (sym_link *);     /* noun strings */

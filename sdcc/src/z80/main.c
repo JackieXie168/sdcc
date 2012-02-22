@@ -590,7 +590,8 @@ _setValues (void)
   setMainValue ("z80bases", dbuf_c_str (&dbuf));
   dbuf_destroy (&dbuf);
 
-  if ((IS_Z80 || IS_Z180) && options.omitFramePtr)
+  /* For the old register allocator (with the new one we decide to omit the frame pointer for each function individually) */
+  if (!IS_GB && options.omitFramePtr)
     z80_port.stack.call_overhead = 2;
 }
 
@@ -669,7 +670,6 @@ static bool
 _hasNativeMulFor (iCode * ic, sym_link * left, sym_link * right)
 {
   sym_link *test = NULL;
-  value *val;
   int result_size = IS_SYMOP(IC_RESULT(ic)) ? getSize(OP_SYM_TYPE(IC_RESULT(ic))) : 4;
 
   if (ic->op != '*')
@@ -678,15 +678,9 @@ _hasNativeMulFor (iCode * ic, sym_link * left, sym_link * right)
     }
 
   if (IS_LITERAL (left))
-    {
-      test = left;
-      val = OP_VALUE (IC_LEFT (ic));
-    }
+    test = left;
   else if (IS_LITERAL (right))
-    {
-      test = right;
-      val = OP_VALUE (IC_RIGHT (ic));
-    }
+    test = right;
   /* 8x8 unsigned multiplication code is shorter than
      call overhead for the multiplication routine. */
   else if (IS_CHAR (right) && IS_UNSIGNED (right) && IS_CHAR (left) && IS_UNSIGNED (left) && !IS_GB)

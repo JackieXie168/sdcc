@@ -3147,7 +3147,7 @@ z80_ralloc (ebbIndex * ebbi)
 
   /* The new register allocator invokes its magic */
   ic = z80_ralloc2_cc (ebbi);
-  
+
   /* after that create the register mask
      for each of the instruction */
   createRegMask (ebbs, count);

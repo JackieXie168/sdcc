@@ -12,6 +12,8 @@ void testmemory(void)
   volatile size_t zero = 0;
   volatile size_t one = 1;
 
+  ASSERT(source[0] == 0);
+
   /* Test memset() */
   destination[3] = 23;
   memset(destination, 42, 3);
@@ -52,9 +54,8 @@ void testmemory(void)
   ASSERT(destination[3] == source[2]);
 
   /* Test memchr() */
-  /* memchr() is not yet supported by sdcc.
   ASSERT(NULL == memchr(destination, 5, 4));
-  ASSERT(destination == memchr(destination, 0, 4));
+  /*ASSERT(destination == memchr(destination, 0, 4));
   ASSERT(destination + 3 == memchr(destination, 3, 4));*/
 
   ASSERT(strlen("test") == 4);

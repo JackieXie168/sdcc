@@ -39,7 +39,7 @@
   typedef unsigned int size_t;
 #endif
 
-#if !defined(SDCC_z80) && !defined(SDCC_z180) && !defined(SDCC_gbz80)
+#if defined(SDCC_mcs51) || defined(SDCC_hc08) || defined(SDCC_ds390) || defined(SDCC_pic14) || defined(SDCC_pic16)
 #define __SDCC_BROKEN_STRING_FUNCTIONS
 #endif
 
@@ -50,7 +50,7 @@
 /* Copying functions: */
 extern void *memcpy (void * /*restrict */ dest, const void * /*restrict*/ src, size_t n);
 extern void *memmove (void *dest, const void *src, size_t n);
-extern char *strcpy (char * /*restrit*/ dest, const char * /*restrict*/ src);
+extern char *strcpy (char * /*restrict*/ dest, const char * /*restrict*/ src);
 extern char *strncpy(char * /*restrict*/ dest, const char * /*restrict*/ src, size_t n);
 
 /* Concatenation functions: */

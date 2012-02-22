@@ -272,8 +272,9 @@ findSymWithLevel (bucket ** stab, symbol * sym)
           /* if levels match then block numbers should also match */
           if (bp->level && bp->level == sym->level && bp->block == sym->block)
             return (bp->sym);
-          /* if levels don't match then we are okay */
-          if (bp->level && bp->level != sym->level && bp->block <= sym->block)
+          /* if levels don't match then we are okay if the symbol is in scope */
+          if (bp->level && bp->level != sym->level && bp->block <= sym->block
+              && ((symbol *) (bp->sym))->isinscope)
             return (bp->sym);
           /* if this is a global variable then we are ok too */
           if (bp->level == 0)
@@ -321,6 +322,7 @@ newSymbol (const char *name, int scope)
   sym->lineDef = lexLineno;     /* set the line number */
   sym->fileDef = lexFilename;
   sym->for_newralloc = 0;
+  sym->isinscope = 1;
   return sym;
 }
 
@@ -1264,6 +1266,12 @@ addSymChain (symbol ** symHead)
       changePointer (sym->type);
       checkTypeSanity (sym->etype, sym->name);
 
+      if (IS_NORETURN (sym->etype))
+        {
+          SPEC_NORETURN (sym->etype) = 0;
+          FUNC_ISNORETURN (sym->type) = 1;
+        }
+
       if (!sym->level && !(IS_SPEC (sym->etype) && IS_TYPEDEF (sym->etype)))
         elemsFromIval = checkDecl (sym, 0);
       else
@@ -1764,7 +1772,7 @@ checkSClass (symbol * sym, int isProto)
 
   /* global variables declared const put into code */
   /* if no other storage class specified */
-  if (sym->level == 0 && SPEC_SCLS (sym->etype) == S_FIXED && !IS_FUNC (sym->type))
+  if ((sym->level == 0 || SPEC_STAT(sym->etype)) && SPEC_SCLS (sym->etype) == S_FIXED && !IS_FUNC (sym->type))
     {
       /* find the first non-array link */
       t = sym->type;
@@ -1775,7 +1783,7 @@ checkSClass (symbol * sym, int isProto)
     }
 
   /* global variable in code space is a constant */
-  if (sym->level == 0 && SPEC_SCLS (sym->etype) == S_CODE && port->mem.code_ro)
+  if ((sym->level == 0 || SPEC_STAT(sym->etype)) && SPEC_SCLS (sym->etype) == S_CODE && port->mem.code_ro)
     {
       /* find the first non-array link */
       t = sym->type;

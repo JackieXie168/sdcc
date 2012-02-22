@@ -33,7 +33,7 @@ replace restart {
 %1:
 } by {
 	jp	C,%2
-	; peephole 3 removed jp by using inverse jump logic
+	; peephole 60 removed jp by using inverse jump logic
 %1:
 } if labelRefCountChange(%1 -1)
 
@@ -43,7 +43,7 @@ replace restart {
 %1:
 } by {
 	jp	NC,%2
-	; peephole 4 removed jp by using inverse jump logic
+	; peephole 61 removed jp by using inverse jump logic
 %1:
 } if labelRefCountChange(%1 -1)
 
@@ -53,7 +53,7 @@ replace restart {
 %1:
 } by {
 	jp	Z,%2
-	; peephole 5 removed jp by using inverse jump logic
+	; peephole 62 removed jp by using inverse jump logic
 %1:
 } if labelRefCountChange(%1 -1)
 
@@ -63,7 +63,7 @@ replace restart {
 %1:
 } by {
 	jp	NZ,%2
-	; peephole 6 removed jp by using inverse jump logic
+	; peephole 63 removed jp by using inverse jump logic
 %1:
 } if labelRefCountChange(%1 -1)
 
@@ -71,28 +71,59 @@ replace restart {
 	jp	%5
 } by {
 	jp	%6
-	; peephole 7 redirected jump-to-jump at %5 by jump to %6
+	; peephole 64 jumped to %6 directly instead of via %5.
 } if labelIsUncondJump(), notSame(%5 %6), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
 
 replace restart {
 	jp	%1,%5
 } by {
 	jp	%1,%6
-	; peephole 8 redirected jump-to-jump at %5 by jump to %6
+	; peephole 65 jumped to %6 directly instead of via %5.
 } if labelIsUncondJump(), notSame(%5 %6), labelRefCountChange(%5 -1), labelRefCountChange(%6 +1)
 
+// A peephole that makes the code longer. Let's hope it's worth it in speed gain and furhter optimization potential.
 replace restart {
-	ld	%2,%3
-	jp	%4
-%5:
-	ld	%2,%3
-%4:
+	ld	a,#0x00
+%1:
+	bit	%2,a
+	jp	Z,%3
 } by {
-	; peephole 9 removed jump and redundant load.
-%5:
-	ld	%2,%3
-%4:
-} if labelRefCountChange(%4 -1)
+	ld	a,#0x00
+	jp	%3
+	; peephole 65a jumped directly to %3 instead of testing a first.
+%1:
+	bit	%2,a
+	jp	Z,%3
+} if labelRefCountChange(%3 +1)
+
+replace restart {
+	ld	%1, %2
+	jp	%3
+	jp	%4
+} by {
+	ld	%1, %2
+	jp	%3
+	; peephole 65b removed unreachable jump to %3.
+}
+
+replace restart {
+	ld	%1, %2
+	jp	%3
+%3:
+} by {
+	ld	%1, %2
+%3:
+	; peephole 65c removed redundant jump to %3.
+} if labelRefCountChange(%3 -1)
+
+replace restart {
+	ld	%1, #0x01
+	bit	0, %1
+	jp	Z, %2
+} by {
+	ld	%1, #0x01
+	; peephole 65d removed impossible jump to %2.
+} if labelRefCountChange(%2 -1)
 
 replace restart {
 	xor	a,a
@@ -132,9 +163,7 @@ replace restart {
 } by {
 	ld	%1,a
 	; peephole 14 removed redundant load from %1 into a.
-} if notVolatile(%1)
-// This gives many false negatives and without the test no problems are encountered in the regression tests
-// Maybe we can try this after 2.7.0 release
+} if notVolatile(%1), notSame(%1 '(hl+)'), notSame(%1 '(hl-)')
 
 replace restart {
 	ld	a,%1
@@ -142,9 +171,7 @@ replace restart {
 } by {
 	ld	a,%1
 	; peephole 15 removed redundant load from a into %1.
-} if notVolatile(%1)
-// This gives many false negatives and without the test no problems are encountered in the regression tests
-// Maybe we can try this after 2.7.0 release
+} if notVolatile(%1), notSame(%1 '(hl+)'), notSame(%1 '(hl-)')
 
 replace restart {
 	ld	%2,%3
@@ -733,27 +760,46 @@ replace restart {
 	; peephole 66 replaced call at end of function by jump moving call beyond pop ix.
 }
 
+replace {
+	ld	a,(hl)
+	inc	hl
+} by {
+	ld	a,(hl+)
+	; peephole GB1 used ldi to increment hl after load
+}
+
+replace {
+	ld	a,(hl)
+	dec	hl
+} by {
+	ld	a,(hl-)
+	; peephole GB2 used ldd to decrement hl after load
+}
+
+replace {
+	ld	(hl),a
+	inc	hl
+} by {
+	ld	(hl+),a
+	; peephole GB3 used ldi to increment hl after load
+}
+
+replace {
+	ld	(hl),a
+	dec	hl
+} by {
+	ld	(hl-),a
+	; peephole GB4 used ldd to decrement hl after load
+}
+
+replace {
+	inc hl
+	dec hl
+} by {
+	; peephole GB5 removed inc hl / dec hl pair
+}
+
 // Old gbz80 rules from here onward
-// Commented out until des assembler update is complete.
-//replace {
-//	ld	(hl),a
-//	dec	hl
-//} by {
-//	ldd	(hl),a
-//}
-//replace {
-//	ld	(hl),a
-//	inc	hl
-//} by {
-//	ldi	(hl),a
-//}
-//replace {
-//	ld	a,(hl)
-//	inc	hl
-//} by {
-//	ldi	a,(hl)
-//}
-//
 //}
 //replace {
 //	ldi	(hl),a
@@ -776,24 +822,290 @@ replace restart {
 //	ld	(hl),a
 //	ld	%1,a
 //}
-//replace {
-//	ld	(hl),a
-//	inc	de
-//	ld	a,(de)
-//	inc	hl
-//} by {
-//	ldi	(hl),a
-//	inc	de
-//	ld	a,(de)
-//}
+
+replace {
+	ld	(hl),a
+	inc	de
+	ld	a,(de)
+	inc	hl
+} by {
+	ld	(hl+),a
+	; peephole E used ldi to increment hl
+	inc	de
+	ld	a,(de)
+}
+
+barrier
+
+// Should be one of the last ones. Opens the code to further peephole optimization.
+replace restart {
+%1:
+} by {
+	; peephole 149 removed unused label %1.
+} if labelRefCount(%1 0)
 
 // Ensure that all rules above see only jp, not jr.
 barrier
 
 replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+%2:
+} by {
+	; peephole 150-3 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+%2:
+} by {
+	; peephole 150-3' removed addition using short jumps in jump-table.
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+%2:
+} by {
+	; peephole 150-4 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+%2:
+} by {
+	; peephole 150-4' removed addition using short jumps in jump-table.
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+%2:
+} by {
+	; peephole 150-5 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+%2:
+} by {
+	; peephole 150-5' removed addition using short jumps in jump-table.
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+	jp	%10
+%2:
+} by {
+	; peephole 150-6 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+	jr	%10
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+	jp	%10
+%2:
+} by {
+	; peephole 150-6' removed addition using short jumps in jump-table.
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+	jr	%10
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	pop	de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+	jp	%10
+	jp	%11
+%2:
+} by {
+	; peephole 150-7 removed addition using short jumps in jump-table.
+	pop	de
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+	jr	%10
+	jr	%11
+%2:
+} if labelJTInRange
+
+replace {
+	add	hl,de
+	jp	(hl)
+%1:
+	jp	%5
+	jp	%6
+	jp	%7
+	jp	%8
+	jp	%9
+	jp	%10
+	jp	%11
+%2:
+} by {
+	; peephole 150-7' removed addition using short jumps in jump-table.
+	jp	(hl)
+%1:
+	jr	%5
+	jr	%6
+	jr	%7
+	jr	%8
+	jr	%9
+	jr	%10
+	jr	%11
+%2:
+} if labelJTInRange
+
+barrier
+
+// Do all jump optimizations before replacing by ret.
+
+replace restart {
+	jp	%5
+} by {
+	ret
+	; peephole 151 replaced jump by return.
+} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
+
+replace restart {
+	jp	%1,%5
+} by {
+	ret	%1
+	; peephole 152 replaced jump by return.
+} if labelIsReturnOnly(), labelRefCountChange(%5 -1)
+
+replace {
 	jp	%5
 } by {
 	jr	%5
-	; peephole z14 changed absolute to relative unconditional jump.
+	; peephole 153 changed absolute to relative unconditional jump.
+} if labelInRange()
+
+replace {
+	jp	%1,%5
+} by {
+	jr	%1,%5
+	; peephole 154 changed absolute to relative conditional jump.
 } if labelInRange()
 

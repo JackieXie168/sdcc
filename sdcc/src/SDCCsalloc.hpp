@@ -590,10 +590,13 @@ void chaitin_salloc(SI_t &SI)
 static
 void dump_scon(const scon_t &scon)
 {
+  if(!currFunc)
+    return;
+
   std::ofstream dump_file((std::string(dstFileName) + ".dumpscon" + currFunc->rname + ".dot").c_str());
 
   std::string *name = new std::string[boost::num_vertices(scon)];
-  for (var_t i = 0; static_cast<boost::graph_traits<scon_t>::vertices_size_type>(i) < boost::num_vertices(scon); i++)
+  for(var_t i = 0; static_cast<boost::graph_traits<scon_t>::vertices_size_type>(i) < boost::num_vertices(scon); i++)
     {
       std::ostringstream os;
       os << i;

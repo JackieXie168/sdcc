@@ -201,6 +201,12 @@ copyAstValues (ast * dest, ast * src)
       AST_FOR (dest, initExpr) = copyAst (AST_FOR (src, initExpr));
       AST_FOR (dest, condExpr) = copyAst (AST_FOR (src, condExpr));
       AST_FOR (dest, loopExpr) = copyAst (AST_FOR (src, loopExpr));
+      break;
+
+    case CAST:
+      dest->values.cast.literalFromCast = src->values.cast.literalFromCast;
+      dest->values.cast.removedCast = src->values.cast.removedCast;
+      dest->values.cast.implicitCast = src->values.cast.implicitCast;
     }
 }
 
@@ -538,6 +544,13 @@ resolveSymbols (ast * tree)
         }
     }
 
+  if (tree->type == EX_OP && tree->opval.op == FOR)
+    {
+      AST_FOR (tree, initExpr) = resolveSymbols (AST_FOR (tree, initExpr));
+      AST_FOR (tree, condExpr) = resolveSymbols (AST_FOR (tree, condExpr));
+      AST_FOR (tree, loopExpr) = resolveSymbols (AST_FOR (tree, loopExpr));
+    }
+
   /* if this is a label resolve it from the labelTab */
   if (IS_AST_VALUE (tree) && tree->opval.val->sym && tree->opval.val->sym->islbl)
     {
@@ -600,6 +613,28 @@ resolveSymbols (ast * tree)
         }
     }
 
+    /* If entering a block with symbols defined, mark the symbols in-scope */
+    /* before continuing down the tree, and mark them out-of-scope again   */
+    /* on the way back up */ 
+    if (tree->type == EX_OP && tree->opval.op == BLOCK && tree->values.sym)
+      {
+        symbol * sym = tree->values.sym;
+        while (sym)
+          {
+            sym->isinscope = 1;
+            sym = sym->next;
+          }
+        resolveSymbols (tree->left);
+        resolveSymbols (tree->right);
+        sym = tree->values.sym;
+        while (sym)
+          {
+            sym->isinscope = 0;
+            sym = sym->next;
+          }
+        return tree;
+      }
+      
 resolveChildren:
   resolveSymbols (tree->left);
   resolveSymbols (tree->right);
@@ -881,6 +916,7 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
           *actParm = newNode (CAST, newType, *actParm);
           (*actParm)->filename = (*actParm)->right->filename;
           (*actParm)->lineno = (*actParm)->right->lineno;
+          AST_VALUES (*actParm, cast.implicitCast) = 1;
 
           *actParm = decorateType (*actParm, resultType);
         }
@@ -923,11 +959,10 @@ processParms (ast * func, value * defParm, ast ** actParm, int *parmNumber,     
       pTree = resolveSymbols (copyAst (*actParm));
 
       /* now change the current one to a cast */
-      (*actParm)->type = EX_OP;
-      (*actParm)->opval.op = CAST;
-      (*actParm)->left = newAst_LINK (defParm->type);
-      (*actParm)->right = pTree;
-      (*actParm)->decorated = 0;        /* force typechecking */
+      *actParm = newNode (CAST, newAst_LINK (defParm->type), pTree);
+      (*actParm)->filename = (*actParm)->right->filename;
+      (*actParm)->lineno = (*actParm)->right->lineno;
+      AST_VALUES (*actParm, cast.implicitCast) = 1;
       *actParm = decorateType (*actParm, IS_GENPTR (defParm->type) ? RESULT_TYPE_GPTR : resultType);
     }
 
@@ -1568,6 +1603,13 @@ processBlockVars (ast * tree, int *stack, int action)
   if (tree->type == EX_OP && tree->opval.op == BLOCK)
     {
       ast *autoInit;
+      symbol * sym = tree->values.sym;
+
+      while (sym)
+        {
+          sym->isinscope = 1;
+          sym = sym->next;
+        }
 
       if (action == ALLOCATE)
         {
@@ -1584,6 +1626,19 @@ processBlockVars (ast * tree, int *stack, int action)
 
   processBlockVars (tree->left, stack, action);
   processBlockVars (tree->right, stack, action);
+
+  /* if this is a block */
+  if (tree->type == EX_OP && tree->opval.op == BLOCK)
+    {
+      symbol * sym = tree->values.sym;
+
+      while (sym)
+        {
+          sym->isinscope = 0;
+          sym = sym->next;
+        }
+    }
+    
   return tree;
 }
 
@@ -2553,6 +2608,14 @@ void
 checkPtrCast (sym_link * newType, sym_link * orgType, bool implicit)
 {
   int errors = 0;
+  
+  if (IS_ARRAY (orgType))
+    {
+      value *val;
+      val = aggregateToPointer (valFromType (orgType));
+      orgType = val->type;
+      Safe_free (val);
+    }
 
   if (IS_PTR (newType))         // to a pointer
     {
@@ -4104,7 +4167,7 @@ decorateType (ast * tree, RESULT_TYPE resultType)
                       gpVal &= (1 << (getSize (LTYPE (tree)) * 8)) - 1;
                     }
                 }
-              checkPtrCast (LTYPE (tree), RTYPE (tree), FALSE);
+              checkPtrCast (LTYPE (tree), RTYPE (tree), tree->values.cast.implicitCast);
               LRVAL (tree) = 1;
               tree->type = EX_VALUE;
               tree->opval.val = valCastLiteral (LTYPE (tree), gpVal | ulFromVal (valFromType (RTYPE (tree))));
@@ -4116,7 +4179,7 @@ decorateType (ast * tree, RESULT_TYPE resultType)
               return tree;
             }
         }
-      checkPtrCast (LTYPE (tree), RTYPE (tree), FALSE);
+      checkPtrCast (LTYPE (tree), RTYPE (tree), tree->values.cast.implicitCast);
       if (IS_GENPTR (LTYPE (tree)) && IS_PTR (RTYPE (tree)) && !IS_GENPTR (RTYPE (tree)) && (resultType != RESULT_TYPE_GPTR))
         {
           DCL_TYPE (LTYPE (tree)) = DCL_TYPE (RTYPE (tree));
@@ -4746,6 +4809,8 @@ decorateType (ast * tree, RESULT_TYPE resultType)
           if (IS_CONSTANT (LTYPE (tree)))
             werrorfl (tree->filename, tree->lineno, E_CODE_WRITE, "=");
         }
+      if (tree->initMode && SPEC_STAT (getSpec (LTYPE (tree))) && !constExprTree (tree->right))
+        werrorfl (tree->filename, tree->lineno, E_CONST_EXPECTED, "=");
       if (LRVAL (tree))
         {
           werrorfl (tree->filename, tree->lineno, E_LVALUE_REQUIRED, "=");
@@ -4837,10 +4902,11 @@ decorateType (ast * tree, RESULT_TYPE resultType)
       /* if there is going to be a casting required then add it */
       if (compareType (currFunc->type->next, RTYPE (tree)) < 0)
         {
-          tree->right =
-            decorateType (newNode (CAST,
-                                   newAst_LINK (copyLinkChain (currFunc->type->next)),
-                                   tree->right), IS_GENPTR (currFunc->type->next) ? RESULT_TYPE_GPTR : RESULT_TYPE_NONE);
+          tree->right = newNode (CAST,
+                                 newAst_LINK (copyLinkChain (currFunc->type->next)),
+                                 tree->right);
+          tree->right->values.cast.implicitCast = 1;
+          tree->right = decorateType (tree->right, IS_GENPTR (currFunc->type->next) ? RESULT_TYPE_GPTR : RESULT_TYPE_NONE);
         }
 
       RRVAL (tree) = 1;
@@ -5004,8 +5070,8 @@ backPatchLabels (ast * tree, symbol * trueLabel, symbol * falseLabel)
       if (IS_IFX (tree->right))
         return newNode (NULLOP, tree->left, createLabel (localLabel, tree->right));
 
-      tree->right = createLabel (localLabel, tree->right);
       tree->right = newIfxNode (tree->right, trueLabel, falseLabel);
+      tree->right = createLabel (localLabel, tree->right);
 
       return newNode (NULLOP, tree->left, tree->right);
     }
@@ -5033,8 +5099,8 @@ backPatchLabels (ast * tree, symbol * trueLabel, symbol * falseLabel)
       if (IS_IFX (tree->right))
         return newNode (NULLOP, tree->left, createLabel (localLabel, tree->right));
 
-      tree->right = createLabel (localLabel, tree->right);
       tree->right = newIfxNode (tree->right, trueLabel, falseLabel);
+      tree->right = createLabel (localLabel, tree->right);
 
       return newNode (NULLOP, tree->left, tree->right);
     }
@@ -5327,7 +5393,7 @@ createDo (symbol * trueLabel, symbol * continueLabel, symbol * falseLabel, ast *
     {
       condAst = backPatchLabels (condAst, continueLabel, falseLabel);
       doTree = (IS_IFX (condAst) ? createLabel (continueLabel, condAst)
-                : newNode (IFX, createLabel (continueLabel, condAst), NULL));
+                : createLabel (continueLabel, newNode (IFX, condAst, NULL)));
       doTree->trueLabel = continueLabel;
       doTree->falseLabel = NULL;
 
@@ -5425,9 +5491,16 @@ createWhile (symbol * trueLabel, symbol * continueLabel, symbol * falseLabel, as
 
   /* put the continue label */
   condExpr = backPatchLabels (condExpr, trueLabel, falseLabel);
-  condExpr = createLabel (continueLabel, condExpr);
-  condExpr->filename = NULL;
-  condExpr->lineno = 0;
+  if (condExpr && !IS_IFX (condExpr))
+    {
+      condExpr = newNode (IFX, condExpr, NULL);
+      /* put the true & false labels in place */
+      condExpr->trueLabel = trueLabel;
+      condExpr->falseLabel = falseLabel;
+    }
+  whileTree = createLabel (continueLabel, condExpr);
+  whileTree->filename = NULL;
+  whileTree->lineno = 0;
 
   /* put the body label in front of the body */
   whileBody = createLabel (trueLabel, whileBody);
@@ -5439,16 +5512,6 @@ createWhile (symbol * trueLabel, symbol * continueLabel, symbol * falseLabel, as
                        whileBody, newNode (GOTO, newAst_VALUE (symbolVal (continueLabel)), createLabel (falseLabel, NULL)));
 
   /* put it all together */
-  if (IS_IFX (condExpr))
-    whileTree = condExpr;
-  else
-    {
-      whileTree = newNode (IFX, condExpr, NULL);
-      /* put the true & false labels in place */
-      whileTree->trueLabel = trueLabel;
-      whileTree->falseLabel = falseLabel;
-    }
-
   return newNode (NULLOP, whileTree, whileBody);
 }
 
@@ -6640,7 +6703,6 @@ createFunction (symbol * name, ast * body)
     }
 
 skipall:
-
   /* dealloc the block variables */
   processBlockVars (body, &stack, DEALLOCATE);
   outputDebugStackSymbols ();
@@ -6659,6 +6721,7 @@ skipall:
   addSet (&operKeyReset, name);
   applyToSet (operKeyReset, resetParmKey);
 
+
   if (options.debug)
     cdbStructBlock (1);
 
@@ -6669,6 +6732,7 @@ skipall:
 
   xstack->syms = NULL;
   istack->syms = NULL;
+  currFunc = NULL;
   return NULL;
 }
 
