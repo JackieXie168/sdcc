@@ -1,3 +1,103 @@
+2012-02-26 Borut Razem <borut.razem AT gmail.com>
+
+	* support/regression/ports/ds390/spec.mk:
+	  simulation timeout icreased to 40s due to
+	  gcc-torture-execute-20090113-1 test failure on
+	  x86_64-w64-mingw32 and sparc64-unknown-netbsd platforms
+	* doc/README.txt: added gbz80 to supported targets,
+	  explanation of sdcc run time libraries licensing
+
+2012-02-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/mcs51/compiler.h:
+	  Update for SDCC -> __SDCC rename.
+	* support/regression/tests/gcc-torture-execute-pr49161.c,
+	  support/regression/tests/gcc-torture-execute-pr49039.c,
+	  support/regression/tests/gcc-torture-execute-pr48809.c,
+	  support/regression/tests/gcc-torture-execute-pr48973-1.c,
+	  support/regression/tests/gcc-torture-execute-pr48973-2.c:
+	  Disable tests for all gcc older than 5.0.
+	* doc/sdccman.lyx:
+	  Document feature macro rename.
+
+2012-02-26 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/ds390/gen.c (genAssign): fixed bug #3463343
+	* support/regression/tests/gcc-torture-execute-string-opt-5.c:
+	  reenabled for ds390
+	* src/ds390/gen.c (genPlus, genMinus): fix bug #3486541
+	* support/regression/tests/gcc-torture-execute-pr20527-1.c:
+	  reenabled for ds390
+
+2012-02-26 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/sdccman.lyx: documented support for 16f720/16f721
+
+2012-02-26 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/tests/gcc-torture-execute-stdarg-4.c:
+	  reenabled for ds390
+
+2012-02-25 Borut Razem <borut.razem AT gmail.com>
+
+	* configure.in, configure, Makefile.in, sdcc.sln,
+	  doc/sdccman.lyx, support/sdranlib/*: support\sdranlib removed
+	* .version, doc/sdccman.lyx: bumped version to 3.1.3
+
+2012-02-25 Raphael Neider <rneider AT web.de>
+
+	* device/include/pic14/pic14devices.txt,
+	  device/non-free/include/pic14/pic16f720.h,
+	  device/non-free/include/pic14/pic16f721.h,
+	  device/non-free/lib/pic14/libdev/Makefile.in,
+	  device/non-free/lib/pic14/libdev/devices.txt,
+	  device/non-free/lib/pic14/libdev/pic16f720.c,
+	  device/non-free/lib/pic14/libdev/pic16f721.c:
+	  added support for 16f720/16f721
+
+	* device/non-free/include/pic14/pic14regs.h:
+	  fixed to use __SDCC_PROCESSOR instead of SDCC_PROCESSOR
+
+	* device/non-free/lib/pic16/libdev/testall.sh:
+	  test support for all devices by compiling a source file
+
+2012-02-25 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCcse.c: fixed bug #3473062
+	* src/z80/gen.c (genCmpGt, genCmpLt),
+	  src/hc08/gen.c (genCmp, genCmpEQorNE),
+	  src/pic16/gen.c (genCmpGt, genCmpLt),
+	  src/pic14/gen.c (genCmpGt, genCmpLt): fixed bug #3487025
+
+2012-02-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-pr42833.c:
+	  Disable test for all gcc versions earlier than 5.0.
+
+2012-02-24 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCast.c (createDo): fixed bug #3489326
+
+2012-02-23 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  More efficient access to two-byte variables near the stack pointer for r2k, fix a bug when fetching 1-byte variables.
+
+2012-02-23 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c,
+	  src/z80/peeph-z80.def:
+	  More efficient access to two-byte variables near the stack pointer.
+	* support/regression/tests/gcc-torture-execute-pr42833.c:
+	  Disable test for even more gcc versions.
+
+2012-02-22 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCmain.c,
+	  device/*,
+	  support/regression/*:
+	  sdcc macro mess cleanup, fix #3490776.
+
 2012-02-22 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* support/regression/tests/bug2935162.c,
