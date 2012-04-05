@@ -126,8 +126,9 @@ _hc08_parseOptions (int *pargc, char **argv, int *i)
 
 static OPTION _hc08_options[] =
   {
-    {  0,   "--out-fmt-elf", NULL, "Output executable in ELF format" },
-    {  0, NULL }
+    {0, "--out-fmt-elf", NULL, "Output executable in ELF format" },
+    {0, "--oldralloc", NULL, "Use old register allocator"},
+    {0, NULL }
   };
 
 static void

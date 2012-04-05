@@ -39,6 +39,9 @@
 extern void genhc08Code (iCode *);
 #define D(x)
 
+// Build the old allocator. It can be used by command-line options
+#define OLDRALLOC 1
+
 /* Global data */
 static struct
   {
@@ -3109,11 +3112,22 @@ packRegisters (eBBlock ** ebpp, int blockno)
     }
 }
 
+/** Serially allocate registers to the variables.
+    This was the main register allocation function.  It is called after
+    packing.
+    In the new register allocator it only serves to mark variables for the new register allocator.
+ */
+static void
+serialRegMark (eBBlock ** ebbs, int count)
+{
+}
+
+#ifdef OLDRALLOC
 /*-----------------------------------------------------------------*/
-/* assignRegisters - assigns registers to each live range as need  */
+/* Old, obsolete register allocator                                */
 /*-----------------------------------------------------------------*/
 void
-hc08_assignRegisters (ebbIndex * ebbi)
+hc08_oldralloc (ebbIndex * ebbi)
 {
   eBBlock ** ebbs = ebbi->bbOrder;
   int count = ebbi->count;
@@ -3207,3 +3221,116 @@ hc08_assignRegisters (ebbIndex * ebbi)
 
   return;
 }
+#endif
+
+/*-----------------------------------------------------------------*/
+/* New register allocator                                          */
+/*-----------------------------------------------------------------*/
+void
+hc08_ralloc (ebbIndex * ebbi)
+{
+  eBBlock ** ebbs = ebbi->bbOrder;
+  int count = ebbi->count;
+  iCode *ic;
+  int i;
+
+  setToNull ((void *) &_G.funcrUsed);
+  setToNull ((void *) &_G.regAssigned);
+  setToNull ((void *) &_G.totRegAssigned);
+  hc08_ptrRegReq = _G.stackExtend = _G.dataExtend = 0;
+  hc08_nRegs = 7;
+  hc08_reg_a = hc08_regWithIdx(A_IDX);
+  hc08_reg_x = hc08_regWithIdx(X_IDX);
+  hc08_reg_h = hc08_regWithIdx(H_IDX);
+  hc08_reg_hx = hc08_regWithIdx(HX_IDX);
+  hc08_reg_xa = hc08_regWithIdx(XA_IDX);
+  hc08_reg_sp = hc08_regWithIdx(SP_IDX);
+  hc08_nRegs = 5;
+
+  /* change assignments this will remove some
+     live ranges reducing some register pressure */
+
+  for (i = 0; i < count; i++)
+    packRegisters (ebbs, i);
+
+  /* liveranges probably changed by register packing
+     so we compute them again */
+  recomputeLiveRanges (ebbs, count);
+
+  if (options.dump_pack)
+    dumpEbbsToFileExt (DUMP_PACK, ebbi);
+
+  /* first determine for each live range the number of
+     registers & the type of registers required for each */
+  regTypeNum (*ebbs);
+
+  /* and serially allocate registers */
+  serialRegMark (ebbs, count);
+
+  /* The new register allocator invokes its magic */
+  ic = hc08_ralloc2_cc (ebbi);
+
+  /* if stack was extended then tell the user */
+  if (_G.stackExtend)
+    {
+/*      werror(W_TOOMANY_SPILS,"stack", */
+/*             _G.stackExtend,currFunc->name,""); */
+      _G.stackExtend = 0;
+    }
+
+  if (_G.dataExtend)
+    {
+/*      werror(W_TOOMANY_SPILS,"data space", */
+/*             _G.dataExtend,currFunc->name,""); */
+      _G.dataExtend = 0;
+    }
+
+  /* after that create the register mask
+     for each of the instruction */
+  createRegMask (ebbs, count);
+
+  /* redo that offsets for stacked automatic variables */
+  if (currFunc)
+    {
+      redoStackOffsets ();
+    }
+
+  if (options.dump_rassgn)
+    {
+      dumpEbbsToFileExt (DUMP_RASSGN, ebbi);
+      dumpLiveRanges (DUMP_LRANGE, liveRanges);
+    }
+
+  /* do the overlaysegment stuff SDCCmem.c */
+  doOverlays (ebbs, count);
+
+  /* now get back the chain */
+  ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbs, count));
+
+  genhc08Code (ic);
+
+  /* free up any _G.stackSpil locations allocated */
+  applyToSet (_G.stackSpil, deallocStackSpil);
+  _G.slocNum = 0;
+  setToNull ((void *) &_G.stackSpil);
+  setToNull ((void *) &_G.spiltSet);
+  /* mark all registers as free */
+  freeAllRegs ();
+
+  return;
+}
+
+/*-----------------------------------------------------------------*/
+/* assignRegisters - assigns registers to each live range as need  */
+/*-----------------------------------------------------------------*/
+void
+hc08_assignRegisters (ebbIndex * ebbi)
+{
+//#ifdef OLDRALLOC
+//  if (hc08_opts.oldralloc)
+    hc08_oldralloc (ebbi);
+//  else
+//#endif
+//    hc08_ralloc (ebbi);
+}
+

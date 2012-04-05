@@ -1,6 +1,6 @@
 // Philipp Klaus Krause, philipp@informatik.uni-frankfurt.de, pkk@spth.de, 2010 - 2011
 //
-// (c) 2010-2011 Goethe-Universität Frankfurt
+// (c) 2010-2012 Goethe-Universität Frankfurt
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -53,13 +53,14 @@ extern "C"
 #include "SDCCsymt.h"
 #include "SDCCicode.h"
 #include "SDCCBBlock.h"
+#include "SDCCopt.h"
+#include "SDCClrange.h"
+#include "SDCCy.h"
 
-#include "z80.h"
+#include "port.h"
 #include "ralloc.h"
 
 iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
-
-bool assignment_optimal;
 }
 
 #ifdef HAVE_STX_BTREE_SET_H
@@ -73,7 +74,7 @@ typedef short int var_t;
 typedef signed char reg_t;
 
 // Todo: Move this port-dependency somewehere else?
-#define NUM_REGS (5 + (OPTRALLOC_HL ? 2 : 0) + (OPTRALLOC_IY ? 2 : 0))
+#define NUM_REGS ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT) ? 9 : ((TARGET_IS_GBZ80 || TARGET_IS_HC08)? 5 : 0))
 // Upper bound on NUM_REGS
 #define MAX_NUM_REGS 9
 
@@ -623,7 +624,7 @@ float compability_cost(const assignment& a, const assignment& ac, const I_t &I)
 // Ensure that we never get more than options.max_allocs_per_node assignments at a single node of the tree decomposition.
 // Tries to drop the worst ones first (but never drop the empty assignment, as it's the only one guaranteed to be always valid).
 template <class G_t, class I_t>
-void drop_worst_assignments(assignment_list_t &alist, unsigned short int i, const G_t &G, const I_t &I, const assignment& ac)
+void drop_worst_assignments(assignment_list_t &alist, unsigned short int i, const G_t &G, const I_t &I, const assignment& ac, bool *const assignment_optimal)
 {
   unsigned int n;
   size_t alist_size;
@@ -632,7 +633,7 @@ void drop_worst_assignments(assignment_list_t &alist, unsigned short int i, cons
   if ((alist_size = alist.size()) * NUM_REGS <= static_cast<size_t>(options.max_allocs_per_node) || alist_size <= 1)
     return;
 
-  assignment_optimal = false;
+  *assignment_optimal = false;
 
 #ifdef DEBUG_RALLOC_DEC
   std::cout << "Too many assignments here (" << i << "):" << alist_size << " > " << options.max_allocs_per_node / NUM_REGS << ". Dropping some.\n"; std::cout.flush();
@@ -683,7 +684,7 @@ void tree_dec_ralloc_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 
 // Handle introduce nodes in the nice tree decomposition
 template <class T_t, class G_t, class I_t>
-void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I, const assignment& ac)
+void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I, const assignment& ac, bool *const assignment_optimal)
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
   adjacency_iter_t c, c_end;
@@ -712,7 +713,7 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
   std::set<var_t>::const_iterator v;
   for (v = new_vars.begin(); v != new_vars.end(); ++v)
     {
-      drop_worst_assignments(alist, i, G, I, ac);
+      drop_worst_assignments(alist, i, G, I, ac, assignment_optimal);
       assignments_introduce_variable(alist, i, *v, G, I);
     }
 
@@ -737,7 +738,7 @@ void tree_dec_ralloc_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex
 #endif
 }
 
-bool assignments_locally_same(const assignment &a1, const assignment &a2)
+static bool assignments_locally_same(const assignment &a1, const assignment &a2)
 {
   if (a1.local != a2.local)
     return(false);
@@ -915,7 +916,7 @@ void get_best_local_assignment_biased(assignment &a, typename boost::graph_trait
 
 // Handle nodes in the tree decomposition, by detecting their type and calling the appropriate function. Recurses.
 template <class T_t, class G_t, class I_t>
-void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I, const assignment& ac)
+static void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I, const assignment& ac, bool *const assignment_optimal)
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
 
@@ -931,17 +932,17 @@ void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_des
       break;
     case 1:
       c0 = *c;
-      tree_dec_ralloc_nodes(T, c0, G, I, ac);
-      T[c0].bag.size() < T[t].bag.size() ? tree_dec_ralloc_introduce(T, t, G, I, ac) : tree_dec_ralloc_forget(T, t, G, I);
+      tree_dec_ralloc_nodes(T, c0, G, I, ac, assignment_optimal);
+      T[c0].bag.size() < T[t].bag.size() ? tree_dec_ralloc_introduce(T, t, G, I, ac, assignment_optimal) : tree_dec_ralloc_forget(T, t, G, I);
       break;
     case 2:
       c0 = *c++;
       c1 = *c;
-      tree_dec_ralloc_nodes(T, c0, G, I, ac);
+      tree_dec_ralloc_nodes(T, c0, G, I, ac, assignment_optimal);
       {
         assignment *ac2 = new assignment;
         get_best_local_assignment_biased(*ac2, c0, T);
-        tree_dec_ralloc_nodes(T, c1, G, I, *ac2);
+        tree_dec_ralloc_nodes(T, c1, G, I, *ac2, assignment_optimal);
         delete ac2;
       }
       tree_dec_ralloc_join(T, t, G, I);
@@ -954,7 +955,7 @@ void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_des
 
 // Find the best root selecting from t_old and the leafs under t.
 template <class T_t>
-std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_best_root(const T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, size_t t_s, typename boost::graph_traits<T_t>::vertex_descriptor t_old, size_t t_old_s)
+static std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_best_root(const T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, size_t t_s, typename boost::graph_traits<T_t>::vertex_descriptor t_old, size_t t_old_s)
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
   adjacency_iter_t c, c_end;
@@ -985,7 +986,7 @@ std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_bes
 
 // Change the root to t.
 template <class T_t>
-void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
+static void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 {
   typename boost::graph_traits<T_t>::vertex_descriptor s0, s1, s2;
   typename boost::graph_traits<T_t>::in_edge_iterator e, e_end;
@@ -1011,7 +1012,7 @@ void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 
 // Change the root to improve the assignment removal heuristic.
 template <class T_t>
-void good_re_root(T_t &T)
+static void good_re_root(T_t &T)
 {
   typename boost::graph_traits<T_t>::vertex_descriptor t;
 
@@ -1036,7 +1037,7 @@ void good_re_root(T_t &T)
 }
 
 // Dump conflict graph, with numbered nodes, show live variables at each node.
-void dump_con(const con_t &con)
+static void dump_con(const con_t &con)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcon" + currFunc->rname + ".dot").c_str());
 
@@ -1054,7 +1055,7 @@ void dump_con(const con_t &con)
 }
 
 // Dump cfg, with numbered nodes, show live variables at each node.
-void dump_cfg(const cfg_t &cfg)
+static void dump_cfg(const cfg_t &cfg)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpcfg" + currFunc->rname + ".dot").c_str());
 
@@ -1073,7 +1074,7 @@ void dump_cfg(const cfg_t &cfg)
 }
 
 // Dump tree decomposition, show bag and live variables at each node.
-void dump_tree_decomposition(const tree_dec_t &tree_dec)
+static void dump_tree_decomposition(const tree_dec_t &tree_dec)
 {
   std::ofstream dump_file((std::string(dstFileName) + ".dumpdec" + currFunc->rname + ".dot").c_str());
 
