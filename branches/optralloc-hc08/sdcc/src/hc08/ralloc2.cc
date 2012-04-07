@@ -26,8 +26,8 @@ extern "C"
   #include "ralloc.h"
 };
 
-template <class I_t> void
-hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
+template <class I_t>
+static void hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
   const iCode *ic = n.ic;
   
@@ -69,7 +69,7 @@ hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 }
 
 template <class T_t, class G_t, class I_t>
-bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
+static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 {
   bool assignment_optimal;
 
@@ -87,9 +87,9 @@ bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 
   assignment ac;
   assignment_optimal = true;
-  //tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac);
+  tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac, &assignment_optimal);
 
-  //const assignment &winner = *(T[find_root(T)].assignments.begin());
+  const assignment &winner = *(T[find_root(T)].assignments.begin());
 
 #ifdef DEBUG_RALLOC_DEC
   std::cout << "Winner: ";
@@ -101,14 +101,13 @@ bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   std::cout << "Cost: " << winner.s << "\n";
   std::cout.flush();
 #endif
-#if 0
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))
     {
       std::cerr << "ERROR: No Assignments at root\n";
       exit(-1);
     }
-#endif
+
   for(unsigned int v = 0; v < boost::num_vertices(I); v++)
     {
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
