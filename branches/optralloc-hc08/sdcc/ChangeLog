@@ -1,5 +1,12 @@
 2012-04-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc.c,
+	  src/hc08/ralloc.c:
+	  Enable new allocator as dummy, spilling everything.
+
+2012-04-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/ralloc.c,
 	  src/hc08/ralloc2.cc,
 	  src/hc08/ralloc.c:

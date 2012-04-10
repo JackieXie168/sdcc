@@ -1204,8 +1204,10 @@ verifyRegsAssigned (operand *op, iCode * ic)
   if (!sym->nRegs) return;
   if (sym->regs[0]) return;
 
-  werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT,
-            sym->prereqv ? sym->prereqv->name : sym->name);
+  /* Don't warn for new allocator, since this is not used by default (until Thoruop is implemented for spillocation compaction). */
+  /*if (z80_opts.oldralloc)
+    werrorfl (ic->filename, ic->lineno, W_LOCAL_NOINIT, sym->prereqv ? sym->prereqv->name : sym->name);*/
+
   spillThis (sym);
 }
 
@@ -3369,9 +3371,9 @@ hc08_assignRegisters (ebbIndex * ebbi)
 {
 //#ifdef OLDRALLOC
 //  if (hc08_opts.oldralloc)
-    hc08_oldralloc (ebbi);
+//    hc08_oldralloc (ebbi);
 //  else
 //#endif
-//    hc08_ralloc (ebbi);
+    hc08_ralloc (ebbi);
 }
 
