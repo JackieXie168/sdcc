@@ -3112,14 +3112,43 @@ packRegisters (eBBlock ** ebpp, int blockno)
     }
 }
 
-/** Serially allocate registers to the variables.
-    This was the main register allocation function.  It is called after
-    packing.
-    In the new register allocator it only serves to mark variables for the new register allocator.
- */
 static void
-serialRegMark (eBBlock ** ebbs, int count)
+RegFix (eBBlock ** ebbs, int count)
 {
+  int i;
+
+  /* Check for and fix any problems with uninitialized operands */
+  for (i = 0; i < count; i++)
+    {
+      iCode *ic;
+
+      if (ebbs[i]->noPath && (ebbs[i]->entryLabel != entryLabel && ebbs[i]->entryLabel != returnLabel))
+        continue;
+
+      for (ic = ebbs[i]->sch; ic; ic = ic->next)
+        {
+          deassignLRs (ic, ebbs[i]);
+
+          if (SKIP_IC2 (ic))
+            continue;
+
+          if (ic->op == IFX)
+            {
+              verifyRegsAssigned (IC_COND (ic), ic);
+              continue;
+            }
+
+          if (ic->op == JUMPTABLE)
+            {
+              verifyRegsAssigned (IC_JTCOND (ic), ic);
+              continue;
+            }
+
+          verifyRegsAssigned (IC_RESULT (ic), ic);
+          verifyRegsAssigned (IC_LEFT (ic), ic);
+          verifyRegsAssigned (IC_RIGHT (ic), ic);
+        }
+    }
 }
 
 #ifdef OLDRALLOC
@@ -3223,6 +3252,16 @@ hc08_oldralloc (ebbIndex * ebbi)
 }
 #endif
 
+/** Serially allocate registers to the variables.
+    This was the main register allocation function.  It is called after
+    packing.
+    In the new register allocator it only serves to mark variables for the new register allocator.
+ */
+static void
+serialRegMark (eBBlock ** ebbs, int count)
+{
+}
+
 /*-----------------------------------------------------------------*/
 /* New register allocator                                          */
 /*-----------------------------------------------------------------*/
@@ -3269,6 +3308,8 @@ hc08_ralloc (ebbIndex * ebbi)
 
   /* The new register allocator invokes its magic */
   ic = hc08_ralloc2_cc (ebbi);
+
+  RegFix (ebbs, count);
 
   /* if stack was extended then tell the user */
   if (_G.stackExtend)

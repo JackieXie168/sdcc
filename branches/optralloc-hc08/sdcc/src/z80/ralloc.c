@@ -2958,7 +2958,7 @@ serialRegMark (eBBlock ** ebbs, int count)
     }
 }
 
-void
+static void
 RegFix (eBBlock ** ebbs, int count)
 {
   int i;

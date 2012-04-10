@@ -1,3 +1,10 @@
+2012-04-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/ralloc.c,
+	  src/hc08/ralloc2.cc,
+	  src/hc08/ralloc.c:
+	  Preparations for optimal register allocation for hc08.
+
 2012-04-09 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* support/regression/Makefile.in,

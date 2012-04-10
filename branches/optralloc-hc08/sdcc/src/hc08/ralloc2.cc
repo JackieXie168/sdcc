@@ -27,7 +27,7 @@ extern "C"
 };
 
 template <class I_t>
-static void hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
+static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
   const iCode *ic = n.ic;
   
@@ -66,6 +66,26 @@ static void hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
           if(I[rvar].byte < I[ovar].byte)
             boost::add_edge(rvar, ovar, I);
         }
+}
+
+// Cost function.
+template <class G_t, class I_t>
+float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  return(0.0f);
+}
+
+// For early removal of assignments that cannot be extended to valid assignments.
+template <class G_t, class I_t>
+static bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar)
+{
+  return(false);
+}
+
+template <class G_t, class I_t>
+float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  return(0.0f);
 }
 
 template <class T_t, class G_t, class I_t>
