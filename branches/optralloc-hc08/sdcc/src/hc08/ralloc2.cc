@@ -83,7 +83,7 @@ static bool assignment_hopeless(const assignment &a, unsigned short int i, const
 }
 
 template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   return(0.0f);
 }

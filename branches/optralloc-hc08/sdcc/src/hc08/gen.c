@@ -8290,6 +8290,9 @@ genhc08Code (iCode * lic)
   hc08_aop_pass[7]->aopu.aop_dir = "___SDCC_hc08_ret7";
 
   for (ic = lic; ic; ic = ic->next)
+    ic->generated = FALSE;
+
+  for (ic = lic; ic; ic = ic->next)
     {
       initGenLineElement ();
 

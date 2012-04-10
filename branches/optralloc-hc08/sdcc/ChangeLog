@@ -2,7 +2,8 @@
 
 	* src/SDCCralloc.hpp,
 	  src/z80/ralloc.c,
-	  src/hc08/ralloc.c:
+	  src/hc08/ralloc.c,
+	  src/hc08/gen.c:
 	  Enable new allocator as dummy, spilling everything.
 
 2012-04-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>

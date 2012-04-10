@@ -1058,6 +1058,8 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   iCode *ic = G[i].ic;
   float c;
 
+  wassert (TARGET_Z80_LIKE);
+
   if(!inst_sane(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
@@ -1267,7 +1269,7 @@ too_risky:
 }
 
 template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const i_assignment_t &ia = a.i_assignment;
     
