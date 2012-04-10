@@ -1,3 +1,34 @@
+2012-04-09 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/Makefile.in,
+	  support/regression/collate-results.py : another fix for bug #3477347
+	* support/regression/ports/hc08/spec.mk: increase timeout to 30 seconds
+
+2012-04-08 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCgen.c:
+	  don't emit leading whitespaces in inline asm, 2nd try
+	  fixed bug #3515390 - asm with leading whitespace passed to backends
+	* src/z80/peep.c: made z80instructionSize() function more
+	  ropbust: accept arbitrary number of arbitrary space characters
+	  between mnemonic and the first operand
+
+2012-04-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc2.cc:
+	  Fix invalid reads.
+	* src/z80/gen.c:
+	  Fix a memory leak.
+
+2012-04-07 Borut Razem <borut.razem AT gmail.com>
+
+	* src/common.h, SDCCglobal.h: fixed mingw32 build on derna:
+	  macros min and max should not be defined when compiled with C++
+	* src/pic16/device.c, src/pic16/genarith.c, src/pic16/gen.c,
+	  src/pic16/pcode.c, src/pic16/glue.c:
+	  applied patch #3515647 - Correction patch on the PIC16's branch,
+	  thanks to Molnar Karoly
+
 2012-04-07 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCralloc.hpp:
