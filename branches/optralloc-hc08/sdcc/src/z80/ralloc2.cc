@@ -986,7 +986,7 @@ void unset_surviving_regs(unsigned short int i, const G_t &G)
 }
 
 template <class G_t, class I_t>
-void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   if(!o || !IS_SYMOP(o))
     return;
@@ -1030,7 +1030,7 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
 }
 
 template <class G_t, class I_t>
-void assign_operands_for_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static void assign_operands_for_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
   

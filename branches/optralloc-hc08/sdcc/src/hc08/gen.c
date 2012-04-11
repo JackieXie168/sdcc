@@ -140,7 +140,9 @@ static unsigned char regalloc_dry_run_cost;
 static void
 emitBranch (char *branchop, symbol * tlbl)
 {
-  emitcode (branchop, "%05d$", labelKey2num (tlbl->key));
+  if (!regalloc_dry_run)
+    emitcode (branchop, "%05d$", labelKey2num (tlbl->key));
+  regalloc_dry_run_cost += 2; /* Todo: brclr is more expensive */
 }
 
 /*-----------------------------------------------------------------*/
@@ -201,6 +203,7 @@ transferRegReg (reg_info * sreg, reg_info * dreg, bool freesrc)
           break;
         case X_IDX:            /* X to A */
           emitcode ("txa", "");
+          regalloc_dry_run_cost++;
           break;
         default:
           error = 1;
@@ -226,6 +229,7 @@ transferRegReg (reg_info * sreg, reg_info * dreg, bool freesrc)
         {
         case A_IDX:            /* A to X */
           emitcode ("tax", "");
+          regalloc_dry_run_cost++;
           break;
         case H_IDX:            /* H to X */
           pushReg (hc08_reg_h, FALSE);
@@ -242,6 +246,7 @@ transferRegReg (reg_info * sreg, reg_info * dreg, bool freesrc)
           pushReg (hc08_reg_x, FALSE);
           pullReg (hc08_reg_h);
           emitcode ("tax", "");
+          regalloc_dry_run_cost++;
           break;
         default:
           error = 1;
@@ -252,6 +257,7 @@ transferRegReg (reg_info * sreg, reg_info * dreg, bool freesrc)
         {
         case HX_IDX:           /* HX to XA */
           emitcode ("txa", "");
+          regalloc_dry_run_cost++;
           pushReg (hc08_reg_h, FALSE);
           pullReg (hc08_reg_x);
           break;
@@ -301,32 +307,39 @@ pushReg (reg_info * reg, bool freereg)
     {
     case A_IDX:
       emitcode ("psha", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes++;
       updateCFA ();
       break;
     case X_IDX:
       emitcode ("pshx", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes++;
       updateCFA ();
       break;
     case H_IDX:
       emitcode ("pshh", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes++;
       updateCFA ();
       break;
     case HX_IDX:
       emitcode ("pshx", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes++;
       updateCFA ();
       emitcode ("pshh", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes++;
       updateCFA ();
       break;
     case XA_IDX:
       emitcode ("psha", "");
+      regalloc_dry_run_cost++;
       updateCFA ();
       _G.stackPushes++;
       emitcode ("pshx", "");
+      regalloc_dry_run_cost++;
       updateCFA ();
       _G.stackPushes++;
       break;
@@ -350,32 +363,39 @@ pullReg (reg_info * reg)
     {
     case A_IDX:
       emitcode ("pula", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes--;
       updateCFA ();
       break;
     case X_IDX:
       emitcode ("pulx", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes--;
       updateCFA ();
       break;
     case H_IDX:
       emitcode ("pulh", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes--;
       updateCFA ();
       break;
     case HX_IDX:
       emitcode ("pulh", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes--;
       updateCFA ();
       emitcode ("pulx", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes--;
       updateCFA ();
       break;
     case XA_IDX:
       emitcode ("pulx", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes--;
       updateCFA ();
       emitcode ("pula", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes--;
       updateCFA ();
       break;
@@ -607,15 +627,24 @@ forceload:
           if (loffset < aop->size)
             transferRegReg (aop->aopu.aop_reg[loffset], reg, FALSE);
           else
-            emitcode ("clra", "");      /* TODO: handle sign extension */
+            {
+              emitcode ("clra", "");      /* TODO: handle sign extension */
+              regalloc_dry_run_cost++;
+            }
         }
       else
         {
           char *l = aopAdrStr (aop, loffset, FALSE);
           if (!strcmp (l, zero))
-            emitcode ("clra", "");
+            {
+              emitcode ("clra", "");
+              regalloc_dry_run_cost++;
+            }
           else
-            emitcode ("lda", "%s", l);
+            {
+              emitcode ("lda", "%s", l);
+              regalloc_dry_run_cost += 2;
+            }
         }
       break;
     case X_IDX:
@@ -624,15 +653,24 @@ forceload:
           if (loffset < aop->size)
             transferRegReg (aop->aopu.aop_reg[loffset], reg, FALSE);
           else
-            emitcode ("clrx", "");      /* TODO: handle sign extension */
+            {
+              emitcode ("clrx", "");      /* TODO: handle sign extension */
+              regalloc_dry_run_cost++;
+            }
         }
       else
         {
           char *l = aopAdrStr (aop, loffset, FALSE);
           if (!strcmp (l, zero))
-            emitcode ("clrx", "");
+            {
+              emitcode ("clrx", "");
+              regalloc_dry_run_cost++;
+            }
           else
-            emitcode ("ldx", "%s", l);
+            {
+              emitcode ("ldx", "%s", l);
+              regalloc_dry_run_cost += 2;
+            }
         }
       break;
     case H_IDX:
@@ -641,6 +679,7 @@ forceload:
       if (!strcmp (l, zero))
         {
           emitcode ("clrh", "");
+          regalloc_dry_run_cost++;
           break;
         }
     }
@@ -670,7 +709,10 @@ forceload:
       else if ((aop->type == AOP_DIR))
         {
           if (aop->size > (loffset + 1))
-            emitcode ("ldhx", "%s", aopAdrStr (aop, loffset + 1, TRUE));
+            {
+              emitcode ("ldhx", "%s", aopAdrStr (aop, loffset + 1, TRUE));
+              regalloc_dry_run_cost += 3;
+            }
           else
             {
               loadRegFromAop (hc08_reg_x, aop, loffset);
@@ -680,6 +722,7 @@ forceload:
       else if ((aop->type == AOP_LIT) || (aop->type == AOP_IMMD))
         {
           emitcode ("ldhx", "%s", aopAdrStr (aop, loffset, TRUE));
+          regalloc_dry_run_cost += 3;
         }
       else
         {
@@ -820,13 +863,19 @@ storeRegToAop (reg_info * reg, asmop * aop, int loffset)
       if ((aop->type == AOP_REG) && (loffset < aop->size))
         transferRegReg (reg, aop->aopu.aop_reg[loffset], FALSE);
       else
-        emitcode ("sta", "%s", aopAdrStr (aop, loffset, FALSE));
+        {
+          emitcode ("sta", "%s", aopAdrStr (aop, loffset, FALSE));
+          regalloc_dry_run_cost += 3;
+        }
       break;
     case X_IDX:
       if ((aop->type == AOP_REG) && (loffset < aop->size))
         transferRegReg (reg, aop->aopu.aop_reg[loffset], FALSE);
       else
-        emitcode ("stx", "%s", aopAdrStr (aop, loffset, FALSE));
+        {
+          emitcode ("stx", "%s", aopAdrStr (aop, loffset, FALSE));
+          regalloc_dry_run_cost += 3;
+        }
       break;
     case H_IDX:
       if (hc08_reg_a->isFree)
@@ -853,6 +902,7 @@ storeRegToAop (reg_info * reg, asmop * aop, int loffset)
       if ((aop->type == AOP_DIR))
         {
           emitcode ("sthx", "%s", aopAdrStr (aop, loffset + 1, TRUE));
+          regalloc_dry_run_cost += 3;
         }
       else if (IS_AOP_XA (aop))
         transferRegReg (reg, hc08_reg_xa, FALSE);
@@ -3150,6 +3200,7 @@ genPlusIncr (iCode * ic)
         }
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("aix", "#%d", icount);
+      regalloc_dry_run_cost += 2;
       hc08_dirtyReg (hc08_reg_hx, FALSE);
       storeRegToAop (hc08_reg_hx, AOP (result), 0);
       pullOrFreeReg (hc08_reg_h, needpulh);
@@ -3168,7 +3219,7 @@ genPlusIncr (iCode * ic)
   D (emitcode (";     genPlusIncr", ""));
 
   if (size > 1)
-    tlbl = newiTempLabel (NULL);
+    tlbl = regalloc_dry_run ? 0 : newiTempLabel (NULL);
 
   if (icount == 1)
     {
@@ -3198,7 +3249,7 @@ genPlusIncr (iCode * ic)
         emitBranch ("bne", tlbl);
     }
 
-  if (size > 1)
+  if (size > 1 && !regalloc_dry_run)
     emitLabel (tlbl);
 
   pullOrFreeReg (hc08_reg_a, needpula);

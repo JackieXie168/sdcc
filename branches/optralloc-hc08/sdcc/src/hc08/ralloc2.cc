@@ -106,7 +106,7 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
     {
       const reg_t l =a.global[oi->second];
       const reg_t h =a.global[oi2->second];
-      if(l == REG_A && h == REG_X || l == REG_H && h == REG_A || l == REG_X)
+      if(l == REG_X && h == REG_A || l == REG_A && h == REG_H || l == REG_H)
         return(false);
     }
   
@@ -135,6 +135,33 @@ static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, c
   return(operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_LEFT(ic), a, i, G, I) && operand_sane(IC_RIGHT(ic), a, i, G, I));
 }
 
+template <class G_t, class I_t>
+void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+}
+
+template <class G_t, class I_t>
+static void assign_operands_for_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+  
+  if(ic->op == IFX)
+    assign_operand_for_cost(IC_COND(ic), a, i, G, I);
+  else if(ic->op == JUMPTABLE)
+    assign_operand_for_cost(IC_JTCOND(ic), a, i, G, I);
+  else
+    {
+      assign_operand_for_cost(IC_LEFT(ic), a, i, G, I);
+      assign_operand_for_cost(IC_RIGHT(ic), a, i, G, I);
+      assign_operand_for_cost(IC_RESULT(ic), a, i, G, I);
+    }
+    
+  if(ic->op == SEND && ic->builtinSEND)
+    {
+      assign_operands_for_cost(a, *(adjacent_vertices(i, G).first), G, I);
+    }
+}
+
 // Cost function.
 template <class G_t, class I_t>
 static float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
@@ -148,6 +175,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   switch(ic->op)
     {
     case '+':
+      assign_operands_for_cost(a, i, G, I);
       c = dryhc08iCode(ic);
       return(c);
     default:
