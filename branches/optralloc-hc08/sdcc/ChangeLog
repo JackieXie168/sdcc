@@ -4,8 +4,9 @@
 	  src/z80/gen.c,
 	  src/hc08/ralloc2.cc,
 	  src/hc08/gen.c,
-	  src/hc08/ralloc.c:
-	  Preparations for optimal register allocator for hc08.
+	  src/hc08/ralloc.c,
+	  src/SDCCicode.c:
+	  Optimal register allocator for hc08 working partially.
 
 2012-04-11 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 

@@ -799,8 +799,10 @@ newiTempOperand (sym_link * type, char throwType)
 /* operandType - returns the type chain for an operand             */
 /*-----------------------------------------------------------------*/
 sym_link *
-operandType (const operand * op)
+operandType (const operand *op)
 {
+  wassert (op);
+
   /* depending on type of operand */
   switch (op->type)
     {

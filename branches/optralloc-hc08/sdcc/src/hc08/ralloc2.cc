@@ -235,10 +235,10 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case '=':
     //case IFX: // SIGSEGV in asmopToBool()
     case ADDRESS_OF:
-    //case JUMPTABLE:
+    case JUMPTABLE:
     //case CAST: // SIGSEGV in asmopToBool()
     //case RECEIVE:
-    //case SEND:
+    case SEND:
     case DUMMY_READ_VOLATILE:
     case CRITICAL:
     case ENDCRITICAL:
@@ -305,31 +305,24 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   for(unsigned int v = 0; v < boost::num_vertices(I); v++)
     {
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
-      /*if(winner.global[v] >= 0)
-        {
-          if(winner.global[v] != REG_A && (winner.global[v] != REG_IYL && winner.global[v] != REG_IYH || !OPTRALLOC_IY))
+      if(winner.global[v] >= 0)
+        { 
+          if(I[v].size == 1)
             {
-              sym->regs[I[v].byte] = regsZ80 + winner.global[v];
+              sym->regs[I[v].byte] = regshc08 + winner.global[v];
               sym->accuse = 0;
               sym->isspilt = false;
               sym->nRegs = I[v].size;
             }
-          else if(winner.global[v] == REG_A)
-            {
-              sym->accuse = ACCUSE_A;
-              sym->isspilt = false;
-              sym->nRegs = 0;
-              sym->regs[0] = 0;
-            }
           else
             {
-              sym->accuse = ACCUSE_IY;
+              sym->accuse = (I[v].byte == 0 && winner.global[v] == REG_X || I[v].byte == 1 && winner.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
               sym->isspilt = false;
               sym->nRegs = 0;
               sym->regs[I[v].byte] = 0;
             }
         }
-      else*/
+      else
         {
           for(int i = 0; i < I[v].size; i++)
             sym->regs[i] = 0;

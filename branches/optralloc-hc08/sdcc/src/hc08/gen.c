@@ -1686,7 +1686,7 @@ sameRegs (asmop * aop1, asmop * aop2)
 /* aopOp - allocates an asmop for an operand  :                    */
 /*-----------------------------------------------------------------*/
 static void
-aopOp (operand * op, iCode * ic, bool result)
+aopOp (operand *op, iCode * ic, bool result)
 {
   asmop *aop = NULL;
   symbol *sym;
@@ -1870,6 +1870,7 @@ aopOp (operand * op, iCode * ic, bool result)
 
 //  printf("assuming register\n");
   /* must be in a register */
+  wassert (sym->nRegs);
   sym->aop = op->aop = aop = newAsmop (AOP_REG);
   aop->size = sym->nRegs;
   for (i = 0; i < sym->nRegs; i++)
@@ -2117,7 +2118,7 @@ opIsGptr (operand * op)
 /* getDataSize - get the operand data size                         */
 /*-----------------------------------------------------------------*/
 static int
-getDataSize (operand * op)
+getDataSize (operand *op)
 {
   int size;
   size = AOP_SIZE (op);
@@ -2131,14 +2132,17 @@ getDataSize (operand * op)
 /*               otherwise result left in Z flag (1=FALSE, 0=TRUE) */
 /*-----------------------------------------------------------------*/
 static void
-asmopToBool (asmop * aop, bool resultInA)
+asmopToBool (asmop *aop, bool resultInA)
 {
-  bool isFloat = IS_FLOAT (operandType (AOP_OP (aop)));
+  bool isFloat; 
   symbol *tlbl, *tlbl1;
   int size = aop->size;
   bool needpula = FALSE;
   bool flagsonly = TRUE;
   int offset = size - 1;
+
+  wassert (aop);
+  isFloat = IS_FLOAT (operandType (AOP_OP (aop)));
 
   if (resultInA)
     hc08_freeReg (hc08_reg_a);
