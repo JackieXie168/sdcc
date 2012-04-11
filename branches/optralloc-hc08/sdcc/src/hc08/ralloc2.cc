@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#define DEBUG_RALLOC_DEC // Uncomment to get debug messages while doing register allocation on the tree decomposition.
+#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (much more verbose than the one above).
 
 #define TD_SALLOC
 #define CH_SALLOC
@@ -24,6 +26,7 @@
 extern "C"
 {
   #include "ralloc.h"
+  #include "gen.h"
   unsigned char dryhc08iCode (iCode *ic);
 };
 
@@ -138,6 +141,38 @@ static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, c
 template <class G_t, class I_t>
 void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
+  if(!o || !IS_SYMOP(o))
+    return;
+  symbol *sym = OP_SYMBOL(o);
+  operand_map_t::const_iterator oi, oi_end;
+  for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+    {
+      var_t v = oi->second;
+      if(a.global[v] >= 0)
+        { 
+          if(I[v].size == 1)
+            {
+              sym->regs[I[v].byte] = regshc08 + a.global[v];
+              sym->accuse = 0;
+              sym->isspilt = false;
+              sym->nRegs = I[v].size;
+            }
+          else
+            {
+              sym->accuse = (I[v].byte == 0 && a.global[v] == REG_X || I[v].byte == 1 && a.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
+              sym->isspilt = false;
+              sym->nRegs = 0;
+              sym->regs[I[v].byte] = 0;
+            }
+        }
+      else
+        {
+          sym->isspilt = true;
+          sym->accuse = 0;
+          sym->nRegs = I[v].size;
+          sym->regs[I[v].byte] = 0;
+        }
+    }
 }
 
 template <class G_t, class I_t>
@@ -174,7 +209,38 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 
   switch(ic->op)
     {
+    case '!':
+    case '~':
+    case UNARYMINUS:
     case '+':
+    case '-':
+    case '^':
+    case '|':
+    case BITWISEAND:
+    //case IPOP:
+    //case CALL:
+    //case PCALL:
+    //case RETURN:
+    //case '*':
+    //case '>':
+    //case '<':
+    //case EQ_OP:
+    //case AND_OP:
+    //case OR_OP:
+    //case GETHBIT:
+    //case LEFT_OP:
+    //case RIGHT_OP:
+    //case GET_VALUE_AT_ADDRESS:
+    //case '=':
+    //case IFX:
+    //case ADDRESS_OF:
+    //case JUMPTABLE:
+    //case CAST:
+    //case RECEIVE:
+    //case SEND:
+    //case DUMMY_READ_VOLATILE:
+    //case CRITICAL:
+    //case ENDCRITICAL:
       assign_operands_for_cost(a, i, G, I);
       c = dryhc08iCode(ic);
       return(c);

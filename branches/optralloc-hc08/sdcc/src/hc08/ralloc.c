@@ -3110,7 +3110,8 @@ packRegisters (eBBlock ** ebpp, int blockno)
           packForPush (ic, ebpp, blockno);
         }
 
-      packRegsForAccUse (ic);
+      if (0) /* TODO: Old allocator! */
+        packRegsForAccUse (ic);
     }
 }
 
