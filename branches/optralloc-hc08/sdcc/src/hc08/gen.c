@@ -164,7 +164,7 @@ hc08_emitDebuggerSymbol (const char *debugSym)
 /*                  reuse. sreg and dreg must be of equal size              */
 /*--------------------------------------------------------------------------*/
 static void
-transferRegReg (reg_info * sreg, reg_info * dreg, bool freesrc)
+transferRegReg (reg_info *sreg, reg_info *dreg, bool freesrc)
 {
   int srcidx;
   int dstidx;
@@ -1183,12 +1183,14 @@ storeRegToFullAop (reg_info * reg, asmop * aop, bool isSigned)
 /*                  srcaop to logical offset dstofs of asmop dstaop.        */
 /*--------------------------------------------------------------------------*/
 static void
-transferAopAop (asmop * srcaop, int srcofs, asmop * dstaop, int dstofs)
+transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
 {
   bool needpula = FALSE;
   reg_info *reg = NULL;
   int regIdx;
   bool keepreg = FALSE;
+
+  wassert (srcaop && dstaop);
 
   /* ignore transfers at the same byte, unless its volatile */
   if (srcaop->op && !isOperandVolatile (srcaop->op, FALSE)
@@ -1811,6 +1813,8 @@ aopOp (operand * op, iCode * ic, bool result)
               aop->aopu.aop_reg[0] = hc08_reg_x;
               aop->aopu.aop_reg[1] = hc08_reg_h;
               break;
+            default:
+              wassert (0);
             }
           aop->op = op;
           aop->isaddr = op->isaddr;
@@ -1869,7 +1873,10 @@ aopOp (operand * op, iCode * ic, bool result)
   sym->aop = op->aop = aop = newAsmop (AOP_REG);
   aop->size = sym->nRegs;
   for (i = 0; i < sym->nRegs; i++)
-    aop->aopu.aop_reg[i] = sym->regs[i];
+    {
+       wassert (sym->regs[i] < regshc08 + 3);
+       aop->aopu.aop_reg[i] = sym->regs[i];
+    }
   aop->op = op;
   aop->isaddr = op->isaddr;
 }
@@ -3664,7 +3671,7 @@ genMultOneByte (operand * left, operand * right, operand * result)
   loadRegFromAop (hc08_reg_a, AOP (left), 0);
   if (!lUnsigned)
     {
-      tlbl1 = newiTempLabel (NULL);
+      tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       emitcode ("tsta", "");
       regalloc_dry_run_cost++;
       emitBranch ("bpl", tlbl1);
@@ -3802,6 +3809,7 @@ genDivOneByte (operand * left, operand * right, operand * result)
       loadRegFromAop (hc08_reg_x, AOP (right), 0);
       loadRegFromAop (hc08_reg_a, AOP (left), 0);
       emitcode ("div", "");
+      regalloc_dry_run_cost++;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       hc08_dirtyReg (hc08_reg_h, FALSE);
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
@@ -3865,21 +3873,30 @@ genDivOneByte (operand * left, operand * right, operand * result)
       signed char val = (char) ulFromVal (AOP (right)->aopu.aop_lit);
 
       if (!rUnsigned && val < 0)
-        emitcode ("ldx", "#0x%02x", -val);
+        {
+          emitcode ("ldx", "#0x%02x", -val);
+          regalloc_dry_run_cost += 2;
+        }
       else
-        emitcode ("ldx", "#0x%02x", (unsigned char) val);
+        {
+          emitcode ("ldx", "#0x%02x", (unsigned char) val);
+          regalloc_dry_run_cost += 2;
+        }
     }
   else                          /* ! literal */
     {
       loadRegFromAop (hc08_reg_x, AOP (right), 0);
       if (!rUnsigned)
         {
-          tlbl1 = newiTempLabel (NULL);
+          tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           emitcode ("tstx", "");
+          regalloc_dry_run_cost++;
           emitBranch ("bpl", tlbl1);
           emitcode ("inc", "1,s");
+          regalloc_dry_run_cost += 3;
           rmwWithReg ("neg", hc08_reg_x);
-          emitLabel (tlbl1);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl1);
         }
     }
 
@@ -3888,33 +3905,43 @@ genDivOneByte (operand * left, operand * right, operand * result)
       signed char val = (char) ulFromVal (AOP (left)->aopu.aop_lit);
 
       if (!lUnsigned && val < 0)
-        emitcode ("lda", "#0x%02x", -val);
+        {
+          emitcode ("lda", "#0x%02x", -val);
+          regalloc_dry_run_cost += 2;
+        }
       else
-        emitcode ("lda", "#0x%02x", (unsigned char) val);
+        {
+          emitcode ("lda", "#0x%02x", (unsigned char) val);
+          regalloc_dry_run_cost += 2;
+        }
     }
   else                          /* ! literal */
     {
       loadRegFromAop (hc08_reg_a, AOP (left), 0);
       if (!lUnsigned)
         {
-          tlbl2 = newiTempLabel (NULL);
+          tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           emitcode ("tsta", "");
+          regalloc_dry_run_cost++;
           emitBranch ("bpl", tlbl2);
           emitcode ("inc", "1,s");
+          regalloc_dry_run_cost += 3;
           rmwWithReg ("neg", hc08_reg_a);
-          emitLabel (tlbl2);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl2);
         }
     }
 
   loadRegFromConst (hc08_reg_h, zero);
   emitcode ("div", "");
+  regalloc_dry_run_cost++;
   hc08_dirtyReg (hc08_reg_x, FALSE);
   hc08_dirtyReg (hc08_reg_a, FALSE);
   hc08_dirtyReg (hc08_reg_h, FALSE);
 
   if (runtimeSign || compiletimeSign)
     {
-      tlbl3 = newiTempLabel (NULL);
+      tlbl3 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       if (runtimeSign)
         {
           pullReg (hc08_reg_x);
@@ -3924,7 +3951,7 @@ genDivOneByte (operand * left, operand * right, operand * result)
         }
 
       rmwWithReg ("neg", hc08_reg_a);
-      if (runtimeSign)
+      if (runtimeSign && !regalloc_dry_run)
         emitLabel (tlbl3);
 
       storeRegToAop (hc08_reg_a, AOP (result), 0);
@@ -3937,6 +3964,7 @@ genDivOneByte (operand * left, operand * right, operand * result)
               rmwWithReg ("lsl", hc08_reg_x);
               emitcode ("clra", "");
               emitcode ("sbc", "#0");
+              regalloc_dry_run_cost += 3;
               while (--size)
                 storeRegToAop (hc08_reg_a, AOP (result), ++offset);
             }
@@ -4014,6 +4042,7 @@ genModOneByte (operand * left, operand * right, operand * result)
       loadRegFromAop (hc08_reg_h, AOP (left), 1);
       loadRegFromAop (hc08_reg_a, AOP (left), 0);
       emitcode ("div", "");
+      regalloc_dry_run_cost++;
       hc08_freeReg (hc08_reg_a);
       hc08_freeReg (hc08_reg_x);
       hc08_dirtyReg (hc08_reg_h, FALSE);
@@ -4029,20 +4058,28 @@ genModOneByte (operand * left, operand * right, operand * result)
       signed char val = (char) ulFromVal (AOP (right)->aopu.aop_lit);
 
       if (!rUnsigned && val < 0)
-        emitcode ("ldx", "#0x%02x", -val);
+        {
+          emitcode ("ldx", "#0x%02x", -val);
+          regalloc_dry_run_cost += 2;
+        }
       else
-        emitcode ("ldx", "#0x%02x", (unsigned char) val);
+        {
+          emitcode ("ldx", "#0x%02x", (unsigned char) val);
+          regalloc_dry_run_cost += 2;
+        }
     }
   else                          /* ! literal */
     {
       loadRegFromAop (hc08_reg_x, AOP (right), 0);
       if (!rUnsigned)
         {
-          tlbl1 = newiTempLabel (NULL);
+          tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           emitcode ("tstx", "");
+          regalloc_dry_run_cost++;
           emitBranch ("bpl", tlbl1);
           rmwWithReg ("neg", hc08_reg_x);
-          emitLabel (tlbl1);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl1);
         }
     }
 
@@ -4061,9 +4098,13 @@ genModOneByte (operand * left, operand * right, operand * result)
         {
           compiletimeSign = TRUE;       /* set sign flag */
           emitcode ("lda", "#0x%02x", -val);
+          regalloc_dry_run_cost += 2;
         }
       else
-        emitcode ("lda", "#0x%02x", (unsigned char) val);
+        {
+          emitcode ("lda", "#0x%02x", (unsigned char) val);
+          regalloc_dry_run_cost += 2;
+        }
     }
   else                          /* ! literal */
     {
@@ -4074,19 +4115,24 @@ genModOneByte (operand * left, operand * right, operand * result)
           runtimeSign = TRUE;
           adjustStack (-1);
           emitcode ("clr", "1,s");
+          regalloc_dry_run_cost += 3;
 
           loadRegFromAop (hc08_reg_a, AOP (left), 0);
-          tlbl2 = newiTempLabel (NULL);
+          tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           emitcode ("tsta", "");
+          regalloc_dry_run_cost++;
           emitBranch ("bpl", tlbl2);
           emitcode ("inc", "1,s");
+          regalloc_dry_run_cost += 3;
           rmwWithReg ("neg", hc08_reg_a);
-          emitLabel (tlbl2);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl2);
         }
     }
 
   loadRegFromConst (hc08_reg_h, zero);
   emitcode ("div", "");
+  regalloc_dry_run_cost++;
   hc08_freeReg (hc08_reg_a);
   hc08_freeReg (hc08_reg_x);
   hc08_dirtyReg (hc08_reg_h, FALSE);
@@ -4094,7 +4140,7 @@ genModOneByte (operand * left, operand * right, operand * result)
   if (runtimeSign || compiletimeSign)
     {
       transferRegReg (hc08_reg_h, hc08_reg_a, TRUE);
-      tlbl3 = newiTempLabel (NULL);
+      tlbl3 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       if (runtimeSign)
         {
           pullReg (hc08_reg_x);
@@ -4117,6 +4163,7 @@ genModOneByte (operand * left, operand * right, operand * result)
               rmwWithReg ("lsl", hc08_reg_x);
               emitcode ("clra", "");
               emitcode ("sbc", "#0");
+              regalloc_dry_run_cost += 3;
               while (--size)
                 storeRegToAop (hc08_reg_a, AOP (result), ++offset);
             }
@@ -4176,7 +4223,7 @@ static void
 genIfxJump (iCode * ic, char *jval)
 {
   symbol *jlbl;
-  symbol *tlbl = newiTempLabel (NULL);
+  symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   char *inst;
 
   D (emitcode (";     genIfxJump", ""));
@@ -4206,7 +4253,8 @@ genIfxJump (iCode * ic, char *jval)
     }
   emitBranch (inst, tlbl);
   emitBranch ("jmp", jlbl);
-  emitLabel (tlbl);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl);
 
   /* mark the icode as generated */
   ic->generated = 1;
@@ -4398,6 +4446,7 @@ genCmp (iCode * ic, iCode * ifx)
     {
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("cphx", "%s", aopAdrStr (AOP (right), 1, TRUE));
+      regalloc_dry_run_cost += (AOP_TYPE (right) == AOP_DIR ? 2 : 3);
       hc08_freeReg (hc08_reg_hx);
     }
   else
@@ -4447,7 +4496,7 @@ genCmp (iCode * ic, iCode * ifx)
 
   if (ifx)
     {
-      symbol *tlbl = newiTempLabel (NULL);
+      symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       char *inst;
 
       freeAsmop (result, NULL, ic, TRUE);
@@ -4455,22 +4504,25 @@ genCmp (iCode * ic, iCode * ifx)
       inst = branchInstCmp (opcode, sign);
       emitBranch (inst, tlbl);
       emitBranch ("jmp", jlbl);
-      emitLabel (tlbl);
+      if (!regalloc_dry_run)
+        emitLabel (tlbl);
 
       /* mark the icode as generated */
       ifx->generated = 1;
     }
   else
     {
-      symbol *tlbl1 = newiTempLabel (NULL);
-      symbol *tlbl2 = newiTempLabel (NULL);
+      symbol *tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+      symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
       emitBranch (branchInstCmp (opcode, sign), tlbl1);
       loadRegFromConst (hc08_reg_a, zero);
       emitBranch ("bra", tlbl2);
-      emitLabel (tlbl1);
+      if (!regalloc_dry_run)
+        emitLabel (tlbl1);
       loadRegFromConst (hc08_reg_a, one);
-      emitLabel (tlbl2);
+      if (!regalloc_dry_run)
+        emitLabel (tlbl2);
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
       freeAsmop (result, NULL, ic, TRUE);
     }
@@ -4534,6 +4586,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
     {
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("cphx", "%s", aopAdrStr (AOP (right), 1, TRUE));
+      regalloc_dry_run_cost += (AOP_TYPE (right) == AOP_DIR ? 2 : 3);
       hc08_freeReg (hc08_reg_hx);
     }
   else
@@ -4546,7 +4599,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
           accopWithAop (sub, AOP (right), offset);
           if (size)
             {
-              if (!tlbl_NE)
+              if (!tlbl_NE && !regalloc_dry_run)
                 tlbl_NE = newiTempLabel (NULL);
               emitBranch ("bne", tlbl_NE);
             }
@@ -4563,21 +4616,23 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 
       if (opcode == EQ_OP)
         {
-          if (!tlbl_EQ)
+          if (!tlbl_EQ && !regalloc_dry_run)
             tlbl_EQ = newiTempLabel (NULL);
           emitBranch ("beq", tlbl_EQ);
           if (tlbl_NE)
             emitLabel (tlbl_NE);
           emitBranch ("jmp", jlbl);
-          emitLabel (tlbl_EQ);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl_EQ);
         }
       else
         {
-          if (!tlbl_NE)
+          if (!tlbl_NE && !regalloc_dry_run)
             tlbl_NE = newiTempLabel (NULL);
           emitBranch ("bne", tlbl_NE);
           emitBranch ("jmp", jlbl);
-          emitLabel (tlbl_NE);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl_NE);
         }
 
       /* mark the icode as generated */
@@ -4585,32 +4640,35 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
     }
   else
     {
-      symbol *tlbl = newiTempLabel (NULL);
+      symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
       if (opcode == EQ_OP)
         {
-          if (!tlbl_EQ)
+          if (!tlbl_EQ && !regalloc_dry_run)
             tlbl_EQ = newiTempLabel (NULL);
           emitBranch ("beq", tlbl_EQ);
           if (tlbl_NE)
             emitLabel (tlbl_NE);
           loadRegFromConst (hc08_reg_a, zero);
           emitBranch ("bra", tlbl);
-          emitLabel (tlbl_EQ);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl_EQ);
           loadRegFromConst (hc08_reg_a, one);
         }
       else
         {
-          if (!tlbl_NE)
+          if (!tlbl_NE && !regalloc_dry_run)
             tlbl_NE = newiTempLabel (NULL);
           emitBranch ("bne", tlbl_NE);
           loadRegFromConst (hc08_reg_a, zero);
           emitBranch ("bra", tlbl);
-          emitLabel (tlbl_NE);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl_NE);
           loadRegFromConst (hc08_reg_a, one);
         }
 
-      emitLabel (tlbl);
+      if (!regalloc_dry_run)
+        emitLabel (tlbl);
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
       freeAsmop (result, NULL, ic, TRUE);
     }
@@ -4693,6 +4751,7 @@ genPointerGetSetOfs (iCode * ic)
               emitcode ("rola", "");
               emitcode ("clra", "");
               emitcode ("sbc", "#0");
+              regalloc_dry_run_cost += 4;
               hc08_useReg (hc08_reg_a);
               transferRegReg (hc08_reg_a, hc08_reg_h, FALSE);
             }
@@ -4705,6 +4764,7 @@ genPointerGetSetOfs (iCode * ic)
       while (size--)
         {
           emitcode ("lda", "%s,x", aopAdrStr (derefaop, size, TRUE));
+          regalloc_dry_run_cost += 3;
           hc08_useReg (hc08_reg_a);
           storeRegToAop (hc08_reg_a, AOP (IC_RESULT (lic)), size);
           hc08_freeReg (hc08_reg_a);
@@ -4744,6 +4804,7 @@ genPointerGetSetOfs (iCode * ic)
               emitcode ("rola", "");
               emitcode ("clra", "");
               emitcode ("sbc", "#0");
+              regalloc_dry_run_cost += 4;
               hc08_useReg (hc08_reg_a);
               transferRegReg (hc08_reg_a, hc08_reg_h, FALSE);
             }
@@ -4757,6 +4818,7 @@ genPointerGetSetOfs (iCode * ic)
         {
           loadRegFromAop (hc08_reg_a, AOP (IC_RIGHT (lic)), size);
           emitcode ("sta", "%s,x", aopAdrStr (derefaop, size, TRUE));
+          regalloc_dry_run_cost += 3;
           hc08_freeReg (hc08_reg_a);
         }
 
@@ -4836,8 +4898,8 @@ genAndOp (iCode * ic)
   aopOp ((right = IC_RIGHT (ic)), ic, FALSE);
   aopOp ((result = IC_RESULT (ic)), ic, FALSE);
 
-  tlbl = newiTempLabel (NULL);
-  tlbl0 = newiTempLabel (NULL);
+  tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  tlbl0 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
   asmopToBool (AOP (left), FALSE);
   emitBranch ("beq", tlbl0);
@@ -4845,9 +4907,11 @@ genAndOp (iCode * ic)
   emitBranch ("beq", tlbl0);
   loadRegFromConst (hc08_reg_a, one);
   emitBranch ("bra", tlbl);
-  emitLabel (tlbl0);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl0);
   loadRegFromConst (hc08_reg_a, zero);
-  emitLabel (tlbl);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl);
 
   hc08_useReg (hc08_reg_a);
   hc08_freeReg (hc08_reg_a);
@@ -4878,8 +4942,8 @@ genOrOp (iCode * ic)
   aopOp ((right = IC_RIGHT (ic)), ic, FALSE);
   aopOp ((result = IC_RESULT (ic)), ic, FALSE);
 
-  tlbl = newiTempLabel (NULL);
-  tlbl0 = newiTempLabel (NULL);
+  tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  tlbl0 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
   asmopToBool (AOP (left), FALSE);
   emitBranch ("bne", tlbl0);
@@ -4887,9 +4951,11 @@ genOrOp (iCode * ic)
   emitBranch ("bne", tlbl0);
   loadRegFromConst (hc08_reg_a, zero);
   emitBranch ("bra", tlbl);
-  emitLabel (tlbl0);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl0);
   loadRegFromConst (hc08_reg_a, one);
-  emitLabel (tlbl);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl);
 
   hc08_useReg (hc08_reg_a);
   hc08_freeReg (hc08_reg_a);
@@ -5063,7 +5129,7 @@ genAnd (iCode * ic, iCode * ifx)
               rmwWithAop ("tst", AOP (left), offset);
               if (size)
                 {
-                  if (!tlbl)
+                  if (!tlbl && !regalloc_dry_run)
                     tlbl = newiTempLabel (NULL);
                   emitBranch ("bne", tlbl);
                 }
@@ -5075,7 +5141,7 @@ genAnd (iCode * ic, iCode * ifx)
               hc08_freeReg (hc08_reg_a);
               if (size)
                 {
-                  if (!tlbl)
+                  if (!tlbl && !regalloc_dry_run)
                     tlbl = newiTempLabel (NULL);
                   emitBranch ("bne", tlbl);
                 }
@@ -5218,7 +5284,7 @@ genOr (iCode * ic, iCode * ifx)
               rmwWithAop ("tst", AOP (left), offset);
               if (size)
                 {
-                  if (!tlbl)
+                  if (!tlbl && !regalloc_dry_run)
                     tlbl = newiTempLabel (NULL);
                   emitBranch ("bne", tlbl);
                 }
@@ -5230,7 +5296,7 @@ genOr (iCode * ic, iCode * ifx)
               hc08_freeReg (hc08_reg_a);
               if (size)
                 {
-                  if (!tlbl)
+                  if (!tlbl && !regalloc_dry_run)
                     tlbl = newiTempLabel (NULL);
                   emitBranch ("bne", tlbl);
                 }
@@ -5335,7 +5401,7 @@ genXor (iCode * ic, iCode * ifx)
       // this can just happen, if ifx has been optimized away
       // wassertl (ifx, "AOP_CPY result without ifx");
 
-      tlbl = newiTempLabel (NULL);
+      tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       size = (AOP_SIZE (left) >= AOP_SIZE (right)) ? AOP_SIZE (left) : AOP_SIZE (right);
       offset = 0;
       while (size--)
@@ -5359,7 +5425,8 @@ genXor (iCode * ic, iCode * ifx)
                *   multiple calls to emitLabel() ?!
                * and we can't genIfxJump, if there is none
                */
-              emitLabel (tlbl);
+              if (!regalloc_dry_run)
+                emitLabel (tlbl);
               if (ifx)
                 genIfxJump (ifx, "a");
             }
@@ -5581,11 +5648,13 @@ genRRC (iCode * ic)
   offset = AOP_SIZE (result) - 1;
   emitcode ("clra", "");
   emitcode ("rora", "");
+  regalloc_dry_run_cost += 2;
   hc08_dirtyReg (hc08_reg_a, FALSE);
   if (resultInA)
     {
       emitcode ("ora", "1,s");
       emitcode ("ais", "#1");
+      regalloc_dry_run_cost += 5;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       needpula = FALSE;
     }
@@ -5657,11 +5726,13 @@ genRLC (iCode * ic)
   offset = 0;
   emitcode ("clra", "");
   emitcode ("rola", "");
+  regalloc_dry_run_cost += 2;
   hc08_dirtyReg (hc08_reg_a, FALSE);
   if (resultInA)
     {
       emitcode ("ora", "1,s");
       emitcode ("ais", "#1");
+      regalloc_dry_run_cost += 5;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       needpula = FALSE;
     }
@@ -5695,6 +5766,7 @@ genGetHbit (iCode * ic)
   emitcode ("rola", "");
   emitcode ("clra", "");
   emitcode ("rola", "");
+  regalloc_dry_run_cost += 3;
   hc08_dirtyReg (hc08_reg_a, FALSE);
   storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
   hc08_freeReg (hc08_reg_a);
@@ -5730,6 +5802,7 @@ genGetAbit (iCode * ic)
   if (AOP_TYPE (result) == AOP_CRY)
     {
       emitcode ("and", "#0x%02x", 1 << shCount);
+      regalloc_dry_run_cost += 2;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       hc08_freeReg (hc08_reg_a);
     }
@@ -5739,30 +5812,38 @@ genGetAbit (iCode * ic)
         {
         case 3:
           emitcode ("lsra", "");
+          regalloc_dry_run_cost++;
           //fallthrough
         case 2:
           emitcode ("lsra", "");
+          regalloc_dry_run_cost++;
           //fallthrough
         case 1:
           emitcode ("lsra", "");
+          regalloc_dry_run_cost++;
           //fallthrough
         case 0:
           emitcode ("and", "#0x01");
+          regalloc_dry_run_cost += 2;
           break;
         case 4:
           emitcode ("nsa", "");
           emitcode ("and", "#0x01");
+          regalloc_dry_run_cost += 3;
           break;
         case 5:
           emitcode ("rola", "");
+          regalloc_dry_run_cost++;
           //fallthrough
         case 6:
           emitcode ("rola", "");
+          regalloc_dry_run_cost++;
           //fallthrough
         case 7:
           emitcode ("rola", "");
           emitcode ("clra", "");
           emitcode ("rola", "");
+          regalloc_dry_run_cost += 3;
           break;
         }
       hc08_dirtyReg (hc08_reg_a, FALSE);
@@ -5848,6 +5929,7 @@ genSwap (iCode * ic)
     case 1:                    /* swap nibbles in byte */
       loadRegFromAop (hc08_reg_a, AOP (left), 0);
       emitcode ("nsa", "");
+      regalloc_dry_run_cost++;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       storeRegToAop (hc08_reg_a, AOP (result), 0);
       hc08_freeReg (hc08_reg_a);
@@ -6733,15 +6815,17 @@ genLeftShift (iCode * ic)
   freeAsmop (left, NULL, ic, TRUE);
   AOP (result) = aopResult;
 
-  tlbl = newiTempLabel (NULL);
+  tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   size = AOP_SIZE (result);
   offset = 0;
-  tlbl1 = newiTempLabel (NULL);
+  tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
   loadRegFromAop (hc08_reg_x, AOP (right), 0);
   emitcode ("tstx", "");
+  regalloc_dry_run_cost++;
   emitBranch ("beq", tlbl1);
-  emitLabel (tlbl);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl);
 
   shift = "lsl";
   for (offset = 0; offset < size; offset++)
@@ -7075,15 +7159,17 @@ genRightShift (iCode * ic)
   freeAsmop (left, NULL, ic, TRUE);
   AOP (result) = aopResult;
 
-  tlbl = newiTempLabel (NULL);
+  tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   size = AOP_SIZE (result);
   offset = 0;
-  tlbl1 = newiTempLabel (NULL);
+  tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
   loadRegFromAop (hc08_reg_x, AOP (right), 0);
   emitcode ("tstx", "");
+  regalloc_dry_run_cost++;
   emitBranch ("beq", tlbl1);
-  emitLabel (tlbl);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl);
 
   shift = sign ? "asr" : "lsr";
   for (offset = size - 1; offset >= 0; offset--)
@@ -7093,7 +7179,8 @@ genRightShift (iCode * ic)
     }
   rmwWithReg ("dec", hc08_reg_x);
   emitBranch ("bne", tlbl);
-  emitLabel (tlbl1);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl1);
   hc08_freeReg (hc08_reg_x);
 
   freeAsmop (result, NULL, ic, TRUE);
@@ -7124,10 +7211,12 @@ genUnpackBits (operand * result, iCode * ifx)
   if (ifx && blen <= 8)
     {
       emitcode ("lda", ",x");
+      regalloc_dry_run_cost++;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       if (blen < 8)
         {
           emitcode ("and", "#0x%02x", (((unsigned char) - 1) >> (8 - blen)) << bstr);
+          regalloc_dry_run_cost += 2;
         }
       genIfxJump (ifx, "a");
       return;
@@ -7138,18 +7227,23 @@ genUnpackBits (operand * result, iCode * ifx)
   if (blen < 8)
     {
       emitcode ("lda", ",x");
+      regalloc_dry_run_cost++;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       AccRsh (bstr, FALSE);
       emitcode ("and", "#0x%02x", ((unsigned char) - 1) >> (8 - blen));
+      regalloc_dry_run_cost += 2;
       if (!SPEC_USIGN (etype))
         {
           /* signed bitfield */
-          symbol *tlbl = newiTempLabel (NULL);
+          symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
           emitcode ("bit", "#0x%02x", 1 << (blen - 1));
-          emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
+          if (!regalloc_dry_run)
+            emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
           emitcode ("ora", "#0x%02x", (unsigned char) (0xff << blen));
-          emitLabel (tlbl);
+          regalloc_dry_run_cost += 6;
+          if (!regalloc_dry_run)
+            emitLabel (tlbl);
         }
       storeRegToAop (hc08_reg_a, AOP (result), offset++);
       goto finish;
@@ -7160,11 +7254,15 @@ genUnpackBits (operand * result, iCode * ifx)
   for (rlen = blen; rlen >= 8; rlen -= 8)
     {
       emitcode ("lda", ",x");
+      regalloc_dry_run_cost++;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       storeRegToAop (hc08_reg_a, AOP (result), offset);
       offset++;
       if (rlen > 8)
-        emitcode ("aix", "#1");
+        {
+          emitcode ("aix", "#1");
+          regalloc_dry_run_cost *= 2;
+        }
     }
 
   /* Handle the partial byte at the end */
@@ -7172,15 +7270,19 @@ genUnpackBits (operand * result, iCode * ifx)
     {
       emitcode ("lda", ",x");
       emitcode ("and", "#0x%02x", ((unsigned char) - 1) >> (8 - rlen));
+      regalloc_dry_run_cost += 3;
       if (!SPEC_USIGN (etype))
         {
           /* signed bitfield */
-          symbol *tlbl = newiTempLabel (NULL);
+          symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
           emitcode ("bit", "#0x%02x", 1 << (rlen - 1));
-          emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
+          if (!regalloc_dry_run)
+            emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
           emitcode ("ora", "#0x%02x", (unsigned char) (0xff << rlen));
-          emitLabel (tlbl);
+         regalloc_dry_run_cost += 6;
+         if (!regalloc_dry_run)
+            emitLabel (tlbl);
         }
       storeRegToAop (hc08_reg_a, AOP (result), offset++);
     }
@@ -7200,6 +7302,7 @@ finish:
           emitcode ("rola", "");
           emitcode ("clra", "");
           emitcode ("sbc", zero);
+          regalloc_dry_run_cost += 4;
 
           while (rsize--)
             storeRegToAop (hc08_reg_a, AOP (result), offset++);
@@ -7242,10 +7345,12 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
     {
       if (!ifx && bstr)
         {
-          symbol *tlbl = newiTempLabel (NULL);
+          symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
           loadRegFromConst (hc08_reg_a, zero);
-          emitcode ("brclr", "#%d,%s,%05d$", bstr, aopAdrStr (derefaop, 0, FALSE), labelKey2num ((tlbl->key)));
+          if (!regalloc_dry_run)
+            emitcode ("brclr", "#%d,%s,%05d$", bstr, aopAdrStr (derefaop, 0, FALSE), labelKey2num ((tlbl->key)));
+          regalloc_dry_run_cost += 3;
           if (SPEC_USIGN (etype))
             rmwWithReg ("inc", hc08_reg_a);
           else
@@ -7258,7 +7363,7 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
         }
       else if (ifx)
         {
-          symbol *tlbl = newiTempLabel (NULL);
+          symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           symbol *jlbl;
           char *inst;
 
@@ -7272,7 +7377,9 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
               jlbl = IC_FALSE (ifx);
               inst = "brset";
             }
-          emitcode (inst, "#%d,%s,%05d$", bstr, aopAdrStr (derefaop, 0, FALSE), labelKey2num ((tlbl->key)));
+          if (!regalloc_dry_run)
+            emitcode (inst, "#%d,%s,%05d$", bstr, aopAdrStr (derefaop, 0, FALSE), labelKey2num ((tlbl->key)));
+          regalloc_dry_run_cost += 3;
           emitBranch ("jmp", jlbl);
           emitLabel (tlbl);
           ifx->generated = 1;
@@ -7289,22 +7396,27 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
         {
           AccRsh (bstr, FALSE);
           emitcode ("and", "#0x%02x", ((unsigned char) - 1) >> (8 - blen));
+          regalloc_dry_run_cost += 2;
           hc08_dirtyReg (hc08_reg_a, FALSE);
           if (!SPEC_USIGN (etype))
             {
               /* signed bitfield */
-              symbol *tlbl = newiTempLabel (NULL);
+              symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
               emitcode ("bit", "#0x%02x", 1 << (blen - 1));
-              emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
+              if (!regalloc_dry_run)
+                emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
               emitcode ("ora", "#0x%02x", (unsigned char) (0xff << blen));
-              emitLabel (tlbl);
+              regalloc_dry_run_cost += 6;
+              if (!regalloc_dry_run)
+                emitLabel (tlbl);
             }
           storeRegToAop (hc08_reg_a, AOP (result), offset);
         }
       else
         {
           emitcode ("and", "#0x%02x", (((unsigned char) - 1) >> (8 - blen)) << bstr);
+          regalloc_dry_run_cost += 2;
           hc08_dirtyReg (hc08_reg_a, FALSE);
         }
       offset++;
@@ -7319,7 +7431,10 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
       if (!ifx)
         storeRegToAop (hc08_reg_a, AOP (result), offset);
       else
-        emitcode ("tsta", "");
+        {
+          emitcode ("tsta", "");
+          regalloc_dry_run_cost++;
+        }
       offset++;
     }
 
@@ -7328,15 +7443,19 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
     {
       loadRegFromAop (hc08_reg_a, derefaop, size - offset - 1);
       emitcode ("and", "#0x%02x", ((unsigned char) - 1) >> (8 - rlen));
+      regalloc_dry_run_cost += 2;
       if (!SPEC_USIGN (etype))
         {
           /* signed bitfield */
-          symbol *tlbl = newiTempLabel (NULL);
+          symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
           emitcode ("bit", "#0x%02x", 1 << (rlen - 1));
-          emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
+          if (!regalloc_dry_run)
+            emitcode ("beq", "%05d$", labelKey2num (tlbl->key));
           emitcode ("ora", "#0x%02x", (unsigned char) (0xff << rlen));
-          emitLabel (tlbl);
+          regalloc_dry_run_cost += 6;
+          if (!regalloc_dry_run)
+            emitLabel (tlbl);
         }
       storeRegToAop (hc08_reg_a, AOP (result), offset++);
     }
@@ -7356,6 +7475,7 @@ finish:
           emitcode ("rola", "");
           emitcode ("clra", "");
           emitcode ("sbc", zero);
+          regalloc_dry_run_cost += 4;
 
           while (rsize--)
             storeRegToAop (hc08_reg_a, AOP (result), offset++);
@@ -7467,6 +7587,7 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
           if (size || pi)
             {
               emitcode ("aix", "#1");
+              regalloc_dry_run_cost += 2;
               hc08_dirtyReg (hc08_reg_hx, FALSE);
             }
           if (!ifx)
@@ -7528,12 +7649,20 @@ genPackBits (sym_link * etype, operand * right)
           litval &= (~mask) & 0xff;
 
           emitcode ("lda", ",x");
+          regalloc_dry_run_cost++;
           if ((mask | litval) != 0xff)
-            emitcode ("and", "#0x%02x", mask);
+            {
+              emitcode ("and", "#0x%02x", mask);
+              regalloc_dry_run_cost += 2;
+            }
           if (litval)
-            emitcode ("ora", "#0x%02x", litval);
+            {
+              emitcode ("ora", "#0x%02x", litval);
+              regalloc_dry_run_cost += 2;
+            }
           hc08_dirtyReg (hc08_reg_a, FALSE);
           emitcode ("sta", ",x");
+          regalloc_dry_run_cost++;
 
           hc08_freeReg (hc08_reg_a);
           return;
@@ -7545,6 +7674,7 @@ genPackBits (sym_link * etype, operand * right)
       /* shift and mask source value */
       AccLsh (bstr);
       emitcode ("and", "#0x%02x", (~mask) & 0xff);
+      regalloc_dry_run_cost += 2;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       pushReg (hc08_reg_a, TRUE);
 
@@ -7552,6 +7682,7 @@ genPackBits (sym_link * etype, operand * right)
       emitcode ("and", "#0x%02x", mask);
       emitcode ("ora", "1,s");
       emitcode ("sta", ",x");
+      regalloc_dry_run_cost += 7;
       pullReg (hc08_reg_a);
 
       hc08_freeReg (hc08_reg_a);
@@ -7565,12 +7696,14 @@ genPackBits (sym_link * etype, operand * right)
       if (AOP (right)->type == AOP_DIR)
         {
           emitcode ("mov", "%s,x+", aopAdrStr (AOP (right), offset, FALSE));
+          regalloc_dry_run_cost += 2;
           xoffset++;
         }
       else
         {
           loadRegFromAop (hc08_reg_a, AOP (right), offset);
           emitcode ("sta", "%d,x", offset);
+          regalloc_dry_run_cost += (offset < 256 ? 2 : 3);
         }
       offset++;
     }
@@ -7588,12 +7721,20 @@ genPackBits (sym_link * etype, operand * right)
           litval >>= (blen - rlen);
           litval &= (~mask) & 0xff;
           emitcode ("lda", "%d,x", offset - xoffset);
+          regalloc_dry_run_cost += (offset - xoffset < 256 ? 2 : 3);
           hc08_dirtyReg (hc08_reg_a, FALSE);
           if ((mask | litval) != 0xff)
-            emitcode ("and", "#0x%02x", mask);
+            {
+              emitcode ("and", "#0x%02x", mask);
+              regalloc_dry_run_cost += 2;
+            }
           if (litval)
-            emitcode ("ora", "#0x%02x", litval);
+            {
+              emitcode ("ora", "#0x%02x", litval);
+              regalloc_dry_run_cost += 2;
+            }
           emitcode ("sta", "%d,x", offset - xoffset);
+          regalloc_dry_run_cost += (offset - xoffset < 256 ? 2 : 3);
           hc08_dirtyReg (hc08_reg_a, FALSE);
           hc08_freeReg (hc08_reg_a);
           return;
@@ -7603,13 +7744,17 @@ genPackBits (sym_link * etype, operand * right)
        */
       loadRegFromAop (hc08_reg_a, AOP (right), offset);
       emitcode ("and", "#0x%02x", (~mask) & 0xff);
+      regalloc_dry_run_cost += 2;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       pushReg (hc08_reg_a, TRUE);
 
       emitcode ("lda", "%d,x", offset - xoffset);
+      regalloc_dry_run_cost += (offset - xoffset < 256 ? 2 : 3);
       emitcode ("and", "#0x%02x", mask);
       emitcode ("ora", "1,s");
+      regalloc_dry_run_cost += 5;
       emitcode ("sta", "%d,x", offset - xoffset);
+      regalloc_dry_run_cost += (offset - xoffset < 256 ? 2 : 3);
       pullReg (hc08_reg_a);
     }
 
@@ -7651,20 +7796,26 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           litval = (int) ulFromVal (AOP (right)->aopu.aop_lit);
 
           emitcode ((litval & 1) ? "bset" : "bclr", "#%d,%s", bstr, aopAdrStr (derefaop, 0, FALSE));
+          regalloc_dry_run_cost += 2;
         }
       else
         {
-          symbol *tlbl1 = newiTempLabel (NULL);
-          symbol *tlbl2 = newiTempLabel (NULL);
+          symbol *tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+          symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
           loadRegFromAop (hc08_reg_a, AOP (right), 0);
           emitcode ("bit", "#1");
+          regalloc_dry_run_cost += 2;
           emitBranch ("bne", tlbl1);
           emitcode ("bclr", "#%d,%s", bstr, aopAdrStr (derefaop, 0, FALSE));
+          regalloc_dry_run_cost += 2;
           emitBranch ("bra", tlbl2);
-          emitLabel (tlbl1);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl1);
           emitcode ("bset", "#%d,%s", bstr, aopAdrStr (derefaop, 0, FALSE));
-          emitLabel (tlbl2);
+          regalloc_dry_run_cost += 2;
+          if (!regalloc_dry_run)
+            emitLabel (tlbl2);
           hc08_freeReg (hc08_reg_a);
         }
       goto release;
@@ -7685,9 +7836,15 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
 
           loadRegFromAop (hc08_reg_a, derefaop, 0);
           if ((mask | litval) != 0xff)
-            emitcode ("and", "#0x%02x", mask);
+            {
+              emitcode ("and", "#0x%02x", mask);
+              regalloc_dry_run_cost += 2;
+            }
           if (litval)
-            emitcode ("ora", "#0x%02x", litval);
+            {
+              emitcode ("ora", "#0x%02x", litval);
+              regalloc_dry_run_cost += 2;
+            }
           hc08_dirtyReg (hc08_reg_a, FALSE);
           storeRegToAop (hc08_reg_a, derefaop, 0);
 
@@ -7701,12 +7858,14 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
       /* shift and mask source value */
       AccLsh (bstr);
       emitcode ("and", "#0x%02x", (~mask) & 0xff);
+      regalloc_dry_run_cost += 2;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       pushReg (hc08_reg_a, TRUE);
 
       loadRegFromAop (hc08_reg_a, derefaop, 0);
       emitcode ("and", "#0x%02x", mask);
       emitcode ("ora", "1,s");
+      regalloc_dry_run_cost += 5;
       storeRegToAop (hc08_reg_a, derefaop, 0);
       pullReg (hc08_reg_a);
 
@@ -7736,9 +7895,15 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           litval &= (~mask) & 0xff;
           loadRegFromAop (hc08_reg_a, derefaop, size - offset - 1);
           if ((mask | litval) != 0xff)
-            emitcode ("and", "#0x%02x", mask);
+            {
+              emitcode ("and", "#0x%02x", mask);
+              regalloc_dry_run_cost += 2;
+            }
           if (litval)
-            emitcode ("ora", "#0x%02x", litval);
+            {
+              emitcode ("ora", "#0x%02x", litval);
+              regalloc_dry_run_cost += 2;
+            }
           hc08_dirtyReg (hc08_reg_a, FALSE);
           storeRegToAop (hc08_reg_a, derefaop, size - offset - 1);
           hc08_dirtyReg (hc08_reg_a, FALSE);
@@ -7750,12 +7915,14 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
        */
       loadRegFromAop (hc08_reg_a, AOP (right), offset);
       emitcode ("and", "#0x%02x", (~mask) & 0xff);
+      regalloc_dry_run_cost += 2;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       pushReg (hc08_reg_a, TRUE);
 
       loadRegFromAop (hc08_reg_a, derefaop, size - offset - 1);
       emitcode ("and", "#0x%02x", mask);
       emitcode ("ora", "1,s");
+      regalloc_dry_run_cost += 5;
       storeRegToAop (hc08_reg_a, derefaop, size - offset - 1);
       pullReg (hc08_reg_a);
     }
@@ -7850,6 +8017,7 @@ genPointerSet (iCode * ic, iCode * pi)
           if (size || pi)
             {
               emitcode ("aix", "#1");
+              regalloc_dry_run_cost += 2;
             }
           hc08_freeReg (hc08_reg_a);
         }
@@ -7952,17 +8120,21 @@ genAddrOf (iCode * ic)
       offset = _G.stackOfs + _G.stackPushes + sym->stack;
       hc08_useReg (hc08_reg_hx);
       emitcode ("tsx", "");
+      regalloc_dry_run_cost++;
       while (offset > 127)
         {
           emitcode ("aix", "#127");
+          regalloc_dry_run_cost += 2;
           offset -= 127;
         }
       while (offset < -128)
         {
           emitcode ("aix", "#-128");
+          regalloc_dry_run_cost += 2;
           offset += 128;
         }
       emitcode ("aix", "#%d", offset);
+      regalloc_dry_run_cost += 2;
       storeRegToFullAop (hc08_reg_hx, AOP (IC_RESULT (ic)), FALSE);
       hc08_freeReg (hc08_reg_hx);
 
@@ -8047,8 +8219,8 @@ static void
 genJumpTab (iCode * ic)
 {
   symbol *jtab;
-  symbol *jtablo = newiTempLabel (NULL);
-  symbol *jtabhi = newiTempLabel (NULL);
+  symbol *jtablo = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  symbol *jtabhi = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
   D (emitcode (";     genJumpTab", ""));
 
@@ -8061,10 +8233,15 @@ genJumpTab (iCode * ic)
       freeAsmop (IC_JTCOND (ic), NULL, ic, TRUE);
       loadRegFromConst (hc08_reg_h, zero);
 
-      emitcode ("lda", "%05d$,x", labelKey2num (jtabhi->key));
-      emitcode ("ldx", "%05d$,x", labelKey2num (jtablo->key));
+      if (!regalloc_dry_run)
+        {
+          emitcode ("lda", "%05d$,x", labelKey2num (jtabhi->key));
+          emitcode ("ldx", "%05d$,x", labelKey2num (jtablo->key));
+        }
+      regalloc_dry_run_cost += 6;
       transferRegReg (hc08_reg_a, hc08_reg_h, TRUE);
       emitcode ("jmp", ",x");
+      regalloc_dry_run_cost++;
 
       hc08_dirtyReg (hc08_reg_a, TRUE);
       hc08_dirtyReg (hc08_reg_hx, TRUE);
@@ -8079,24 +8256,36 @@ genJumpTab (iCode * ic)
       freeAsmop (IC_JTCOND (ic), NULL, ic, TRUE);
       loadRegFromConst (hc08_reg_h, zero);
 
-      emitcode ("lda", "%05d$,x", labelKey2num (jtabhi->key));
+      if (!regalloc_dry_run)
+        emitcode ("lda", "%05d$,x", labelKey2num (jtabhi->key));
       emitcode ("sta", "3,s");
-      emitcode ("lda", "%05d$,x", labelKey2num (jtablo->key));
+      if (!regalloc_dry_run)
+        emitcode ("lda", "%05d$,x", labelKey2num (jtablo->key));
       emitcode ("sta", "4,s");
+      regalloc_dry_run_cost += 12;
 
       pullReg (hc08_reg_hx);
       emitcode ("rts", "");
+      regalloc_dry_run_cost++;
       _G.stackPushes += 2;
       updateCFA ();
     }
 
   /* now generate the jump labels */
-  emitLabel (jtablo);
+  if (!regalloc_dry_run)
+    emitLabel (jtablo);
   for (jtab = setFirstItem (IC_JTLABELS (ic)); jtab; jtab = setNextItem (IC_JTLABELS (ic)))
-    emitcode (".db", "%05d$", labelKey2num (jtab->key));
-  emitLabel (jtabhi);
+    {
+      emitcode (".db", "%05d$", labelKey2num (jtab->key));
+      regalloc_dry_run_cost++;
+    }
+  if (!regalloc_dry_run)
+    emitLabel (jtabhi);
   for (jtab = setFirstItem (IC_JTLABELS (ic)); jtab; jtab = setNextItem (IC_JTLABELS (ic)))
-    emitcode (".db", ">%05d$", labelKey2num (jtab->key));
+    {
+      emitcode (".db", ">%05d$", labelKey2num (jtab->key));
+      regalloc_dry_run_cost++;
+    }
 }
 
 /*-----------------------------------------------------------------*/
@@ -8255,16 +8444,19 @@ genDjnz (iCode * ic, iCode * ifx)
     }
 
   /* otherwise we can save BIG */
-  lbl = newiTempLabel (NULL);
-  lbl1 = newiTempLabel (NULL);
+  lbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  lbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
-
-  emitcode ("dbnz", "%s,%05d$", aopAdrStr (AOP (IC_RESULT (ic)), 0, FALSE), labelKey2num (lbl->key));
+  if (!regalloc_dry_run)
+    emitcode ("dbnz", "%s,%05d$", aopAdrStr (AOP (IC_RESULT (ic)), 0, FALSE), labelKey2num (lbl->key));
+  regalloc_dry_run_cost += 3; // TODO: Stack aop.
 
   emitBranch ("bra", lbl1);
-  emitLabel (lbl);
+  if (!regalloc_dry_run)
+    emitLabel (lbl);
   emitBranch ("jmp", IC_TRUE (ifx));
-  emitLabel (lbl1);
+  if (!regalloc_dry_run)
+    emitLabel (lbl1);
 
   freeAsmop (IC_RESULT (ic), NULL, ic, TRUE);
   ifx->generated = 1;
@@ -8360,8 +8552,10 @@ genCritical (iCode * ic)
     aopOp (IC_RESULT (ic), ic, TRUE);
 
   emitcode ("tpa", "");
+  regalloc_dry_run_cost++;
   hc08_dirtyReg (hc08_reg_a, FALSE);
   emitcode ("sei", "");
+  regalloc_dry_run_cost++;
 
   if (IC_RESULT (ic))
     storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), 0);
@@ -8386,6 +8580,7 @@ genEndCritical (iCode * ic)
       aopOp (IC_RIGHT (ic), ic, FALSE);
       loadRegFromAop (hc08_reg_a, AOP (IC_RIGHT (ic)), 0);
       emitcode ("tap", "");
+      regalloc_dry_run_cost++;
       hc08_freeReg (hc08_reg_a);
       freeAsmop (IC_RIGHT (ic), NULL, ic, TRUE);
     }
@@ -8393,6 +8588,7 @@ genEndCritical (iCode * ic)
     {
       pullReg (hc08_reg_a);
       emitcode ("tap", "");
+      regalloc_dry_run_cost++;
     }
 }
 
@@ -8685,6 +8881,8 @@ genhc08Code (iCode *lic)
   int cln = 0;
   int clevel = 0;
   int cblock = 0;
+
+  regalloc_dry_run = FALSE;
 
   /* print the allocation information */
   if (allocInfo && currFunc)

@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-#define DEBUG_RALLOC_DEC // Uncomment to get debug messages while doing register allocation on the tree decomposition.
-#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (much more verbose than the one above).
+//#define DEBUG_RALLOC_DEC // Uncomment to get debug messages while doing register allocation on the tree decomposition.
+//#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (much more verbose than the one above).
 
 #define TD_SALLOC
 #define CH_SALLOC
@@ -209,38 +209,39 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 
   switch(ic->op)
     {
-    case '!':
+    //case '!': // SIGSEGV in asmopToBool()
     case '~':
     case UNARYMINUS:
-    case '+':
+    //case '+': // genPointerGetSetOfs() issue
     case '-':
     case '^':
     case '|':
     case BITWISEAND:
+    //case IPUSH: // SIGSEGV in saveRegisters()
     //case IPOP:
     //case CALL:
     //case PCALL:
     //case RETURN:
-    //case '*':
-    //case '>':
-    //case '<':
-    //case EQ_OP:
-    //case AND_OP:
-    //case OR_OP:
-    //case GETHBIT:
-    //case LEFT_OP:
-    //case RIGHT_OP:
-    //case GET_VALUE_AT_ADDRESS:
-    //case '=':
-    //case IFX:
-    //case ADDRESS_OF:
+    case '*':
+    case '>':
+    case '<':
+    case EQ_OP:
+    case AND_OP:
+    case OR_OP:
+    case GETHBIT:
+    case LEFT_OP:
+    case RIGHT_OP:
+    case GET_VALUE_AT_ADDRESS:
+    case '=':
+    //case IFX: // SIGSEGV in asmopToBool()
+    case ADDRESS_OF:
     //case JUMPTABLE:
-    //case CAST:
+    //case CAST: // SIGSEGV in asmopToBool()
     //case RECEIVE:
     //case SEND:
-    //case DUMMY_READ_VOLATILE:
-    //case CRITICAL:
-    //case ENDCRITICAL:
+    case DUMMY_READ_VOLATILE:
+    case CRITICAL:
+    case ENDCRITICAL:
       assign_operands_for_cost(a, i, G, I);
       c = dryhc08iCode(ic);
       return(c);
@@ -284,8 +285,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac, &assignment_optimal);
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
-
-//#ifdef DEBUG_RALLOC_DEC
+#ifdef DEBUG_RALLOC_DEC
   std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
   {
@@ -294,7 +294,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   std::cout << "\n";
   std::cout << "Cost: " << winner.s << "\n";
   std::cout.flush();
-//#endif
+#endif
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))
     {
