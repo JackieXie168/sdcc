@@ -24,6 +24,7 @@
 extern "C"
 {
   #include "ralloc.h"
+  unsigned char dryhc08iCode (iCode *ic);
 };
 
 #define REG_A 0
@@ -94,11 +95,20 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
   if(!o || !IS_SYMOP(o))
     return(true);
  
-  operand_map_t::const_iterator oi, oi_end;
+  operand_map_t::const_iterator oi, oi2, oi_end;
   boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
   
   if(oi == oi_end)
     return(true);
+
+  // Register combinations code generation cannot handle.
+  if(a.local.find(oi->second) != a.local.end() && a.local.find((oi2 = oi, ++oi2)->second) != a.local.end())
+    {
+      const reg_t l =a.global[oi->second];
+      const reg_t h =a.global[oi2->second];
+      if(l == REG_A && h == REG_X || l == REG_H && h == REG_A || l == REG_X)
+        return(false);
+    }
   
   // In registers.
   if(a.local.find(oi->second) != a.local.end())
@@ -137,6 +147,9 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 
   switch(ic->op)
     {
+    case '+':
+      c = dryhc08iCode(ic);
+      return(c);
     default:
       return(0.0f);
     }
@@ -178,7 +191,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 
   const assignment &winner = *(T[find_root(T)].assignments.begin());
 
-#ifdef DEBUG_RALLOC_DEC
+//#ifdef DEBUG_RALLOC_DEC
   std::cout << "Winner: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
   {
@@ -187,7 +200,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   std::cout << "\n";
   std::cout << "Cost: " << winner.s << "\n";
   std::cout.flush();
-#endif
+//#endif
   // Todo: Make this an assertion
   if(winner.global.size() != boost::num_vertices(I))
     {

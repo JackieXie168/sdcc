@@ -134,6 +134,8 @@ static unsigned char SRMask[] =
 #define AOP_SIZE(op) AOP(op)->size
 #define AOP_OP(aop) aop->op
 
+static bool regalloc_dry_run;
+static unsigned char regalloc_dry_run_cost;
 
 static void
 emitBranch (char *branchop, symbol * tlbl)
@@ -8229,11 +8231,290 @@ genEndCritical (iCode * ic)
     }
 }
 
+/*---------------------------------------------------------------------------------------*/
+/* genhc08iode - generate code for HC08 based controllers for a single iCode instruction */
+/*---------------------------------------------------------------------------------------*/
+static void
+genhc08iCode (iCode *ic)
+{
+  /* if the result is marked as
+     spilt and rematerializable or code for
+     this has already been generated then
+     do nothing */
+  if (resultRemat (ic) || ic->generated)
+    return;
+
+  {
+    int i;
+    reg_info *reg;
+    symbol *sym;
+
+    initGenLineElement ();
+
+    for (i = A_IDX; i <= XA_IDX; i++)
+      {
+        reg = hc08_regWithIdx (i);
+        if (reg->aop)
+          emitcode ("", "; %s = %s offset %d", reg->name, aopName (reg->aop), reg->aopofs);
+        reg->isFree = TRUE;
+      }
+    if (IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
+      {
+        sym = OP_SYMBOL (IC_LEFT (ic));
+        if (sym->accuse == ACCUSE_HX)
+          {
+            hc08_reg_h->isFree = FALSE;
+            hc08_reg_x->isFree = FALSE;
+          }
+        else if (sym->accuse == ACCUSE_XA)
+          {
+            hc08_reg_a->isFree = FALSE;
+            if (sym->nRegs > 1)
+              hc08_reg_x->isFree = FALSE;
+          }
+      }
+    if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
+      {
+        sym = OP_SYMBOL (IC_RIGHT (ic));
+        if (sym->accuse == ACCUSE_HX)
+          {
+            hc08_reg_h->isFree = FALSE;
+            hc08_reg_x->isFree = FALSE;
+          }
+        else if (sym->accuse == ACCUSE_XA)
+          {
+            hc08_reg_a->isFree = FALSE;
+            if (sym->nRegs > 1)
+              hc08_reg_x->isFree = FALSE;
+          }
+      }
+  }
+
+  /* depending on the operation */
+  switch (ic->op)
+    {
+    case '!':
+      genNot (ic);
+      break;
+
+    case '~':
+      genCpl (ic);
+      break;
+
+    case UNARYMINUS:
+          genUminus (ic);
+          break;
+
+    case IPUSH:
+          genIpush (ic);
+          break;
+
+    case IPOP:
+      /* IPOP happens only when trying to restore a
+         spilt live range, if there is an ifx statement
+         following this pop then the if statement might
+         be using some of the registers being popped which
+         would destory the contents of the register so
+         we need to check for this condition and handle it */
+      if (ic->next && ic->next->op == IFX && regsInCommon (IC_LEFT (ic), IC_COND (ic->next)))
+        genIfx (ic->next, ic);
+      else
+        genIpop (ic);
+      break;
+
+    case CALL:
+      genCall (ic);
+      break;
+
+    case PCALL:
+      genPcall (ic);
+      break;
+
+    case FUNCTION:
+      genFunction (ic);
+      break;
+
+    case ENDFUNCTION:
+      genEndFunction (ic);
+      break;
+
+    case RETURN:
+      genRet (ic);
+      break;
+
+    case LABEL:
+      genLabel (ic);
+      break;
+
+    case GOTO:
+      genGoto (ic);
+      break;
+
+    case '+':
+      if (!genPointerGetSetOfs (ic))
+        genPlus (ic);
+      break;
+
+    case '-':
+      if (!genDjnz (ic, ifxForOp (IC_RESULT (ic), ic)))
+        genMinus (ic);
+      break;
+
+    case '*':
+      genMult (ic);
+      break;
+
+    case '/':
+      genDiv (ic);
+      break;
+
+    case '%':
+      genMod (ic);
+      break;
+
+    case '>':
+    case '<':
+    case LE_OP:
+    case GE_OP:
+      genCmp (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case NE_OP:
+    case EQ_OP:
+      genCmpEQorNE (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case AND_OP:
+      genAndOp (ic);
+      break;
+
+    case OR_OP:
+      genOrOp (ic);
+      break;
+
+    case '^':
+      genXor (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case '|':
+      genOr (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case BITWISEAND:
+      genAnd (ic, ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case INLINEASM:
+      hc08_genInline (ic);
+      break;
+
+    case RRC:
+      genRRC (ic);
+      break;
+
+    case RLC:
+      genRLC (ic);
+      break;
+
+    case GETHBIT:
+      genGetHbit (ic);
+      break;
+
+    case GETABIT:
+      genGetAbit (ic);
+      break;
+
+    case GETBYTE:
+      genGetByte (ic);
+      break;
+
+    case GETWORD:
+      genGetWord (ic);
+      break;
+
+    case LEFT_OP:
+      genLeftShift (ic);
+      break;
+
+    case RIGHT_OP:
+      genRightShift (ic);
+      break;
+
+    case GET_VALUE_AT_ADDRESS:
+      genPointerGet (ic, hasInc (IC_LEFT (ic), ic, getSize (operandType (IC_RESULT (ic)))), ifxForOp (IC_RESULT (ic), ic));
+      break;
+
+    case '=':
+      if (POINTER_SET (ic))
+        genPointerSet (ic, hasInc (IC_RESULT (ic), ic, getSize (operandType (IC_RIGHT (ic)))));
+      else
+        genAssign (ic);
+      break;
+
+    case IFX:
+      genIfx (ic, NULL);
+      break;
+
+    case ADDRESS_OF:
+      genAddrOf (ic);
+      break;
+
+    case JUMPTABLE:
+      genJumpTab (ic);
+      break;
+
+    case CAST:
+      genCast (ic);
+      break;
+
+    case RECEIVE:
+      genReceive (ic);
+      break;
+
+    case SEND:
+      addSet (&_G.sendSet, ic);
+      break;
+
+    case DUMMY_READ_VOLATILE:
+      genDummyRead (ic);
+      break;
+
+    case CRITICAL:
+      genCritical (ic);
+      break;
+
+    case ENDCRITICAL:
+      genEndCritical (ic);
+      break;
+
+    case SWAP:
+      genSwap (ic);
+      break;
+
+    default:
+      ;
+    }
+}
+
+unsigned char
+dryhc08iCode (iCode *ic)
+{
+  regalloc_dry_run = TRUE;
+  regalloc_dry_run_cost = 0;
+
+  genhc08iCode (ic);
+
+  destroy_line_list ();
+  /*freeTrace (&_G.trace.aops);*/
+
+  return (regalloc_dry_run_cost);
+}
+
 /*-----------------------------------------------------------------*/
 /* genhc08Code - generate code for HC08 based controllers          */
 /*-----------------------------------------------------------------*/
 void
-genhc08Code (iCode * lic)
+genhc08Code (iCode *lic)
 {
   iCode *ic;
   int cln = 0;
@@ -8340,263 +8621,8 @@ genhc08Code (iCode * lic)
           emitcode ("", "; [%s] ic:%d: %s", regsInUse, ic->seq, printILine (ic));
           dbuf_free (iLine);
         }
-      /* if the result is marked as
-         spilt and rematerializable or code for
-         this has already been generated then
-         do nothing */
-      if (resultRemat (ic) || ic->generated)
-        continue;
 
-      {
-        int i;
-        reg_info *reg;
-        symbol *sym;
-
-        initGenLineElement ();
-
-        for (i = A_IDX; i <= XA_IDX; i++)
-          {
-            reg = hc08_regWithIdx (i);
-            if (reg->aop)
-              emitcode ("", "; %s = %s offset %d", reg->name, aopName (reg->aop), reg->aopofs);
-            reg->isFree = TRUE;
-          }
-        if (IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
-          {
-            sym = OP_SYMBOL (IC_LEFT (ic));
-            if (sym->accuse == ACCUSE_HX)
-              {
-                hc08_reg_h->isFree = FALSE;
-                hc08_reg_x->isFree = FALSE;
-              }
-            else if (sym->accuse == ACCUSE_XA)
-              {
-                hc08_reg_a->isFree = FALSE;
-                if (sym->nRegs > 1)
-                  hc08_reg_x->isFree = FALSE;
-              }
-          }
-        if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
-          {
-            sym = OP_SYMBOL (IC_RIGHT (ic));
-            if (sym->accuse == ACCUSE_HX)
-              {
-                hc08_reg_h->isFree = FALSE;
-                hc08_reg_x->isFree = FALSE;
-              }
-            else if (sym->accuse == ACCUSE_XA)
-              {
-                hc08_reg_a->isFree = FALSE;
-                if (sym->nRegs > 1)
-                  hc08_reg_x->isFree = FALSE;
-              }
-          }
-      }
-
-      /* depending on the operation */
-      switch (ic->op)
-        {
-        case '!':
-          genNot (ic);
-          break;
-
-        case '~':
-          genCpl (ic);
-          break;
-
-        case UNARYMINUS:
-          genUminus (ic);
-          break;
-
-        case IPUSH:
-          genIpush (ic);
-          break;
-
-        case IPOP:
-          /* IPOP happens only when trying to restore a
-             spilt live range, if there is an ifx statement
-             following this pop then the if statement might
-             be using some of the registers being popped which
-             would destory the contents of the register so
-             we need to check for this condition and handle it */
-          if (ic->next && ic->next->op == IFX && regsInCommon (IC_LEFT (ic), IC_COND (ic->next)))
-            genIfx (ic->next, ic);
-          else
-            genIpop (ic);
-          break;
-
-        case CALL:
-          genCall (ic);
-          break;
-
-        case PCALL:
-          genPcall (ic);
-          break;
-
-        case FUNCTION:
-          genFunction (ic);
-          break;
-
-        case ENDFUNCTION:
-          genEndFunction (ic);
-          break;
-
-        case RETURN:
-          genRet (ic);
-          break;
-
-        case LABEL:
-          genLabel (ic);
-          break;
-
-        case GOTO:
-          genGoto (ic);
-          break;
-
-        case '+':
-          if (!genPointerGetSetOfs (ic))
-            genPlus (ic);
-          break;
-
-        case '-':
-          if (!genDjnz (ic, ifxForOp (IC_RESULT (ic), ic)))
-            genMinus (ic);
-          break;
-
-        case '*':
-          genMult (ic);
-          break;
-
-        case '/':
-          genDiv (ic);
-          break;
-
-        case '%':
-          genMod (ic);
-          break;
-
-        case '>':
-        case '<':
-        case LE_OP:
-        case GE_OP:
-          genCmp (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case NE_OP:
-        case EQ_OP:
-          genCmpEQorNE (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case AND_OP:
-          genAndOp (ic);
-          break;
-
-        case OR_OP:
-          genOrOp (ic);
-          break;
-
-        case '^':
-          genXor (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case '|':
-          genOr (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case BITWISEAND:
-          genAnd (ic, ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case INLINEASM:
-          hc08_genInline (ic);
-          break;
-
-        case RRC:
-          genRRC (ic);
-          break;
-
-        case RLC:
-          genRLC (ic);
-          break;
-
-        case GETHBIT:
-          genGetHbit (ic);
-          break;
-
-        case GETABIT:
-          genGetAbit (ic);
-          break;
-
-        case GETBYTE:
-          genGetByte (ic);
-          break;
-
-        case GETWORD:
-          genGetWord (ic);
-          break;
-
-        case LEFT_OP:
-          genLeftShift (ic);
-          break;
-
-        case RIGHT_OP:
-          genRightShift (ic);
-          break;
-
-        case GET_VALUE_AT_ADDRESS:
-          genPointerGet (ic, hasInc (IC_LEFT (ic), ic, getSize (operandType (IC_RESULT (ic)))), ifxForOp (IC_RESULT (ic), ic));
-          break;
-
-        case '=':
-          if (POINTER_SET (ic))
-            genPointerSet (ic, hasInc (IC_RESULT (ic), ic, getSize (operandType (IC_RIGHT (ic)))));
-          else
-            genAssign (ic);
-          break;
-
-        case IFX:
-          genIfx (ic, NULL);
-          break;
-
-        case ADDRESS_OF:
-          genAddrOf (ic);
-          break;
-
-        case JUMPTABLE:
-          genJumpTab (ic);
-          break;
-
-        case CAST:
-          genCast (ic);
-          break;
-
-        case RECEIVE:
-          genReceive (ic);
-          break;
-
-        case SEND:
-          addSet (&_G.sendSet, ic);
-          break;
-
-        case DUMMY_READ_VOLATILE:
-          genDummyRead (ic);
-          break;
-
-        case CRITICAL:
-          genCritical (ic);
-          break;
-
-        case ENDCRITICAL:
-          genEndCritical (ic);
-          break;
-
-        case SWAP:
-          genSwap (ic);
-          break;
-
-        default:
-          ic = ic;
-        }
+      genhc08iCode(ic);
 
       if (!hc08_reg_a->isFree)
         DD (emitcode ("", "; forgot to free a"));
@@ -8624,3 +8650,4 @@ genhc08Code (iCode * lic)
   /* destroy the line list */
   destroy_line_list ();
 }
+

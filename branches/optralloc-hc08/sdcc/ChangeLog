@@ -1,3 +1,24 @@
+2012-04-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCralloc.hpp,
+	  src/z80/gen.c,
+	  src/hc08/ralloc2.cc,
+	  src/hc08/gen.c,
+	  src/hc08/ralloc.c:
+	  Preparations for optimal register allocator for hc08.
+
+2012-04-11 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCcse.c (ifOperandsHave): fixed bug #3516746
+
+2012-04-11 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/string.c:
+	  Added test for strrchr().
+	* src/z80/gen.c,
+	  src/SDCCpeeph.c:
+	  Fixed memory leaks.
+
 2012-04-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCralloc.hpp,
