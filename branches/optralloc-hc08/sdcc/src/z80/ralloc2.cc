@@ -111,7 +111,7 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
 
 // Check that the operand is either fully in registers or fully in memory.
 template <class G_t, class I_t>
-bool operand_sane(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static bool operand_sane(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   if(!o || !IS_SYMOP(o))
     return(true);
@@ -153,8 +153,8 @@ static float default_instruction_cost(const assignment &a, unsigned short int i,
   return(c);
 }
 
-template <class G_t, class I_t> bool
-inst_sane(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+template <class G_t, class I_t>
+static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
 
@@ -425,7 +425,7 @@ static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 
 // Return true, iff the operand is placed (partially) in r.
 template <class G_t>
-bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, unsigned short int i, const G_t &G)
+static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, unsigned short int i, const G_t &G)
 {
   if(!o || !IS_SYMOP(o))
     return(false);
@@ -460,7 +460,7 @@ bool operand_on_stack(const operand *o, const assignment &a, unsigned short int 
 }
 
 template <class G_t>
-bool operand_is_pair(const operand *o, const assignment &a, unsigned short int i, const G_t &G)
+static bool operand_is_pair(const operand *o, const assignment &a, unsigned short int i, const G_t &G)
 {
   if(!o || !IS_SYMOP(o))
     return(false);
@@ -487,7 +487,7 @@ bool operand_is_pair(const operand *o, const assignment &a, unsigned short int i
 }
 
 template <class G_t, class I_t>
-bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
   const i_assignment_t &ia = a.i_assignment;
@@ -599,7 +599,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
 }
 
 template <class G_t, class I_t>
-bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
 
@@ -782,7 +782,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 }
 
 template <class G_t, class I_t>
-bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
 
@@ -1053,7 +1053,7 @@ void assign_operands_for_cost(const assignment &a, unsigned short int i, const G
 
 // Cost function.
 template <class G_t, class I_t>
-float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   iCode *ic = G[i].ic;
   float c;

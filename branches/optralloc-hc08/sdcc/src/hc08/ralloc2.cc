@@ -26,6 +26,10 @@ extern "C"
   #include "ralloc.h"
 };
 
+#define REG_A 0
+#define REG_H 1
+#define REG_X 2
+
 template <class I_t>
 static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
@@ -68,11 +72,74 @@ static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
         }
 }
 
+// Return true, iff the operand is placed (partially) in r.
+template <class G_t>
+static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, unsigned short int i, const G_t &G)
+{
+  if(!o || !IS_SYMOP(o))
+    return(false);
+
+  operand_map_t::const_iterator oi, oi_end;
+  for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+    if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
+      return(true);
+
+  return(false);
+}
+
+// Check that the operand is either fully in registers or fully in memory.
+template <class G_t, class I_t>
+static bool operand_sane(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  if(!o || !IS_SYMOP(o))
+    return(true);
+ 
+  operand_map_t::const_iterator oi, oi_end;
+  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
+  
+  if(oi == oi_end)
+    return(true);
+  
+  // In registers.
+  if(a.local.find(oi->second) != a.local.end())
+    {
+      while(++oi != oi_end)
+        if(a.local.find(oi->second) == a.local.end())
+          return(false);
+    }
+  else
+    {
+       while(++oi != oi_end)
+        if(a.local.find(oi->second) != a.local.end())
+          return(false);
+    }
+ 
+  return(true);
+}
+
+template <class G_t, class I_t>
+static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+
+  return(operand_sane(IC_RESULT(ic), a, i, G, I) && operand_sane(IC_LEFT(ic), a, i, G, I) && operand_sane(IC_RIGHT(ic), a, i, G, I));
+}
+
 // Cost function.
 template <class G_t, class I_t>
-float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
-  return(0.0f);
+  iCode *ic = G[i].ic;
+  float c;
+
+  if(!inst_sane(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
+  switch(ic->op)
+    {
+    default:
+      return(0.0f);
+    }
 }
 
 // For early removal of assignments that cannot be extended to valid assignments.
