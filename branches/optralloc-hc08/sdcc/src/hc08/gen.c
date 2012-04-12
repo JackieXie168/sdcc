@@ -7545,6 +7545,7 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
   operand *result = IC_RESULT (ic);
   int size, offset;
   sym_link *retype = getSpec (operandType (result));
+  bool postH = FALSE;
 
   D (emitcode (";     genPointerGet", ""));
 
@@ -7597,7 +7598,12 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
               regalloc_dry_run_cost += 2;
               hc08_dirtyReg (hc08_reg_hx, FALSE);
             }
-          if (!ifx)
+          if (!ifx && pi && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset] == hc08_reg_h)
+            {
+              pushReg(hc08_reg_a, FALSE);
+              postH = TRUE;
+            }
+          else if (!ifx)
             storeRegToAop (hc08_reg_a, AOP (result), offset);
           offset--;
         }
@@ -7614,13 +7620,16 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
       pi->generated = 1;
     }
 
+  if (postH)
+    pullReg (hc08_reg_h);
+
   if (ifx && !ifx->generated)
     {
       genIfxJump (ifx, "a");
     }
 
   hc08_freeReg (hc08_reg_hx);
-
+D (emitcode (";     done", ""));
 }
 
 /*-----------------------------------------------------------------*/
