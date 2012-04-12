@@ -1,5 +1,14 @@
 2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/hc08/ralloc.c:
+	  Cleanup.
+	* src/hc08/gen.c:
+	  Made genDjnz() more flexible.
+	* src/hc08/ralloc2.cc:
+	  Disallow X, A for now.
+
+2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc,
 	  src/hc08/ralloc2.cc:

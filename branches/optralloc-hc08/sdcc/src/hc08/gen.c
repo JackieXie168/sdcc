@@ -6839,7 +6839,8 @@ genLeftShift (iCode * ic)
     }
   rmwWithReg ("dec", hc08_reg_x);
   emitBranch ("bne", tlbl);
-  emitLabel (tlbl1);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl1);
   hc08_freeReg (hc08_reg_x);
 
   freeAsmop (result, NULL, ic, TRUE);
@@ -8451,9 +8452,24 @@ genDjnz (iCode * ic, iCode * ifx)
   lbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   lbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
-  if (!regalloc_dry_run)
-    emitcode ("dbnz", "%s,%05d$", aopAdrStr (AOP (IC_RESULT (ic)), 0, FALSE), labelKey2num (lbl->key));
-  regalloc_dry_run_cost += 3; // TODO: Stack aop.
+  if (IS_AOP_A (AOP (IC_RESULT (ic))))
+    {
+      if (!regalloc_dry_run)
+        emitcode ("dbnza", "%05d$", labelKey2num (lbl->key));
+      regalloc_dry_run_cost += 2;
+    }
+  else if (IS_AOP_X (AOP (IC_RESULT (ic))))
+    {
+      if (!regalloc_dry_run)
+        emitcode ("dbnzx", "%05d$", labelKey2num (lbl->key));
+      regalloc_dry_run_cost += 2;
+    }
+  else
+    {
+      if (!regalloc_dry_run)
+        emitcode ("dbnz", "%s,%05d$", aopAdrStr (AOP (IC_RESULT (ic)), 0, FALSE), labelKey2num (lbl->key));
+      regalloc_dry_run_cost += 3; // TODO: Stack aop cost.
+    }
 
   emitBranch ("bra", lbl1);
   if (!regalloc_dry_run)

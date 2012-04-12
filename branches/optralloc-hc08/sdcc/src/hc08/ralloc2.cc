@@ -139,6 +139,42 @@ static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, c
 }
 
 template <class G_t, class I_t>
+static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+
+  const i_assignment_t &ia = a.i_assignment;
+
+  bool unused_X = (ia.registers[REG_X][1] < 0);
+  bool unused_A = (ia.registers[REG_A][1] < 0);
+
+  if(unused_X && unused_A)
+    return(true);
+
+  /*if(ic->op == IFX || ic->op == JUMPTABLE)
+    return(false);
+
+  const operand *left = IC_LEFT(ic);
+  const operand *right = IC_RIGHT(ic);
+  const operand *result = IC_RESULT(ic);
+
+  bool result_in_X = operand_in_reg(result, REG_X, ia, i, G);
+  bool result_in_A = operand_in_reg(result, REG_A, ia, i, G);
+
+  const std::set<var_t> &dying = G[i].dying;
+
+  bool dying_X = result_in_X || dying.find(ia.registers[REG_X][1]) != dying.end() || dying.find(ia.registers[REG_X][0]) != dying.end();
+  bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
+
+  bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
+
+  if(result_only_XA)
+    return(true);*/
+
+  return(false);
+}
+
+template <class G_t, class I_t>
 void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   if(!o || !IS_SYMOP(o))
@@ -204,7 +240,12 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   iCode *ic = G[i].ic;
   float c;
 
+  wassert (TARGET_IS_HC08);
+
   if(!inst_sane(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
+  if(!XAinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
   switch(ic->op)
@@ -261,6 +302,8 @@ static bool assignment_hopeless(const assignment &a, unsigned short int i, const
 template <class T_t>
 static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T)
 {
+  a = *T[t].assignments.begin();
+
   std::set<var_t>::const_iterator vi, vi_end;
   for(vi = T[t].alive.begin(), vi_end = T[t].alive.end(); vi != vi_end; ++vi)
     a.local.insert(*vi);
