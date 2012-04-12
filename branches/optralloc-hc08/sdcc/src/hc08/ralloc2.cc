@@ -151,7 +151,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(unused_X && unused_A)
     return(true);
 
-  /*if(ic->op == IFX || ic->op == JUMPTABLE)
+  if(ic->op == IFX || ic->op == JUMPTABLE)
     return(false);
 
   const operand *left = IC_LEFT(ic);
@@ -168,8 +168,15 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
-  if(result_only_XA)
-    return(true);*/
+  if(!result_only_XA)
+    return(false);
+
+  if (ic->op == SEND && ic->next && ic->next->op != CALL)
+    return(false);
+
+  // TODO: Allow more!
+  if (ic->op == LEFT_OP || ic->op == RIGHT_OP && isOperandLiteral (right) && getSize(operandType(left)) == 2)
+    return (true);
 
   return(false);
 }

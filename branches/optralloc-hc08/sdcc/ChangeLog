@@ -1,5 +1,11 @@
 2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCicode.h,
+	  src/SDCCicode.c:
+	  Made isOperandLiteral() work on const operand *.
+
+2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/hc08/ralloc.c:
 	  Cleanup.
 	* src/hc08/gen.c:
