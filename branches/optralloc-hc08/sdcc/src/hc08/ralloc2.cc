@@ -196,9 +196,6 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(!left_in_X && !right_in_X && !left_in_A && !right_in_A)
     return(true);
 
-  if(!unused_X && !result_in_X)
-    return(false);
-
   if(left_in_A && getSize(operandType(left)) == 1)
     return(true);
 

@@ -8393,13 +8393,19 @@ genCast (iCode * ic)
     }
   else
     {
+      bool save_a = (AOP(result)->type == AOP_REG && AOP(result)->aopu.aop_reg[0] == hc08_reg_a);
+
       /* we need to extend the sign :{ */
+      if (save_a)
+        pushReg(hc08_reg_a, FALSE);
       loadRegFromAop (hc08_reg_a, AOP (right), AOP_SIZE (right) - 1);
       accopWithMisc ("rola", "");
       accopWithMisc ("clra", "");
       accopWithMisc ("sbc", zero);
       while (size--)
         storeRegToAop (hc08_reg_a, AOP (result), offset++);
+      if (save_a)
+        pullReg(hc08_reg_a);
     }
 
   /* we are done hurray !!!! */
