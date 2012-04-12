@@ -533,6 +533,7 @@ static symbol *
 createStackSpil (symbol * sym)
 {
   symbol *sloc = NULL;
+  struct dbuf_s dbuf;
   int useXstack, model;
 
   char slocBuffer[30];
@@ -553,14 +554,10 @@ createStackSpil (symbol * sym)
      we need to allocate this on the stack : this is really a
      hack!! but cannot think of anything better at this time */
 
-  if (sprintf (slocBuffer, "sloc%d", _G.slocNum++) >= sizeof (slocBuffer))
-    {
-      fprintf (stderr, "***Internal error: slocBuffer overflowed: %s:%d\n",
-               __FILE__, __LINE__);
-      exit (1);
-    }
-
-  sloc = newiTemp (slocBuffer);
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "sloc%d", _G.slocNum++);
+  sloc = newiTemp (dbuf_c_str (&dbuf));
+  dbuf_destroy (&dbuf);
 
   /* set the type to the spilling symbol */
   sloc->type = copyLinkChain (sym->type);

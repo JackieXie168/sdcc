@@ -1,5 +1,14 @@
 2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCset.c:
+	  Additional assertion.
+	* src/hc08/ralloc.c:
+	  Avoid buffer overflow.
+	* src/hc08/ralloc2.cc:
+	  Do not use assignment for now.
+
+2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCicode.h,
 	  src/SDCCicode.c:
 	  Made isOperandLiteral() work on const operand *.

@@ -160,6 +160,10 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   bool result_in_X = operand_in_reg(result, REG_X, ia, i, G);
   bool result_in_A = operand_in_reg(result, REG_A, ia, i, G);
+  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
+  bool left_in_A = operand_in_reg(left, REG_A, ia, i, G);
+  bool right_in_X = operand_in_reg(right, REG_X, ia, i, G);
+  bool right_in_A = operand_in_reg(right, REG_A, ia, i, G);
 
   const std::set<var_t> &dying = G[i].dying;
 
@@ -175,8 +179,20 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     return(false);
 
   // TODO: Allow more!
-  if (ic->op == LEFT_OP || ic->op == RIGHT_OP && isOperandLiteral (right) && getSize(operandType(left)) == 2)
+  if(ic->op == LEFT_OP || ic->op == RIGHT_OP && isOperandLiteral (right) && getSize(operandType(left)) == 2)
     return (true);
+
+  if(!left_in_X && !right_in_X && !left_in_A && !right_in_A)
+    return(true);
+
+  if(left_in_X || right_in_X)
+    return(false);
+
+  if(left_in_A && getSize(operandType(left)) == 1)
+    return(true);
+
+  if(right_in_A && getSize(operandType(right)) == 1)
+    return(true);
 
   return(false);
 }
@@ -365,7 +381,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   for(unsigned int v = 0; v < boost::num_vertices(I); v++)
     {
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
-      if(winner.global[v] >= 0)
+      /*if(winner.global[v] >= 0)
         { 
           if(I[v].size == 1)
             {
@@ -382,7 +398,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
               sym->regs[I[v].byte] = 0;
             }
         }
-      else
+      else*/
         {
           for(int i = 0; i < I[v].size; i++)
             sym->regs[i] = 0;
