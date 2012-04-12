@@ -1241,8 +1241,9 @@ static bool assignment_hopeless(const assignment &a, unsigned short int i, const
   return(false);
 }
 
+// Increase chance of finding good compatible assignments at join nodes.
 template <class T_t>
-void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T)
+static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T)
 {
   const assignment_list_t &alist = T[t].assignments;
 

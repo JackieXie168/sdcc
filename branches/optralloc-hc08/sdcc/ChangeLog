@@ -1,3 +1,10 @@
+2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc,
+	  src/hc08/ralloc2.cc:
+	  Make optimal register allocator less port-specific.
+
 2012-04-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCralloc.hpp,

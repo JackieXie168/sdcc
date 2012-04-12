@@ -220,6 +220,10 @@ static float rough_cost_estimate(const assignment &a, unsigned short int i, cons
 template <class I_t>
 static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
 
+// Port-specific
+template <class T_t>
+static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T);
+
 inline void
 add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
 {
@@ -896,9 +900,6 @@ void get_best_local_assignment(assignment &a, typename boost::graph_traits<T_t>:
 	
   a = *ai_best;
 }
-
-template <class T_t>
-void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T);
 
 // Handle nodes in the tree decomposition, by detecting their type and calling the appropriate function. Recurses.
 template <class T_t, class G_t, class I_t>

@@ -104,7 +104,7 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
   if(oi == oi_end)
     return(true);
 
-  // Register combinations code generation cannot handle.
+  // Register combinations code generation cannot handle yet (AX, AH, XH, HA).
   if(a.local.find(oi->second) != a.local.end() && a.local.find((oi2 = oi, ++oi2)->second) != a.local.end())
     {
       const reg_t l =a.global[oi->second];
@@ -250,13 +250,23 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     }
 }
 
-// For early removal of assignments that cannot be extended to valid assignments.
+// For early removal of assignments that cannot be extended to valid assignments. This is just a dummy for now, it probably isn't really needed for hc08 due to the low number of registers.
 template <class G_t, class I_t>
 static bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar)
 {
   return(false);
 }
 
+// Increase chance of finding good compatible assignments at join nodes. This is just a dummy for now, it probably isn't really needed for hc08 due to the low number of registers.
+template <class T_t>
+static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T)
+{
+  std::set<var_t>::const_iterator vi, vi_end;
+  for(vi = T[t].alive.begin(), vi_end = T[t].alive.end(); vi != vi_end; ++vi)
+    a.local.insert(*vi);
+}
+
+// This is just a dummy for now, it probably isn't really needed for hc08 due to the low number of registers.
 template <class G_t, class I_t>
 static float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
