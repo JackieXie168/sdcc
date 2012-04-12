@@ -31,8 +31,8 @@ extern "C"
 };
 
 #define REG_A 0
-#define REG_H 1
-#define REG_X 2
+#define REG_X 1
+#define REG_H 2
 
 template <class I_t>
 static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
@@ -107,8 +107,8 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
   // Register combinations code generation cannot handle yet (AX, AH, XH, HA).
   if(a.local.find(oi->second) != a.local.end() && a.local.find((oi2 = oi, ++oi2)->second) != a.local.end())
     {
-      const reg_t l =a.global[oi->second];
-      const reg_t h =a.global[oi2->second];
+      const reg_t l = a.global[oi->second];
+      const reg_t h = a.global[oi2->second];
       if(l == REG_X && h == REG_A || l == REG_A && h == REG_H || l == REG_H)
         return(false);
     }
@@ -151,6 +151,10 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(unused_X && unused_A)
     return(true);
 
+#if 0
+  std::cout << "XAinst_ok: at (" << i << ", " << ic->key << ")\nX = (" << ia.registers[REG_X][0] << ", " << ia.registers[REG_X][1] << "), A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << ")inst " << i << ", " << ic->key << "\n";
+#endif
+
   if(ic->op == IFX || ic->op == JUMPTABLE)
     return(false);
 
@@ -172,6 +176,13 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
+#if 0
+  std::cout << "Result in X: " << result_in_X << ", result in A: " << result_in_A << "\n";
+  std::cout << "Unused X: " << unused_X << ", unused A: " << unused_A << "\n";
+  std::cout << "Dying X: " << dying_X << ", dying A: " << dying_A << "\n";
+  std::cout << "Result only XA: " << result_only_XA << "\n";
+#endif
+
   if(!result_only_XA)
     return(false);
 
@@ -185,7 +196,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(!left_in_X && !right_in_X && !left_in_A && !right_in_A)
     return(true);
 
-  if(left_in_X || right_in_X)
+  if(!unused_X && !result_in_X)
     return(false);
 
   if(left_in_A && getSize(operandType(left)) == 1)
@@ -302,7 +313,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case JUMPTABLE:
     //case CAST: // SIGSEGV in asmopToBool()
     //case RECEIVE:
-    case SEND:
+    //case SEND: // Messes up _G.sendSet
     case DUMMY_READ_VOLATILE:
     case CRITICAL:
     case ENDCRITICAL:
@@ -381,7 +392,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   for(unsigned int v = 0; v < boost::num_vertices(I); v++)
     {
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
-      /*if(winner.global[v] >= 0)
+      if(winner.global[v] >= 0)
         { 
           if(I[v].size == 1)
             {
@@ -398,7 +409,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
               sym->regs[I[v].byte] = 0;
             }
         }
-      else*/
+      else
         {
           for(int i = 0; i < I[v].size; i++)
             sym->regs[i] = 0;

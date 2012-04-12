@@ -1,5 +1,12 @@
 2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/hc08/ralloc2.cc:
+	  Fix checking of XA and reenable use of assignment.
+	* src/hc08/gen.c:
+	  Additional debugging output.
+
+2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCset.c:
 	  Additional assertion.
 	* src/hc08/ralloc.c:

@@ -2679,16 +2679,18 @@ genIpop (iCode * ic)
 /* genSend - gen code for SEND                                     */
 /*-----------------------------------------------------------------*/
 static void
-genSend (set * sendSet)
+genSend (set *sendSet)
 {
   iCode *sic;
+
+  D (emitcode (";", "genSend"));
 
   for (sic = setFirstItem (sendSet); sic; sic = setNextItem (sendSet))
     {
       int size, offset = 0;
       aopOp (IC_LEFT (sic), sic, FALSE);
       size = AOP_SIZE (IC_LEFT (sic));
-
+  D (emitcode (";", "sending something"));
       if (sic->argreg)
         {
           offset = size - 1;
