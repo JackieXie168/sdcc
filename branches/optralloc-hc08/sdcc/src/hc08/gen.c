@@ -8661,6 +8661,10 @@ genhc08iCode (iCode *ic)
             if (sym->nRegs > 1)
               hc08_reg_x->isFree = FALSE;
           }
+        else if (!sym->isspilt)
+          {
+            sym->regs[0]->isFree = FALSE;
+          }
       }
     if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
       {
@@ -8675,6 +8679,10 @@ genhc08iCode (iCode *ic)
             hc08_reg_a->isFree = FALSE;
             if (sym->nRegs > 1)
               hc08_reg_x->isFree = FALSE;
+          }
+        else if (!sym->isspilt)
+          {
+            sym->regs[0]->isFree = FALSE;
           }
       }
   }
