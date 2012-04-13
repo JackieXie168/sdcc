@@ -8697,6 +8697,17 @@ genhc08iCode (iCode *ic)
         updateiTempRegisterUse (IC_LEFT (ic));
         updateiTempRegisterUse (IC_RIGHT (ic));
       }
+
+    for (i = A_IDX; i <= X_IDX; i++)
+      {
+        if (bitVectBitValue (ic->rSurv, i))
+          {
+            hc08_regWithIdx (i)->isDead = FALSE;
+            hc08_regWithIdx (i)->isFree = FALSE;
+          }
+        else
+          hc08_regWithIdx (i)->isDead = TRUE;
+      }
   }
 
   /* depending on the operation */

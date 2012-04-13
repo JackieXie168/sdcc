@@ -53,7 +53,8 @@ typedef struct reg_info
     short mask;			/* bitmask for pair allocation */
     struct asmop *aop;		/* last operand */
     int aopofs;			/* last operand offset */
-    unsigned isFree:1;		/* is currently unassigned  */
+    unsigned isFree:1;		/* is currently unassigned */
+    unsigned isDead:1;      /* does not need to survive current instruction */
   }
 reg_info;
 extern reg_info regshc08[];

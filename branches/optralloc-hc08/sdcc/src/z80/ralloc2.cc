@@ -964,7 +964,7 @@ bool DEinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 }
 
 template <class G_t, class I_t>
-void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+static void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   iCode *ic = G[i].ic;
   
@@ -978,7 +978,7 @@ void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G,
 }
 
 template<class G_t>
-void unset_surviving_regs(unsigned short int i, const G_t &G)
+static void unset_surviving_regs(unsigned short int i, const G_t &G)
 {
   iCode *ic = G[i].ic;
   
