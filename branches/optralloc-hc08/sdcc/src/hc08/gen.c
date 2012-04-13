@@ -6834,7 +6834,8 @@ genLeftShift (iCode * ic)
   symbol *tlbl, *tlbl1;
   char *shift;
   asmop *aopResult;
-  bool needpullx;
+  bool needpullcountreg;
+  reg_info *countreg = NULL;
 
   D (emitcode (";     genLeftShift", ""));
 
@@ -6885,25 +6886,32 @@ genLeftShift (iCode * ic)
   offset = 0;
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
-  needpullx = pushRegIfSurv (hc08_reg_x);
-  loadRegFromAop (hc08_reg_x, AOP (right), 0);
-  emitcode ("tstx", "");
+  countreg = (hc08_reg_x->isDead && !IS_AOP_X (AOP (result)) && !IS_AOP_XA (AOP (result)) && !IS_AOP_HX (AOP (result))) ? hc08_reg_x : hc08_reg_a;
+
+  needpullcountreg = pushRegIfSurv (countreg);
+  loadRegFromAop (countreg, AOP (right), 0);
+  emitcode (countreg == hc08_reg_a ? "tsta" : "tstx", "");
   regalloc_dry_run_cost++;
   emitBranch ("beq", tlbl1);
   if (!regalloc_dry_run)
     emitLabel (tlbl);
 
   shift = "lsl";
+  if (countreg == hc08_reg_a && (IS_AOP_A (AOP (result)) || IS_AOP_XA (AOP (result))))
+    pushReg (hc08_reg_a, TRUE);
   for (offset = 0; offset < size; offset++)
     {
       rmwWithAop (shift, AOP (result), offset);
       shift = "rol";
     }
-  rmwWithReg ("dec", hc08_reg_x);
-  emitBranch ("bne", tlbl);
+  if (countreg == hc08_reg_a && (IS_AOP_A (AOP (result)) || IS_AOP_XA (AOP (result))))
+    pullReg (hc08_reg_a);
+  if (!regalloc_dry_run)
+    emitcode (countreg == hc08_reg_a ? "dbnza" : "dbnzx", "%05d$", labelKey2num (tlbl->key));
+  regalloc_dry_run_cost += 2;
   if (!regalloc_dry_run)
     emitLabel (tlbl1);
-  pullOrFreeReg (hc08_reg_x, needpullx);
+  pullOrFreeReg (countreg, needpullcountreg);
 
   freeAsmop (result, NULL, ic, TRUE);
   freeAsmop (right, NULL, ic, TRUE);

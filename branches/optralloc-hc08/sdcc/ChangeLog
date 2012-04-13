@@ -3,7 +3,7 @@
 	* src/SDCCralloc.hpp,
 	  src/hc08/ralloc2.cc,
 	  src/hc08/gen.c,
-	  Made code generation more robust wrt. surviving registers.
+	  Made hc08 code generation more robust wrt. surviving registers and register operands.
 
 2012-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
