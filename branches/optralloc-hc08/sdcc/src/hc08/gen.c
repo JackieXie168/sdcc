@@ -426,9 +426,25 @@ pullNull (int n)
 /*                 push was performed, false otherwise.                     */
 /*--------------------------------------------------------------------------*/
 static bool
-pushRegIfUsed (reg_info * reg)
+pushRegIfUsed (reg_info *reg)
 {
   if (!reg->isFree)
+    {
+      pushReg (reg, TRUE);
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
+/*--------------------------------------------------------------------------*/
+/* pushRegIfSurv - Push register reg if marked surviving. Returns true if   */
+/*                 the push was performed, false otherwise.                 */
+/*--------------------------------------------------------------------------*/
+static bool
+pushRegIfSurv (reg_info *reg)
+{
+  if (!reg->isDead)
     {
       pushReg (reg, TRUE);
       return TRUE;
@@ -2203,7 +2219,7 @@ asmopToBool (asmop *aop, bool resultInA)
         }
       else
         {
-          werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "Bad rIdx in asmToBool");
+          werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "Bad rIdx in asmopToBool");
           return;
         }
       break;
@@ -2328,16 +2344,20 @@ asmopToBool (asmop *aop, bool resultInA)
 static void
 genNot (iCode * ic)
 {
+  bool needpulla;
+
   D (emitcode (";     genNot", ""));
 
   /* assign asmOps to operand & result */
   aopOp (IC_LEFT (ic), ic, FALSE);
   aopOp (IC_RESULT (ic), ic, TRUE);
 
+  needpulla = pushRegIfSurv (hc08_reg_a);
   asmopToBool (AOP (IC_LEFT (ic)), TRUE);
   emitcode ("eor", one);
   regalloc_dry_run_cost += 2;
   storeRegToFullAop (hc08_reg_a, AOP (IC_RESULT (ic)), FALSE);
+  pullOrFreeReg (hc08_reg_a, needpulla);
 
   freeAsmop (IC_RESULT (ic), NULL, ic, TRUE);
   freeAsmop (IC_LEFT (ic), NULL, ic, TRUE);
@@ -2397,7 +2417,7 @@ genUminusFloat (operand * op, operand * result)
       offset++;
     }
 
-  needpula = pushRegIfUsed (hc08_reg_a);
+  needpula = pushRegIfSurv (hc08_reg_a);
   loadRegFromAop (hc08_reg_a, AOP (op), offset);
   emitcode ("eor", "#0x80");
   regalloc_dry_run_cost += 2;
@@ -3442,16 +3462,9 @@ genMinusDec (iCode * ic)
 
   if ((AOP_TYPE (left) == AOP_DIR) && (AOP_TYPE (result) == AOP_DIR) && (icount >= -127) && (icount <= 128) && (size == 2))
     {
-      if (!IS_AOP_HX (AOP (left)))
-        {
-          needpulx = pushRegIfUsed (hc08_reg_x);
-          needpulh = pushRegIfUsed (hc08_reg_h);
-        }
-      else
-        {
-          needpulx = FALSE;
-          needpulh = FALSE;
-        }
+      needpulx = pushRegIfSurv (hc08_reg_x);
+      needpulh = pushRegIfSurv (hc08_reg_h);
+
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("aix", "#%d", -(int) icount);
       regalloc_dry_run_cost += 2;
@@ -3511,6 +3524,7 @@ genMinus (iCode * ic)
 {
   char *sub;
   int size, offset = 0;
+  bool needpulla;
 
   asmop *leftOp, *rightOp;
 
@@ -3534,6 +3548,8 @@ genMinus (iCode * ic)
   sub = "sub";
   offset = 0;
 
+  needpulla = pushRegIfSurv (hc08_reg_a);
+
   if (IS_AOP_A (rightOp))
     {
       loadRegFromAop (hc08_reg_a, rightOp, offset);
@@ -3551,6 +3567,7 @@ genMinus (iCode * ic)
       sub = "sbc";
     }
 
+  pullOrFreeReg (hc08_reg_a, needpulla);
 
 //  adjustArithmeticResult (ic);
 
@@ -4401,6 +4418,7 @@ genCmp (iCode * ic, iCode * ifx)
   unsigned long lit = 0L;
   char *sub;
   symbol *jlbl = NULL;
+  bool needpulla = FALSE;;
 
   opcode = ic->op;
 
@@ -4450,7 +4468,7 @@ genCmp (iCode * ic, iCode * ifx)
 
   if ((size == 2)
       && ((AOP_TYPE (left) == AOP_DIR) && (AOP_SIZE (left) == 2))
-      && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && hc08_reg_hx->isFree)
+      && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && hc08_reg_h->isDead && hc08_reg_x->isDead)
     {
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("cphx", "%s", aopAdrStr (AOP (right), 1, TRUE));
@@ -4490,6 +4508,7 @@ genCmp (iCode * ic, iCode * ifx)
                 }
             }
         }
+      needpulla = pushRegIfSurv (hc08_reg_a);
       while (size--)
         {
           loadRegFromAop (hc08_reg_a, AOP (left), offset);
@@ -4507,6 +4526,8 @@ genCmp (iCode * ic, iCode * ifx)
       symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       char *inst;
 
+      pullOrFreeReg (hc08_reg_a, needpulla);
+
       freeAsmop (result, NULL, ic, TRUE);
 
       inst = branchInstCmp (opcode, sign);
@@ -4523,6 +4544,9 @@ genCmp (iCode * ic, iCode * ifx)
       symbol *tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
+      if (!needpulla)
+        needpulla = pushRegIfSurv (hc08_reg_a);
+
       emitBranch (branchInstCmp (opcode, sign), tlbl1);
       loadRegFromConst (hc08_reg_a, zero);
       emitBranch ("bra", tlbl2);
@@ -4532,6 +4556,7 @@ genCmp (iCode * ic, iCode * ifx)
       if (!regalloc_dry_run)
         emitLabel (tlbl2);
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       freeAsmop (result, NULL, ic, TRUE);
     }
 }
@@ -4896,6 +4921,7 @@ genAndOp (iCode * ic)
 {
   operand *left, *right, *result;
   symbol *tlbl, *tlbl0;
+  bool needpulla;
 
   D (emitcode (";     genAndOp", ""));
 
@@ -4909,6 +4935,7 @@ genAndOp (iCode * ic)
   tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl0 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
+  needpulla = pushRegIfSurv (hc08_reg_a);
   asmopToBool (AOP (left), FALSE);
   emitBranch ("beq", tlbl0);
   asmopToBool (AOP (right), FALSE);
@@ -4925,6 +4952,7 @@ genAndOp (iCode * ic)
   hc08_freeReg (hc08_reg_a);
 
   storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
+  pullOrFreeReg(hc08_reg_a, needpulla);
 
   freeAsmop (left, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
   freeAsmop (right, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
@@ -4940,6 +4968,7 @@ genOrOp (iCode * ic)
 {
   operand *left, *right, *result;
   symbol *tlbl, *tlbl0;
+  bool needpulla;
 
   D (emitcode (";     genOrOp", ""));
 
@@ -4953,6 +4982,7 @@ genOrOp (iCode * ic)
   tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl0 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
+  needpulla = pushRegIfSurv (hc08_reg_a);
   asmopToBool (AOP (left), FALSE);
   emitBranch ("bne", tlbl0);
   asmopToBool (AOP (right), FALSE);
@@ -4969,7 +4999,7 @@ genOrOp (iCode * ic)
   hc08_freeReg (hc08_reg_a);
 
   storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
-
+  pullOrFreeReg(hc08_reg_a, needpulla);
 
   freeAsmop (left, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
   freeAsmop (right, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
@@ -5761,6 +5791,7 @@ static void
 genGetHbit (iCode * ic)
 {
   operand *left, *result;
+  bool needpulla;
 
   D (emitcode (";     genGetHbit", ""));
 
@@ -5770,6 +5801,7 @@ genGetHbit (iCode * ic)
   aopOp (result, ic, FALSE);
 
   /* get the highest order byte into a */
+  needpulla = pushRegIfSurv (hc08_reg_a);
   loadRegFromAop (hc08_reg_a, AOP (left), AOP_SIZE (left) - 1);
   emitcode ("rola", "");
   emitcode ("clra", "");
@@ -5777,7 +5809,7 @@ genGetHbit (iCode * ic)
   regalloc_dry_run_cost += 3;
   hc08_dirtyReg (hc08_reg_a, FALSE);
   storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
-  hc08_freeReg (hc08_reg_a);
+  pullOrFreeReg (hc08_reg_a, needpulla);
 
   freeAsmop (left, NULL, ic, TRUE);
   freeAsmop (result, NULL, ic, TRUE);
@@ -5924,6 +5956,7 @@ static void
 genSwap (iCode * ic)
 {
   operand *left, *result;
+  bool needpulla;
 
   D (emitcode (";     genSwap", ""));
 
@@ -5935,21 +5968,23 @@ genSwap (iCode * ic)
   switch (AOP_SIZE (left))
     {
     case 1:                    /* swap nibbles in byte */
+      needpulla = pushRegIfSurv (hc08_reg_a);
       loadRegFromAop (hc08_reg_a, AOP (left), 0);
       emitcode ("nsa", "");
       regalloc_dry_run_cost++;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       storeRegToAop (hc08_reg_a, AOP (result), 0);
-      hc08_freeReg (hc08_reg_a);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       break;
     case 2:                    /* swap bytes in a word */
       if (operandsEqu (left, result) || sameRegs (AOP (left), AOP (result)))
         {
+          needpulla = pushRegIfSurv (hc08_reg_a);
           loadRegFromAop (hc08_reg_a, AOP (left), 0);
           hc08_useReg (hc08_reg_a);
           transferAopAop (AOP (left), 1, AOP (result), 0);
           storeRegToAop (hc08_reg_a, AOP (result), 1);
-          hc08_freeReg (hc08_reg_a);
+          pullOrFreeReg (hc08_reg_a, needpulla);
         }
       else
         {
@@ -6778,6 +6813,7 @@ genLeftShift (iCode * ic)
   symbol *tlbl, *tlbl1;
   char *shift;
   asmop *aopResult;
+  bool needpullx;
 
   D (emitcode (";     genLeftShift", ""));
 
@@ -6828,6 +6864,7 @@ genLeftShift (iCode * ic)
   offset = 0;
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
+  needpullx = pushRegIfSurv (hc08_reg_x);
   loadRegFromAop (hc08_reg_x, AOP (right), 0);
   emitcode ("tstx", "");
   regalloc_dry_run_cost++;
@@ -6845,7 +6882,7 @@ genLeftShift (iCode * ic)
   emitBranch ("bne", tlbl);
   if (!regalloc_dry_run)
     emitLabel (tlbl1);
-  hc08_freeReg (hc08_reg_x);
+  pullOrFreeReg (hc08_reg_x, needpullx);
 
   freeAsmop (result, NULL, ic, TRUE);
   freeAsmop (right, NULL, ic, TRUE);
@@ -7111,6 +7148,7 @@ genRightShift (iCode * ic)
   char *shift;
   bool sign;
   asmop *aopResult;
+  bool needpullx;
 
   D (emitcode (";     genRightShift", ""));
 
@@ -7173,6 +7211,7 @@ genRightShift (iCode * ic)
   offset = 0;
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
+  needpullx = pushRegIfSurv (hc08_reg_x);
   loadRegFromAop (hc08_reg_x, AOP (right), 0);
   emitcode ("tstx", "");
   regalloc_dry_run_cost++;
@@ -7190,7 +7229,7 @@ genRightShift (iCode * ic)
   emitBranch ("bne", tlbl);
   if (!regalloc_dry_run)
     emitLabel (tlbl1);
-  hc08_freeReg (hc08_reg_x);
+  pullOrFreeReg (hc08_reg_x, needpullx);
 
   freeAsmop (result, NULL, ic, TRUE);
   freeAsmop (right, NULL, ic, TRUE);
@@ -8331,8 +8370,10 @@ genCast (iCode * ic)
 
   if (IS_BOOL (operandType (result)))
     {
+      bool needpulla = pushRegIfSurv (hc08_reg_a);
       asmopToBool (AOP (right), TRUE);
       storeRegToAop (hc08_reg_a, AOP (result), 0);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       goto release;
     }
 
@@ -8406,7 +8447,7 @@ genCast (iCode * ic)
     }
   else
     {
-      bool save_a = (AOP(result)->type == AOP_REG && AOP(result)->aopu.aop_reg[0] == hc08_reg_a);
+      bool save_a = (AOP(result)->type == AOP_REG && AOP(result)->aopu.aop_reg[0] == hc08_reg_a || !hc08_reg_a->isDead);
 
       /* we need to extend the sign :{ */
       if (save_a)
@@ -8440,6 +8481,9 @@ genDjnz (iCode * ic, iCode * ifx)
     return 0;
 
   D (emitcode (";     genDjnz", ""));
+
+  if (regalloc_dry_run) /* TODO: Handle exact cost here correctly! */
+    return (0);
 
   /* if the if condition has a false label
      then we cannot save */

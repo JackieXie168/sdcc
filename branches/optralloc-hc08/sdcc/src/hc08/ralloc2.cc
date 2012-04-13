@@ -145,41 +145,65 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   const i_assignment_t &ia = a.i_assignment;
 
-  bool unused_X = (ia.registers[REG_X][1] < 0);
   bool unused_A = (ia.registers[REG_A][1] < 0);
+  bool unused_H = (ia.registers[REG_H][1] < 0);
+  bool unused_X = (ia.registers[REG_X][1] < 0);
+
+  // Instructions that can handle anything.
+  if(ic->op == '!' ||
+    ic->op == UNARYMINUS ||
+    ic->op == FUNCTION ||
+    ic->op == ENDFUNCTION ||
+    ic->op == LABEL ||
+    ic->op == GOTO ||
+    ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
+    ic->op == AND_OP ||
+    ic->op == OR_OP ||
+    ic->op == GETHBIT ||
+    ic->op ==  LEFT_OP ||
+    ic->op == '=' && !POINTER_SET(ic) ||
+    ic->op == CAST ||
+    ic->op == SWAP)
+    return(true);
+
+  if(ic->op == IFX && ic->generated)
+    return(true);
+
+  if(unused_X && unused_A && unused_H)
+    return(true);
 
   // Todo: Allow more use of h
   if (ia.registers[REG_H][1] >= 0 && I[ia.registers[REG_H][1]].size <= 1 || ia.registers[REG_H][0] >= 0 && I[ia.registers[REG_H][0]].size <= 1 )
     return(false);
 
-  if(unused_X && unused_A)
-    return(true);
-
 #if 0
   std::cout << "XAinst_ok: at (" << i << ", " << ic->key << ")\nX = (" << ia.registers[REG_X][0] << ", " << ia.registers[REG_X][1] << "), A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << ")inst " << i << ", " << ic->key << "\n";
 #endif
-
-  if(ic->op == IFX || ic->op == JUMPTABLE)
-    return(false);
 
   const operand *left = IC_LEFT(ic);
   const operand *right = IC_RIGHT(ic);
   const operand *result = IC_RESULT(ic);
 
-  bool result_in_X = operand_in_reg(result, REG_X, ia, i, G);
   bool result_in_A = operand_in_reg(result, REG_A, ia, i, G);
-  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
+  bool result_in_H = operand_in_reg(result, REG_H, ia, i, G);
+  bool result_in_X = operand_in_reg(result, REG_X, ia, i, G);
   bool left_in_A = operand_in_reg(left, REG_A, ia, i, G);
-  bool right_in_X = operand_in_reg(right, REG_X, ia, i, G);
+  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
   bool right_in_A = operand_in_reg(right, REG_A, ia, i, G);
+  bool right_in_X = operand_in_reg(right, REG_X, ia, i, G);
 
   const std::set<var_t> &dying = G[i].dying;
 
-  bool dying_X = result_in_X || dying.find(ia.registers[REG_X][1]) != dying.end() || dying.find(ia.registers[REG_X][0]) != dying.end();
   bool dying_A = result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end();
+  bool dying_H = result_in_H || dying.find(ia.registers[REG_H][1]) != dying.end() || dying.find(ia.registers[REG_H][0]) != dying.end();
+  bool dying_X = result_in_X || dying.find(ia.registers[REG_X][1]) != dying.end() || dying.find(ia.registers[REG_X][0]) != dying.end();
 
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
+  if((ic->op == IFX || ic->op == JUMPTABLE) && (unused_A || dying_A) && (unused_H || dying_H) && (unused_X || dying_X))
+    return(true);
+
+return(false);
 #if 0
   std::cout << "Result in X: " << result_in_X << ", result in A: " << result_in_A << "\n";
   std::cout << "Unused X: " << unused_X << ", unused A: " << unused_A << "\n";
@@ -193,17 +217,13 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if (ic->op == SEND && ic->next && ic->next->op != CALL)
     return(false);
 
-  // TODO: Allow more!
-  if(ic->op == LEFT_OP || ic->op == RIGHT_OP && isOperandLiteral (right) && getSize(operandType(left)) == 2)
-    return (true);
-
   if(!left_in_X && !right_in_X && !left_in_A && !right_in_A)
     return(true);
 
-  if(left_in_A && getSize(operandType(left)) == 1)
+  if(unused_X && unused_H && left_in_A && getSize(operandType(left)) == 1)
     return(true);
 
-  if(right_in_A && getSize(operandType(right)) == 1)
+  if(unused_X && unused_H && right_in_A && getSize(operandType(right)) == 1)
     return(true);
 
   return(false);
@@ -307,11 +327,18 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 
   switch(ic->op)
     {
+    // Register assignment doesn't matter for these:
+    case FUNCTION:
+    case ENDFUNCTION:
+    case LABEL:
+    case GOTO:
+    case INLINEASM:
+      return(0.0f);
     case '!':
     case '~':
     case UNARYMINUS:
     //case '+': // genPointerGetSetOfs() issue
-    case '-':
+    case '-': // genDjnz issue (no crash, but might yield incorrect results)
     case '^':
     case '|':
     case BITWISEAND:
@@ -323,7 +350,10 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case '*':
     case '>':
     case '<':
+    case LE_OP:
+    case GE_OP:
     case EQ_OP:
+    case NE_OP:
     case AND_OP:
     case OR_OP:
     case GETHBIT:

@@ -1,9 +1,17 @@
 2012-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCralloc.hpp,
+	  src/hc08/ralloc2.cc,
+	  src/hc08/gen.c,
+	  Made code generation more robust wrt. surviving registers.
+
+2012-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/hc08/ralloc.h,
 	  src/hc08/ralloc2.cc,
-	  src/hc08/gen.c:
-	  Introduce isDead for registers.
+	  src/hc08/gen.c,
+	  src/z80/ralloc2.cc:
+	  Introduce isDead for hc08 registers.
 
 2012-04-13 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 

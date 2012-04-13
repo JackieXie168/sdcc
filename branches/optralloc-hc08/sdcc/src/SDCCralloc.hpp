@@ -266,7 +266,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
             getBuiltinParms(ic, &nbi_parms, bi_parms);
           }
 
-        if(ic->op == '>' || ic->op == '<' || ic->op == EQ_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)
+        if(ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP || TARGET_Z80_LIKE && ic->op == '^' || TARGET_Z80_LIKE && ic->op == '|' || TARGET_Z80_LIKE && ic->op == BITWISEAND)
           {
             iCode *ifx;
             if (ifx = ifxForOp (IC_RESULT (ic), ic))
