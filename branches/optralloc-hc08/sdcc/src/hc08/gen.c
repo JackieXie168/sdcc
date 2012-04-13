@@ -3744,7 +3744,8 @@ genMultOneByte (operand * left, operand * right, operand * result)
     emitLabel (tlbl4);
   rmwWithReg ("neg", hc08_reg_x);
 
-  emitLabel (tlbl3);
+  if (!regalloc_dry_run)
+    emitLabel (tlbl3);
   adjustStack (1);
   storeRegToFullAop (hc08_reg_xa, AOP (result), TRUE);
   hc08_freeReg (hc08_reg_xa);
@@ -4156,7 +4157,7 @@ genModOneByte (operand * left, operand * right, operand * result)
         }
 
       rmwWithReg ("neg", hc08_reg_a);
-      if (runtimeSign)
+      if (runtimeSign && !regalloc_dry_run)
         emitLabel (tlbl3);
 
       storeRegToAop (hc08_reg_a, AOP (result), 0);
@@ -7362,7 +7363,8 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
             rmwWithReg ("inc", hc08_reg_a);
           else
             rmwWithReg ("dec", hc08_reg_a);
-          emitLabel (tlbl);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl);
           storeRegToAop (hc08_reg_a, AOP (result), offset);
           hc08_freeReg (hc08_reg_a);
           offset++;
@@ -7388,7 +7390,8 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
             emitcode (inst, "#%d,%s,%05d$", bstr, aopAdrStr (derefaop, 0, FALSE), labelKey2num ((tlbl->key)));
           regalloc_dry_run_cost += 3;
           emitBranch ("jmp", jlbl);
-          emitLabel (tlbl);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl);
           ifx->generated = 1;
           offset++;
           goto finish;
@@ -8629,6 +8632,34 @@ genEndCritical (iCode * ic)
     }
 }
 
+static void
+updateiTempRegisterUse (operand * op)
+{
+  symbol *sym;
+
+  if (IS_ITEMP (op))
+    {
+      sym = OP_SYMBOL (op);
+      if (sym->accuse == ACCUSE_HX)
+        {
+          hc08_reg_h->isFree = FALSE;
+          hc08_reg_x->isFree = FALSE;
+        }
+      else if (sym->accuse == ACCUSE_XA)
+        {
+          hc08_reg_a->isFree = FALSE;
+	  if (sym->nRegs > 1)
+            hc08_reg_x->isFree = FALSE;
+        }
+      else if (!sym->isspilt)
+        {
+	  /* If only used by IFX, there might not be any register assigned */
+          if (sym->regs[0])
+            sym->regs[0]->isFree = FALSE;
+        }
+    }
+}
+
 /*---------------------------------------------------------------------------------------*/
 /* genhc08iode - generate code for HC08 based controllers for a single iCode instruction */
 /*---------------------------------------------------------------------------------------*/
@@ -8645,7 +8676,6 @@ genhc08iCode (iCode *ic)
   {
     int i;
     reg_info *reg;
-    symbol *sym;
 
     initGenLineElement ();
 
@@ -8656,43 +8686,15 @@ genhc08iCode (iCode *ic)
           emitcode ("", "; %s = %s offset %d", reg->name, aopName (reg->aop), reg->aopofs);
         reg->isFree = TRUE;
       }
-    if (IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
+    
+    if (ic->op == IFX)
+      updateiTempRegisterUse (IC_COND (ic));
+    else if (ic->op == JUMPTABLE)
+      updateiTempRegisterUse (IC_JTCOND (ic));
+    else
       {
-        sym = OP_SYMBOL (IC_LEFT (ic));
-        if (sym->accuse == ACCUSE_HX)
-          {
-            hc08_reg_h->isFree = FALSE;
-            hc08_reg_x->isFree = FALSE;
-          }
-        else if (sym->accuse == ACCUSE_XA)
-          {
-            hc08_reg_a->isFree = FALSE;
-            if (sym->nRegs > 1)
-              hc08_reg_x->isFree = FALSE;
-          }
-        else if (!sym->isspilt)
-          {
-            sym->regs[0]->isFree = FALSE;
-          }
-      }
-    if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
-      {
-        sym = OP_SYMBOL (IC_RIGHT (ic));
-        if (sym->accuse == ACCUSE_HX)
-          {
-            hc08_reg_h->isFree = FALSE;
-            hc08_reg_x->isFree = FALSE;
-          }
-        else if (sym->accuse == ACCUSE_XA)
-          {
-            hc08_reg_a->isFree = FALSE;
-            if (sym->nRegs > 1)
-              hc08_reg_x->isFree = FALSE;
-          }
-        else if (!sym->isspilt)
-          {
-            sym->regs[0]->isFree = FALSE;
-          }
+        updateiTempRegisterUse (IC_LEFT (ic));
+        updateiTempRegisterUse (IC_RIGHT (ic));
       }
   }
 
