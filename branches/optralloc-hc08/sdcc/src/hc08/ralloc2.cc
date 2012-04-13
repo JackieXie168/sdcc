@@ -151,12 +151,14 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   // Instructions that can handle anything.
   if(ic->op == '!' ||
+    ic->op == '~' ||
     ic->op == UNARYMINUS ||
     ic->op == FUNCTION ||
     ic->op == ENDFUNCTION ||
     ic->op == LABEL ||
     ic->op == GOTO ||
     ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
+    ic->op == NE_OP || ic->op == EQ_OP ||
     ic->op == AND_OP ||
     ic->op == OR_OP ||
     ic->op == GETHBIT ||
@@ -359,8 +361,8 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case GETHBIT:
     case LEFT_OP:
     case RIGHT_OP:
-    case GET_VALUE_AT_ADDRESS:
-    case '=':
+    case GET_VALUE_AT_ADDRESS: // postincrement issue (no crash, but might yield incorrect results)
+    case '=': // postincrement issue (no crash, but might yield incorrect results)
     case IFX:
     case ADDRESS_OF:
     case JUMPTABLE:

@@ -30,8 +30,8 @@
 enum
   {
     A_IDX,
-    H_IDX,
     X_IDX,
+    H_IDX,
     HX_IDX,
     XA_IDX,
     CND_IDX,

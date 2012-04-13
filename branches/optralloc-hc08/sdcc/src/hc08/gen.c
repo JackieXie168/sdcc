@@ -1205,6 +1205,7 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
   reg_info *reg = NULL;
   int regIdx;
   bool keepreg = FALSE;
+  bool afree;
 
   wassert (srcaop && dstaop);
 
@@ -1270,6 +1271,8 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
         }
     }
 
+  afree = hc08_reg_a->isFree;
+
   if (!reg)
     {
       if (hc08_reg_a->isFree)
@@ -1289,6 +1292,8 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
 
   if (!keepreg)
     pullOrFreeReg (hc08_reg_a, needpula);
+
+  hc08_reg_a->isFree = afree;
 }
 
 
@@ -2372,7 +2377,8 @@ genCpl (iCode * ic)
 {
   int offset = 0;
   int size;
-  reg_info *reg = hc08_reg_a;
+  reg_info *reg;
+  bool needpullreg;
 
   D (emitcode (";     genCpl", ""));
 
@@ -2380,16 +2386,24 @@ genCpl (iCode * ic)
   aopOp (IC_LEFT (ic), ic, FALSE);
   aopOp (IC_RESULT (ic), ic, TRUE);
 
+  reg = (hc08_reg_a->isDead && !(AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] == hc08_reg_a) ? hc08_reg_a : hc08_reg_x);
+
   size = AOP_SIZE (IC_RESULT (ic));
+  needpullreg = pushRegIfSurv (reg);
   while (size--)
     {
+      if (!size && AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] == reg)
+        pushReg (reg, TRUE);
       loadRegFromAop (reg, AOP (IC_LEFT (ic)), offset);
       rmwWithReg ("com", reg);
       hc08_useReg (reg);
       storeRegToAop (reg, AOP (IC_RESULT (ic)), offset);
       hc08_freeReg (reg);
+      if (!size && AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[0] == reg)
+        pullReg (reg);
       offset++;
     }
+  pullOrFreeReg (reg, needpullreg);
 
   /* release the aops */
   freeAsmop (IC_RESULT (ic), NULL, ic, TRUE);
@@ -4418,7 +4432,7 @@ genCmp (iCode * ic, iCode * ifx)
   unsigned long lit = 0L;
   char *sub;
   symbol *jlbl = NULL;
-  bool needpulla = FALSE;;
+  bool needpulla = FALSE;
 
   opcode = ic->op;
 
@@ -4574,6 +4588,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
   symbol *jlbl = NULL;
   symbol *tlbl_NE = NULL;
   symbol *tlbl_EQ = NULL;
+  bool needpulla = FALSE;
 
   opcode = ic->op;
 
@@ -4615,7 +4630,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 
   if ((size == 2)
       && ((AOP_TYPE (left) == AOP_DIR) && (AOP_SIZE (left) == 2))
-      && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && hc08_reg_hx->isFree)
+      && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && hc08_reg_h->isDead && hc08_reg_x->isDead)
     {
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("cphx", "%s", aopAdrStr (AOP (right), 1, TRUE));
@@ -4626,6 +4641,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
     {
       offset = 0;
       sub = "cmp";
+      needpulla = pushRegIfSurv (hc08_reg_a);
       while (size--)
         {
           loadRegFromAop (hc08_reg_a, AOP (left), offset);
@@ -4645,6 +4661,8 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 
   if (ifx)
     {
+      pullOrFreeReg (hc08_reg_a, needpulla);
+
       freeAsmop (result, NULL, ic, TRUE);
 
       if (opcode == EQ_OP)
@@ -4675,6 +4693,8 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
     {
       symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
+      if (!needpulla)
+        needpulla = pushRegIfSurv (hc08_reg_a);
       if (opcode == EQ_OP)
         {
           if (!tlbl_EQ && !regalloc_dry_run)
@@ -4703,6 +4723,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
       if (!regalloc_dry_run)
         emitLabel (tlbl);
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       freeAsmop (result, NULL, ic, TRUE);
     }
 }
@@ -7834,6 +7855,7 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
   int bstr;                     /* bitfield starting bit within byte */
   int litval;                   /* source literal value (if AOP_LIT) */
   unsigned char mask;           /* bitmask within current byte */
+  bool needpulla;
 
   D (emitcode (";     genPackBitsImmed", ""));
 
@@ -7862,6 +7884,7 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           symbol *tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
+          needpulla = pushRegIfSurv (hc08_reg_a);
           loadRegFromAop (hc08_reg_a, AOP (right), 0);
           emitcode ("bit", "#1");
           regalloc_dry_run_cost += 2;
@@ -7875,7 +7898,7 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           regalloc_dry_run_cost += 2;
           if (!regalloc_dry_run)
             emitLabel (tlbl2);
-          hc08_freeReg (hc08_reg_a);
+          pullOrFreeReg (hc08_reg_a, needpulla);
         }
       goto release;
     }
@@ -7893,6 +7916,7 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           litval <<= bstr;
           litval &= (~mask) & 0xff;
 
+          needpulla = pushRegIfSurv (hc08_reg_a);
           loadRegFromAop (hc08_reg_a, derefaop, 0);
           if ((mask | litval) != 0xff)
             {
@@ -7907,12 +7931,13 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           hc08_dirtyReg (hc08_reg_a, FALSE);
           storeRegToAop (hc08_reg_a, derefaop, 0);
 
-          hc08_freeReg (hc08_reg_a);
+          pullOrFreeReg (hc08_reg_a, needpulla);
           goto release;
         }
 
       /* Case with a bitfield length < 8 and arbitrary source
        */
+      needpulla = pushRegIfSurv (hc08_reg_a);
       loadRegFromAop (hc08_reg_a, AOP (right), 0);
       /* shift and mask source value */
       AccLsh (bstr);
@@ -7928,7 +7953,7 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
       storeRegToAop (hc08_reg_a, derefaop, 0);
       pullReg (hc08_reg_a);
 
-      hc08_freeReg (hc08_reg_a);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       goto release;
     }
 
@@ -7952,6 +7977,7 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           litval = (int) ulFromVal (AOP (right)->aopu.aop_lit);
           litval >>= (blen - rlen);
           litval &= (~mask) & 0xff;
+          needpulla = pushRegIfSurv (hc08_reg_a);
           loadRegFromAop (hc08_reg_a, derefaop, size - offset - 1);
           if ((mask | litval) != 0xff)
             {
@@ -7966,12 +7992,13 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
           hc08_dirtyReg (hc08_reg_a, FALSE);
           storeRegToAop (hc08_reg_a, derefaop, size - offset - 1);
           hc08_dirtyReg (hc08_reg_a, FALSE);
-          hc08_freeReg (hc08_reg_a);
+          pullOrFreeReg (hc08_reg_a, needpulla);
           goto release;
         }
 
       /* Case with partial byte and arbitrary source
        */
+      needpulla = pushRegIfSurv (hc08_reg_a);
       loadRegFromAop (hc08_reg_a, AOP (right), offset);
       emitcode ("and", "#0x%02x", (~mask) & 0xff);
       regalloc_dry_run_cost += 2;
@@ -7984,6 +8011,7 @@ genPackBitsImmed (operand * result, sym_link * etype, operand * right, iCode * i
       regalloc_dry_run_cost += 5;
       storeRegToAop (hc08_reg_a, derefaop, size - offset - 1);
       pullReg (hc08_reg_a);
+      pullOrFreeReg (hc08_reg_a, needpulla);
     }
 
   hc08_freeReg (hc08_reg_a);
