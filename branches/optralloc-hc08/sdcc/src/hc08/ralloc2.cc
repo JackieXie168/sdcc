@@ -157,7 +157,8 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == ENDFUNCTION ||
     ic->op == LABEL ||
     ic->op == GOTO ||
-    /*ic->op == '-' ||*/
+    ic->op == '+' ||
+    ic->op == '-' ||
     ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
     ic->op == NE_OP || ic->op == EQ_OP ||
     ic->op == AND_OP ||
@@ -165,6 +166,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == GETHBIT ||
     ic->op ==  LEFT_OP ||
     ic->op == '=' && !POINTER_SET(ic) ||
+    ic->op == ADDRESS_OF ||
     ic->op == CAST ||
     ic->op == SWAP)
     return(true);
@@ -174,10 +176,6 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   if(unused_X && unused_A && unused_H)
     return(true);
-
-  // Todo: Allow more use of h
-  if (ia.registers[REG_H][1] >= 0 && I[ia.registers[REG_H][1]].size <= 1 || ia.registers[REG_H][0] >= 0 && I[ia.registers[REG_H][0]].size <= 1 )
-    return(false);
 
 #if 0
   std::cout << "XAinst_ok: at (" << i << ", " << ic->key << ")\nX = (" << ia.registers[REG_X][0] << ", " << ia.registers[REG_X][1] << "), A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << ")inst " << i << ", " << ic->key << "\n";
@@ -204,29 +202,6 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
   if((ic->op == IFX || ic->op == JUMPTABLE) && (unused_A || dying_A))
-    return(true);
-
-return(false);
-#if 0
-  std::cout << "Result in X: " << result_in_X << ", result in A: " << result_in_A << "\n";
-  std::cout << "Unused X: " << unused_X << ", unused A: " << unused_A << "\n";
-  std::cout << "Dying X: " << dying_X << ", dying A: " << dying_A << "\n";
-  std::cout << "Result only XA: " << result_only_XA << "\n";
-#endif
-
-  if(!result_only_XA)
-    return(false);
-
-  if (ic->op == SEND && ic->next && ic->next->op != CALL)
-    return(false);
-
-  if(!left_in_X && !right_in_X && !left_in_A && !right_in_A)
-    return(true);
-
-  if(unused_X && unused_H && left_in_A && getSize(operandType(left)) == 1)
-    return(true);
-
-  if(unused_X && unused_H && right_in_A && getSize(operandType(right)) == 1)
     return(true);
 
   return(false);
@@ -340,7 +315,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case '!':
     case '~':
     case UNARYMINUS:
-    //case '+': // genPointerGetSetOfs() issue
+    case '+':
     case '-':
     case '^':
     case '|':

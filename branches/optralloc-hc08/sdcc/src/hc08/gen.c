@@ -3313,19 +3313,13 @@ genPlusIncr (iCode * ic)
 
   DD (emitcode ("", "; IS_AOP_HX = %d", IS_AOP_HX (AOP (left))));
 
-  if ((IS_AOP_HX (AOP (left)) ||
-       ((AOP_TYPE (left) == AOP_DIR) && (AOP_TYPE (result) == AOP_DIR))) && (icount >= -128) && (icount <= 127) && (size == 2))
+  // TODO: Use aix for 8-bit operands in x.
+  if ((IS_AOP_HX (AOP (left)) || ((AOP_TYPE (left) == AOP_DIR) &&
+    (IS_AOP_HX (AOP (result)) || AOP_TYPE (result) == AOP_DIR))) &&
+    (icount >= -128) && (icount <= 127) && (size == 2))
     {
-      if (!IS_AOP_HX (AOP (left)))
-        {
-          needpulx = pushRegIfUsed (hc08_reg_x);
-          needpulh = pushRegIfUsed (hc08_reg_h);
-        }
-      else
-        {
-          needpulx = FALSE;
-          needpulh = FALSE;
-        }
+      needpulx = pushRegIfSurv (hc08_reg_x);
+      needpulh = pushRegIfSurv (hc08_reg_h);
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("aix", "#%d", icount);
       regalloc_dry_run_cost += 2;
@@ -3396,6 +3390,8 @@ genPlus (iCode * ic)
   int size, offset = 0;
   char *add;
   asmop *leftOp, *rightOp;
+  bool needpulla;
+  bool delayedstore = FALSE;
 
   /* special cases :- */
 
@@ -3430,14 +3426,25 @@ genPlus (iCode * ic)
   add = "add";
 
   offset = 0;
+  needpulla = pushRegIfSurv (hc08_reg_a);
   while (size--)
     {
       loadRegFromAop (hc08_reg_a, leftOp, offset);
       accopWithAop (add, rightOp, offset);
-      storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), offset++);
+      if (size && AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          delayedstore = TRUE;
+        }
+      else
+        storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), offset);
+      offset++;
       hc08_freeReg (hc08_reg_a);
       add = "adc";              /* further adds must propagate carry */
     }
+ if (delayedstore)
+   pullReg (hc08_reg_a);
+ pullOrFreeReg (hc08_reg_a, needpulla);
 
 
 //  adjustArithmeticResult (ic);
@@ -4746,12 +4753,15 @@ genPointerGetSetOfs (iCode * ic)
   symbol *sym;
   asmop *derefaop;
 
+  /* TODO: Make this work with new allcoator! */
+  return FALSE;
+
   /* Make sure we have a next iCode */
   DD (emitcode ("", "; checking lic"));
   if (!lic)
     return FALSE;
 
-  /* Make sure the result of the addition is an iCode */
+  /* Make sure the result of the addition is an iTemp */
   DD (emitcode ("", "; checking IS_ITEMP"));
   if (!IS_ITEMP (IC_RESULT (ic)))
     return FALSE;
@@ -6606,6 +6616,7 @@ static void
 genlshTwo (operand * result, operand * left, int shCount)
 {
   int size;
+  bool needpulla, needpullx;
 
   D (emitcode (";     genlshTwo", ""));
 
@@ -6617,6 +6628,7 @@ genlshTwo (operand * result, operand * left, int shCount)
     {
       shCount -= 8;
 
+      needpulla = pushRegIfSurv (hc08_reg_a);
       if (size > 1)
         {
           loadRegFromAop (hc08_reg_a, AOP (left), 0);
@@ -6624,14 +6636,19 @@ genlshTwo (operand * result, operand * left, int shCount)
           storeRegToAop (hc08_reg_a, AOP (result), 1);
         }
       storeConstToAop (zero, AOP (result), LSB);
+      pullOrFreeReg (hc08_reg_a, needpulla);
     }
 
   /*  1 <= shCount <= 7 */
   else
     {
+      needpulla = pushRegIfSurv (hc08_reg_a);
+      needpullx = pushRegIfSurv (hc08_reg_x);
       loadRegFromAop (hc08_reg_xa, AOP (left), 0);
       XAccLsh (shCount);
       storeRegToFullAop (hc08_reg_xa, AOP (result), 0);
+      pullOrFreeReg (hc08_reg_x, needpullx);
+      pullOrFreeReg (hc08_reg_a, needpulla);
     }
 }
 
@@ -8210,6 +8227,7 @@ genAddrOf (iCode * ic)
 {
   symbol *sym = OP_SYMBOL (IC_LEFT (ic));
   int size, offset;
+  bool needpullx, needpullh;
 
   D (emitcode (";     genAddrOf", ""));
 
@@ -8220,6 +8238,8 @@ genAddrOf (iCode * ic)
      variable */
   if (sym->onStack)
     {
+      needpullx = pushRegIfSurv (hc08_reg_x);
+      needpullh = pushRegIfSurv (hc08_reg_h);
       /* if it has an offset then we need to compute it */
       offset = _G.stackOfs + _G.stackPushes + sym->stack;
       hc08_useReg (hc08_reg_hx);
@@ -8240,8 +8260,8 @@ genAddrOf (iCode * ic)
       emitcode ("aix", "#%d", offset);
       regalloc_dry_run_cost += 2;
       storeRegToFullAop (hc08_reg_hx, AOP (IC_RESULT (ic)), FALSE);
-      hc08_freeReg (hc08_reg_hx);
-
+      pullOrFreeReg (hc08_reg_h, needpullh);
+      pullOrFreeReg (hc08_reg_x, needpullx);
       goto release;
     }
 
