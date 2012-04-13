@@ -1865,6 +1865,7 @@ aopOp (operand *op, iCode * ic, bool result)
       /* else must be a dummy iTemp */
       sym->aop = op->aop = aop = newAsmop (AOP_DUMMY);
       aop->size = getSize (sym->type);
+      aop->op = op;
       return;
     }
 
@@ -8462,7 +8463,7 @@ genDjnz (iCode * ic, iCode * ifx)
 //  if (getSize (operandType (IC_RESULT (ic))) > 1)
 //    return 0;
   aopOp (IC_RESULT (ic), ic, FALSE);
-  if (AOP_SIZE (IC_RESULT (ic)) > 1)
+  if (AOP_SIZE (IC_RESULT (ic)) > 1 || IS_AOP_H (AOP (IC_RESULT (ic))))
     {
       freeAsmop (IC_RESULT (ic), NULL, ic, TRUE);
       return 0;

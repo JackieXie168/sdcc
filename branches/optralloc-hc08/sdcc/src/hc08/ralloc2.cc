@@ -281,7 +281,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 
   switch(ic->op)
     {
-    //case '!': // SIGSEGV in asmopToBool()
+    case '!':
     case '~':
     case UNARYMINUS:
     //case '+': // genPointerGetSetOfs() issue
@@ -305,10 +305,10 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
     case '=':
-    //case IFX: // SIGSEGV in asmopToBool()
+    case IFX:
     case ADDRESS_OF:
     case JUMPTABLE:
-    //case CAST: // SIGSEGV in asmopToBool()
+    case CAST:
     //case RECEIVE:
     //case SEND: // Messes up _G.sendSet
     case DUMMY_READ_VOLATILE:

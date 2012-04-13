@@ -1,5 +1,10 @@
 2012-04-13 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
+	* src/hc08/gen.c (asmOp): always keep pointer to operand in asmop
+	* src/hc08/ralloc2.cc (instruction_cost): reenable !, IFX, and CAST
+
+2012-04-13 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
 	* src/SDCCsymt.c (newBoolLink): return bool instead of bit if no
 	  bit memory.
 	* src/hc08/gen.c: Fixed no register assigned to iTemp for IFX.
