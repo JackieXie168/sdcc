@@ -266,7 +266,14 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
             getBuiltinParms(ic, &nbi_parms, bi_parms);
           }
 
+        // TODO: Do these in port-specific helper function!
         if(ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP || TARGET_Z80_LIKE && ic->op == '^' || TARGET_Z80_LIKE && ic->op == '|' || TARGET_Z80_LIKE && ic->op == BITWISEAND)
+          {
+            iCode *ifx;
+            if (ifx = ifxForOp (IC_RESULT (ic), ic))
+              ifx->generated = 1;
+          }
+        if(ic->op == '-' && TARGET_IS_HC08 && IS_VALOP (IC_RIGHT (ic)) && operandLitValue (IC_RIGHT (ic)) == 1 && getSize(operandType(IC_RESULT (ic))) == 1 && !isOperandInFarSpace (IC_RESULT (ic)) && isOperandEqual (IC_RESULT (ic), IC_LEFT (ic)))
           {
             iCode *ifx;
             if (ifx = ifxForOp (IC_RESULT (ic), ic))

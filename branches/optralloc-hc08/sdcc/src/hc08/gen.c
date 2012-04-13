@@ -3539,6 +3539,7 @@ genMinus (iCode * ic)
   char *sub;
   int size, offset = 0;
   bool needpulla;
+  bool delayedstore = FALSE;
 
   asmop *leftOp, *rightOp;
 
@@ -3577,10 +3578,15 @@ genMinus (iCode * ic)
     {
       loadRegFromAop (hc08_reg_a, leftOp, offset);
       accopWithAop (sub, rightOp, offset);
-      storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), offset++);
+      if (size && AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX)
+        pushReg (hc08_reg_a, TRUE);
+      else
+        storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), offset);
+      offset++;
       sub = "sbc";
     }
-
+  if(delayedstore)
+    pullReg (hc08_reg_a);
   pullOrFreeReg (hc08_reg_a, needpulla);
 
 //  adjustArithmeticResult (ic);
@@ -8321,7 +8327,7 @@ genJumpTab (iCode * ic)
 
   aopOp (IC_JTCOND (ic), ic, FALSE);
 
-  if (hc08_reg_x->isFree && hc08_reg_x->isFree)
+  if (hc08_reg_x->isFree && hc08_reg_h->isFree)
     {
       /* get the condition into x */
       loadRegFromAop (hc08_reg_x, AOP (IC_JTCOND (ic)), 0);
@@ -8517,9 +8523,6 @@ genDjnz (iCode * ic, iCode * ifx)
     return 0;
 
   D (emitcode (";     genDjnz", ""));
-
-  if (regalloc_dry_run) /* TODO: Handle exact cost here correctly! */
-    return (0);
 
   /* if the if condition has a false label
      then we cannot save */

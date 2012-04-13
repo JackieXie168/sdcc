@@ -157,6 +157,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == ENDFUNCTION ||
     ic->op == LABEL ||
     ic->op == GOTO ||
+    ic->op == '-' ||
     ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
     ic->op == NE_OP || ic->op == EQ_OP ||
     ic->op == AND_OP ||
@@ -202,7 +203,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
-  if((ic->op == IFX || ic->op == JUMPTABLE) && (unused_A || dying_A) && (unused_H || dying_H) && (unused_X || dying_X))
+  if((ic->op == IFX || ic->op == JUMPTABLE) && (unused_A || dying_A))
     return(true);
 
 return(false);
@@ -340,7 +341,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case '~':
     case UNARYMINUS:
     //case '+': // genPointerGetSetOfs() issue
-    case '-': // genDjnz issue (no crash, but might yield incorrect results)
+    case '-':
     case '^':
     case '|':
     case BITWISEAND:
