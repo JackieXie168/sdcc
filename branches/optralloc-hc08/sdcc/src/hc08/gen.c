@@ -3579,7 +3579,10 @@ genMinus (iCode * ic)
       loadRegFromAop (hc08_reg_a, leftOp, offset);
       accopWithAop (sub, rightOp, offset);
       if (size && AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX)
-        pushReg (hc08_reg_a, TRUE);
+        {
+          pushReg (hc08_reg_a, TRUE);
+          delayedstore = TRUE;
+        }
       else
         storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), offset);
       offset++;
