@@ -1,3 +1,7 @@
+2012-04-14 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: fix isDead status for register H
+
 2012-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCralloc.hpp,

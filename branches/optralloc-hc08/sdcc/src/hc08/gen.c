@@ -8793,18 +8793,20 @@ genhc08iCode (iCode *ic)
           emitcode ("", "; %s = %s offset %d", reg->name, aopName (reg->aop), reg->aopofs);
         reg->isFree = TRUE;
       }
-    
+
     if (ic->op == IFX)
       updateiTempRegisterUse (IC_COND (ic));
     else if (ic->op == JUMPTABLE)
       updateiTempRegisterUse (IC_JTCOND (ic));
     else
       {
+        if (POINTER_SET (ic))
+          updateiTempRegisterUse (IC_RESULT (ic));
         updateiTempRegisterUse (IC_LEFT (ic));
         updateiTempRegisterUse (IC_RIGHT (ic));
       }
 
-    for (i = A_IDX; i <= X_IDX; i++)
+    for (i = A_IDX; i <= X_IDX || i <= H_IDX; i++)
       {
         if (bitVectBitValue (ic->rSurv, i))
           {
@@ -9136,17 +9138,15 @@ genhc08Code (iCode *lic)
         }
       if (options.iCodeInAsm)
         {
-          char regsInUse[80];
-          int i;
+          char regsSurv[4];
           const char *iLine;
 
-          for (i = 0; i < 6; i++)
-            {
-              sprintf (&regsInUse[i], "%c", ic->riu & (1 << i) ? i + '0' : '-');
-            }
-          regsInUse[i] = 0;
+          regsSurv[0] = (bitVectBitValue (ic->rSurv, A_IDX)) ? 'a' : '-';
+          regsSurv[1] = (bitVectBitValue (ic->rSurv, H_IDX)) ? 'h' : '-';
+          regsSurv[2] = (bitVectBitValue (ic->rSurv, X_IDX)) ? 'x' : '-';
+          regsSurv[3] = 0;
           iLine = printILine (ic);
-          emitcode ("", "; [%s] ic:%d: %s", regsInUse, ic->seq, printILine (ic));
+          emitcode ("", "; [%s] ic:%d: %s", regsSurv, ic->seq, printILine (ic));
           dbuf_free (iLine);
         }
 
