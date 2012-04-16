@@ -1,5 +1,11 @@
 2012-04-16 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/hc08/ralloc2.cc,
+	  src/hc08/gen.c:
+	  Handling of pointer access in new allocator.
+
+2012-04-16 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCralloc.hpp,
 	  src/SDCCicode.c,
 	  src/SDCCicode.h,

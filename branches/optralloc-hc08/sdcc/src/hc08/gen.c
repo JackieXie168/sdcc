@@ -7473,6 +7473,8 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
   int blen;                     /* bitfield length */
   int bstr;                     /* bitfield starting bit within byte */
   asmop *derefaop;
+  bool delayed_a = FALSE;
+  bool assigned_a = FALSE;
 
   D (emitcode (";     genUnpackBitsImmed", ""));
 
@@ -7506,6 +7508,8 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
           if (!regalloc_dry_run)
             emitLabel (tlbl);
           storeRegToAop (hc08_reg_a, AOP (result), offset);
+          if (AOP_TYPE (result) == AOP_REG && AOP(result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+            assigned_a = TRUE;
           hc08_freeReg (hc08_reg_a);
           offset++;
           goto finish;
@@ -7562,6 +7566,8 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
                 emitLabel (tlbl);
             }
           storeRegToAop (hc08_reg_a, AOP (result), offset);
+          if (AOP_TYPE (result) == AOP_REG && AOP(result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+            assigned_a = TRUE;
         }
       else
         {
@@ -7577,9 +7583,18 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
      but the partial byte at the end.  */
   for (rlen = blen; rlen >= 8; rlen -= 8)
     {
+      if (assigned_a && !delayed_a)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          delayed_a = TRUE;
+        }
       loadRegFromAop (hc08_reg_a, derefaop, size - offset - 1);
       if (!ifx)
-        storeRegToAop (hc08_reg_a, AOP (result), offset);
+        {
+          storeRegToAop (hc08_reg_a, AOP (result), offset);
+          if (AOP_TYPE (result) == AOP_REG && AOP(result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+            assigned_a = TRUE;
+        }
       else
         {
           emitcode ("tsta", "");
@@ -7591,6 +7606,11 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
   /* Handle the partial byte at the end */
   if (rlen)
     {
+      if (assigned_a && !delayed_a)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          delayed_a = TRUE;
+        }
       loadRegFromAop (hc08_reg_a, derefaop, size - offset - 1);
       emitcode ("and", "#0x%02x", ((unsigned char) - 1) >> (8 - rlen));
       regalloc_dry_run_cost += 2;
@@ -7607,7 +7627,10 @@ genUnpackBitsImmed (operand * left, operand * result, iCode * ic, iCode * ifx)
           if (!regalloc_dry_run)
             emitLabel (tlbl);
         }
-      storeRegToAop (hc08_reg_a, AOP (result), offset++);
+      storeRegToAop (hc08_reg_a, AOP (result), offset);
+      if (AOP_TYPE (result) == AOP_REG && AOP(result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+        assigned_a = TRUE;
+      offset++;
     }
 
 finish:
@@ -7621,6 +7644,12 @@ finish:
         }
       else
         {
+          if (assigned_a && !delayed_a)
+            {
+              pushReg (hc08_reg_a, TRUE);
+              delayed_a = TRUE;
+            }
+
           /* signed bitfield: sign extension with 0x00 or 0xff */
           emitcode ("rola", "");
           emitcode ("clra", "");
@@ -7639,6 +7668,8 @@ finish:
     {
       genIfxJump (ifx, "a");
     }
+  if (delayed_a)
+    pullReg (hc08_reg_a);
 }
 
 
@@ -7689,6 +7720,7 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
   int size, offset;
   sym_link *retype = getSpec (operandType (result));
   bool postH = FALSE;
+  bool postX = FALSE;
 
   D (emitcode (";     genPointerGet", ""));
 
@@ -7741,10 +7773,15 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
               regalloc_dry_run_cost += 2;
               hc08_dirtyReg (hc08_reg_hx, FALSE);
             }
-          if (!ifx && pi && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset] == hc08_reg_h)
+          if (!ifx && (pi || size) && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset] == hc08_reg_h)
             {
               pushReg(hc08_reg_a, FALSE);
               postH = TRUE;
+            }
+          else if (!ifx && (pi || size) && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset] == hc08_reg_x)
+            {
+              pushReg(hc08_reg_a, FALSE);
+              postX = TRUE;
             }
           else if (!ifx)
             storeRegToAop (hc08_reg_a, AOP (result), offset);
@@ -7763,6 +7800,8 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
       pi->generated = 1;
     }
 
+  if (postX)
+    pullReg (hc08_reg_x);
   if (postH)
     pullReg (hc08_reg_h);
 
@@ -7771,7 +7810,6 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
       genIfxJump (ifx, "a");
     }
 
-  hc08_freeReg (hc08_reg_hx);
 D (emitcode (";     done", ""));
 }
 
@@ -8139,6 +8177,8 @@ genPointerSet (iCode * ic, iCode * pi)
   int size, offset;
   sym_link *retype = getSpec (operandType (right));
   sym_link *letype = getSpec (operandType (result));
+  bool needpullx = FALSE;
+  bool needpullh = FALSE;
 
   D (emitcode (";     genPointerSet", ""));
 
@@ -8158,6 +8198,9 @@ genPointerSet (iCode * ic, iCode * pi)
           return;
         }
     }
+
+  needpullx = pushRegIfSurv (hc08_reg_x);
+  needpullh = pushRegIfSurv (hc08_reg_h);
 
   /* if the operand is already in hx
      then we do nothing else we move the value to hx */
@@ -8200,8 +8243,8 @@ genPointerSet (iCode * ic, iCode * pi)
       pi->generated = 1;
     }
 
-  hc08_freeReg (hc08_reg_hx);
-
+  pullOrFreeReg (hc08_reg_h, needpullh);
+  pullOrFreeReg (hc08_reg_x, needpullx);
 }
 
 /*-----------------------------------------------------------------*/
