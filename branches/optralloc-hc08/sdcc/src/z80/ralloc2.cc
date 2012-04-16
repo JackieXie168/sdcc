@@ -1322,6 +1322,17 @@ static float rough_cost_estimate(const assignment &a, unsigned short int i, cons
   return(c);
 }
 
+// Code for another ic is generated when generating this one. Mark the other as generated.
+static void extra_ic_generated(const iCode *ic)
+{
+  if(ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)
+    {
+      iCode *ifx;
+      if (ifx = ifxForOp (IC_RESULT (ic), ic))
+      ifx->generated = 1;
+    }
+}
+
 template <class T_t, class G_t, class I_t>
 static bool tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 {

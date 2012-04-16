@@ -224,6 +224,9 @@ static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
 template <class T_t>
 static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T);
 
+// Code for anotehr ic is generated when generating this one. Mark the other as generated. Port-specific.
+static void extra_ic_generated(const iCode *ic);
+
 inline void
 add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
 {
@@ -266,19 +269,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
             getBuiltinParms(ic, &nbi_parms, bi_parms);
           }
 
-        // TODO: Do these in port-specific helper function!
-        if(ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP || TARGET_Z80_LIKE && ic->op == '^' || TARGET_Z80_LIKE && ic->op == '|' || TARGET_Z80_LIKE && ic->op == BITWISEAND)
-          {
-            iCode *ifx;
-            if (ifx = ifxForOp (IC_RESULT (ic), ic))
-              ifx->generated = 1;
-          }
-        if(ic->op == '-' && TARGET_IS_HC08 && IS_VALOP (IC_RIGHT (ic)) && operandLitValue (IC_RIGHT (ic)) == 1 && getSize(operandType(IC_RESULT (ic))) == 1 && !isOperandInFarSpace (IC_RESULT (ic)) && isOperandEqual (IC_RESULT (ic), IC_LEFT (ic)))
-          {
-            iCode *ifx;
-            if (ifx = ifxForOp (IC_RESULT (ic), ic))
-              ifx->generated = 1;
-          }
+        extra_ic_generated(ic);
 
         cfg[i].ic = ic;
 

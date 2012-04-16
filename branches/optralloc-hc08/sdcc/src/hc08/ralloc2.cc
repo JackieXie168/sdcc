@@ -345,8 +345,8 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case GETHBIT:
     case LEFT_OP:
     case RIGHT_OP:
-    case GET_VALUE_AT_ADDRESS: // postincrement issue (no crash, but might yield incorrect results)
-    case '=': // postincrement issue (no crash, but might yield incorrect results)
+    case GET_VALUE_AT_ADDRESS:
+    case '=':
     case IFX:
     case ADDRESS_OF:
     case JUMPTABLE:
@@ -389,6 +389,29 @@ template <class G_t, class I_t>
 static float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   return(0.0f);
+}
+
+// Code for another ic is generated when generating this one. Mark the other as generated.
+static void extra_ic_generated(const iCode *ic)
+{
+  if(ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP)
+    {
+      iCode *ifx;
+      if (ifx = ifxForOp (IC_RESULT (ic), ic))
+      ifx->generated = 1;
+    }
+  if(ic->op == '-' && IS_VALOP (IC_RIGHT (ic)) && operandLitValue (IC_RIGHT (ic)) == 1 && getSize(operandType(IC_RESULT (ic))) == 1 && !isOperandInFarSpace (IC_RESULT (ic)) && isOperandEqual (IC_RESULT (ic), IC_LEFT (ic)))
+    {
+      iCode *ifx;
+      if (ifx = ifxForOp (IC_RESULT (ic), ic))
+      ifx->generated = 1;
+    }
+  if(ic->op == GET_VALUE_AT_ADDRESS)
+    {
+      iCode *inc;
+      if (inc = hasInchc08 (IC_LEFT (ic), ic,  getSize (operandType (IC_RIGHT (ic)))))
+         inc->generated = 1;
+    }
 }
 
 template <class T_t, class G_t, class I_t>

@@ -4925,10 +4925,10 @@ genPointerGetSetOfs (iCode * ic)
 
 
 /*-----------------------------------------------------------------*/
-/* hasInc - operand is incremented before any other use            */
+/* hasInchc08 - operand is incremented before any other use        */
 /*-----------------------------------------------------------------*/
-static iCode *
-hasInc (operand * op, iCode * ic, int osize)
+iCode *
+hasInchc08 (const operand *op, const iCode *ic, int osize)
 {
   sym_link *type = operandType (op);
   sym_link *retype = getSpec (type);
@@ -9026,12 +9026,12 @@ genhc08iCode (iCode *ic)
       break;
 
     case GET_VALUE_AT_ADDRESS:
-      genPointerGet (ic, hasInc (IC_LEFT (ic), ic, getSize (operandType (IC_RESULT (ic)))), ifxForOp (IC_RESULT (ic), ic));
+      genPointerGet (ic, hasInchc08 (IC_LEFT (ic), ic, getSize (operandType (IC_RESULT (ic)))), ifxForOp (IC_RESULT (ic), ic));
       break;
 
     case '=':
       if (POINTER_SET (ic))
-        genPointerSet (ic, hasInc (IC_RESULT (ic), ic, getSize (operandType (IC_RIGHT (ic)))));
+        genPointerSet (ic, hasInchc08 (IC_RESULT (ic), ic, getSize (operandType (IC_RIGHT (ic)))));
       else
         genAssign (ic);
       break;

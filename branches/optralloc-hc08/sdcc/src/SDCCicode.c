@@ -1396,7 +1396,7 @@ operandOperation (operand * left, operand * right, int op, sym_link * type)
 /* isOperandEqual - compares two operand & return 1 if they are =  */
 /*-----------------------------------------------------------------*/
 int
-isOperandEqual (operand * left, operand * right)
+isOperandEqual (const operand * left, const operand * right)
 {
   /* if the pointers are equal then they are equal */
   if (left == right)
