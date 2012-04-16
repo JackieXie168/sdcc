@@ -3581,6 +3581,7 @@ genMinus (iCode * ic)
       accopWithAop (sub, leftOp, offset);
       accopWithMisc ("nega", "");
       storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), offset++);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       goto release;
     }
 
@@ -4500,8 +4501,8 @@ genCmp (iCode * ic, iCode * ifx)
   size = max (AOP_SIZE (left), AOP_SIZE (right));
 
   if ((size == 2)
-      && ((AOP_TYPE (left) == AOP_DIR) && (AOP_SIZE (left) == 2))
-      && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && hc08_reg_h->isDead && hc08_reg_x->isDead)
+      && ((AOP_TYPE (left) == AOP_DIR || IS_AOP_HX (AOP (left))) && (AOP_SIZE (left) == 2))
+      && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && (hc08_reg_h->isDead && hc08_reg_x->isDead || IS_AOP_HX (AOP (left))))
     {
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
       emitcode ("cphx", "%s", aopAdrStr (AOP (right), 1, TRUE));
@@ -4544,8 +4545,19 @@ genCmp (iCode * ic, iCode * ifx)
       needpulla = pushRegIfSurv (hc08_reg_a);
       while (size--)
         {
-          loadRegFromAop (hc08_reg_a, AOP (left), offset);
-          accopWithAop (sub, AOP (right), offset);
+          if (AOP_TYPE (right) == AOP_REG && AOP(right)->aopu.aop_reg[offset]->rIdx == A_IDX)
+            {
+              pushReg (hc08_reg_a, TRUE);
+              loadRegFromAop (hc08_reg_a, AOP (left), offset);
+              emitcode (sub, "1, s");
+              regalloc_dry_run_cost += 3;
+              pullReg (hc08_reg_a);
+            }
+          else
+            {
+              loadRegFromAop (hc08_reg_a, AOP (left), offset);
+              accopWithAop (sub, AOP (right), offset);
+            }
           hc08_freeReg (hc08_reg_a);
           offset++;
           sub = "sbc";
@@ -8331,6 +8343,7 @@ genAssign (iCode * ic)
 {
   operand *result, *right;
   int size;
+  int offset = 0;
 //  unsigned long lit = 0L;
 
   D (emitcode (";     genAssign", ""));
@@ -8361,7 +8374,8 @@ genAssign (iCode * ic)
   size = AOP_SIZE (result);
   while (size--)
     {
-      transferAopAop (AOP (right), size, AOP (result), size);
+      transferAopAop (AOP (right), offset, AOP (result), offset);
+      offset++;
     }
 
 release:
