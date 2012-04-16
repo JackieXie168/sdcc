@@ -155,6 +155,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == UNARYMINUS ||
     ic->op == FUNCTION ||
     ic->op == ENDFUNCTION ||
+    ic->op == RETURN ||
     ic->op == LABEL ||
     ic->op == GOTO ||
     ic->op == '+' ||
@@ -164,7 +165,8 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == AND_OP ||
     ic->op == OR_OP ||
     ic->op == GETHBIT ||
-    ic->op ==  LEFT_OP ||
+    ic->op == LEFT_OP ||
+    ic->op == RIGHT_OP ||
     ic->op == '=' && !POINTER_SET(ic) ||
     ic->op == ADDRESS_OF ||
     ic->op == CAST ||
@@ -202,6 +204,9 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   bool result_only_XA = (result_in_X || unused_X || dying_X) && (result_in_A || unused_A || dying_A);
 
   if((ic->op == IFX || ic->op == JUMPTABLE) && (unused_A || dying_A))
+    return(true);
+
+  if(ic->op == IPUSH && (unused_A || dying_A || operand_in_reg(left, REG_A, ia, i, G) || operand_in_reg(left, REG_H, ia, i, G) || operand_in_reg(left, REG_X, ia, i, G)))
     return(true);
 
   return(false);
@@ -320,11 +325,11 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case '^':
     case '|':
     case BITWISEAND:
-    //case IPUSH: // SIGSEGV in saveRegisters()
+    case IPUSH:
     //case IPOP:
     //case CALL:
     //case PCALL:
-    //case RETURN:
+    case RETURN:
     case '*':
     case '>':
     case '<':

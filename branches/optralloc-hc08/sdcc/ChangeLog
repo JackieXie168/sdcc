@@ -1,3 +1,9 @@
+2012-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/hc08/ralloc2.cc,
+	  src/hc08/gen.c:
+	  Made hc08 code generation more robust wrt. surviving registers and register operands.
+
 2012-04-14 Raphael Neider <rneider AT web.de>
 
 	* src/pic16/genarith.c (pic16_genMult8XLit_n,pic16_genMult8X8_n):
@@ -12,7 +18,7 @@
 
 	* src/SDCCralloc.hpp,
 	  src/hc08/ralloc2.cc,
-	  src/hc08/gen.c,
+	  src/hc08/gen.c:
 	  Made hc08 code generation more robust wrt. surviving registers and register operands.
 
 2012-04-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
