@@ -8666,6 +8666,7 @@ genReceive (iCode * ic)
   int size;
   int offset;
   D (emitcode (";     genReceive", ""));
+  bool delayed_x = FALSE;
 
   aopOp (IC_RESULT (ic), ic, FALSE);
   size = AOP_SIZE (IC_RESULT (ic));
@@ -8675,12 +8676,21 @@ genReceive (iCode * ic)
     {
       while (size--)
         {
-          transferAopAop (hc08_aop_pass[offset + (ic->argreg - 1)], 0, AOP (IC_RESULT (ic)), offset);
+          if (AOP_TYPE (IC_RESULT (ic)) == AOP_REG && !(offset + (ic->argreg - 1)) && AOP (IC_RESULT (ic))->aopu.aop_reg[0]->rIdx == X_IDX && size)
+            {
+              pushReg (hc08_reg_a, TRUE);
+              delayed_x = TRUE;
+            }
+          else
+            transferAopAop (hc08_aop_pass[offset + (ic->argreg - 1)], 0, AOP (IC_RESULT (ic)), offset);
           if (hc08_aop_pass[offset]->type == AOP_REG)
             hc08_freeReg (hc08_aop_pass[offset]->aopu.aop_reg[0]);
           offset++;
         }
     }
+
+  if (delayed_x)
+    pullReg (hc08_reg_x);
 
   freeAsmop (IC_RESULT (ic), NULL, ic, TRUE);
 }

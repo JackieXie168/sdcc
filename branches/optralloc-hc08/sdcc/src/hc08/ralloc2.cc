@@ -206,8 +206,11 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if((ic->op == IFX || ic->op == JUMPTABLE) && (unused_A || dying_A))
     return(true);
 
-  if(ic->op == IPUSH && (unused_A || dying_A || operand_in_reg(left, REG_A, ia, i, G) || operand_in_reg(left, REG_H, ia, i, G) || operand_in_reg(left, REG_X, ia, i, G)))
+  if(ic->op == IPUSH && (unused_A || dying_A || left_in_A || operand_in_reg(left, REG_H, ia, i, G) || left_in_X))
     return(true);
+
+  /*if(ic->op == RECEIVE && (!ic->next || !(ic->next->op == RECEIVE) || !result_in_X || getSize(operandType(result)) >= 2))
+    return(true);*/
 
   return(false);
 }
@@ -348,7 +351,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case ADDRESS_OF:
     case JUMPTABLE:
     case CAST:
-    //case RECEIVE:
+    case RECEIVE:
     //case SEND: // Messes up _G.sendSet
     case DUMMY_READ_VOLATILE:
     case CRITICAL:

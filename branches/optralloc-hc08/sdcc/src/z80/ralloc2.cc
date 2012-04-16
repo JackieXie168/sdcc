@@ -676,7 +676,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(exstk && (operand_on_stack(result, a, i, G) || operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)))	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
     return(false);
 
-  if(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) >= 2 &&
+  if(ic->op == '+' && getSize(operandType(result)) >= 2 &&
     (IS_TRUE_SYMOP (result) || IS_TRUE_SYMOP (left) || IS_TRUE_SYMOP (right))) // Might use (hl).
     return(false);
 
@@ -693,7 +693,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
        ic->op == CAST))
     return(true);
 
-  if(IC_RESULT(ic) && IS_SYMOP(result) && isOperandInDirSpace(IC_RESULT(ic)))
+  if(result && IS_SYMOP(result) && isOperandInDirSpace(IC_RESULT(ic)))
     return(false);
 
   if((input_in_HL || !result_only_HL) && left && IS_SYMOP(left) && isOperandInDirSpace(IC_LEFT(ic)))
