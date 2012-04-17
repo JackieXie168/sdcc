@@ -3395,6 +3395,8 @@ genPlus (iCode * ic)
   asmop *leftOp, *rightOp;
   bool needpulla;
   bool delayedstore = FALSE;
+  bool mayskip = TRUE;
+  bool skip = FALSE;
 
   /* special cases :- */
 
@@ -3433,7 +3435,14 @@ genPlus (iCode * ic)
   while (size--)
     {
       loadRegFromAop (hc08_reg_a, leftOp, offset);
-      accopWithAop (add, rightOp, offset);
+      if (!mayskip || AOP_TYPE (IC_RIGHT (ic)) != AOP_LIT || (((ulFromVal (AOP (IC_RIGHT (ic))->aopu.aop_lit) >> (offset * 8)) & 0xff) != 0x00))
+        {
+          accopWithAop (add, rightOp, offset);
+          mayskip = FALSE;
+          skip = FALSE;
+        }
+      else
+        skip = TRUE;
       if (size && AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX)
         {
           pushReg (hc08_reg_a, TRUE);
@@ -3443,7 +3452,8 @@ genPlus (iCode * ic)
         storeRegToAop (hc08_reg_a, AOP (IC_RESULT (ic)), offset);
       offset++;
       hc08_freeReg (hc08_reg_a);
-      add = "adc";              /* further adds must propagate carry */
+      if (!skip)
+        add = "adc";              /* further adds must propagate carry */
     }
  if (delayedstore)
    pullReg (hc08_reg_a);
@@ -3484,7 +3494,9 @@ genMinusDec (iCode * ic)
 
   icount = (unsigned int) ulFromVal (AOP (IC_RIGHT (ic))->aopu.aop_lit);
 
-  if ((AOP_TYPE (left) == AOP_DIR) && (AOP_TYPE (result) == AOP_DIR) && (icount >= -127) && (icount <= 128) && (size == 2))
+  if (((AOP_TYPE (left) == AOP_DIR) && (AOP_TYPE (result) == AOP_DIR) && (size == 2) ||
+    (IS_AOP_HX (AOP (left)) || IS_AOP_X (AOP (left))) && (IS_AOP_HX (AOP (result)) || IS_AOP_X (AOP (result)))) &&
+    (icount >= -127) && (icount <= 128))
     {
       needpulx = pushRegIfSurv (hc08_reg_x);
       needpulh = pushRegIfSurv (hc08_reg_h);
@@ -7776,6 +7788,14 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
   /* so hx now contains the address */
   aopOp (result, ic, FALSE);
 
+
+  if (AOP_TYPE (result) == AOP_REG && pi)
+    { 
+      int i;
+      for (i = 0; i < AOP_SIZE (result); i++)
+        AOP (result)->aopu.aop_reg[i]->isDead = TRUE;
+    }
+
   /* if bit then unpack */
   if (IS_BITVAR (retype))
     genUnpackBits (result, ifx);
@@ -8217,6 +8237,13 @@ genPointerSet (iCode * ic, iCode * pi)
           genPackBitsImmed (result, (IS_BITVAR (retype) ? retype : letype), right, ic);
           return;
         }
+    }
+
+  if (AOP_TYPE (result) == AOP_REG && pi)
+    { 
+      int i;
+      for (i = 0; i < AOP_SIZE (result); i++)
+        AOP (result)->aopu.aop_reg[i]->isDead = TRUE;
     }
 
   needpullx = pushRegIfSurv (hc08_reg_x);
@@ -8735,7 +8762,14 @@ genReceive (iCode * ic)
   size = AOP_SIZE (IC_RESULT (ic));
   offset = 0;
 
-  if (ic->argreg)
+  if (ic->argreg && IS_AOP_HX (AOP (IC_RESULT (ic))) && (offset + (ic->argreg - 1)) == 0)
+    {
+      pushReg (hc08_reg_x, TRUE);
+      emitcode ("tax", "");
+      regalloc_dry_run_cost++;
+      pullReg (hc08_reg_h);
+    }
+  else if (ic->argreg)
     {
       while (size--)
         {
