@@ -1314,7 +1314,7 @@ accopWithMisc (char *accop, char *param)
 /*                Supports: adc, add, and, bit, cmp, eor, ora, sbc, sub     */
 /*--------------------------------------------------------------------------*/
 static void
-accopWithAop (char *accop, asmop * aop, int loffset)
+accopWithAop (char *accop, asmop *aop, int loffset)
 {
   if (aop->stacked && aop->stk_aop[loffset])
     {
@@ -1325,7 +1325,12 @@ accopWithAop (char *accop, asmop * aop, int loffset)
   if (aop->type == AOP_DUMMY)
     return;
 
-  if (aop->type == AOP_REG)
+  if (loffset >= aop->size)
+    {
+      emitcode (accop, "#0");
+      regalloc_dry_run_cost += 2;
+    }
+  else if (aop->type == AOP_REG)
     {
       pushReg (aop->aopu.aop_reg[loffset], FALSE);
       emitcode (accop, "1,s");
@@ -1388,7 +1393,7 @@ rmwWithReg (char *rmwop, reg_info * reg)
 }
 
 /*--------------------------------------------------------------------------*/
-/* accopWithAop - Emit read/modify/write instruction rmwop with the byte at */
+/* rmwWithAop - Emit read/modify/write instruction rmwop with the byte at   */
 /*                logical offset loffset of asmop aop.                      */
 /*                Supports: com, dec, inc, lsl, lsr, neg, rol, ror, tst     */
 /*--------------------------------------------------------------------------*/
@@ -3648,6 +3653,7 @@ genMultOneByte (operand * left, operand * right, operand * result)
   int size = AOP_SIZE (result);
   bool negLiteral = FALSE;
   bool lUnsigned, rUnsigned;
+  bool needpulla, needpullx;
 
   D (emitcode (";     genMultOneByte", ""));
 
@@ -3673,6 +3679,9 @@ genMultOneByte (operand * left, operand * right, operand * result)
       right = left;
       left = t;
     }
+
+  needpulla = pushRegIfSurv (hc08_reg_a);
+  needpullx = pushRegIfSurv (hc08_reg_x);
 
   lUnsigned = SPEC_USIGN (getSpec (operandType (left)));
   rUnsigned = SPEC_USIGN (getSpec (operandType (right)));
@@ -3824,8 +3833,9 @@ genMultOneByte (operand * left, operand * right, operand * result)
     emitLabel (tlbl3);
   adjustStack (1);
   storeRegToFullAop (hc08_reg_xa, AOP (result), TRUE);
-  hc08_freeReg (hc08_reg_xa);
-
+  
+  pullOrFreeReg (hc08_reg_x, needpullx);
+  pullOrFreeReg (hc08_reg_a, needpulla);
 }
 
 /*-----------------------------------------------------------------*/
