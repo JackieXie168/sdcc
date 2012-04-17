@@ -3587,8 +3587,20 @@ genMinus (iCode * ic)
 
   while (size--)
     {
-      loadRegFromAop (hc08_reg_a, leftOp, offset);
-      accopWithAop (sub, rightOp, offset);
+      if (AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          loadRegFromAop (hc08_reg_a, leftOp, offset);
+          emitcode (sub, "1, s");
+          regalloc_dry_run_cost += 3;
+          emitcode ("ais", "#1");
+          regalloc_dry_run_cost += 2;
+        }
+      else
+        {
+          loadRegFromAop (hc08_reg_a, leftOp, offset);
+          accopWithAop (sub, rightOp, offset);
+        }
       if (size && AOP_TYPE (IC_RESULT (ic)) == AOP_REG && AOP (IC_RESULT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX)
         {
           pushReg (hc08_reg_a, TRUE);
@@ -4615,7 +4627,6 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
   operand *left, *right, *result;
   int opcode;
   int size, offset = 0;
-  char *sub;
   symbol *jlbl = NULL;
   symbol *tlbl_NE = NULL;
   symbol *tlbl_EQ = NULL;
@@ -4671,29 +4682,36 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
   else
     {
       offset = 0;
-      sub = "cmp";
-      needpulla = pushRegIfSurv (hc08_reg_a);
       while (size--)
         {
-          loadRegFromAop (hc08_reg_a, AOP (left), offset);
-          accopWithAop (sub, AOP (right), offset);
+          if (AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == X_IDX)
+            accopWithAop ("cpx", AOP (right), offset);
+          else
+            {
+              if (!(AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == A_IDX))
+                {
+                  needpulla = pushRegIfSurv (hc08_reg_a);
+                  loadRegFromAop (hc08_reg_a, AOP (left), offset);
+                }
+              accopWithAop ("cmp", AOP (right), offset);
+              if (!(AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx == A_IDX))
+                pullOrFreeReg (hc08_reg_a, needpulla);
+              needpulla = FALSE;
+            }
           if (size)
             {
               if (!tlbl_NE && !regalloc_dry_run)
                 tlbl_NE = newiTempLabel (NULL);
               emitBranch ("bne", tlbl_NE);
             }
-          hc08_freeReg (hc08_reg_a);
           offset++;
-        }
+          }
     }
   freeAsmop (right, NULL, ic, FALSE);
   freeAsmop (left, NULL, ic, FALSE);
 
   if (ifx)
     {
-      pullOrFreeReg (hc08_reg_a, needpulla);
-
       freeAsmop (result, NULL, ic, TRUE);
 
       if (opcode == EQ_OP)
@@ -6493,10 +6511,12 @@ shiftR1Left2Result (operand * left, int offl, operand * result, int offr, int sh
 static void
 shiftL1Left2Result (operand * left, int offl, operand * result, int offr, int shCount)
 {
+  bool needpulla = pushRegIfSurv (hc08_reg_a);
   loadRegFromAop (hc08_reg_a, AOP (left), offl);
   /* shift left accumulator */
   AccLsh (shCount);
   storeRegToAop (hc08_reg_a, AOP (result), offr);
+  pullOrFreeReg (hc08_reg_a, needpulla);
 }
 
 /*-----------------------------------------------------------------*/
