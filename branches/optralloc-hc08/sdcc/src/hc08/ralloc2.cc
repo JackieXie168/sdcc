@@ -153,6 +153,8 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(ic->op == '!' ||
     ic->op == '~' ||
     ic->op == UNARYMINUS ||
+    ic->op == CALL ||
+    ic->op == PCALL ||
     ic->op == FUNCTION ||
     ic->op == ENDFUNCTION ||
     ic->op == RETURN ||
@@ -218,6 +220,18 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   if(ic->op == RECEIVE && (!ic->next || !(ic->next->op == RECEIVE) || !result_in_X || getSize(operandType(result)) >= 2))
     return(true);
+
+  if(ic->op == SEND && ic->next && ic->next->op == SEND && ic->next->next && ic->next->next->op == SEND)
+    return(true);
+
+  if(ic->op == SEND && ic->next && ic->next->op == SEND && (unused_X || dying_X))
+    return(true);
+
+  if(ic->op == SEND && (unused_X || dying_X) && (unused_A || dying_A))
+    return(true);
+
+  /*if(ic->op == SEND && ic->next && (ic->next->op == CALL || ic->next->op == PCALL)) // Might mess up A and X, but these would have been saved before if surviving, and will not be needed again before the call.
+    return(true);*/
 
   return(false);
 }
@@ -337,10 +351,12 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case BITWISEAND:
     case IPUSH:
     //case IPOP:
-    //case CALL:
-    //case PCALL:
+    case CALL:
+    case PCALL:
     case RETURN:
     case '*':
+    case '/':
+    case '%':
     case '>':
     case '<':
     case LE_OP:

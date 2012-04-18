@@ -694,33 +694,35 @@ forceload:
         }
       break;
     case H_IDX:
-    {
-      char *l = aopAdrStr (aop, loffset, FALSE);
-      if (!strcmp (l, zero))
+      {
+        char *l = aopAdrStr (aop, loffset, FALSE);
+        if (!strcmp (l, zero))
+         {
+            emitcode ("clrh", "");
+            regalloc_dry_run_cost++;
+            break;
+          }
+      }
+      if (aop->type == AOP_REG && loffset < aop->size)
+        transferRegReg (aop->aopu.aop_reg[loffset], hc08_reg_h, TRUE);
+      else if (hc08_reg_a->isFree)
         {
-          emitcode ("clrh", "");
-          regalloc_dry_run_cost++;
-          break;
+          loadRegFromAop (hc08_reg_a, aop, loffset);
+          transferRegReg (hc08_reg_a, hc08_reg_h, TRUE);
         }
-    }
-    if (hc08_reg_a->isFree)
-      {
-        loadRegFromAop (hc08_reg_a, aop, loffset);
-        transferRegReg (hc08_reg_a, hc08_reg_h, TRUE);
-      }
-    else if (hc08_reg_x->isFree)
-      {
-        loadRegFromAop (hc08_reg_x, aop, loffset);
-        transferRegReg (hc08_reg_x, hc08_reg_h, TRUE);
-      }
-    else
-      {
-        pushReg (hc08_reg_a, TRUE);
-        loadRegFromAop (hc08_reg_a, aop, loffset);
-        transferRegReg (hc08_reg_a, hc08_reg_h, TRUE);
-        pullReg (hc08_reg_a);
-      }
-    break;
+      else if (hc08_reg_x->isFree)
+        {
+          loadRegFromAop (hc08_reg_x, aop, loffset);
+          transferRegReg (hc08_reg_x, hc08_reg_h, TRUE);
+        }
+      else
+        {
+          pushReg (hc08_reg_a, TRUE);
+          loadRegFromAop (hc08_reg_a, aop, loffset);
+          transferRegReg (hc08_reg_a, hc08_reg_h, TRUE);
+          pullReg (hc08_reg_a);
+        }
+      break;
     case HX_IDX:
       if (IS_AOP_HX (aop))
         break;
@@ -898,7 +900,9 @@ storeRegToAop (reg_info * reg, asmop * aop, int loffset)
         }
       break;
     case H_IDX:
-      if (hc08_reg_a->isFree)
+      if ((aop->type == AOP_REG) && (loffset < aop->size))
+        transferRegReg (reg, aop->aopu.aop_reg[loffset], FALSE);
+      else if (hc08_reg_a->isFree)
         {
           transferRegReg (hc08_reg_h, hc08_reg_a, FALSE);
           storeRegToAop (hc08_reg_a, aop, loffset);
@@ -2535,11 +2539,10 @@ release:
 /* saveRegisters - will look for a call and save the registers     */
 /*-----------------------------------------------------------------*/
 static void
-saveRegisters (iCode * lic)
+saveRegisters (iCode *lic)
 {
   int i;
   iCode *ic;
-  bitVect *rsave;
 
   /* look for call */
   for (ic = lic; ic; ic = ic->next)
@@ -2560,14 +2563,11 @@ saveRegisters (iCode * lic)
       (IFFUNC_CALLEESAVES (OP_SYMBOL (IC_LEFT (ic))->type) || IFFUNC_ISNAKED (OP_SYM_TYPE (IC_LEFT (ic)))))
     return;
 
-  /* safe the registers in use at this time but skip the
-     ones for the result */
-  rsave = bitVectCplAnd (bitVectCopy (ic->rMask), hc08_rUmaskForOp (IC_RESULT (ic)));
-
-  ic->regsSaved = 1;
-  for (i = 0; i < hc08_nRegs; i++)
+  if (!regalloc_dry_run)
+    ic->regsSaved = 1;
+  for (i = A_IDX; i <= H_IDX; i++)
     {
-      if (bitVectBitValue (rsave, i))
+      if (bitVectBitValue (ic->rSurv, i))
         pushReg (hc08_regWithIdx (i), FALSE);
     }
 }
@@ -2576,7 +2576,7 @@ saveRegisters (iCode * lic)
 /* unsaveRegisters - pop the pushed registers                      */
 /*-----------------------------------------------------------------*/
 static void
-unsaveRegisters (iCode * ic)
+unsaveRegisters (iCode *ic)
 {
   int i;
   bitVect *rsave;
@@ -2585,9 +2585,9 @@ unsaveRegisters (iCode * ic)
      ones for the result */
   rsave = bitVectCplAnd (bitVectCopy (ic->rMask), hc08_rUmaskForOp (IC_RESULT (ic)));
 
-  for (i = hc08_nRegs; i >= 0; i--)
+  for (i = H_IDX; i >= A_IDX; i--)
     {
-      if (bitVectBitValue (rsave, i))
+      if (bitVectBitValue (ic->rSurv, i))
         pullReg (hc08_regWithIdx (i));
     }
 
@@ -2621,13 +2621,22 @@ assignResultValue (operand * oper)
 {
   int size = AOP_SIZE (oper);
   int offset = 0;
+  bool delayed_x = FALSE;
   while (size--)
     {
-      transferAopAop (hc08_aop_pass[offset], 0, AOP (oper), offset);
+      if (!offset && AOP_TYPE (oper) == AOP_REG && AOP_SIZE (oper) > 1 && AOP (oper)->aopu.aop_reg[0]->rIdx == X_IDX)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          delayed_x = true;
+        }
+      else
+        transferAopAop (hc08_aop_pass[offset], 0, AOP (oper), offset);
       if (hc08_aop_pass[offset]->type == AOP_REG)
         hc08_freeReg (hc08_aop_pass[offset]->aopu.aop_reg[0]);
       offset++;
     }
+  if (delayed_x)
+    pullReg (hc08_reg_x);
 }
 
 
@@ -2741,6 +2750,7 @@ static void
 genSend (set *sendSet)
 {
   iCode *sic;
+  bool delayed_x = FALSE;
 
   D (emitcode (";", "genSend"));
 
@@ -2749,18 +2759,27 @@ genSend (set *sendSet)
       int size, offset = 0;
       aopOp (IC_LEFT (sic), sic, FALSE);
       size = AOP_SIZE (IC_LEFT (sic));
-  D (emitcode (";", "sending something"));
+
       if (sic->argreg)
         {
           offset = size - 1;
           while (size--)
             {
+              if (offset + (sic->argreg - 1) == 0 && delayed_x)
+                continue;
+              if (offset + (sic->argreg - 1) == 1 && (!setNextItem (sendSet) && AOP_TYPE (IC_LEFT (sic)) == AOP_REG && AOP (IC_LEFT (sic))->aopu.aop_reg[0]->rIdx == X_IDX || 0))
+                {
+                  pushReg (hc08_reg_x, TRUE);
+                  delayed_x = TRUE;
+                }
               transferAopAop (AOP (IC_LEFT (sic)), offset, hc08_aop_pass[offset + (sic->argreg - 1)], 0);
               offset--;
             }
         }
       freeAsmop (IC_LEFT (sic), NULL, sic, TRUE);
     }
+  if (delayed_x)
+    pullReg (hc08_reg_a);
 }
 
 /*-----------------------------------------------------------------*/
@@ -2776,10 +2795,14 @@ genCall (iCode * ic)
 
   D (emitcode (";", "genCall"));
 
+  /* if caller saves & we have not saved then */
+  if (!ic->regsSaved)
+    saveRegisters (ic);
+
   dtype = operandType (IC_LEFT (ic));
   etype = getSpec (dtype);
   /* if send set is not empty then assign */
-  if (_G.sendSet)
+  if (_G.sendSet && !regalloc_dry_run)
     {
       if (IFFUNC_ISREENT (dtype))       /* need to reverse the send set */
         {
@@ -2791,10 +2814,6 @@ genCall (iCode * ic)
         }
       _G.sendSet = NULL;
     }
-
-  /* if caller saves & we have not saved then */
-  if (!ic->regsSaved)
-    saveRegisters (ic);
 
   /* make the call */
   if (IS_LITERAL (etype))
@@ -2869,7 +2888,7 @@ genPcall (iCode * ic)
   pushSide (IC_LEFT (ic), FPTRSIZE, ic);
 
   /* if send set is not empty then assign */
-  if (_G.sendSet)
+  if (_G.sendSet && !regalloc_dry_run)
     {
       genSend (reverseSet (_G.sendSet));
       _G.sendSet = NULL;
@@ -4693,7 +4712,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
   size = max (AOP_SIZE (left), AOP_SIZE (right));
 
   if ((size == 2)
-      && ((AOP_TYPE (left) == AOP_DIR) && (AOP_SIZE (left) == 2))
+      && ((AOP_TYPE (left) == AOP_DIR || IS_AOP_HX (AOP (left))) && (AOP_SIZE (left) == 2))
       && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && hc08_reg_h->isDead && hc08_reg_x->isDead)
     {
       loadRegFromAop (hc08_reg_hx, AOP (left), 0);
@@ -8970,7 +8989,7 @@ genhc08iCode (iCode *ic)
         updateiTempRegisterUse (IC_RIGHT (ic));
       }
 
-    for (i = A_IDX; i <= X_IDX || i <= H_IDX; i++)
+    for (i = A_IDX; i <= H_IDX; i++)
       {
         if (bitVectBitValue (ic->rSurv, i))
           {
@@ -9184,7 +9203,7 @@ genhc08iCode (iCode *ic)
       break;
 
     default:
-      ;
+      wassertl (0, "Unknown iCode");
     }
 }
 
