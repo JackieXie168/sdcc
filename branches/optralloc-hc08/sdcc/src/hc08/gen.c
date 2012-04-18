@@ -4774,7 +4774,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
             }
           if (size)
             {
-              if (!needpulla)
+              if (!needpulla && !ifx)
                 needpulla = pushRegIfSurv (hc08_reg_a);
               if (!tlbl_NE && !regalloc_dry_run)
                 tlbl_NE = newiTempLabel (NULL);
