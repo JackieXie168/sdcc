@@ -4685,7 +4685,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
   aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
   aopOp (result, ic, TRUE);
-
+D (emitcode (";     A", ""));
   /* need register operand on left, prefer literal operand on right */
   if ((AOP_TYPE (right) == AOP_REG) || AOP_TYPE (left) == AOP_LIT)
     {
@@ -4708,7 +4708,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
           jlbl = IC_FALSE (ifx);
         }
     }
-
+D (emitcode (";     B", ""));
   size = max (AOP_SIZE (left), AOP_SIZE (right));
 
   if ((size == 2)
@@ -4741,16 +4741,20 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
             }
           if (size)
             {
+              if (!needpulla)
+                needpulla = pushRegIfSurv (hc08_reg_a);
               if (!tlbl_NE && !regalloc_dry_run)
                 tlbl_NE = newiTempLabel (NULL);
               emitBranch ("bne", tlbl_NE);
+              pullOrFreeReg (hc08_reg_a, needpulla);
+              needpulla = FALSE;
             }
           offset++;
           }
     }
   freeAsmop (right, NULL, ic, FALSE);
   freeAsmop (left, NULL, ic, FALSE);
-
+D (emitcode (";     C", ""));
   if (ifx)
     {
       freeAsmop (result, NULL, ic, TRUE);
@@ -4816,6 +4820,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
       pullOrFreeReg (hc08_reg_a, needpulla);
       freeAsmop (result, NULL, ic, TRUE);
     }
+D (emitcode (";     D", ""));
 }
 
 static bool

@@ -230,8 +230,8 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(ic->op == SEND && (unused_X || dying_X) && (unused_A || dying_A))
     return(true);
 
-  /*if(ic->op == SEND && ic->next && (ic->next->op == CALL || ic->next->op == PCALL)) // Might mess up A and X, but these would have been saved before if surviving, and will not be needed again before the call.
-    return(true);*/
+  if(ic->op == SEND && ic->next && (ic->next->op == CALL || ic->next->op == PCALL)) // Might mess up A and X, but these would have been saved before if surviving, and will not be needed again before the call.
+    return(true);
 
   return(false);
 }
