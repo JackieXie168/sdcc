@@ -4685,7 +4685,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
   aopOp (left, ic, FALSE);
   aopOp (right, ic, FALSE);
   aopOp (result, ic, TRUE);
-D (emitcode (";     A", ""));
+
   /* need register operand on left, prefer literal operand on right */
   if ((AOP_TYPE (right) == AOP_REG) || AOP_TYPE (left) == AOP_LIT)
     {
@@ -4708,7 +4708,7 @@ D (emitcode (";     A", ""));
           jlbl = IC_FALSE (ifx);
         }
     }
-D (emitcode (";     B", ""));
+
   size = max (AOP_SIZE (left), AOP_SIZE (right));
 
   if ((size == 2)
@@ -4754,7 +4754,7 @@ D (emitcode (";     B", ""));
     }
   freeAsmop (right, NULL, ic, FALSE);
   freeAsmop (left, NULL, ic, FALSE);
-D (emitcode (";     C", ""));
+
   if (ifx)
     {
       freeAsmop (result, NULL, ic, TRUE);
@@ -4820,7 +4820,6 @@ D (emitcode (";     C", ""));
       pullOrFreeReg (hc08_reg_a, needpulla);
       freeAsmop (result, NULL, ic, TRUE);
     }
-D (emitcode (";     D", ""));
 }
 
 static bool
@@ -5207,7 +5206,7 @@ genAnd (iCode * ic, iCode * ifx)
   unsigned long lit = 0L;
   unsigned long litinv;
   unsigned char bytemask;
-
+  bool needpulla = FALSE;
 
 //  int bytelit = 0;
 //  char buffer[10];
@@ -5246,6 +5245,8 @@ genAnd (iCode * ic, iCode * ifx)
 
   if (AOP_TYPE (result) == AOP_CRY && size > 1 && (isOperandVolatile (left, FALSE) || isOperandVolatile (right, FALSE)))
     {
+      needpulla = pushRegIfSurv (hc08_reg_a);
+
       /* this generates ugly code, but meets volatility requirements */
       loadRegFromConst (hc08_reg_a, zero);
       pushReg (hc08_reg_a, TRUE);
@@ -5264,13 +5265,19 @@ genAnd (iCode * ic, iCode * ifx)
       pullReg (hc08_reg_a);
       emitcode ("tsta", "");
       regalloc_dry_run_cost++;
+
+      pullOrFreeReg (hc08_reg_a, needpulla);
+
       genIfxJump (ifx, "a");
+
       goto release;
     }
 
   if (AOP_TYPE (result) == AOP_CRY)
     {
       symbol *tlbl = NULL;
+
+      needpulla = pushRegIfSurv (hc08_reg_a);
 
       offset = 0;
       while (size--)
@@ -5307,6 +5314,9 @@ genAnd (iCode * ic, iCode * ifx)
         }
       if (tlbl)
         emitLabel (tlbl);
+
+      pullOrFreeReg (hc08_reg_a, needpulla);
+
       if (ifx)
         genIfxJump (ifx, "a");
       goto release;
@@ -5325,6 +5335,8 @@ genAnd (iCode * ic, iCode * ifx)
           goto release;
         }
     }
+
+  needpulla = pushRegIfSurv (hc08_reg_a);
 
   offset = 0;
   while (size--)
@@ -5351,8 +5363,15 @@ genAnd (iCode * ic, iCode * ifx)
           storeRegToAop (hc08_reg_a, AOP (result), offset);
           hc08_freeReg (hc08_reg_a);
         }
+      if (AOP_TYPE (result) == AOP_REG && size && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          needpulla = TRUE;
+        }
       offset++;
     }
+
+  pullOrFreeReg (hc08_reg_a, needpulla);
 
 release:
   freeAsmop (left, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
@@ -5370,6 +5389,7 @@ genOr (iCode * ic, iCode * ifx)
   int size, offset = 0;
   unsigned long lit = 0L;
   unsigned char bytemask;
+  bool needpulla = FALSE;
 
   D (emitcode (";     genOr", ""));
 
@@ -5405,6 +5425,8 @@ genOr (iCode * ic, iCode * ifx)
 
   if (AOP_TYPE (result) == AOP_CRY && size > 1 && (isOperandVolatile (left, FALSE) || isOperandVolatile (right, FALSE)))
     {
+      needpulla = pushRegIfSurv (hc08_reg_a);
+
       /* this generates ugly code, but meets volatility requirements */
       loadRegFromConst (hc08_reg_a, zero);
       pushReg (hc08_reg_a, TRUE);
@@ -5423,13 +5445,19 @@ genOr (iCode * ic, iCode * ifx)
       pullReg (hc08_reg_a);
       emitcode ("tsta", "");
       regalloc_dry_run_cost++;
+
+      pullOrFreeReg (hc08_reg_a, needpulla);
+
       genIfxJump (ifx, "a");
+
       goto release;
     }
 
   if (AOP_TYPE (result) == AOP_CRY)
     {
       symbol *tlbl = NULL;
+
+      needpulla = pushRegIfSurv (hc08_reg_a);
 
       offset = 0;
       while (size--)
@@ -5462,8 +5490,13 @@ genOr (iCode * ic, iCode * ifx)
         }
       if (tlbl)
         emitLabel (tlbl);
+
+      pullOrFreeReg (hc08_reg_a, needpulla);
+
       if (ifx)
         genIfxJump (ifx, "a");
+
+      goto release;
     }
 
   if (AOP_TYPE (right) == AOP_LIT)
@@ -5479,6 +5512,8 @@ genOr (iCode * ic, iCode * ifx)
       regalloc_dry_run_cost += 2;
       goto release;
     }
+
+  needpulla = pushRegIfSurv (hc08_reg_a);
 
   offset = 0;
   while (size--)
@@ -5505,9 +5540,15 @@ genOr (iCode * ic, iCode * ifx)
           storeRegToAop (hc08_reg_a, AOP (result), offset);
           hc08_freeReg (hc08_reg_a);
         }
+      if (AOP_TYPE (result) == AOP_REG && size && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          needpulla = TRUE;
+        }
       offset++;
     }
 
+  pullOrFreeReg (hc08_reg_a, needpulla);
 
 release:
   freeAsmop (left, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
@@ -5523,6 +5564,7 @@ genXor (iCode * ic, iCode * ifx)
 {
   operand *left, *right, *result;
   int size, offset = 0;
+  bool needpulla = FALSE;
 
   D (emitcode (";     genXor", ""));
 
@@ -5551,6 +5593,8 @@ genXor (iCode * ic, iCode * ifx)
       right = left;
       left = tmp;
     }
+
+  needpulla = pushRegIfSurv (hc08_reg_a);
 
   if (AOP_TYPE (result) == AOP_CRY)
     {
@@ -5597,11 +5641,20 @@ genXor (iCode * ic, iCode * ifx)
     {
       loadRegFromAop (hc08_reg_a, AOP (left), offset);
       accopWithAop ("eor", AOP (right), offset);
-      storeRegToAop (hc08_reg_a, AOP (result), offset++);
+      storeRegToAop (hc08_reg_a, AOP (result), offset);
+      if (AOP_TYPE (result) == AOP_REG && size && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          needpulla = TRUE;
+        }
       hc08_freeReg (hc08_reg_a);
+      offset++;
     }
 
+  pullOrFreeReg (hc08_reg_a, needpulla);
+
 //release:
+
   freeAsmop (left, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
   freeAsmop (right, NULL, ic, (RESULTONSTACK (ic) ? FALSE : TRUE));
   freeAsmop (result, NULL, ic, TRUE);
