@@ -3906,11 +3906,17 @@ genDivOneByte (operand * left, operand * right, operand * result)
   int offset = 0;
   bool lUnsigned, rUnsigned;
   bool runtimeSign, compiletimeSign;
+  bool needpulla, needpullh;
+  bool needpullx = FALSE;
+  bool delayed_a = FALSE;
 
   lUnsigned = SPEC_USIGN (getSpec (operandType (left)));
   rUnsigned = SPEC_USIGN (getSpec (operandType (right)));
 
   D (emitcode (";     genDivOneByte", ""));
+
+  needpulla = pushRegIfSurv (hc08_reg_a);
+  needpullh = pushRegIfSurv (hc08_reg_h);
 
   size = AOP_SIZE (result);
   /* signed or unsigned */
@@ -3925,11 +3931,13 @@ genDivOneByte (operand * left, operand * right, operand * result)
       hc08_dirtyReg (hc08_reg_a, FALSE);
       hc08_dirtyReg (hc08_reg_h, FALSE);
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
-      hc08_freeReg (hc08_reg_a);
       hc08_freeReg (hc08_reg_x);
-      hc08_freeReg (hc08_reg_h);
+      pullOrFreeReg (hc08_reg_h, needpullh);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       return;
     }
+
+  needpullx = pushRegIfSurv (hc08_reg_x);
 
   /* signed is a little bit more difficult */
 
@@ -4066,7 +4074,13 @@ genDivOneByte (operand * left, operand * right, operand * result)
       if (runtimeSign && !regalloc_dry_run)
         emitLabel (tlbl3);
 
-      storeRegToAop (hc08_reg_a, AOP (result), 0);
+      if (size > 1 && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[0]->rIdx == A_IDX)
+        {
+          pushReg (hc08_reg_a, TRUE);
+          delayed_a = TRUE;
+        }
+      else
+        storeRegToAop (hc08_reg_a, AOP (result), 0);
 
       if (size > 1)
         {
@@ -4078,11 +4092,20 @@ genDivOneByte (operand * left, operand * right, operand * result)
               emitcode ("sbc", "#0");
               regalloc_dry_run_cost += 3;
               while (--size)
-                storeRegToAop (hc08_reg_a, AOP (result), ++offset);
+                {
+                  offset++;
+                  if (size && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
+                    {
+                      pushReg (hc08_reg_a, TRUE);
+                      delayed_a = TRUE;
+                    }
+                  else
+                    storeRegToAop (hc08_reg_a, AOP (result), offset);
+                }
             }
           else                  /* compiletimeSign */
             while (--size)
-              storeConstToAop ("#0xff", AOP (result), ++offset);
+                storeConstToAop ("#0xff", AOP (result), ++offset);
         }
     }
   else
@@ -4090,9 +4113,12 @@ genDivOneByte (operand * left, operand * right, operand * result)
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
     }
 
-  hc08_freeReg (hc08_reg_a);
-  hc08_freeReg (hc08_reg_x);
-  hc08_freeReg (hc08_reg_h);
+  if (delayed_a)
+    pullReg (hc08_reg_a);
+
+  pullOrFreeReg (hc08_reg_x, needpullx);
+  pullOrFreeReg (hc08_reg_h, needpullh);
+  pullOrFreeReg (hc08_reg_a, needpulla);
 }
 
 /*-----------------------------------------------------------------*/
@@ -4139,6 +4165,8 @@ genModOneByte (operand * left, operand * right, operand * result)
   int offset = 0;
   bool lUnsigned, rUnsigned;
   bool runtimeSign, compiletimeSign;
+  bool needpulla, needpullh;
+  bool needpullx = FALSE;
 
   lUnsigned = SPEC_USIGN (getSpec (operandType (left)));
   rUnsigned = SPEC_USIGN (getSpec (operandType (right)));
@@ -4146,6 +4174,9 @@ genModOneByte (operand * left, operand * right, operand * result)
   D (emitcode (";     genModOneByte", ""));
 
   size = AOP_SIZE (result);
+
+  needpulla = pushRegIfSurv (hc08_reg_a);
+  needpullh = pushRegIfSurv (hc08_reg_h);
 
   if (lUnsigned && rUnsigned)
     {
@@ -4159,11 +4190,13 @@ genModOneByte (operand * left, operand * right, operand * result)
       hc08_freeReg (hc08_reg_x);
       hc08_dirtyReg (hc08_reg_h, FALSE);
       storeRegToFullAop (hc08_reg_h, AOP (result), FALSE);
-      hc08_freeReg (hc08_reg_h);
+      pullOrFreeReg (hc08_reg_h, needpullh);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       return;
     }
 
   /* signed is a little bit more difficult */
+  needpullx = pushRegIfSurv (hc08_reg_x);
 
   if (AOP_TYPE (right) == AOP_LIT)
     {
@@ -4289,9 +4322,9 @@ genModOneByte (operand * left, operand * right, operand * result)
       storeRegToFullAop (hc08_reg_h, AOP (result), FALSE);
     }
 
-  hc08_freeReg (hc08_reg_a);
-  hc08_freeReg (hc08_reg_x);
-  hc08_freeReg (hc08_reg_h);
+  pullOrFreeReg (hc08_reg_x, needpullx);
+  pullOrFreeReg (hc08_reg_h, needpullh);
+  pullOrFreeReg (hc08_reg_a, needpulla);
 }
 
 /*-----------------------------------------------------------------*/

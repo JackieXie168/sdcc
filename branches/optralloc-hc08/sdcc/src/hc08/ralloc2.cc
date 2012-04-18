@@ -163,13 +163,15 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == '+' ||
     ic->op == '-' ||
     ic->op == '*' ||
+    ic->op == '/' ||
+    ic->op == '%' ||
     ic->op == '<' || ic->op == '>' || ic->op == LE_OP || ic->op == GE_OP ||
     ic->op == NE_OP || ic->op == EQ_OP ||
     ic->op == AND_OP ||
     ic->op == OR_OP ||
-    /*ic->op == '^' ||
+    ic->op == '^' ||
     ic->op == '|' ||
-    ic->op == BITWISEAND ||*/
+    ic->op == BITWISEAND ||
     ic->op == GETHBIT ||
     ic->op == LEFT_OP ||
     ic->op == RIGHT_OP ||
@@ -369,6 +371,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case AND_OP:
     case OR_OP:
     case GETHBIT:
+    case GETABIT:
     case LEFT_OP:
     case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
