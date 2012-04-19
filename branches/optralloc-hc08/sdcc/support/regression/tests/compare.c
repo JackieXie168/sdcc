@@ -6,7 +6,7 @@
  */
 #include <testfwk.h>
 
-static void
+/*static*/ void
 testCmpAroundZero(void)
 {
     {attr} {storage} signed {type} i;
@@ -30,7 +30,7 @@ testCmpAroundZero(void)
     ASSERT(0 >= i);
 }
 
-static void
+/*static*/ void
 testCompareConstants(void)
 {
     {attr} {storage} signed {type} i;
@@ -58,7 +58,7 @@ testCompareConstants(void)
     ASSERT(i == -34);
 }
 
-static void
+/*static*/ void
 testCompareVariables(void)
 {
     {attr} {storage} signed {type} left, right;
@@ -88,7 +88,7 @@ testCompareVariables(void)
     ASSERT(left >= right);
 }
 
-static void
+/*static*/ void
 testUnsignedCompare(void)
 {
     {attr} {storage} unsigned {type} left, right;

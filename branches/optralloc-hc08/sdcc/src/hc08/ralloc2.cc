@@ -176,6 +176,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == '|' ||
     ic->op == BITWISEAND ||
     ic->op == GETHBIT ||
+    ic->op == GETABIT ||
     ic->op == LEFT_OP ||
     ic->op == RIGHT_OP ||
     ic->op == '=' && !POINTER_SET(ic) ||

@@ -6003,6 +6003,7 @@ genGetAbit (iCode * ic)
 {
   operand *left, *right, *result;
   int shCount;
+  bool needpulla;
 
   D (emitcode (";     genGetAbit", ""));
 
@@ -6015,6 +6016,8 @@ genGetAbit (iCode * ic)
 
   shCount = (int) ulFromVal (AOP (IC_RIGHT (ic))->aopu.aop_lit);
 
+  needpulla = pushRegIfSurv (hc08_reg_a);
+
   /* get the needed byte into a */
   loadRegFromAop (hc08_reg_a, AOP (left), shCount / 8);
   shCount %= 8;
@@ -6023,7 +6026,6 @@ genGetAbit (iCode * ic)
       emitcode ("and", "#0x%02x", 1 << shCount);
       regalloc_dry_run_cost += 2;
       hc08_dirtyReg (hc08_reg_a, FALSE);
-      hc08_freeReg (hc08_reg_a);
     }
   else
     {
@@ -6067,8 +6069,8 @@ genGetAbit (iCode * ic)
         }
       hc08_dirtyReg (hc08_reg_a, FALSE);
       storeRegToFullAop (hc08_reg_a, AOP (result), FALSE);
-      hc08_freeReg (hc08_reg_a);
     }
+  pullOrFreeReg (hc08_reg_a, needpulla);
 
   freeAsmop (result, NULL, ic, TRUE);
   freeAsmop (right, NULL, ic, TRUE);
