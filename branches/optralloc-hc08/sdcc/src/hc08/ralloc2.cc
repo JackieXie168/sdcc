@@ -143,6 +143,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 {
   const iCode *ic = G[i].ic;
 
+
   const i_assignment_t &ia = a.i_assignment;
 
   bool unused_A = (ia.registers[REG_A][1] < 0);
@@ -498,7 +499,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
             {
               sym->accuse = (I[v].byte == 0 && winner.global[v] == REG_X || I[v].byte == 1 && winner.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
               sym->isspilt = false;
-              sym->nRegs = 0;
+              sym->nRegs = I[v].size;
               sym->regs[I[v].byte] = 0;
             }
         }
@@ -508,6 +509,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
             sym->regs[i] = 0;
           sym->accuse = 0;
           sym->nRegs = I[v].size;
+          wassert (sym->nRegs);
           //spillThis(sym); Leave it to regFix, which can do some spillocation compaction. Todo: Use Thorup instead.
           sym->isspilt = false;
         }
