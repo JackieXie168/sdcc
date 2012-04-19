@@ -1,5 +1,11 @@
 2012-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/hc08/ralloc2.cc,
+	  src/hc08/gen.c:
+	  Fix xa to hx assignment.
+
+2012-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/hc08/ralloc2.cc:
 	  Fix assignment of nRegs and regs for accuse symbols.
 

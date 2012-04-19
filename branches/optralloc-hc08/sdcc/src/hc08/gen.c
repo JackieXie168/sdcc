@@ -8548,7 +8548,7 @@ genAssign (iCode * ic)
   if (sameRegs (AOP (right), AOP (result)))
     goto release;
 
-  if ((AOP_TYPE (right) == AOP_LIT) && (IS_AOP_HX (AOP (result))))
+  if (IS_AOP_HX (AOP (result)))
     {
       loadRegFromAop (hc08_reg_hx, AOP (right), 0);
       goto release;
