@@ -488,20 +488,13 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
       if(winner.global[v] >= 0)
         { 
-          if(I[v].size == 1)
-            {
-              sym->regs[I[v].byte] = regshc08 + winner.global[v];
-              sym->accuse = 0;
-              sym->isspilt = false;
-              sym->nRegs = I[v].size;
-            }
+          sym->regs[I[v].byte] = regshc08 + winner.global[v];   
+          sym->isspilt = false;
+          sym->nRegs = I[v].size;
+          if (I[v].size == 1)
+            sym->accuse = 0;
           else
-            {
-              sym->accuse = (I[v].byte == 0 && winner.global[v] == REG_X || I[v].byte == 1 && winner.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
-              sym->isspilt = false;
-              sym->nRegs = I[v].size;
-              sym->regs[I[v].byte] = 0;
-            }
+            sym->accuse = (I[v].byte == 0 && winner.global[v] == REG_X || I[v].byte == 1 && winner.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
         }
       else
         {

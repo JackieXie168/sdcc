@@ -1644,7 +1644,7 @@ regsInCommon (operand * op1, operand * op2)
 /* operandsEqu - equivalent                                        */
 /*-----------------------------------------------------------------*/
 static bool
-operandsEqu (operand * op1, operand * op2)
+operandsEqu (operand *op1, operand *op2)
 {
   symbol *sym1, *sym2;
 

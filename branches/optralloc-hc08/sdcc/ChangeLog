@@ -1,7 +1,7 @@
 2012-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/hc08/ralloc2.cc:
-	  Fix assignment of nRegs for accuse symbols.
+	  Fix assignment of nRegs and regs for accuse symbols.
 
 2012-04-19 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
