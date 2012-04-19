@@ -1,5 +1,10 @@
 2012-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/hc08/gen.c:
+	  Preparations for removing accuse.
+
+2012-04-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/hc08/ralloc2.cc,
 	  src/hc08/gen.c:
 	  Fix xa to hx assignment.

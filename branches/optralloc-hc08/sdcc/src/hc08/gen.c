@@ -9009,8 +9009,10 @@ updateiTempRegisterUse (operand * op)
       else if (!sym->isspilt)
         {
 	  /* If only used by IFX, there might not be any register assigned */
-          if (sym->regs[0])
-            sym->regs[0]->isFree = FALSE;
+          int i;
+          for(i = 0; i < sym->nRegs; i++)
+            if (sym->regs[i])
+              sym->regs[i]->isFree = FALSE;
         }
     }
 }
