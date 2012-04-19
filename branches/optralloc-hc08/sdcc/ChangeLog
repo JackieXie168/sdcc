@@ -1,3 +1,7 @@
+2012-04-19 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: fixed div/mod sign ext. to work with register result
+
 2012-04-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/hc08/ralloc2.cc,

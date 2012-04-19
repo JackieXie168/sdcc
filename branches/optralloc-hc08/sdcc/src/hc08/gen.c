@@ -3903,7 +3903,6 @@ genDivOneByte (operand * left, operand * right, operand * result)
 {
   symbol *tlbl1, *tlbl2, *tlbl3;
   int size;
-  int offset = 0;
   bool lUnsigned, rUnsigned;
   bool runtimeSign, compiletimeSign;
   bool needpulla, needpullh;
@@ -4061,51 +4060,32 @@ genDivOneByte (operand * left, operand * right, operand * result)
 
   if (runtimeSign || compiletimeSign)
     {
-      tlbl3 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       if (runtimeSign)
         {
+          tlbl3 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           pullReg (hc08_reg_x);
           rmwWithReg ("lsr", hc08_reg_x);
-          rmwWithReg ("ror", hc08_reg_x);
-          emitBranch ("bpl", tlbl3);
+          if (size > 1)
+            loadRegFromConst (hc08_reg_x, zero);
+          emitBranch ("bcc", tlbl3);
+          rmwWithReg ("neg", hc08_reg_a);
+          if (size > 1)
+            rmwWithReg ("dec", hc08_reg_x);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl3);
+          /* signed result now in A or XA */
+          if (size == 1)
+            storeRegToAop (hc08_reg_a, AOP (result), 0);
+          else
+            storeRegToAop (hc08_reg_xa, AOP (result), 0);
         }
-
-      rmwWithReg ("neg", hc08_reg_a);
-      if (runtimeSign && !regalloc_dry_run)
-        emitLabel (tlbl3);
-
-      if (size > 1 && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[0]->rIdx == A_IDX)
+      else /* must be compiletimeSign */
         {
-          pushReg (hc08_reg_a, TRUE);
-          delayed_a = TRUE;
-        }
-      else
-        storeRegToAop (hc08_reg_a, AOP (result), 0);
-
-      if (size > 1)
-        {
-          /* msb is 0x00 or 0xff depending on the sign */
-          if (runtimeSign)
-            {
-              rmwWithReg ("lsl", hc08_reg_x);
-              emitcode ("clra", "");
-              emitcode ("sbc", "#0");
-              regalloc_dry_run_cost += 3;
-              while (--size)
-                {
-                  offset++;
-                  if (size && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset]->rIdx == A_IDX)
-                    {
-                      pushReg (hc08_reg_a, TRUE);
-                      delayed_a = TRUE;
-                    }
-                  else
-                    storeRegToAop (hc08_reg_a, AOP (result), offset);
-                }
-            }
-          else                  /* compiletimeSign */
-            while (--size)
-                storeConstToAop ("#0xff", AOP (result), ++offset);
+          hc08_freeReg (hc08_reg_x); /* in case we need a free reg for the 0xff */
+          rmwWithReg ("neg", hc08_reg_a);
+          storeRegToAop (hc08_reg_a, AOP (result), 0);
+          if (size > 1)
+            storeConstToAop ("#0xff", AOP (result), 1);
         }
     }
   else
@@ -4140,7 +4120,7 @@ genDiv (iCode * ic)
 
   /* special cases first */
   /* if both are of size == 1 */
-  if (AOP_SIZE (left) <= 2 && AOP_SIZE (right) == 1)
+  if (AOP_SIZE (left) <= 2 && AOP_SIZE (right) == 1 && AOP_SIZE (result) <= 2)
     {
       genDivOneByte (left, right, result);
       goto release;
@@ -4162,7 +4142,6 @@ genModOneByte (operand * left, operand * right, operand * result)
 {
   symbol *tlbl1, *tlbl2, *tlbl3;
   int size;
-  int offset = 0;
   bool lUnsigned, rUnsigned;
   bool runtimeSign, compiletimeSign;
   bool needpulla, needpullh;
@@ -4285,36 +4264,32 @@ genModOneByte (operand * left, operand * right, operand * result)
   if (runtimeSign || compiletimeSign)
     {
       transferRegReg (hc08_reg_h, hc08_reg_a, TRUE);
-      tlbl3 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
       if (runtimeSign)
         {
+          tlbl3 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           pullReg (hc08_reg_x);
           rmwWithReg ("lsr", hc08_reg_x);
-          rmwWithReg ("ror", hc08_reg_x);
-          emitBranch ("bpl", tlbl3);
+          if (size > 1)
+            loadRegFromConst (hc08_reg_x, zero);
+          emitBranch ("bcc", tlbl3);
+          rmwWithReg ("neg", hc08_reg_a);
+          if (size > 1)
+            rmwWithReg ("dec", hc08_reg_x);
+          if (!regalloc_dry_run)
+            emitLabel (tlbl3);
+          /* signed result now in A or XA */
+          if (size == 1)
+            storeRegToAop (hc08_reg_a, AOP (result), 0);
+          else
+            storeRegToAop (hc08_reg_xa, AOP (result), 0);
         }
-
-      rmwWithReg ("neg", hc08_reg_a);
-      if (runtimeSign && !regalloc_dry_run)
-        emitLabel (tlbl3);
-
-      storeRegToAop (hc08_reg_a, AOP (result), 0);
-
-      if (size > 1)
+      else /* must be compiletimeSign */
         {
-          /* msb is 0x00 or 0xff depending on the sign */
-          if (runtimeSign)
-            {
-              rmwWithReg ("lsl", hc08_reg_x);
-              emitcode ("clra", "");
-              emitcode ("sbc", "#0");
-              regalloc_dry_run_cost += 3;
-              while (--size)
-                storeRegToAop (hc08_reg_a, AOP (result), ++offset);
-            }
-          else                  /* compiletimeSign */
-            while (--size)
-              storeConstToAop ("#0xff", AOP (result), ++offset);
+          hc08_freeReg (hc08_reg_x); /* in case we need a free reg for the 0xff */
+          rmwWithReg ("neg", hc08_reg_a);
+          storeRegToAop (hc08_reg_a, AOP (result), 0);
+          if (size > 1)
+            storeConstToAop ("#0xff", AOP (result), 1);
         }
     }
   else
@@ -4346,7 +4321,7 @@ genMod (iCode * ic)
 
   /* special cases first */
   /* if both are of size == 1 */
-  if (AOP_SIZE (left) <= 2 && AOP_SIZE (right) == 1)
+  if (AOP_SIZE (left) <= 2 && AOP_SIZE (right) == 1 && AOP_SIZE (result) <= 2)
     {
       genModOneByte (left, right, result);
       goto release;
