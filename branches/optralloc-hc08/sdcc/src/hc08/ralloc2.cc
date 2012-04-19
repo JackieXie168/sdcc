@@ -28,6 +28,7 @@ extern "C"
   #include "ralloc.h"
   #include "gen.h"
   unsigned char dryhc08iCode (iCode *ic);
+  bool hc08_assignment_optimal;
 };
 
 #define REG_A 0
@@ -182,6 +183,7 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     ic->op == '=' && !POINTER_SET(ic) ||
     ic->op == ADDRESS_OF ||
     ic->op == CAST ||
+    ic->op == DUMMY_READ_VOLATILE ||
     ic->op == SWAP)
     return(true);
 
@@ -279,27 +281,21 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
       var_t v = oi->second;
       if(a.global[v] >= 0)
         { 
-          if(I[v].size == 1)
-            {
-              sym->regs[I[v].byte] = regshc08 + a.global[v];
-              sym->accuse = 0;
-              sym->isspilt = false;
-              sym->nRegs = I[v].size;
-            }
+          sym->regs[I[v].byte] = regshc08 + a.global[v];   
+          sym->isspilt = false;
+          sym->nRegs = I[v].size;
+          if (I[v].size == 1)
+            sym->accuse = 0;
           else
-            {
-              sym->accuse = (I[v].byte == 0 && a.global[v] == REG_X || I[v].byte == 1 && a.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
-              sym->isspilt = false;
-              sym->nRegs = 0;
-              sym->regs[I[v].byte] = 0;
-            }
+            sym->accuse = (I[v].byte == 0 && a.global[v] == REG_X || I[v].byte == 1 && a.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
         }
       else
         {
-          sym->isspilt = true;
+          for(int i = 0; i < I[v].size; i++)
+            sym->regs[i] = 0;
           sym->accuse = 0;
           sym->nRegs = I[v].size;
-          sym->regs[I[v].byte] = 0;
+          sym->isspilt = true;
         }
     }
 }
@@ -393,6 +389,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
       set_surviving_regs(a, i, G, I);
       c = dryhc08iCode(ic);
       unset_surviving_regs(i, G);
+
       return(c);
     default:
       return(0.0f);
@@ -549,7 +546,10 @@ iCode *hc08_ralloc2_cc(ebbIndex *ebbi)
   nicify(tree_decomposition);
   alive_tree_dec(tree_decomposition, control_flow_graph);
 
-  tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
+  if(options.dump_graphs)
+    dump_tree_decomposition(tree_decomposition);
+
+  hc08_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
 
   return(ic);
 }

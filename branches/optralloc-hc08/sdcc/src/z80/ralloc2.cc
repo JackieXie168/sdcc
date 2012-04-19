@@ -1506,7 +1506,7 @@ iCode *z80_ralloc2_cc(ebbIndex *ebbi)
   if(options.dump_graphs)
     dump_tree_decomposition(tree_decomposition);
 
-  z80_assignment_optimal = tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
+  z80_assignment_optimal = !tree_dec_ralloc(tree_decomposition, control_flow_graph, conflict_graph);
 
   return(ic);
 }

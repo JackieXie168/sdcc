@@ -663,7 +663,7 @@ forceload:
           else
             {
               emitcode ("lda", "%s", l);
-              regalloc_dry_run_cost += ((aop->type == AOP_DIR || aop->type == AOP_IMMD) ? 2 : 3);
+              regalloc_dry_run_cost += ((aop->type == AOP_DIR || aop->type == AOP_IMMD || aop->type == AOP_LIT) ? 2 : 3);
             }
         }
       break;
@@ -689,7 +689,7 @@ forceload:
           else
             {
               emitcode ("ldx", "%s", l);
-              regalloc_dry_run_cost += ((aop->type == AOP_DIR || aop->type == AOP_IMMD) ? 2 :3);
+              regalloc_dry_run_cost += ((aop->type == AOP_DIR || aop->type == AOP_IMMD || aop->type == AOP_LIT) ? 2 : 3);
             }
         }
       break;
@@ -744,7 +744,7 @@ forceload:
       else if ((aop->type == AOP_LIT) || (aop->type == AOP_IMMD))
         {
           emitcode ("ldhx", "%s", aopAdrStr (aop, loffset, TRUE));
-          regalloc_dry_run_cost += (aop->type == AOP_IMMD ? 3 : 2);
+          regalloc_dry_run_cost += 3;
         }
       else
         {
@@ -833,7 +833,7 @@ forceStackedAop (asmop * aop, bool copyOrig)
 /* storeRegToAop - Store register reg to logical offset loffset of aop.     */
 /*--------------------------------------------------------------------------*/
 static void
-storeRegToAop (reg_info * reg, asmop * aop, int loffset)
+storeRegToAop (reg_info *reg, asmop * aop, int loffset)
 {
   int regidx = reg->rIdx;
 #if 0
@@ -953,6 +953,8 @@ storeRegToAop (reg_info * reg, asmop * aop, int loffset)
           storeRegToAop (hc08_reg_x, aop, loffset + 1);
         }
       break;
+    default:
+      wassert (0);
     }
 
   /* Disable the register tracking for now */
@@ -1704,6 +1706,8 @@ sameRegs (asmop * aop1, asmop * aop2)
         case AOP_SOF:
           return (aop1->aopu.aop_stk == aop2->aopu.aop_stk);
         case AOP_DIR:
+          if (regalloc_dry_run)
+            return FALSE;
         case AOP_EXT:
           return (!strcmp (aop1->aopu.aop_dir, aop2->aopu.aop_dir));
         }
@@ -1866,8 +1870,17 @@ aopOp (operand *op, iCode * ic, bool result)
           return;
         }
 #endif
+
+       if (regalloc_dry_run)     // Todo: Handle dummy iTemp correctly
+        {
+          sym->aop = op->aop = aop = newAsmop (AOP_DIR); // TODO: STACK vs. IMMD depending on options!
+          aop->size = getSize (sym->type);
+          aop->op = op;
+          return;
+        }
+
       /* else spill location  */
-      if (sym->usl.spillLoc)
+      if (sym->usl.spillLoc || regalloc_dry_run)
         {
           asmop *oldAsmOp = NULL;
 
@@ -2365,9 +2378,9 @@ genNot (iCode * ic)
   /* assign asmOps to operand & result */
   aopOp (IC_LEFT (ic), ic, FALSE);
   aopOp (IC_RESULT (ic), ic, TRUE);
-
   needpulla = pushRegIfSurv (hc08_reg_a);
   asmopToBool (AOP (IC_LEFT (ic)), TRUE);
+
   emitcode ("eor", one);
   regalloc_dry_run_cost += 2;
   storeRegToFullAop (hc08_reg_a, AOP (IC_RESULT (ic)), FALSE);
@@ -2985,7 +2998,8 @@ genFunction (iCode * ic)
   emitcode (";", "-----------------------------------------");
   emitcode (";", " function %s", sym->name);
   emitcode (";", "-----------------------------------------");
-  emitcode (";", " Stack space usage: %d bytes.", sym->stack);
+  emitcode (";", hc08_assignment_optimal ? "Register assignment is optimal." : "Register assignment might be sub-optimal.");
+  emitcode (";", "Stack space usage: %d bytes.", sym->stack);
 
   emitcode ("", "%s:", sym->rname);
   genLine.lineCurr->isLabel = 1;
@@ -8896,10 +8910,13 @@ genDummyRead (iCode * ic)
 {
   operand *op;
   int size, offset;
+  bool needpulla;
 
   D (emitcode (";     genDummyRead", ""));
 
   op = IC_RIGHT (ic);
+
+  needpulla = pushRegIfSurv (hc08_reg_a);
   if (op && IS_SYMOP (op))
     {
 
@@ -8935,6 +8952,7 @@ genDummyRead (iCode * ic)
 
       freeAsmop (op, NULL, ic, TRUE);
     }
+  pullOrFreeReg (hc08_reg_a, needpulla);
 }
 
 /*-----------------------------------------------------------------*/
@@ -9315,20 +9333,6 @@ dryhc08iCode (iCode *ic)
   return (regalloc_dry_run_cost);
 }
 
-/*#define DEBUG_DRY_COST*/
-
-#ifdef DEBUG_DRY_COST
-static void
-dryhc08Code (iCode * lic)
-{
-  iCode *ic;
-
-  for (ic = lic; ic; ic = ic->next)
-    if (ic->op != FUNCTION && ic->op != ENDFUNCTION && ic->op != LABEL && ic->op != GOTO && ic->op != INLINEASM)
-      printf ("; iCode %d total cost: %d\n", ic->key, (int) (dryhc08iCode (ic)));
-}
-#endif
-
 /*-----------------------------------------------------------------*/
 /* genhc08Code - generate code for HC08 based controllers          */
 /*-----------------------------------------------------------------*/
@@ -9339,10 +9343,6 @@ genhc08Code (iCode *lic)
   int cln = 0;
   int clevel = 0;
   int cblock = 0;
-
-#ifdef DEBUG_DRY_COST
-  dryhc08Code (lic);
-#endif
 
   regalloc_dry_run = FALSE;
 
@@ -9445,7 +9445,9 @@ genhc08Code (iCode *lic)
           dbuf_free (iLine);
         }
 
+      regalloc_dry_run_cost = 0;
       genhc08iCode(ic);
+      emitcode (";", "iCode %d total cost: %d\n", ic->key, (int) regalloc_dry_run_cost);
 
       if (!hc08_reg_a->isFree)
         DD (emitcode ("", "; forgot to free a"));
