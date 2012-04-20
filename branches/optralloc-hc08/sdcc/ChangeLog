@@ -1,3 +1,9 @@
+2012-04-20 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/hc08/ralloc2.cc,
+	  src/hc08/gen.c:
+	  Made hc08 code generation more robust wrt. surviving registers and register operands.
+
 2012-04-19 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c: rewrite genCast for register source/results

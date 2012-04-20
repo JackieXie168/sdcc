@@ -638,7 +638,6 @@ loadRegFromAop (reg_info * reg, asmop * aop, int loffset)
     }
 
 forceload:
-
   switch (regidx)
     {
     case A_IDX:
@@ -7081,6 +7080,7 @@ genLeftShift (iCode * ic)
 
   needpullcountreg = pushRegIfSurv (countreg);
   loadRegFromAop (countreg, AOP (right), 0);
+  countreg->isFree = FALSE;
   emitcode (countreg == hc08_reg_a ? "tsta" : "tstx", "");
   regalloc_dry_run_cost++;
   emitBranch ("beq", tlbl1);
@@ -7390,7 +7390,8 @@ genRightShift (iCode * ic)
   char *shift;
   bool sign;
   asmop *aopResult;
-  bool needpullx;
+  bool needpullcountreg;
+  reg_info *countreg = NULL;
 
   D (emitcode (";     genRightShift", ""));
 
@@ -7435,7 +7436,9 @@ genRightShift (iCode * ic)
 
   /* now move the left to the result if they are not the
      same */
-  if (!sameRegs (AOP (left), aopResult))
+  if (IS_AOP_HX (AOP (result)))
+    loadRegFromAop (hc08_reg_hx, AOP (left), 0);
+  else if (!sameRegs (AOP (left), aopResult))
     {
       size = AOP_SIZE (result);
       offset = 0;
@@ -7453,25 +7456,33 @@ genRightShift (iCode * ic)
   offset = 0;
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
-  needpullx = pushRegIfSurv (hc08_reg_x);
-  loadRegFromAop (hc08_reg_x, AOP (right), 0);
-  emitcode ("tstx", "");
+  countreg = (hc08_reg_x->isDead && !IS_AOP_X (AOP (result)) && !IS_AOP_XA (AOP (result)) && !IS_AOP_HX (AOP (result))) ? hc08_reg_x : hc08_reg_a;
+
+  needpullcountreg = pushRegIfSurv (countreg);
+  loadRegFromAop (countreg, AOP (right), 0);
+  countreg->isFree = FALSE;
+  emitcode (countreg == hc08_reg_a ? "tsta" : "tstx", "");
   regalloc_dry_run_cost++;
   emitBranch ("beq", tlbl1);
   if (!regalloc_dry_run)
     emitLabel (tlbl);
 
   shift = sign ? "asr" : "lsr";
+  if (countreg == hc08_reg_a && (IS_AOP_A (AOP (result)) || IS_AOP_XA (AOP (result))))
+    pushReg (hc08_reg_a, TRUE);
   for (offset = size - 1; offset >= 0; offset--)
     {
       rmwWithAop (shift, AOP (result), offset);
       shift = "ror";
     }
-  rmwWithReg ("dec", hc08_reg_x);
-  emitBranch ("bne", tlbl);
+  if (countreg == hc08_reg_a && (IS_AOP_A (AOP (result)) || IS_AOP_XA (AOP (result))))
+    pullReg (hc08_reg_a);
+  if (!regalloc_dry_run)
+    emitcode (countreg == hc08_reg_a ? "dbnza" : "dbnzx", "%05d$", labelKey2num (tlbl->key));
+  regalloc_dry_run_cost += 2;
   if (!regalloc_dry_run)
     emitLabel (tlbl1);
-  pullOrFreeReg (hc08_reg_x, needpullx);
+  pullOrFreeReg (countreg, needpullcountreg);
 
   freeAsmop (result, NULL, ic, TRUE);
   freeAsmop (right, NULL, ic, TRUE);

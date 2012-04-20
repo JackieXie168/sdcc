@@ -244,6 +244,9 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(ic->op == SEND && ic->next && (ic->next->op == CALL || ic->next->op == PCALL)) // Might mess up A and X, but these would have been saved before if surviving, and will not be needed again before the call.
     return(true);
 
+  if((ic->op == CRITICAL || ic->op == ENDCRITICAL) && (unused_A || dying_A))
+    return(true);
+
   return(false);
 }
 
@@ -385,11 +388,11 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case DUMMY_READ_VOLATILE:
     case CRITICAL:
     case ENDCRITICAL:
+    case SWAP:
       assign_operands_for_cost(a, i, G, I);
       set_surviving_regs(a, i, G, I);
       c = dryhc08iCode(ic);
       unset_surviving_regs(i, G);
-
       return(c);
     default:
       return(0.0f);
