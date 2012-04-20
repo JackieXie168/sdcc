@@ -287,10 +287,7 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
           sym->regs[I[v].byte] = regshc08 + a.global[v];   
           sym->isspilt = false;
           sym->nRegs = I[v].size;
-          if (I[v].size == 1)
-            sym->accuse = 0;
-          else
-            sym->accuse = (I[v].byte == 0 && a.global[v] == REG_X || I[v].byte == 1 && a.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
+          sym->accuse = 0;
         }
       else
         {
@@ -494,10 +491,7 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
           sym->regs[I[v].byte] = regshc08 + winner.global[v];   
           sym->isspilt = false;
           sym->nRegs = I[v].size;
-          if (I[v].size == 1)
-            sym->accuse = 0;
-          else
-            sym->accuse = (I[v].byte == 0 && winner.global[v] == REG_X || I[v].byte == 1 && winner.global[v] == REG_H) ? ACCUSE_HX : ACCUSE_XA;
+          sym->accuse = 0;
         }
       else
         {

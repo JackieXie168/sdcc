@@ -1831,29 +1831,6 @@ aopOp (operand *op, iCode * ic, bool result)
           return;
         }
 
-//      printf("checking accuse\n");
-      if (sym->accuse)
-        {
-          sym->aop = op->aop = aop = newAsmop (AOP_REG);
-          aop->size = getSize (sym->type);
-          switch (sym->accuse)
-            {
-            case ACCUSE_XA:
-              aop->aopu.aop_reg[0] = hc08_reg_a;
-              aop->aopu.aop_reg[1] = hc08_reg_x;
-              break;
-            case ACCUSE_HX:
-              aop->aopu.aop_reg[0] = hc08_reg_x;
-              aop->aopu.aop_reg[1] = hc08_reg_h;
-              break;
-            default:
-              wassert (0);
-            }
-          aop->op = op;
-          aop->isaddr = op->isaddr;
-          return;
-        }
-
 //      printf("checking ruonly\n");
 #if 1
       if (sym->ruonly)
@@ -2842,8 +2819,7 @@ genCall (iCode * ic)
 
   /* if we need assign a result value */
   if ((IS_ITEMP (IC_RESULT (ic)) &&
-       (OP_SYMBOL (IC_RESULT (ic))->nRegs ||
-        OP_SYMBOL (IC_RESULT (ic))->accuse || OP_SYMBOL (IC_RESULT (ic))->spildir)) || IS_TRUE_SYMOP (IC_RESULT (ic)))
+       (OP_SYMBOL (IC_RESULT (ic))->nRegs || OP_SYMBOL (IC_RESULT (ic))->spildir)) || IS_TRUE_SYMOP (IC_RESULT (ic)))
     {
       _G.accInUse++;
       aopOp (IC_RESULT (ic), ic, FALSE);
@@ -3036,7 +3012,7 @@ genFunction (iCode * ic)
         {
           if (rsym && rsym->regType == REG_CND)
             rsym = NULL;
-          if (rsym && (rsym->accuse || rsym->ruonly))
+          if (rsym && (/*rsym->accuse ||*/ rsym->ruonly))
             rsym = NULL;
           if (rsym && (rsym->isspilt || rsym->nRegs == 0) && rsym->usl.spillLoc)
             rsym = rsym->usl.spillLoc;
@@ -9057,18 +9033,7 @@ updateiTempRegisterUse (operand * op)
   if (IS_ITEMP (op))
     {
       sym = OP_SYMBOL (op);
-      if (sym->accuse == ACCUSE_HX)
-        {
-          hc08_reg_h->isFree = FALSE;
-          hc08_reg_x->isFree = FALSE;
-        }
-      else if (sym->accuse == ACCUSE_XA)
-        {
-          hc08_reg_a->isFree = FALSE;
-	  if (sym->nRegs > 1)
-            hc08_reg_x->isFree = FALSE;
-        }
-      else if (!sym->isspilt)
+      if (!sym->isspilt)
         {
 	  /* If only used by IFX, there might not be any register assigned */
           int i;
