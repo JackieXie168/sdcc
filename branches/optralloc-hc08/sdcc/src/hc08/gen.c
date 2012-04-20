@@ -8666,10 +8666,11 @@ static void
 genCast (iCode * ic)
 {
   operand *result = IC_RESULT (ic);
-  sym_link *ctype = operandType (IC_LEFT (ic));
   sym_link *rtype = operandType (IC_RIGHT (ic));
   operand *right = IC_RIGHT (ic);
   int size, offset;
+  bool signExtend;
+  bool save_a;
 
   D (emitcode (";     genCast", ""));
 
@@ -8689,16 +8690,12 @@ genCast (iCode * ic)
       goto release;
     }
 
-  /* if they are the same size : or less */
-  if (AOP_SIZE (result) <= AOP_SIZE (right))
+  /* If the result is 1 byte, then just copy the one byte; there is */
+  /* nothing special required. */
+  if (AOP_SIZE (result) == 1)
     {
-      /* if they are in the same place */
-#if 0
-      if (sameRegs (AOP (right), AOP (result)))
-        goto release;
-#endif
-
-      /* if they in different places then copy */
+      transferAopAop (AOP (right), 0, AOP (result), 0);
+      goto release;
       size = AOP_SIZE (result);
       offset = 0;
       while (size--)
@@ -8709,70 +8706,104 @@ genCast (iCode * ic)
       goto release;
     }
 
-  /* if the result is of type pointer */
-  if (IS_PTR (ctype))
+  signExtend = AOP_SIZE (result) > AOP_SIZE (right) && IS_SPEC (rtype) && !SPEC_USIGN (rtype);
+
+  /* If the result is 2 bytes and in registers, we have to be careful */
+  /* to make sure the registers are not overwritten prematurely. */
+  if (AOP_SIZE (result) == 2 && AOP (result)->type == AOP_REG)
     {
-      /* pointer to generic pointer */
-      if (IS_GENPTR (ctype))
+      if (AOP_SIZE (right) == 1)
         {
-          /* the first two bytes are known */
-          size = GPTRSIZE - 1;
-          offset = 0;
-          while (size--)
+          transferAopAop (AOP (right), 0, AOP (result), 0);
+          if (!signExtend)
+            storeConstToAop (zero, AOP (result), 1);
+          else
             {
-              transferAopAop (AOP (right), offset, AOP (result), offset);
-              offset++;
+              save_a = (AOP (result)->aopu.aop_reg[0] == hc08_reg_a || !hc08_reg_a->isDead);
+
+              /* we need to extend the sign :{ */
+              if (save_a)
+                pushReg(hc08_reg_a, FALSE);
+              if (AOP (result)->aopu.aop_reg[0] != hc08_reg_a)
+                loadRegFromAop (hc08_reg_a, AOP (right), 0);
+              accopWithMisc ("rola", "");
+              accopWithMisc ("clra", "");
+              accopWithMisc ("sbc", zero);
+              storeRegToAop (hc08_reg_a, AOP (result), 1);
+              if (save_a)
+                pullReg(hc08_reg_a);
             }
-          /* the last byte depending on type */
           goto release;
         }
 
-      /* just copy the pointers */
-      size = AOP_SIZE (result);
-      offset = 0;
-      while (size--)
+      if (AOP (right)->type == AOP_REG)
         {
-          transferAopAop (AOP (right), offset, AOP (result), offset);
-          offset++;
+          wassert (AOP_SIZE (right) == 2);
+          /* Source and destination are the same size; no need for sign */
+          /* extension or zero padding. Just copy in the order that */
+          /* won't prematurely overwrite the source. */
+          if (AOP (result)->aopu.aop_reg[0] == AOP (right)->aopu.aop_reg[1])
+            {
+              transferAopAop (AOP (right), 1, AOP (result), 1);
+              transferAopAop (AOP (right), 0, AOP (result), 0);
+            }
+          else
+            {
+              transferAopAop (AOP (right), 0, AOP (result), 0);
+              transferAopAop (AOP (right), 1, AOP (result), 1);
+            }
+          goto release;
         }
-      goto release;
+      else
+        {
+          /* Source is at least 2 bytes and not in registers; no need */
+          /* for sign extension or zero padding. Just copy. */
+          transferAopAop (AOP (right), 0, AOP (result), 0);
+          transferAopAop (AOP (right), 1, AOP (result), 1);
+          goto release;
+        }
     }
 
-  /* so we now know that the size of destination is greater
-     than the size of the source */
-  /* we move to result for the size of source */
-  size = AOP_SIZE (right);
+  wassert (AOP (result)->type != AOP_REG);
+  
+  save_a = !hc08_reg_a->isDead && signExtend;
+  if (save_a)
+    pushReg(hc08_reg_a, TRUE);
+
   offset = 0;
-  while (size--)
+  size = AOP_SIZE (right);
+  if (AOP_SIZE (result) < size)
+    size = AOP_SIZE (result);
+  while (size)
     {
-      transferAopAop (AOP (right), offset, AOP (result), offset);
+      if (size == 1 && signExtend)
+        {
+          loadRegFromAop (hc08_reg_a, AOP (right), offset);
+          storeRegToAop (hc08_reg_a, AOP (result), offset);
+        }
+      else
+        transferAopAop (AOP (right), offset, AOP (result), offset);
       offset++;
+      size--;
     }
 
-  /* now depending on the sign of the source && destination */
-  size = AOP_SIZE (result) - AOP_SIZE (right);
-  /* if unsigned or not an integral type */
-  if (!IS_SPEC (rtype) || SPEC_USIGN (rtype) || AOP_TYPE (right) == AOP_CRY)
+  size = AOP_SIZE (result) - offset;
+  if (size && !signExtend)
     {
       while (size--)
         storeConstToAop (zero, AOP (result), offset++);
     }
-  else
+  else if (size)
     {
-      bool save_a = (AOP(result)->type == AOP_REG && AOP(result)->aopu.aop_reg[0] == hc08_reg_a || !hc08_reg_a->isDead);
-
-      /* we need to extend the sign :{ */
-      if (save_a)
-        pushReg(hc08_reg_a, FALSE);
-      loadRegFromAop (hc08_reg_a, AOP (right), AOP_SIZE (right) - 1);
       accopWithMisc ("rola", "");
       accopWithMisc ("clra", "");
       accopWithMisc ("sbc", zero);
       while (size--)
         storeRegToAop (hc08_reg_a, AOP (result), offset++);
-      if (save_a)
-        pullReg(hc08_reg_a);
     }
+
+  if (save_a)
+    pullReg(hc08_reg_a);
 
   /* we are done hurray !!!! */
 
