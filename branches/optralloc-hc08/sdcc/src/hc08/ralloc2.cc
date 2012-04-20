@@ -278,14 +278,34 @@ static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   const i_assignment_t &ia = a.i_assignment;
 
-  if(ic->op == CALL ||
+  if(ic->op == '!' ||
+    ic->op == '~' ||
+    ic->op == IPUSH ||
+    ic->op == CALL ||
+    ic->op == FUNCTION ||
+    ic->op == ENDFUNCTION ||
+    ic->op == RETURN ||
     ic->op == LABEL ||
     ic->op == GOTO ||
     ic->op == '+' ||
     ic->op == '-' ||
+    ic->op == NE_OP || ic->op == EQ_OP ||
+    ic->op == '^' ||
+    ic->op == '|' ||
+    ic->op == BITWISEAND ||
+    ic->op == GETHBIT ||
+    ic->op == GETABIT ||
+    /*ic->op == LEFT_OP ||
+    ic->op == RIGHT_OP ||*/
     ic->op == GET_VALUE_AT_ADDRESS ||
-    ic->op == '=' && !POINTER_SET(ic) ||
-    ic->op == NE_OP || ic->op == EQ_OP)
+    ic->op == '=' ||
+    ic->op == ADDRESS_OF ||
+    ic->op == RECEIVE ||
+    ic->op == SEND ||
+    ic->op == DUMMY_READ_VOLATILE ||
+    ic->op == CRITICAL ||
+    ic->op == ENDCRITICAL ||
+    ic->op == SWAP)
     return(true);
 
   bool unused_A = (ia.registers[REG_A][1] < 0);
