@@ -107,12 +107,12 @@ static bool operand_sane(const operand *o, const assignment &a, unsigned short i
   if(oi == oi_end)
     return(true);
 
-  // Register combinations code generation cannot handle yet (AX, AH, XH, HA).
+  // Register combinations code generation cannot handle yet (AH, XH, HA).
   if(a.local.find(oi->second) != a.local.end() && a.local.find((oi2 = oi, ++oi2)->second) != a.local.end())
     {
       const reg_t l = a.global[oi->second];
       const reg_t h = a.global[oi2->second];
-      if(l == REG_X && h == REG_A || l == REG_A && h == REG_H || l == REG_H)
+      if(l == REG_A && h == REG_H || l == REG_H)
         return(false);
     }
   
@@ -142,16 +142,33 @@ static bool inst_sane(const assignment &a, unsigned short int i, const G_t &G, c
 }
 
 template <class G_t, class I_t>
+static bool operand_is_ax(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{  
+  if(!o || !IS_SYMOP(o))
+    return(false);
+ 
+  operand_map_t::const_iterator oi, oi2, oi_end;
+  boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key);
+  
+  if(oi == oi_end)
+    return(false);
+
+  // Register combinations code generation cannot handle yet (AX, AH, XH, HA).
+  if(a.local.find(oi->second) != a.local.end() && a.local.find((oi2 = oi, ++oi2)->second) != a.local.end())
+    {
+      const reg_t l = a.global[oi->second];
+      const reg_t h = a.global[oi2->second];
+      if(l == REG_X && h == REG_A)
+        return(true);
+    }
+
+  return(false);
+}
+
+template <class G_t, class I_t>
 static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
-
-
-  const i_assignment_t &ia = a.i_assignment;
-
-  bool unused_A = (ia.registers[REG_A][1] < 0);
-  bool unused_H = (ia.registers[REG_H][1] < 0);
-  bool unused_X = (ia.registers[REG_X][1] < 0);
 
   // Instructions that can handle anything.
   if(ic->op == '!' ||
@@ -190,6 +207,12 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(ic->op == IFX && ic->generated)
     return(true);
 
+  const i_assignment_t &ia = a.i_assignment;
+
+  bool unused_A = (ia.registers[REG_A][1] < 0);
+  bool unused_H = (ia.registers[REG_H][1] < 0);
+  bool unused_X = (ia.registers[REG_X][1] < 0);
+
   if(unused_X && unused_A && unused_H)
     return(true);
 
@@ -204,10 +227,8 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   bool result_in_A = operand_in_reg(result, REG_A, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
   bool result_in_H = operand_in_reg(result, REG_H, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
   bool result_in_X = operand_in_reg(result, REG_X, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
-  bool left_in_A = operand_in_reg(left, REG_A, ia, i, G);
-  bool left_in_X = operand_in_reg(left, REG_X, ia, i, G);
-  bool right_in_A = operand_in_reg(right, REG_A, ia, i, G);
-  bool right_in_X = operand_in_reg(right, REG_X, ia, i, G);
+  bool left_in_A = operand_in_reg(result, REG_A, ia, i, G);
+  bool left_in_X = operand_in_reg(result, REG_X, ia, i, G);
 
   const std::set<var_t> &dying = G[i].dying;
 
@@ -245,6 +266,40 @@ static bool XAinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     return(true);
 
   if((ic->op == CRITICAL || ic->op == ENDCRITICAL) && (unused_A || dying_A))
+    return(true);
+
+  return(false);
+}
+
+template <class G_t, class I_t>
+static bool AXinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+
+  const i_assignment_t &ia = a.i_assignment;
+
+  bool unused_A = (ia.registers[REG_A][1] < 0);
+  bool unused_X = (ia.registers[REG_X][1] < 0);
+
+  if (unused_A || unused_X)
+    return(true);
+
+  const operand *left = IC_LEFT(ic);
+  const operand *right = IC_RIGHT(ic);
+  const operand *result = IC_RESULT(ic);
+
+  bool result_in_A = operand_in_reg(result, REG_A, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
+  bool result_in_X = operand_in_reg(result, REG_X, ia, i, G) && !(ic->op == '=' && POINTER_SET(ic));
+  bool left_in_A = operand_in_reg(result, REG_A, ia, i, G);
+  bool left_in_X = operand_in_reg(result, REG_X, ia, i, G);
+  bool right_in_A = operand_in_reg(result, REG_A, ia, i, G);
+  bool right_in_X = operand_in_reg(result, REG_X, ia, i, G);
+
+  bool result_is_ax = operand_is_ax (result, a, i, G, I);
+  bool left_is_ax = operand_is_ax (left, a, i, G, I);
+  bool right_is_ax = operand_is_ax (right, a, i, G, I);
+
+  if (!result_is_ax && !left_is_ax && !right_is_ax)
     return(true);
 
   return(false);
@@ -335,6 +390,9 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     return(std::numeric_limits<float>::infinity());
 
   if(!XAinst_ok(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
+  if(!AXinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
   switch(ic->op)

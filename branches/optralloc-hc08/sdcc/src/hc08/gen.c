@@ -86,12 +86,20 @@ static char *aopAdrStr (asmop * aop, int loffset, bool bit16);
 #define IS_AOP_HX(x) \
         (((x)->type == AOP_REG) \
          && ((x)->aopu.aop_reg[0] == hc08_reg_x) \
-         && ((x)->aopu.aop_reg[1] == hc08_reg_h) )
+         && ((x)->aopu.aop_reg[1] == hc08_reg_h) \
+         && ((x)->size == 2) )
 
 #define IS_AOP_XA(x) \
         (((x)->type == AOP_REG) \
          && ((x)->aopu.aop_reg[0] == hc08_reg_a) \
-         && ((x)->aopu.aop_reg[1] == hc08_reg_x) )
+         && ((x)->aopu.aop_reg[1] == hc08_reg_x) \
+         && ((x)->size == 2) )
+
+#define IS_AOP_AX(x) \
+        (((x)->type == AOP_REG) \
+         && ((x)->aopu.aop_reg[0] == hc08_reg_x) \
+         && ((x)->aopu.aop_reg[1] == hc08_reg_a) \
+         && ((x)->size == 2) )
 
 #define IS_AOP_A(x) \
         (((x)->type == AOP_REG) \
@@ -2209,7 +2217,7 @@ asmopToBool (asmop *aop, bool resultInA)
         {
           emitcode ("cphx", zero);
         }
-      else if (IS_AOP_XA (aop))
+      else if (IS_AOP_XA (aop) || IS_AOP_AX (aop))
         {
           symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           emitcode ("tsta", "");
