@@ -3414,6 +3414,7 @@ genPlus (iCode * ic)
   char *add;
   asmop *leftOp, *rightOp;
   bool needpulla;
+  bool earlystore = FALSE;
   bool delayedstore = FALSE;
   bool mayskip = TRUE;
   bool skip = FALSE;
@@ -3452,9 +3453,19 @@ genPlus (iCode * ic)
 
   offset = 0;
   needpulla = pushRegIfSurv (hc08_reg_a);
+
+  if(size > 1 && IS_AOP_AX (AOP (IC_LEFT (ic))))
+    {
+      earlystore = TRUE;
+      pushReg (hc08_reg_a, TRUE);
+    }
+
   while (size--)
     {
-      loadRegFromAop (hc08_reg_a, leftOp, offset);
+      if (earlystore && offset == 1)
+        pullReg (hc08_reg_a);
+      else
+        loadRegFromAop (hc08_reg_a, leftOp, offset);
       if (!mayskip || AOP_TYPE (IC_RIGHT (ic)) != AOP_LIT || (((ulFromVal (AOP (IC_RIGHT (ic))->aopu.aop_lit) >> (offset * 8)) & 0xff) != 0x00))
         {
           accopWithAop (add, rightOp, offset);
@@ -3479,7 +3490,7 @@ genPlus (iCode * ic)
    pullReg (hc08_reg_a);
  pullOrFreeReg (hc08_reg_a, needpulla);
 
-
+ wassert (!earlystore || !delayedstore);
 //  adjustArithmeticResult (ic);
 
 release:
@@ -3581,6 +3592,7 @@ genMinus (iCode * ic)
   char *sub;
   int size, offset = 0;
   bool needpulla;
+  bool earlystore = FALSE;
   bool delayedstore = FALSE;
 
   asmop *leftOp, *rightOp;
@@ -3617,8 +3629,18 @@ genMinus (iCode * ic)
       goto release;
     }
 
+  if (size > 1 && (IS_AOP_AX (AOP (IC_LEFT (ic))) || IS_AOP_AX (AOP (IC_RIGHT (ic)))))
+    {
+      earlystore = TRUE;
+      pushReg (hc08_reg_a, TRUE);
+    }
+
   while (size--)
     {
+      if (earlystore &&
+        (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX ||
+        AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX))
+        pullReg (hc08_reg_a);
       if (AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[offset]->rIdx == A_IDX)
         {
           pushReg (hc08_reg_a, TRUE);
@@ -3646,6 +3668,8 @@ genMinus (iCode * ic)
   if(delayedstore)
     pullReg (hc08_reg_a);
   pullOrFreeReg (hc08_reg_a, needpulla);
+
+  wassert (!earlystore || !delayedstore);
 
 //  adjustArithmeticResult (ic);
 
@@ -7858,6 +7882,7 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
   sym_link *retype = getSpec (operandType (result));
   bool postH = FALSE;
   bool postX = FALSE;
+  bool postA = FALSE;
 
   D (emitcode (";     genPointerGet", ""));
 
@@ -7928,6 +7953,11 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
               pushReg(hc08_reg_a, FALSE);
               postX = TRUE;
             }
+          else if (!ifx && (pi || size) && AOP_TYPE (result) == AOP_REG && AOP (result)->aopu.aop_reg[offset] == hc08_reg_a)
+            {
+              pushReg(hc08_reg_a, FALSE);
+              postA = TRUE;
+            }
           else if (!ifx)
             storeRegToAop (hc08_reg_a, AOP (result), offset);
           offset--;
@@ -7945,6 +7975,8 @@ genPointerGet (iCode * ic, iCode * pi, iCode * ifx)
       pi->generated = 1;
     }
 
+  if (postA)
+    pullReg (hc08_reg_a);
   if (postX)
     pullReg (hc08_reg_x);
   if (postH)
