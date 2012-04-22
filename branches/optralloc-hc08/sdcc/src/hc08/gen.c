@@ -1436,6 +1436,24 @@ rmwWithAop (char *rmwop, asmop * aop, int loffset)
       break;
     case AOP_DUMMY:
       break;
+    case AOP_SOF:
+      {
+        int offset = aop->size - 1 - loffset;
+        offset += _G.stackOfs + _G.stackPushes + aop->aopu.aop_stk + 1;
+        if (offset > 0xff)
+          {
+            /* Unfortunately, the rmw class of instructions only support a */
+            /* single byte stack pointer offset and we need two. */
+            needpula = pushRegIfUsed (hc08_reg_a);
+            loadRegFromAop (hc08_reg_a, aop, loffset);
+            rmwWithReg (rmwop, hc08_reg_a);
+            if (strcmp ("tst", rmwop))
+              storeRegToAop (hc08_reg_a, aop, loffset);
+            pullOrFreeReg (hc08_reg_a, needpula);
+            break;
+          }
+        /* If the offset is small enough, fall through to default case */
+      }
     default:
       emitcode (rmwop, "%s", aopAdrStr (aop, loffset, FALSE));
       regalloc_dry_run_cost += ((aop->type == AOP_DIR || aop->type == AOP_IMMD) ? 2 : 3);
@@ -2168,12 +2186,32 @@ asmopToBool (asmop *aop, bool resultInA)
   bool needpula = FALSE;
   bool flagsonly = TRUE;
   int offset = size - 1;
+  sym_link *type;
 
   wassert (aop);
-  isFloat = IS_FLOAT (operandType (AOP_OP (aop)));
+  type = operandType (AOP_OP (aop));
+  isFloat = IS_FLOAT (type);
 
   if (resultInA)
     hc08_freeReg (hc08_reg_a);
+
+  if (IS_BOOL (type))
+    {
+      if (resultInA)
+        loadRegFromAop (hc08_reg_a, aop, 0);
+      else
+        rmwWithAop ("tst", aop, 0);
+      return;
+    }
+
+  if (resultInA && size == 1)
+    {
+      loadRegFromAop (hc08_reg_a, aop, 0);
+      rmwWithReg ("neg", hc08_reg_a);
+      loadRegFromConst (hc08_reg_a, zero);
+      rmwWithReg ("rol", hc08_reg_a);
+      return;
+    }
 
   switch (aop->type)
     {
@@ -5915,8 +5953,8 @@ genRRC (iCode * ic)
   if (resultInA)
     {
       emitcode ("ora", "1,s");
-      emitcode ("ais", "#1");
-      regalloc_dry_run_cost += 5;
+      pullNull (1);
+      regalloc_dry_run_cost += 3;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       needpula = FALSE;
     }
@@ -5961,7 +5999,7 @@ genRLC (iCode * ic)
     {
       while (size--)
         {
-          rmwWithAop (shift, AOP (result), offset--);
+          rmwWithAop (shift, AOP (result), offset++);
           shift = "rol";
         }
     }
@@ -5993,8 +6031,8 @@ genRLC (iCode * ic)
   if (resultInA)
     {
       emitcode ("ora", "1,s");
-      emitcode ("ais", "#1");
-      regalloc_dry_run_cost += 5;
+      pullNull (1);
+      regalloc_dry_run_cost += 3;
       hc08_dirtyReg (hc08_reg_a, FALSE);
       needpula = FALSE;
     }
@@ -8755,7 +8793,7 @@ genJumpTab (iCode * ic)
       pullReg (hc08_reg_hx);
       emitcode ("rts", "");
       regalloc_dry_run_cost++;
-      _G.stackPushes += 2;
+      _G.stackPushes -= 2;
       updateCFA ();
     }
 

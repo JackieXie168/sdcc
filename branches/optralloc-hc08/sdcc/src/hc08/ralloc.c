@@ -2199,6 +2199,11 @@ findAssignToSym (operand * op, iCode * ic)
   if (!IS_SYMOP (IC_RIGHT (dic)))
     return NULL;
 
+  /* if the symbol's address has been taken, there might be a */
+  /* non-obvious assignment to it, and so we should not */
+  if (OP_SYMBOL (IC_RIGHT (dic))->addrtaken)
+    return NULL;
+
   /* if the symbol is volatile then we should not */
   if (isOperandVolatile (IC_RIGHT (dic), TRUE))
     return NULL;
