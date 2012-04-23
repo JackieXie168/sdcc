@@ -304,7 +304,7 @@ static bool cseCostEstimation (iCode *ic, iCode *pdic)
     operand *result = IC_RESULT(ic);
     sym_link *result_type = operandType(result);
 
-    return 0; /* disable CSE */
+    //return 0; /* disable CSE */
 
     /* if it is a pointer then return ok for now */
     if (IC_RESULT(ic) && IS_PTR(result_type)) return 1;
