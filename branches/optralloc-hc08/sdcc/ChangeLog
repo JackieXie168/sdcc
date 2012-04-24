@@ -1,3 +1,10 @@
+2012-04-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.c,
+	  src/SDCCopt.c,
+	  src/z80/gen.c:
+	  GET_VALUE_AT_ADDRESS with offset for z80, z180 and r2k.
+
 2012-04-22 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c: Index stack frame via x instead of sp when convenient
