@@ -1,3 +1,10 @@
+2012-04-22 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Use msb to lsb order in assignment for compatibility
+	  with hardware hardware registers. Expanded use of cpx and ldhx
+	  instructions. Removed some old unused code. Fixed a stack bug in
+	  genPlusIncr.
+
 2012-04-23 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCicode.c:

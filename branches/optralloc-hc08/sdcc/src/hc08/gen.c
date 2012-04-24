@@ -2723,7 +2723,7 @@ genIpush (iCode * ic)
   offset = 0;
 
 //  l = aopGet (AOP (IC_LEFT (ic)), 0, FALSE, TRUE);
-  if (AOP_TYPE (IC_LEFT (ic)) == AOP_IMMD || IS_AOP_HX (AOP (IC_LEFT (ic))))
+  if (AOP_TYPE (IC_LEFT (ic)) == AOP_IMMD || AOP_TYPE (IC_LEFT (ic)) == AOP_LIT ||IS_AOP_HX (AOP (IC_LEFT (ic))))
     {
       if ((size == 2) && hc08_reg_hx->isDead || IS_AOP_HX (AOP (IC_LEFT (ic))))
         {
@@ -3310,40 +3310,6 @@ genGoto (iCode * ic)
   regalloc_dry_run_cost += 3;
 }
 
-#if 0
-/*-----------------------------------------------------------------*/
-/* findLabelBackwards: walks back through the iCode chain looking  */
-/* for the given label. Returns number of iCode instructions     */
-/* between that label and given ic.          */
-/* Returns zero if label not found.          */
-/*-----------------------------------------------------------------*/
-static int
-findLabelBackwards (iCode * ic, int key)
-{
-  int count = 0;
-
-  while (ic->prev)
-    {
-      ic = ic->prev;
-      count++;
-
-      /* If we have any pushes or pops, we cannot predict the distance.
-         I don't like this at all, this should be dealt with in the
-         back-end */
-      if (ic->op == IPUSH || ic->op == IPOP)
-        {
-          return 0;
-        }
-
-      if (ic->op == LABEL && IC_LABEL (ic)->key == key)
-        {
-          return count;
-        }
-    }
-
-  return 0;
-}
-#endif
 
 /*-----------------------------------------------------------------*/
 /* genPlusIncr :- does addition with increment if possible         */
@@ -3685,8 +3651,7 @@ genMinus (iCode * ic)
           loadRegFromAop (hc08_reg_a, leftOp, offset);
           emitcode (sub, "1, s");
           regalloc_dry_run_cost += 3;
-          emitcode ("ais", "#1");
-          regalloc_dry_run_cost += 2;
+          pullNull (1);
         }
       else
         {
@@ -4619,6 +4584,10 @@ genCmp (iCode * ic, iCode * ifx)
 
   size = max (AOP_SIZE (left), AOP_SIZE (right));
 
+  if (size == 1 && IS_AOP_X (AOP (left)))
+    {
+      accopWithAop ("cpx", AOP (right), offset);
+    }
   if ((size == 2)
       && ((AOP_TYPE (left) == AOP_DIR || IS_AOP_HX (AOP (left))) && (AOP_SIZE (left) == 2))
       && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && (hc08_reg_h->isDead && hc08_reg_x->isDead || IS_AOP_HX (AOP (left))))
@@ -5214,52 +5183,6 @@ isLiteralBit (unsigned long lit)
   return 0;
 }
 
-#if 0
-/*-----------------------------------------------------------------*/
-/* continueIfTrue -                                                */
-/*-----------------------------------------------------------------*/
-static void
-continueIfTrue (iCode * ic)
-{
-  if (IC_TRUE (ic))
-    emitBranch ("jmp", IC_TRUE (ic));
-  ic->generated = 1;
-}
-
-/*-----------------------------------------------------------------*/
-/* jmpIfTrue -                                                     */
-/*-----------------------------------------------------------------*/
-static void
-jumpIfTrue (iCode * ic)
-{
-  if (!IC_TRUE (ic))
-    emitBranch ("jmp", IC_FALSE (ic));
-  ic->generated = 1;
-}
-
-/*-----------------------------------------------------------------*/
-/* jmpTrueOrFalse -                                                */
-/*-----------------------------------------------------------------*/
-static void
-jmpTrueOrFalse (iCode * ic, symbol * tlbl)
-{
-  // ugly but optimized by peephole
-  if (IC_TRUE (ic))
-    {
-      symbol *nlbl = newiTempLabel (NULL);
-      emitBranch ("bra", nlbl);
-      emitLabel (tlbl);
-      emitBranch ("jmp", IC_TRUE (ic));
-      emitLabel (nlbl);
-    }
-  else
-    {
-      emitBranch ("jmp", IC_FALSE (ic));
-      emitLabel (tlbl);
-    }
-  ic->generated = 1;
-}
-#endif
 
 /*-----------------------------------------------------------------*/
 /* genAnd  - code for and                                          */
@@ -5639,7 +5562,7 @@ release:
 }
 
 /*-----------------------------------------------------------------*/
-/* genXor - code for xclusive or                                   */
+/* genXor - code for Exclusive or                                  */
 /*-----------------------------------------------------------------*/
 static void
 genXor (iCode * ic, iCode * ifx)
@@ -6685,20 +6608,6 @@ XAccRsh (int shCount, bool sign)
 }
 
 
-#if 0
-/*-----------------------------------------------------------------*/
-/* shiftR1Left2Result - shift right one byte from left to result   */
-/*-----------------------------------------------------------------*/
-static void
-shiftR1Left2Result (operand * left, int offl, operand * result, int offr, int shCount, int sign)
-{
-  loadRegFromAop (hc08_reg_a, AOP (left), offl);
-  /* shift right accumulator */
-  AccRsh (shCount, sign);
-  storeRegToAop (hc08_reg_a, AOP (result), offr);
-}
-#endif
-
 /*-----------------------------------------------------------------*/
 /* shiftL1Left2Result - shift left one byte from left to result    */
 /*-----------------------------------------------------------------*/
@@ -6771,53 +6680,6 @@ shiftL2Left2Result (operand * left, int offl, operand * result, int offr, int sh
 }
 
 
-#if 0
-/*-----------------------------------------------------------------*/
-/* shiftR2Left2Result - shift right two bytes from left to result  */
-/*-----------------------------------------------------------------*/
-static void
-shiftR2Left2Result (operand * left, int offl, operand * result, int offr, int shCount, int sign)
-{
-  int i;
-  bool needpula = FALSE;
-  bool needpulx = FALSE;
-
-  needpula = pushRegIfUsed (hc08_reg_a);
-  needpulx = pushRegIfUsed (hc08_reg_x);
-
-  loadRegFromAop (hc08_reg_xa, AOP (left), offl);
-  for (i = 0; i < shCount; i++)
-    {
-      if (sign)
-        rmwWithReg ("asr", hc08_reg_x);
-      else
-        rmwWithReg ("lsr", hc08_reg_x);
-      rmwWithReg ("ror", hc08_reg_a);
-    }
-  storeRegToAop (hc08_reg_xa, AOP (result), offl);
-
-  pullOrFreeReg (hc08_reg_x, needpulx);
-  pullOrFreeReg (hc08_reg_a, needpula);
-}
-#endif
-
-#if 0
-/*-----------------------------------------------------------------*/
-/* shiftLLeftOrResult - shift left one byte from left, or to result */
-/*-----------------------------------------------------------------*/
-static void
-shiftLLeftOrResult (operand * left, int offl, operand * result, int offr, int shCount)
-{
-  loadRegFromAop (hc08_reg_a, AOP (left), offl);
-  /* shift left accumulator */
-  AccLsh (shCount);
-  /* or with result */
-  accopWithAop ("ora", AOP (result), offr);
-  /* back to result */
-  storeRegToAop (hc08_reg_a, AOP (result), offr);
-  hc08_freeReg (hc08_reg_a);
-}
-#endif
 
 /*-----------------------------------------------------------------*/
 /* shiftRLeftOrResult - shift right one byte from left,or to result */
@@ -8725,12 +8587,31 @@ genAssign (iCode * ic)
       goto release;
     }
 
+  /* If the result and right are 2 bytes and both in registers, we have to be careful */
+  /* to make sure the registers are not overwritten prematurely. */
+  if (AOP_SIZE (result) == 2 && AOP (result)->type == AOP_REG && AOP (result)->type == AOP_REG)
+    {
+      if (AOP (result)->aopu.aop_reg[0] == AOP (right)->aopu.aop_reg[1])
+        {
+          transferAopAop (AOP (right), 1, AOP (result), 1);
+          transferAopAop (AOP (right), 0, AOP (result), 0);
+        }
+      else
+        {
+          transferAopAop (AOP (right), 0, AOP (result), 0);
+          transferAopAop (AOP (right), 1, AOP (result), 1);
+        }
+    }
+
   /* general case */
+  /* Copy in msb to lsb order, since some multi-byte hardware registers */
+  /* expect this order. */
   size = AOP_SIZE (result);
+  offset = size - 1;
   while (size--)
     {
       transferAopAop (AOP (right), offset, AOP (result), offset);
-      offset++;
+      offset--;
     }
 
 release:
@@ -8850,14 +8731,6 @@ genCast (iCode * ic)
   if (AOP_SIZE (result) == 1)
     {
       transferAopAop (AOP (right), 0, AOP (result), 0);
-      goto release;
-      size = AOP_SIZE (result);
-      offset = 0;
-      while (size--)
-        {
-          transferAopAop (AOP (right), offset, AOP (result), offset);
-          offset++;
-        }
       goto release;
     }
 
@@ -9109,13 +8982,13 @@ genDummyRead (iCode * ic)
       aopOp (op, ic, FALSE);
 
       size = AOP_SIZE (op);
-      offset = 0;
+      offset = size - 1;
 
       while (size--)
         {
           loadRegFromAop (hc08_reg_a, AOP (op), offset);
           hc08_freeReg (hc08_reg_a);
-          offset++;
+          offset--;
         }
 
       freeAsmop (op, NULL, ic, TRUE);
@@ -9127,13 +9000,13 @@ genDummyRead (iCode * ic)
       aopOp (op, ic, FALSE);
 
       size = AOP_SIZE (op);
-      offset = 0;
+      offset = size - 1;
 
       while (size--)
         {
           loadRegFromAop (hc08_reg_a, AOP (op), offset);
           hc08_freeReg (hc08_reg_a);
-          offset++;
+          offset--;
         }
 
       freeAsmop (op, NULL, ic, TRUE);
