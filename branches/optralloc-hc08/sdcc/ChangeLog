@@ -1,5 +1,9 @@
 2012-04-22 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
+	* src/hc08/gen.c: Index stack frame via x instead of sp when convenient
+
+2012-04-22 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
 	* src/hc08/gen.c: Use msb to lsb order in assignment for compatibility
 	  with hardware hardware registers. Expanded use of cpx and ldhx
 	  instructions. Removed some old unused code. Fixed a stack bug in

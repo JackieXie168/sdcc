@@ -58,17 +58,18 @@ char **fReturn2 = fReturnhc08;
 static struct
 {
   short hxPushed;
-  short iyPushed;
   short accInUse;
   short nRegsSaved;
   int stackOfs;
   int stackPushes;
   short regsinuse;
   set *sendSet;
+  int tsxStackPushes;
 }
 _G;
 
 static asmop *hc08_aop_pass[8];
+static asmop tsxaop;
 
 extern int hc08_ptrRegReq;
 extern int hc08_nRegs;
@@ -777,10 +778,7 @@ forceload:
     }
 
 // ignore caching for now
-#if 0
-  reg->aop = aop;
-  reg->aopofs = loffset;
-#endif
+  hc08_dirtyReg (reg, FALSE);
 }
 
 
@@ -1384,7 +1382,7 @@ rmwWithReg (char *rmwop, reg_info * reg)
       sprintf (rmwaop, "%sx", rmwop);
       emitcode (rmwaop, "");
       regalloc_dry_run_cost++;
-      hc08_dirtyReg (hc08_reg_a, FALSE);
+      hc08_dirtyReg (hc08_reg_x, FALSE);
     }
   else if (hc08_reg_a->isFree)
     {
@@ -1490,6 +1488,29 @@ pointerCode (sym_link * etype)
 #endif
 
 /*-----------------------------------------------------------------*/
+/* operandConflictsWithHX - true if operand in h and/or x register */
+/*-----------------------------------------------------------------*/
+static bool
+operandConflictsWithHX (operand *op)
+{
+  symbol *sym;
+  int i;
+
+  if (IS_ITEMP (op))
+    {
+      sym = OP_SYMBOL (op);
+      if (!sym->isspilt)
+        {
+          for(i = 0; i < sym->nRegs; i++)
+            if (sym->regs[i] == hc08_reg_h || sym->regs[i] == hc08_reg_x)
+              return TRUE;
+        }
+    }
+
+  return FALSE;
+}
+
+/*-----------------------------------------------------------------*/
 /* aopForSym - for a true symbol                                   */
 /*-----------------------------------------------------------------*/
 static asmop *
@@ -1528,6 +1549,36 @@ aopForSym (iCode * ic, symbol * sym, bool result)
       aop->aopu.aop_dir = sym->rname;
       aop->size = getSize (sym->type);
       aop->aopu.aop_stk = sym->stack;
+
+      if (!regalloc_dry_run && hc08_reg_hx->isFree && hc08_reg_hx->aop != &tsxaop)
+        {
+          if (!hc08_reg_h->isDead || !hc08_reg_x->isDead)
+            return aop;
+          if (ic->op == IFX && operandConflictsWithHX (IC_COND (ic)))
+            return aop;
+          else if (ic->op == JUMPTABLE && operandConflictsWithHX (IC_JTCOND (ic)))
+            return aop;
+          else
+            {
+              /* If this is a pointer gen/set, then hx is definitely in use */
+              if (POINTER_SET (ic) || POINTER_GET (ic))
+                return aop;
+              if (ic->op == ADDRESS_OF)
+                return aop;
+              if (operandConflictsWithHX (IC_LEFT (ic)))
+                return aop;
+              if (operandConflictsWithHX (IC_RIGHT (ic)))
+                return aop;
+            }
+          /* It's safe to use tsx here. tsx costs 1 byte and 2 cycles but */
+          /* can save us 1 byte and 1 bytes for each time we can use x    */
+          /* instead of sp. For a single use, we break even on bytes, but */
+          /* lose a cycle. */
+          /* TODO: check that at least two uses are possible. */
+          emitcode ("tsx", "");
+          hc08_reg_hx->aop = &tsxaop;
+          _G.tsxStackPushes = _G.stackPushes;
+        }
       return aop;
     }
 
@@ -2128,7 +2179,16 @@ aopAdrStr (asmop * aop, int loffset, bool bit16)
       return aop->aopu.aop_str[loffset];
 
     case AOP_SOF:
-      sprintf (s, "%d,s", _G.stackOfs + _G.stackPushes + aop->aopu.aop_stk + offset + 1);
+      if (!regalloc_dry_run && hc08_reg_hx->aop == &tsxaop)
+        {
+          int xofs = _G.stackOfs + _G.tsxStackPushes + aop->aopu.aop_stk + offset;
+          if (xofs)
+            sprintf (s, "%d,x", xofs);
+          else
+            sprintf (s, ",x");
+        }
+      else
+        sprintf (s, "%d,s", _G.stackOfs + _G.stackPushes + aop->aopu.aop_stk + offset + 1);
       rs = Safe_calloc (1, strlen (s) + 1);
       strcpy (rs, s);
       return rs;
@@ -2636,7 +2696,9 @@ static void
 pushSide (operand * oper, int size, iCode * ic)
 {
   int offset = 0;
+  bool xIsFree = hc08_reg_x->isFree;
 
+  hc08_useReg (hc08_reg_x);
   aopOp (oper, ic, FALSE);
 
   while (size--)
@@ -2646,6 +2708,8 @@ pushSide (operand * oper, int size, iCode * ic)
     }
 
   freeAsmop (oper, NULL, ic, TRUE);
+  if (xIsFree)
+    hc08_freeReg (hc08_reg_x);
 }
 
 /*-----------------------------------------------------------------*/
@@ -2863,10 +2927,16 @@ genCall (iCode * ic)
       regalloc_dry_run_cost += 3;
     }
 
+  hc08_dirtyReg (hc08_reg_a, FALSE);
+  hc08_dirtyReg (hc08_reg_hx, FALSE);
+
   /* if we need assign a result value */
   if ((IS_ITEMP (IC_RESULT (ic)) &&
        (OP_SYMBOL (IC_RESULT (ic))->nRegs || OP_SYMBOL (IC_RESULT (ic))->spildir)) || IS_TRUE_SYMOP (IC_RESULT (ic)))
     {
+      hc08_useReg (hc08_reg_a);
+      if (operandSize (IC_RESULT (ic)) > 1)
+        hc08_useReg (hc08_reg_x);
       _G.accInUse++;
       aopOp (IC_RESULT (ic), ic, FALSE);
       _G.accInUse--;
@@ -2937,10 +3007,16 @@ genPcall (iCode * ic)
   _G.stackPushes -= 4;          /* account for rts here & in called function */
   updateCFA ();
 
+  hc08_dirtyReg (hc08_reg_a, FALSE);
+  hc08_dirtyReg (hc08_reg_hx, FALSE);
+
   /* if we need assign a result value */
   if ((IS_ITEMP (IC_RESULT (ic)) &&
        (OP_SYMBOL (IC_RESULT (ic))->nRegs || OP_SYMBOL (IC_RESULT (ic))->spildir)) || IS_TRUE_SYMOP (IC_RESULT (ic)))
     {
+      hc08_useReg (hc08_reg_a);
+      if (operandSize (IC_RESULT (ic)) > 1)
+        hc08_useReg (hc08_reg_x);
       _G.accInUse++;
       aopOp (IC_RESULT (ic), ic, FALSE);
       _G.accInUse--;
@@ -3576,6 +3652,7 @@ addSign (operand * result, int offset, int sign)
           emitcode ("rola", "");
           emitcode ("clra", "");
           emitcode ("sbc", zero);
+          hc08_dirtyReg (hc08_reg_a, FALSE);
           regalloc_dry_run_cost += 4;
           while (size--)
             storeRegToAop (hc08_reg_a, AOP (result), offset++);
@@ -3751,6 +3828,8 @@ genMultOneByte (operand * left, operand * right, operand * result)
       hc08_dirtyReg (hc08_reg_xa, FALSE);
       storeRegToFullAop (hc08_reg_xa, AOP (result), TRUE);
       hc08_freeReg (hc08_reg_xa);
+      pullOrFreeReg (hc08_reg_x, needpullx);
+      pullOrFreeReg (hc08_reg_a, needpulla);
 
       return;
     }
@@ -3774,9 +3853,11 @@ genMultOneByte (operand * left, operand * right, operand * result)
           emitcode ("ldx", "#0x%02x", val);
           regalloc_dry_run_cost += 2;
         }
+      hc08_dirtyReg (hc08_reg_x, FALSE);
 
       emitcode ("mul", "");
       regalloc_dry_run_cost++;
+      hc08_dirtyReg (hc08_reg_xa, FALSE);
 
       if (val < 0)
         {
@@ -3789,9 +3870,10 @@ genMultOneByte (operand * left, operand * right, operand * result)
           rmwWithReg ("neg", hc08_reg_x);
         }
 
-      hc08_dirtyReg (hc08_reg_xa, FALSE);
       storeRegToFullAop (hc08_reg_xa, AOP (result), TRUE);
       hc08_freeReg (hc08_reg_xa);
+      pullOrFreeReg (hc08_reg_x, needpullx);
+      pullOrFreeReg (hc08_reg_a, needpulla);
       return;
     }
 
@@ -3831,6 +3913,7 @@ genMultOneByte (operand * left, operand * right, operand * result)
           emitcode ("ldx", "#0x%02x", val);
           regalloc_dry_run_cost += 2;
         }
+      hc08_dirtyReg (hc08_reg_x, FALSE);
       hc08_useReg (hc08_reg_x);
     }
   else
@@ -4024,6 +4107,7 @@ genDivOneByte (operand * left, operand * right, operand * result)
           emitcode ("ldx", "#0x%02x", (unsigned char) val);
           regalloc_dry_run_cost += 2;
         }
+      hc08_dirtyReg (hc08_reg_x, FALSE);
     }
   else                          /* ! literal */
     {
@@ -4056,6 +4140,7 @@ genDivOneByte (operand * left, operand * right, operand * result)
           emitcode ("lda", "#0x%02x", (unsigned char) val);
           regalloc_dry_run_cost += 2;
         }
+      hc08_dirtyReg (hc08_reg_a, FALSE);
     }
   else                          /* ! literal */
     {
@@ -4188,8 +4273,8 @@ genModOneByte (operand * left, operand * right, operand * result)
       loadRegFromAop (hc08_reg_a, AOP (left), 0);
       emitcode ("div", "");
       regalloc_dry_run_cost++;
-      hc08_freeReg (hc08_reg_a);
       hc08_freeReg (hc08_reg_x);
+      hc08_dirtyReg (hc08_reg_a, TRUE);
       hc08_dirtyReg (hc08_reg_h, FALSE);
       storeRegToFullAop (hc08_reg_h, AOP (result), FALSE);
       pullOrFreeReg (hc08_reg_h, needpullh);
@@ -4214,6 +4299,7 @@ genModOneByte (operand * left, operand * right, operand * result)
           emitcode ("ldx", "#0x%02x", (unsigned char) val);
           regalloc_dry_run_cost += 2;
         }
+      hc08_dirtyReg (hc08_reg_x, FALSE);
     }
   else                          /* ! literal */
     {
@@ -4252,6 +4338,7 @@ genModOneByte (operand * left, operand * right, operand * result)
           emitcode ("lda", "#0x%02x", (unsigned char) val);
           regalloc_dry_run_cost += 2;
         }
+      hc08_dirtyReg (hc08_reg_a, FALSE);
     }
   else                          /* ! literal */
     {
@@ -4280,8 +4367,8 @@ genModOneByte (operand * left, operand * right, operand * result)
   loadRegFromConst (hc08_reg_h, zero);
   emitcode ("div", "");
   regalloc_dry_run_cost++;
-  hc08_freeReg (hc08_reg_a);
   hc08_freeReg (hc08_reg_x);
+  hc08_dirtyReg (hc08_reg_a, TRUE);
   hc08_dirtyReg (hc08_reg_h, FALSE);
 
   if (runtimeSign || compiletimeSign)
@@ -4937,6 +5024,7 @@ genPointerGetSetOfs (iCode * ic)
               emitcode ("rola", "");
               emitcode ("clra", "");
               emitcode ("sbc", "#0");
+              hc08_dirtyReg (hc08_reg_a, FALSE);
               regalloc_dry_run_cost += 4;
               hc08_useReg (hc08_reg_a);
               transferRegReg (hc08_reg_a, hc08_reg_h, FALSE);
@@ -8506,6 +8594,7 @@ genAddrOf (iCode * ic)
       offset = _G.stackOfs + _G.stackPushes + sym->stack;
       hc08_useReg (hc08_reg_hx);
       emitcode ("tsx", "");
+      hc08_dirtyReg (hc08_reg_hx, FALSE);
       regalloc_dry_run_cost++;
       while (offset > 127)
         {
@@ -9080,7 +9169,7 @@ updateiTempRegisterUse (operand * op)
           int i;
           for(i = 0; i < sym->nRegs; i++)
             if (sym->regs[i])
-              sym->regs[i]->isFree = FALSE;
+              hc08_useReg (sym->regs[i]);
         }
     }
 }
@@ -9107,8 +9196,8 @@ genhc08iCode (iCode *ic)
     for (i = A_IDX; i <= XA_IDX; i++)
       {
         reg = hc08_regWithIdx (i);
-        if (reg->aop)
-          emitcode ("", "; %s = %s offset %d", reg->name, aopName (reg->aop), reg->aopofs);
+        //if (reg->aop)
+        //  emitcode ("", "; %s = %s offset %d", reg->name, aopName (reg->aop), reg->aopofs);
         reg->isFree = TRUE;
       }
 
@@ -9116,6 +9205,11 @@ genhc08iCode (iCode *ic)
       updateiTempRegisterUse (IC_COND (ic));
     else if (ic->op == JUMPTABLE)
       updateiTempRegisterUse (IC_JTCOND (ic));
+    else if (ic->op == RECEIVE)
+      {
+        hc08_useReg (hc08_reg_a);
+        hc08_useReg (hc08_reg_x); // TODO: x really is free if function only receives 1 byte
+      }
     else
       {
         if (POINTER_SET (ic))
