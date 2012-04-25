@@ -1,3 +1,8 @@
+2012-04-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Fix #3521024.
+
 2012-04-25 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c: Fixed bug with cpx use. Optimize stack adjustments
