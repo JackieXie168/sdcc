@@ -44,6 +44,7 @@ extern int allocInfo;
 static int pushReg (reg_info * reg, bool freereg);
 static void pullReg (reg_info * reg);
 static void transferAopAop (asmop * srcaop, int srcofs, asmop * dstaop, int dstofs);
+static void adjustStack (int n);
 
 static char *zero = "#0x00";
 static char *one = "#0x01";
@@ -421,13 +422,8 @@ pullReg (reg_info * reg)
 static void
 pullNull (int n)
 {
-  if (n)
-    {
-      emitcode ("ais", "#%d", n);
-      regalloc_dry_run_cost += 2;
-      _G.stackPushes -= n;
-      updateCFA ();
-    }
+  wassert (n >= 0);
+  adjustStack (n);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -501,8 +497,21 @@ adjustStack (int n)
         }
       else
         {
-          emitcode ("ais", "#%d", n);
-          regalloc_dry_run_cost += 2;
+          if (n == -1)
+            {
+              emitcode ("pshh", "");      /* 1 byte,  2 cycles */
+              regalloc_dry_run_cost++;
+            }
+          else if (n == 1 && optimize.codeSize && hc08_reg_h->isFree)
+            {
+              emitcode ("pulh", "");      /* 1 byte,  3 cycles */
+              regalloc_dry_run_cost++;
+            }
+          else
+            {
+              emitcode ("ais", "#%d", n); /* 2 bytes, 2 cycles */
+              regalloc_dry_run_cost += 2;
+            }
           _G.stackPushes -= n;
           n = 0;
           updateCFA ();
@@ -558,7 +567,6 @@ aopName (asmop * aop)
 
   return "?";
 }
-
 
 /*--------------------------------------------------------------------------*/
 /* loadRegFromAop - Load register reg from logical offset loffset of aop.   */
@@ -1082,13 +1090,17 @@ storeConstToAop (char *c, asmop * aop, int loffset)
   switch (aop->type)
     {
     case AOP_DIR:
-      if (!strcmp (c, zero))
+      /* clr operates with read-modify-write cycles, so don't use if the */
+      /* destination is volatile to avoid the read side-effect. */
+      if (!strcmp (c, zero) && !(aop->op && isOperandVolatile (aop->op, FALSE)) && optimize.codeSize)
         {
+          /* clr dst : 2 bytes, 5 cycles */
           emitcode ("clr", "%s", aopAdrStr (aop, loffset, FALSE));
           regalloc_dry_run_cost += 2;
         }
       else
         {
+          /* mov #0,dst : 3 bytes, 4 cycles */
           emitcode ("mov", "%s,%s", c, aopAdrStr (aop, loffset, FALSE));
           regalloc_dry_run_cost += 3;
         }
@@ -1255,13 +1267,17 @@ transferAopAop (asmop *srcaop, int srcofs, asmop *dstaop, int dstofs)
   if ((dstaop->type == AOP_DIR) && ((srcaop->type == AOP_DIR) || (srcaop->type == AOP_LIT)))
     {
       char *src = aopAdrStr (srcaop, srcofs, FALSE);
-      if (!strcmp (src, zero))
+      /* clr operates with read-modify-write cycles, so don't use if the */
+      /* destination is volatile to avoid the read side-effect. */
+      if (!strcmp (src, zero) && !(dstaop->op && isOperandVolatile (dstaop->op, FALSE)) && optimize.codeSize)
         {
+          /* clr dst : 2 bytes, 5 cycles */
           emitcode ("clr", "%s", aopAdrStr (dstaop, dstofs, FALSE));
           regalloc_dry_run_cost += 2;
         }
       else
         {
+          /* mov #0,dst : 3 bytes, 4 cycles */
           emitcode ("mov", "%s,%s", src, aopAdrStr (dstaop, dstofs, FALSE));
           regalloc_dry_run_cost += 3;
         }
@@ -1511,6 +1527,79 @@ operandConflictsWithHX (operand *op)
 }
 
 /*-----------------------------------------------------------------*/
+/* operandOnStack - returns True if operand is on the stack        */
+/*-----------------------------------------------------------------*/
+static bool
+operandOnStack(operand *op)
+{
+  symbol *sym;
+
+  if (!op || !IS_SYMOP (op))
+    return FALSE;
+  sym = OP_SYMBOL (op);
+  if (!sym->isspilt && sym->onStack)
+    return TRUE;
+  if (sym->isspilt)
+    {
+      sym = sym->usl.spillLoc;
+      if (sym && sym->onStack)
+        return TRUE;
+    }
+  return FALSE;
+}
+
+/*-----------------------------------------------------------------*/
+/* tsxUseful - returns True if tsx could help at least two         */
+/*             anticipated stack references                        */
+/*-----------------------------------------------------------------*/
+static bool
+tsxUseful(iCode *ic)
+{
+  int uses = 0;
+
+  while (ic && uses < 2)
+    {
+      if (ic->op == IFX)
+        {
+          if (operandOnStack (IC_COND (ic)))
+            uses += operandSize(IC_COND (ic));
+          break;
+        }
+      else if (ic->op == JUMPTABLE)
+        {
+          if (operandOnStack (IC_JTCOND (ic)))
+            uses++;
+          break;
+        }
+      else if (ic->op == ADDRESS_OF)
+        {
+          if (operandOnStack (IC_RIGHT (ic)))
+            break;
+        }
+      else if (ic->op == LABEL || ic->op == GOTO || ic->op == CALL || ic->op == PCALL)
+        break;
+      else if (POINTER_SET (ic) || POINTER_GET (ic))
+        break;
+      else
+        {
+          if (operandConflictsWithHX (IC_RESULT (ic)))
+            break;
+          if (operandOnStack (IC_LEFT (ic)))
+            uses += operandSize (IC_LEFT (ic));
+          if (operandOnStack (IC_RIGHT (ic)))
+            uses += operandSize (IC_RIGHT (ic));
+          if (operandOnStack (IC_RESULT (ic)))
+            uses += operandSize (IC_RESULT (ic));
+        }
+
+      ic = ic->next;
+    }
+
+  return uses>=2;
+}
+
+
+/*-----------------------------------------------------------------*/
 /* aopForSym - for a true symbol                                   */
 /*-----------------------------------------------------------------*/
 static asmop *
@@ -1571,10 +1660,11 @@ aopForSym (iCode * ic, symbol * sym, bool result)
                 return aop;
             }
           /* It's safe to use tsx here. tsx costs 1 byte and 2 cycles but */
-          /* can save us 1 byte and 1 bytes for each time we can use x    */
+          /* can save us 1 byte and 1 cycle for each time we can use x    */
           /* instead of sp. For a single use, we break even on bytes, but */
-          /* lose a cycle. */
-          /* TODO: check that at least two uses are possible. */
+          /* lose a cycle. Make sure there are at least two uses.         */
+          if (!tsxUseful (ic))
+            return aop;
           emitcode ("tsx", "");
           hc08_reg_hx->aop = &tsxaop;
           _G.tsxStackPushes = _G.stackPushes;
@@ -4675,7 +4765,7 @@ genCmp (iCode * ic, iCode * ifx)
     {
       accopWithAop ("cpx", AOP (right), offset);
     }
-  if ((size == 2)
+  else if ((size == 2)
       && ((AOP_TYPE (left) == AOP_DIR || IS_AOP_HX (AOP (left))) && (AOP_SIZE (left) == 2))
       && ((AOP_TYPE (right) == AOP_LIT) || ((AOP_TYPE (right) == AOP_DIR) && (AOP_SIZE (right) == 2))) && (hc08_reg_h->isDead && hc08_reg_x->isDead || IS_AOP_HX (AOP (left))))
     {
