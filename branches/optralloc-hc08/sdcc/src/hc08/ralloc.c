@@ -2104,24 +2104,6 @@ packRegsForAssign (iCode * ic, eBBlock * ebp)
         }
     }
 
-  /* if the result is on stack or iaccess then it must be
-     the same atleast one of the operands */
-  if (OP_SYMBOL (IC_RESULT (ic))->onStack ||
-      OP_SYMBOL (IC_RESULT (ic))->iaccess)
-    {
-      /* the operation has only one symbol
-         operator then we can pack */
-      if ((IC_LEFT (dic) && !IS_SYMOP (IC_LEFT (dic))) ||
-          (IC_RIGHT (dic) && !IS_SYMOP (IC_RIGHT (dic))))
-        goto pack;
-
-      if (!((IC_LEFT (dic) &&
-             IC_RESULT (ic)->key == IC_LEFT (dic)->key) ||
-            (IC_RIGHT (dic) &&
-             IC_RESULT (ic)->key == IC_RIGHT (dic)->key)))
-        return 0;
-    }
-pack:
   /* found the definition */
   /* replace the result with the result of */
   /* this assignment and remove this assignment */

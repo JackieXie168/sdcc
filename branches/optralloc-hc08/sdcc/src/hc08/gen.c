@@ -777,6 +777,12 @@ forceload:
         break;
       else if (IS_AOP_HX (aop))
         transferRegReg (hc08_reg_hx, hc08_reg_xa, FALSE);
+      else if (IS_AOP_AX (aop))
+        {
+          pushReg (hc08_reg_a, FALSE);
+          transferRegReg (hc08_reg_x, hc08_reg_a, FALSE);
+          pullReg (hc08_reg_x);
+        }
       else
         {
           loadRegFromAop (hc08_reg_a, aop, loffset);
@@ -960,6 +966,12 @@ storeRegToAop (reg_info *reg, asmop * aop, int loffset)
         transferRegReg (reg, hc08_reg_hx, FALSE);
       else if (IS_AOP_XA (aop))
         break;
+      else if (IS_AOP_AX (aop))
+        {
+          pushReg (hc08_reg_a, FALSE);
+          transferRegReg (hc08_reg_x, hc08_reg_a, FALSE);
+          pullReg (hc08_reg_x);
+        }
       else
         {
           storeRegToAop (hc08_reg_a, aop, loffset);
@@ -1556,6 +1568,15 @@ static bool
 tsxUseful(iCode *ic)
 {
   int uses = 0;
+
+  if (ic->op == CALL)
+    {
+      if (IC_RESULT (ic) && operandSize (IC_RESULT (ic)) < 2 && operandOnStack (IC_RESULT (ic)))
+        {
+          uses++;
+          ic = ic->next;
+        }
+    }
 
   while (ic && uses < 2)
     {
@@ -2938,37 +2959,76 @@ genIpop (iCode * ic)
 static void
 genSend (set *sendSet)
 {
-  iCode *sic;
-  bool delayed_x = FALSE;
+  iCode *send1;
+  iCode *send2;
 
   D (emitcode (";", "genSend"));
 
-  for (sic = setFirstItem (sendSet); sic; sic = setNextItem (sendSet))
-    {
-      int size, offset = 0;
-      aopOp (IC_LEFT (sic), sic, FALSE);
-      size = AOP_SIZE (IC_LEFT (sic));
+  /* case 1: single parameter in A
+   * case 2: single parameter in XA
+   * case 3: first parameter in A, second parameter in X
+   */
+  send1 = setFirstItem (sendSet);
+  send2 = setNextItem (sendSet);
 
-      if (sic->argreg)
+  if (!send2)
+    {
+      int size;
+      /* case 1 or 2, this is fairly easy */
+      aopOp (IC_LEFT (send1), send1, FALSE);
+      size = AOP_SIZE (IC_LEFT (send1));
+      wassert (size <= 2);
+      if (size == 1)
+        loadRegFromAop (hc08_reg_a, AOP (IC_LEFT (send1)), 0);
+      else if (AOP (IC_LEFT (send1))->type == AOP_REG)
+        loadRegFromAop (hc08_reg_xa, AOP (IC_LEFT (send1)), 0);
+      else if (isOperandVolatile (IC_LEFT (send1), FALSE))
         {
-          offset = size - 1;
-          while (size--)
-            {
-              if (offset + (sic->argreg - 1) == 0 && delayed_x)
-                continue;
-              if (offset + (sic->argreg - 1) == 1 && (!setNextItem (sendSet) && AOP_TYPE (IC_LEFT (sic)) == AOP_REG && AOP (IC_LEFT (sic))->aopu.aop_reg[0]->rIdx == X_IDX || 0))
-                {
-                  pushReg (hc08_reg_x, TRUE);
-                  delayed_x = TRUE;
-                }
-              transferAopAop (AOP (IC_LEFT (sic)), offset, hc08_aop_pass[offset + (sic->argreg - 1)], 0);
-              offset--;
-            }
+          /* use msb to lsb order for volatile operands */
+          loadRegFromAop (hc08_reg_x, AOP (IC_LEFT (send1)), 1);
+          loadRegFromAop (hc08_reg_a, AOP (IC_LEFT (send1)), 0);
         }
-      freeAsmop (IC_LEFT (sic), NULL, sic, TRUE);
+      else
+        {
+          /* otherwise perfer to load x last (lsb to msb order) */
+          loadRegFromAop (hc08_reg_a, AOP (IC_LEFT (send1)), 0);
+          loadRegFromAop (hc08_reg_x, AOP (IC_LEFT (send1)), 1);
+        }
+      freeAsmop (IC_LEFT (send1), NULL, send1, TRUE);
     }
-  if (delayed_x)
-    pullReg (hc08_reg_a);
+  else
+    {
+      /* case 3 */
+      /* make sure send1 is the first argument and swap with send2 if not */
+      if (send1->argreg > send2->argreg)
+        {
+          iCode * sic = send1;
+          send2 = send1;
+          send1 = sic;
+        }
+      aopOp (IC_LEFT (send1), send1, FALSE);
+      aopOp (IC_LEFT (send2), send2, FALSE);
+      if (IS_AOP_X (AOP (IC_LEFT (send1))) && IS_AOP_A (AOP (IC_LEFT (send2))))
+        {
+          /* If the parameters' register assignment is eactly backwards */
+          /* from what is needed, then swap the registers. */
+          pushReg (hc08_reg_a, FALSE);
+          transferRegReg (hc08_reg_x, hc08_reg_a, FALSE);
+          pullReg (hc08_reg_x);
+        }
+      else if (IS_AOP_A (AOP (IC_LEFT (send2))))
+        {
+          loadRegFromAop (hc08_reg_x, AOP (IC_LEFT (send2)), 0);
+          loadRegFromAop (hc08_reg_a, AOP (IC_LEFT (send1)), 0);
+        }
+      else
+        {
+          loadRegFromAop (hc08_reg_a, AOP (IC_LEFT (send1)), 0);
+          loadRegFromAop (hc08_reg_x, AOP (IC_LEFT (send2)), 0);
+        }
+      freeAsmop (IC_LEFT (send2), NULL, send2, TRUE);
+      freeAsmop (IC_LEFT (send1), NULL, send1, TRUE);
+    }
 }
 
 /*-----------------------------------------------------------------*/

@@ -1,3 +1,9 @@
+2012-04-26 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Rewrite genSend to fix problem with register
+	  clobbering. Allow use of tsx with function return values.
+	* src/hc08/ralloc.c: Removed unneed constraint on stack operands
+
 2012-04-25 Borut Razem <borut.razem AT gmail.com>
 
 	* src/common.h, src/ds390/main.c: include SDCCsystem.h in common.h
