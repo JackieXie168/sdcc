@@ -719,6 +719,12 @@ forceload:
             break;
           }
       }
+      if (aop->type == AOP_SOF && !(_G.stackOfs + _G.stackPushes + aop->aopu.aop_stk + aop->size - loffset - 1))
+        {
+          pullReg (hc08_reg_h);
+          pushReg (hc08_reg_h, FALSE);
+          break;
+        }
       if (aop->type == AOP_REG && loffset < aop->size)
         transferRegReg (aop->aopu.aop_reg[loffset], hc08_reg_h, TRUE);
       else if (hc08_reg_a->isFree)
@@ -740,6 +746,14 @@ forceload:
         }
       break;
     case HX_IDX:
+      if (aop->type == AOP_SOF && !(_G.stackOfs + _G.stackPushes + aop->aopu.aop_stk + aop->size - loffset - 2))
+        {
+          pullReg (hc08_reg_h);
+          pullReg (hc08_reg_x);
+          pushReg (hc08_reg_x, FALSE);
+          pushReg (hc08_reg_h, FALSE);
+          break;
+        }
       if (IS_AOP_HX (aop))
         break;
       else if (IS_AOP_XA (aop))
@@ -2979,7 +2993,9 @@ genSend (set *sendSet)
       size = AOP_SIZE (IC_LEFT (send1));
       wassert (size <= 2);
       if (size == 1)
-        loadRegFromAop (hc08_reg_a, AOP (IC_LEFT (send1)), 0);
+        {
+          loadRegFromAop (send1->argreg == 2 ? hc08_reg_x : hc08_reg_a, AOP (IC_LEFT (send1)), 0);
+        }
       else if (AOP (IC_LEFT (send1))->type == AOP_REG)
         loadRegFromAop (hc08_reg_xa, AOP (IC_LEFT (send1)), 0);
       else if (isOperandVolatile (IC_LEFT (send1), FALSE))
@@ -9562,7 +9578,15 @@ genhc08iCode (iCode *ic)
       break;
 
     case SEND:
-      addSet (&_G.sendSet, ic);
+      if (!regalloc_dry_run)
+        addSet (&_G.sendSet, ic);
+      else
+        {
+          set * sendSet = NULL;
+          addSet (&sendSet, ic);
+          genSend (sendSet);
+          deleteSet (&sendSet);
+        }
       break;
 
     case DUMMY_READ_VOLATILE:

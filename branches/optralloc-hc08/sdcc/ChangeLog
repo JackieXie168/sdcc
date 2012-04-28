@@ -1,3 +1,10 @@
+2012-04-28 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Optimize access to h/hx on top of stack. Compute
+	  cost of SEND.
+	* src/hc08/ralloc2.cc: Compute cost of SEND. Support xa and ax
+	  with GETBYTE and GETWORD.
+
 2012-04-26 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c: Rewrite genSend to fix problem with register
