@@ -1,3 +1,8 @@
+2012-05-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/hc08/gen.c:
+	  Remove obsolete genPointerGetSetOfs().
+
 2012-05-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/SDCCval.h,
