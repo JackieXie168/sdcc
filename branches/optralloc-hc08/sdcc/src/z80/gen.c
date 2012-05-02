@@ -2424,7 +2424,10 @@ aopGet (asmop * aop, int offset, bool bit16)
         {
           unsigned long v = aop->aopu.aop_simplelit;
 
-          v >>= (offset * 8);
+          if (offset >= sizeof(v))
+            v = 0;
+          else
+            v >>= (offset * 8);
           dbuf_tprintf (&dbuf, "!immedbyte", (unsigned int) v & 0xff);
         }
         break;
@@ -5995,6 +5998,14 @@ genIfxJump (iCode * ic, char *jval)
           emit3 (A_OR, ASMOP_A, ASMOP_A);
           inst = "NZ";
         }
+      else if (!strcmp (jval, "z"))
+        {
+          inst = "Z";
+        }
+      else if (!strcmp (jval, "nz"))
+        {
+          inst = "NZ";
+        }
       else if (!strcmp (jval, "c"))
         {
           inst = "C";
@@ -6034,6 +6045,14 @@ genIfxJump (iCode * ic, char *jval)
       if (!strcmp (jval, "a"))
         {
           emit3 (A_OR, ASMOP_A, ASMOP_A);
+          inst = "Z";
+        }
+      else if (!strcmp (jval, "z"))
+        {
+          inst = "NZ";
+        }
+      else if (!strcmp (jval, "nz"))
+        {
           inst = "Z";
         }
       else if (!strcmp (jval, "c"))
@@ -6258,6 +6277,15 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
                 }
               else
                 {
+                  if (!(AOP_TYPE (result) == AOP_CRY && AOP_SIZE (result)) && ifx &&
+                    (AOP_TYPE (left) == AOP_REG || AOP_TYPE (left) == AOP_STK && !IS_GB))
+                    {
+                      if (!regalloc_dry_run)
+                        emit2 ("bit 7, %s", aopGet (AOP (left), AOP_SIZE (left) - 1, FALSE));
+                      regalloc_dry_run_cost += ((AOP_TYPE (left) == AOP_REG) ? 2 : 4);
+                      genIfxJump (ifx, "nz");
+                      return;
+                    }
                   /* Just load in the top most bit */
                   cheapMove (ASMOP_A, 0, AOP (left), AOP_SIZE (left) - 1);
                   if (!(AOP_TYPE (result) == AOP_CRY && AOP_SIZE (result)) && ifx)
@@ -6538,7 +6566,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
           while (size--)
             {
               cheapMove (ASMOP_A, 0, AOP (left), offset);
-              if ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0)
+              if (byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0)
                 emit3 (A_OR, ASMOP_A, ASMOP_A);
               else
                 emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
@@ -6561,7 +6589,7 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
       while (size--)
         {
           cheapMove (ASMOP_A, 0, AOP (left), offset);
-          if (AOP_TYPE (right) == AOP_LIT && ((unsigned int) ((lit >> (offset * 8)) & 0x0FFL) == 0))
+          if (AOP_TYPE (right) == AOP_LIT && byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0)
             {
               emit3 (A_OR, ASMOP_A, ASMOP_A);
               if (!regalloc_dry_run)

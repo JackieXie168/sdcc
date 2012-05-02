@@ -1,3 +1,29 @@
+2012-05-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCval.h,
+	* src/SDCCval.c (byteOfVal): new function
+	* src/z80/gen.c (aopGet, gencjneshort),
+	* src/SCCglue.c (aopLiteralLong): use byteOfVal() to access value
+	* configure.in,
+	* sdcc_vc_in.h,
+	* sdccconf_in.h: find/define appropriate 64-bit integer
+	* src/SDCCsymt.h: start of support for 64-bit literal
+
+2012-04-30 Leland Morrison <enigmalee AT sourceforge.net>
+	* sim/ucsim/app.cc:  reduced the frequency of checks for user input
+	
+2012-04-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Improve code generation for comparison to zero.
+
+2012-04-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/librarian/sdcclib.c:
+	  Do not depend on PATH_MAX, fix #3521650.
+	* sdas/asxxsrc/asxxxx.h:
+	  Use FILENAME_MAX if PATH_MAX is not defined.
+
 2012-04-28 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c: Optimize access to h/hx on top of stack. Compute
