@@ -121,6 +121,12 @@ _hc08_parseOptions (int *pargc, char **argv, int *i)
       return TRUE;
     }
 
+  if (!strcmp (argv[*i], "--oldralloc"))
+    {
+      options.oldralloc = TRUE;
+      return TRUE;
+    }
+
   return FALSE;
 }
 

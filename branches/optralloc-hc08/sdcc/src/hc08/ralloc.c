@@ -3293,11 +3293,11 @@ hc08_ralloc (ebbIndex * ebbi)
 void
 hc08_assignRegisters (ebbIndex * ebbi)
 {
-//#ifdef OLDRALLOC
-//  if (hc08_opts.oldralloc)
-//    hc08_oldralloc (ebbi);
-//  else
-//#endif
+#ifdef OLDRALLOC
+  if (options.oldralloc)
+    hc08_oldralloc (ebbi);
+  else
+#endif
     hc08_ralloc (ebbi);
 }
 
