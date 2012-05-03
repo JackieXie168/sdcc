@@ -1,7 +1,25 @@
+2012-05-03 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/z80/gen.c (aopPut3): added missing declarations
+
 2012-05-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/hc08/gen.c:
 	  Remove obsolete genPointerGetSetOfs().
+
+2012-05-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* configure: regenerated from new configure.in
+
+2012-05-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  More efficent storing of registers pairs to top of stack.
+
+2012-05-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-20101013-1.c:
+	  Disable test until nonzero integer constants work.
 
 2012-05-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
