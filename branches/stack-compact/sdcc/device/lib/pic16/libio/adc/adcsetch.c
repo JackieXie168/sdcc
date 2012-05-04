@@ -5,7 +5,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -36,6 +36,8 @@ void adc_setchannel(unsigned char channel)
   ADCON0 = (ADCON0 & ~(0x07 << 3)) | ((channel & 0x07) << 3);
 #elif (__SDCC_ADC_STYLE == 1812200)
   ADCON0 = (ADCON0 & ~(0x07 << 2)) | ((channel & 0x07) << 2);
+#elif (__SDCC_ADC_STYLE == 1812300)
+  ADCON0 = (ADCON0 & ~(0x03 << 2)) | ((channel & 0x03) << 2);
 #elif (__SDCC_ADC_STYLE == 1813502)
   ADCON0 = (ADCON0 & ~(0x0f << 2)) | ((channel & 0x0f) << 2);
 #elif (__SDCC_ADC_STYLE == 1822200)

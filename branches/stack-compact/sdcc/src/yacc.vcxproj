@@ -65,10 +65,12 @@
   <ItemGroup>
     <CustomBuild Include="SDCC.y">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bison  -d -v -o sdccy.c sdcc.y</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">sdccy.c;sdccy.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bison  -d -v -o sdccy.c sdcc.y</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">sdccy.c;sdccy.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bison  -d -v -o SDCCy.c SDCC.y</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">SDCCy.c;SDCCy.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bison  -d -v -o SDCCy.c SDCC.y</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">SDCCy.c;SDCCy.h;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Generating Parser: SDCCy.c</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Generating Parser: SDCCy.c</Message>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

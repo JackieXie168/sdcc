@@ -278,7 +278,7 @@ cnvToFloatCast (iCode * ic, eBBlock * ebp)
   /* remove it from the iCode */
   remiCodeFromeBBlock (ebp, ic);
   /* depending on the type */
-  for (bwd = 0; bwd < 3; bwd++)
+  for (bwd = 0; bwd < 4; bwd++)
     {
       for (su = 0; su < 2; su++)
         {
@@ -292,7 +292,7 @@ cnvToFloatCast (iCode * ic, eBBlock * ebp)
 
   if (compareType (type, fixed16x16Type) == 1)
     {
-      func = fp16x16conv[0][3][0];
+      func = fp16x16conv[0][4][0];
       goto found;
     }
 
@@ -385,7 +385,7 @@ cnvToFixed16x16Cast (iCode * ic, eBBlock * ebp)
   /* remove it from the iCode */
   remiCodeFromeBBlock (ebp, ic);
   /* depending on the type */
-  for (bwd = 0; bwd < 3; bwd++)
+  for (bwd = 0; bwd < 4; bwd++)
     {
       for (su = 0; su < 2; su++)
         {
@@ -487,7 +487,7 @@ cnvFromFloatCast (iCode * ic, eBBlock * ebp)
   remiCodeFromeBBlock (ebp, ic);
 
   /* depending on the type */
-  for (bwd = 0; bwd < 3; bwd++)
+  for (bwd = 0; bwd < 4; bwd++)
     {
       for (su = 0; su < 2; su++)
         {
@@ -589,7 +589,7 @@ cnvFromFixed16x16Cast (iCode * ic, eBBlock * ebp)
   remiCodeFromeBBlock (ebp, ic);
 
   /* depending on the type */
-  for (bwd = 0; bwd < 3; bwd++)
+  for (bwd = 0; bwd < 4; bwd++)
     {
       for (su = 0; su < 2; su++)
         {
@@ -603,7 +603,7 @@ cnvFromFixed16x16Cast (iCode * ic, eBBlock * ebp)
 
   if (compareType (type, floatType) == 1)
     {
-      func = fp16x16conv[1][3][0];
+      func = fp16x16conv[1][4][0];
       goto found;
     }
 
@@ -726,7 +726,7 @@ convilong (iCode * ic, eBBlock * ebp)
     }
 
   /* depending on the type */
-  for (bwd = 0; bwd < 3; bwd++)
+  for (bwd = 0; bwd < 4; bwd++)
     {
       for (su = 0; su < 2; su++)
         {
@@ -760,7 +760,7 @@ convilong (iCode * ic, eBBlock * ebp)
             }
         }
     }
-  werror (E_INVALID_OP);
+  werrorfl (filename, lineno, E_INVALID_OP, "");
   return;
 found:
   /* if int & long support routines NOT compiled as reentrant */
@@ -944,31 +944,32 @@ convbuiltin (iCode *const ic, eBBlock *ebp)
 static void
 convsmallc (iCode *ic, eBBlock *ebp)
 {
-  iCode *icc, *icp, *ico;
+  iCode *icc, *icp, *ico = NULL;
 
   assert (ic->op == CALL || ic->op == PCALL);
 
-  for(icc = ic->prev; icc && icc->op == IPUSH; icc = icc->prev);
+  for (icc = ic->prev; icc && icc->op == IPUSH; icc = icc->prev)
+    ;
   icp = icc;
   ic = icp->next;
 
   /* Reverse parameters. */
   for (icc = ic; icc->op != CALL && icc->op != PCALL; icc = icc->next)
     {
-      if(icc->next->op != CALL && icc->next->op != PCALL)
+      if (icc->next->op != CALL && icc->next->op != PCALL)
         icc->prev = icc->next;
       else
         icc->prev = icp;
     }
-  if(icc != ic)
+  if (icc != ic)
     {
-      if(icp)
+      if (icp)
         icp->next = icc->prev;
       icc->prev = ic;
     }
-  for(; icc != icp; ico = icc, icc = icc->prev)
+  for (; icc != icp; ico = icc, icc = icc->prev)
     {
-      if(icc->op != CALL && icc->op != PCALL)
+      if (icc->op != CALL && icc->op != PCALL)
         icc->next = ico;
     }
 }
@@ -1136,7 +1137,7 @@ miscOpt (eBBlock ** ebbs, int count)
             case LE_OP:
             case '>':
             case GE_OP:
-              /* Only if the the right operand is literal and left operant is unsigned */
+              /* Only if the the right operand is literal and left operand is unsigned */
               if (isOperandLiteral (IC_RIGHT (ic)) && IS_UNSIGNED (operandType (IC_LEFT (ic))))
                 {
                   unsigned litVal = ulFromVal (OP_VALUE (IC_RIGHT (ic)));
@@ -1193,7 +1194,7 @@ miscOpt (eBBlock ** ebbs, int count)
 
 /*-----------------------------------------------------------------*/
 /* separateAddressSpaces - enforce restrictions on bank switching  */
-/* Operands of a singel iCode must may be in at most one           */
+/* Operands of a single iCode must be in at most one               */
 /* named address space. Use temporaries and additional assignments */
 /* to enforce the rule.                                            */
 /*-----------------------------------------------------------------*/
@@ -1209,13 +1210,24 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
       iCode *ic;
       symbol *source;
 
+      /* Skip this block if not reachable; other routines may have */
+      /* also skipped it, so these iCodes may be undercooked. */
+      if (ebbs[i]->noPath)
+        continue;
+
       /* for all instructions in the block do */
       for (ic = ebbs[i]->sch; ic; ic = ic->next)
         {
           iCode *iic = 0, *newic = 0;
           operand *left, *right, *result;
           const symbol *leftaddrspace = 0, *rightaddrspace = 0, *resultaddrspace = 0;
-          
+
+          /* JUMPTABLE and IFX do not have left/right/result operands. */
+          /* However, they only have a single operand so they cannot   */
+          /* have more than one address space to worry about. */
+          if (ic->op == JUMPTABLE || ic->op == IFX)
+            continue;
+
           left = IC_LEFT (ic);
           right = IC_RIGHT (ic);
           result = IC_RESULT (ic);
@@ -1223,7 +1235,7 @@ separateAddressSpaces (eBBlock ** ebbs, int count)
           /*printf ("Looking at ic %d, op %d\n", ic->key, (int)(ic->op));*/
           
           if (left && IS_SYMOP (left))
-            { 
+            {
               if (POINTER_GET (ic))
                 {
                   assert (!(IS_DECL (OP_SYMBOL (left)->type) && DCL_PTR_ADDRSPACE (OP_SYMBOL (left)->type)));
@@ -1308,6 +1320,21 @@ getAddrspaceiCode (const iCode *ic)
   operand *left, *right, *result;
   const symbol *leftaddrspace = 0, *rightaddrspace = 0, *resultaddrspace = 0;
   const symbol *addrspace;
+
+  /* Not safe to use IC_LEFT, IC_RIGHT, or IC_RESULT macros on */
+  /* IFX or JUMPTABLE iCodes. Handle these as a special case.  */
+  if (ic->op == IFX || ic->op == JUMPTABLE)
+    {
+      operand *cond;
+      if (ic->op == IFX)
+        cond = IC_COND (ic);
+      else
+        cond = IC_JTCOND (ic);
+      if (IS_SYMOP (cond))
+        return getAddrspace (OP_SYMBOL (cond)->type);
+      else
+        return NULL;
+    }
 
   left = IC_LEFT (ic);
   right = IC_RIGHT (ic);
@@ -1887,6 +1914,7 @@ optimizeCastCast (eBBlock ** ebbs, int count)
   sym_link * type2;
   sym_link * type3;
   symbol * sym;
+  int size1, size2, size3;
 
   for (i = 0; i < count; i++)
     {
@@ -1901,7 +1929,12 @@ optimizeCastCast (eBBlock ** ebbs, int count)
               /* integer type that has no loss of bits */
               if (!IS_INTEGRAL (type1) || !IS_INTEGRAL (type2))
                 continue;
-              if (getSize (type2) < getSize (type1))
+              size1 = getSize (type1);
+              size2 = getSize (type2);
+              if (size2 < size1)
+                continue;
+              /* If they are the same size, they must have the same signedness */
+              if (size2 == size1 && SPEC_USIGN (type2) != SPEC_USIGN (type1))
                 continue;
 
               /* There must be only one use of this first result */
@@ -1919,8 +1952,12 @@ optimizeCastCast (eBBlock ** ebbs, int count)
               type3 = operandType (IC_RESULT (uic));
               if (!IS_INTEGRAL (type3))
                  continue;
-              if (getSize (type3) < getSize (type2))
+              size3 = getSize (type3);
+              if (size3 < size2)
                  continue;
+              /* If they are the same size, they must have the same signedness */
+              if (size3 == size2 && SPEC_USIGN (type3) != SPEC_USIGN (type2))
+                continue;
 
               /* The signedness between the first and last types */
               /* must match */
@@ -1938,6 +1975,54 @@ optimizeCastCast (eBBlock ** ebbs, int count)
               sym = OP_SYMBOL (IC_RESULT (ic));
               sym->type = copyLinkChain (type1);
               sym->etype = getSpec (sym->type);
+            }
+        }
+    }
+}
+
+/* Fold pointer addition into offset of GET_VALUE_AT_ADDRESS */
+static void
+offsetFold (eBBlock **ebbs, int count)
+{
+  int i;
+  iCode *ic;
+  iCode *uic;
+
+  if (!TARGET_IS_Z80 && !TARGET_IS_Z180 && !TARGET_IS_R2K)
+    return;
+
+  for (i = 0; i < count; i++)
+    {
+      for (ic = ebbs[i]->sch; ic; ic = ic->next)
+        {
+          if ((ic->op == '+' || ic->op == '-') && IC_RESULT (ic) && IS_ITEMP (IC_RESULT (ic)))
+            {
+              if (!IS_OP_LITERAL (IC_RIGHT (ic)))
+                continue;
+
+              /* There must be only one use of the result */
+              if (bitVectnBitsOn (OP_USES (IC_RESULT (ic))) != 1)
+                continue;
+
+              /* This use must be a GET_VALUE_ATA_DDRESS */
+              uic = hTabItemWithKey (iCodehTab,
+                        bitVectFirstBit (OP_USES (IC_RESULT (ic))));
+              if (!POINTER_GET (uic))
+                continue;
+
+              /* Historically GET_VALUE_AT_ADDRESS didn't have a right operand */
+              wassertl (IC_RIGHT (uic), "GET_VALUE_AT_ADDRESS without right operand");
+              wassertl (IS_OP_LITERAL (IC_RIGHT (uic)), "GET_VALUE_AT_ADDRESS with non-literal right operand");
+
+              if (ic->op == '+')
+                IC_RIGHT (uic) = operandFromLit (operandLitValue (IC_RIGHT (uic)) + operandLitValue (IC_RIGHT (ic)));
+              else
+                IC_RIGHT (uic) = operandFromLit (operandLitValue (IC_RIGHT (uic)) - operandLitValue (IC_RIGHT (ic)));
+
+              ic->op = '=';
+              IC_RIGHT (ic) = IC_LEFT (ic);
+              IC_LEFT (ic) = 0;
+              SET_ISADDR (IC_RESULT (ic), 0);
             }
         }
     }
@@ -2028,6 +2113,8 @@ eBBlockFromiCode (iCode * ic)
       // compute the dataflow only
       assert(cseAllBlocks (ebbi, TRUE)==0);
     }
+
+
   /* kill dead code */
   kchange = killDeadCode (ebbi);
 
@@ -2062,6 +2149,8 @@ eBBlockFromiCode (iCode * ic)
       if (options.dump_loop)
         dumpEbbsToFileExt (DUMP_LOOPD, ebbi);
     }
+
+  offsetFold (ebbi->bbOrder, ebbi->count);
 
   /* sort it back by block number */
   //qsort (ebbs, saveCount, sizeof (eBBlock *), bbNumCompare);

@@ -6,7 +6,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -32,7 +32,7 @@
 
 /* Exact integral types.  */
 
-#if defined (__SDCC_z80) || defined (__SDCC_z180) || defined (__SDCC_r2k) || defined (__SDCC_gbz80)
+#if !defined(__SDCC_mcs51) && !defined(__SDCC_ds390) && !defined(__SDCC_ds400) && !defined(__SDCC_pic14) && !defined(__SDCC_pic16)
 #if __STDC_VERSION__ >= 199901L
 #define __SDCC_LONGLONG
 #endif
@@ -102,9 +102,13 @@ typedef unsigned long long int  uint_fast64_t;
 
 
 /* Largest integral types.  */
+#ifndef __SDCC_LONGLONG
 typedef long int                intmax_t;
 typedef unsigned long int       uintmax_t;
-
+#else
+typedef long long int           intmax_t;
+typedef unsigned long long int  uintmax_t;
+#endif
 
 /* Limits of integral types.  */
 
@@ -212,7 +216,7 @@ typedef unsigned long int       uintmax_t;
 #endif
 
 /* Limit of `size_t' type.  */
-#define SIZE_MAX               (65535)
+#define SIZE_MAX               (65535u)
 
 /* Signed.  */
 #define INT8_C(c)      c
@@ -243,6 +247,11 @@ typedef unsigned long int       uintmax_t;
 #else
 #define INTMAX_C(c)    c ## L
 #define UINTMAX_C(c)   c ## UL
+#endif
+
+/* Bounds-checking interfaces from annex K of the C11 standard. */
+#if defined (__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__
+#define RSIZE_MAX SIZE_MAX
 #endif
 
 #endif /* stdint.h */

@@ -2,10 +2,12 @@
    _ret.c
 
    Copyright (C) 2003, Erik Petrich
+   Copyright (C) 2012, Philipp Klaus Krause
+   Considering how short this file is, it is probably not copyrightable, though.
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -26,5 +28,10 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-__data unsigned char _ret2;
-__data unsigned char _ret3;
+__data unsigned char __SDCC_hc08_ret2;
+__data unsigned char __SDCC_hc08_ret3;
+__data unsigned char __SDCC_hc08_ret4;
+__data unsigned char __SDCC_hc08_ret5;
+__data unsigned char __SDCC_hc08_ret6;
+__data unsigned char __SDCC_hc08_ret7;
+

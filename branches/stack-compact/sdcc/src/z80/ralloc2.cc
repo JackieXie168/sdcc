@@ -85,12 +85,12 @@ float default_operand_cost(const operand *o, const assignment &a, unsigned short
                 c += 2.0f;
 
               // Code generator cannot handle variables only partially in A.
-              if(OPTRALLOC_A && size > 1)
+              if(size > 1)
                 for(unsigned short int i = 0; i < size; i++)
                   if(byteregs[i] == REG_A)
                     c += std::numeric_limits<float>::infinity();
 
-              if(OPTRALLOC_A && byteregs[0] == REG_A)
+              if(byteregs[0] == REG_A)
                 c -= 0.4f;
               else if(OPTRALLOC_HL && byteregs[0] == REG_L)
                 c -= 0.1f;
@@ -143,8 +143,8 @@ bool operand_sane(const operand *o, const assignment &a, unsigned short int i, c
   return(true);
 }
 
-template <class G_t, class I_t> static float
-default_instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+template <class G_t, class I_t>
+static float default_instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   float c = 0.0f;
 
@@ -206,12 +206,12 @@ assign_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
         }
 
       // Code generator cannot handle variables only partially in A.
-      if(OPTRALLOC_A && size1 > 1)
+      if(size1 > 1)
         for(unsigned short int i = 0; i < size1; i++)
           if(byteregs[i] == REG_A)
             c += std::numeric_limits<float>::infinity();
 
-      if(OPTRALLOC_A && byteregs[0] == REG_A)
+      if(byteregs[0] == REG_A)
         c -= 0.4f;
       else if(OPTRALLOC_IY && byteregs[0] == REG_IYL || byteregs[0] == REG_IYH)
         c += 0.1f;
@@ -242,7 +242,7 @@ assign_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
           size2++;
         }
 
-      if(OPTRALLOC_A && byteregs[0] == REG_A)
+      if(byteregs[0] == REG_A)
         c -= 0.4f;
       else if(OPTRALLOC_IY && byteregs[0] == REG_IYL || byteregs[0] == REG_IYH)
         c += 0.1f;
@@ -292,7 +292,7 @@ return_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &
           size++;
         }
 
-      if(OPTRALLOC_A && byteregs[0] == REG_A)
+      if(byteregs[0] == REG_A)
         c -= 0.4f;
         
       if(byteregs[0] == REG_L)
@@ -347,12 +347,12 @@ call_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
         }
 
       // Code generator cannot handle variables only partially in A.
-      if(OPTRALLOC_A && size > 1)
+      if(size > 1)
         for(unsigned short int i = 0; i < size; i++)
           if(byteregs[i] == REG_A)
             c += std::numeric_limits<float>::infinity();
 
-      if(OPTRALLOC_A && byteregs[0] == REG_A)
+      if(byteregs[0] == REG_A)
         c -= 0.4f;
         
       if(byteregs[0] == REG_L)
@@ -384,8 +384,8 @@ jumptab_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t 
   return(default_operand_cost(IC_JTCOND(ic), a, i, G, I));
 }
 
-template <class I_t> void
-z80_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
+template <class I_t>
+static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
   const iCode *ic = n.ic;
   
@@ -494,6 +494,7 @@ template <class G_t, class I_t>
 bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   const iCode *ic = G[i].ic;
+
   const i_assignment_t &ia = a.i_assignment;
 
   const operand *left = IC_LEFT(ic);
@@ -501,7 +502,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
   if(ia.registers[REG_A][1] < 0)
     return(true);	// Register A not in use.
 
-  //if(i == 15) std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
+  //std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
 
   // Code generator cannot handle variables that are only partially in A.
   if(I[ia.registers[REG_A][1]].size > 1 || ia.registers[REG_A][0] >= 0 && I[ia.registers[REG_A][0]].size > 1)
@@ -555,14 +556,15 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
   if(input_in_A && (result_in_A || dying.find(ia.registers[REG_A][1]) != dying.end() || dying.find(ia.registers[REG_A][0]) != dying.end()))
     {
       if(ic->op != IFX &&
+        ic->op != RETURN &&
         !((ic->op == RIGHT_OP || ic->op == LEFT_OP) && (IS_OP_LITERAL(IC_RIGHT(ic)) || operand_in_reg(IC_RIGHT(ic), REG_A, ia, i, G))) &&
         !((ic->op == '=' || ic->op == CAST) && !(IY_RESERVED && POINTER_SET(ic))) &&
         !IS_BITWISE_OP (ic) &&
         !(ic->op == '~') &&
-        !(ic->op == '*' && IS_ITEMP(IC_LEFT(ic)) && IS_ITEMP(IC_RIGHT(ic))) &&
+        !(ic->op == '*' && (IS_ITEMP(IC_LEFT(ic)) || IS_OP_LITERAL(IC_LEFT(ic))) && (IS_ITEMP(IC_RIGHT(ic)) || IS_OP_LITERAL(IC_RIGHT(ic)))) &&
         !((ic->op == '-' || ic->op == '+' || ic->op == EQ_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
         {
-          //if(i == 15) std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
+          //std::cout << "Last use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
           return(false);
         }
     }
@@ -580,6 +582,7 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
       !POINTER_GET(ic) &&
       ic->op != '+' &&
       ic->op != '-' &&
+      (ic->op != '*' || !IS_OP_LITERAL(IC_LEFT(ic)) && !IS_OP_LITERAL(IC_RIGHT(ic))) &&
       !IS_BITWISE_OP(ic) &&
       ic->op != '=' &&
       ic->op != EQ_OP &&
@@ -591,11 +594,11 @@ bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t
       ic->op != GETHBIT &&
       !((ic->op == LEFT_OP || ic->op == RIGHT_OP) && IS_OP_LITERAL(IC_RIGHT(ic))))
     {
-      //if(i == 15) std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+      //std::cout << "First use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
       return(false);
     }
 
-  //if(i == 15) std::cout << "Default OK\n";
+  //std::cout << "Default OK\n";
 
   return(true);
 }
@@ -620,7 +623,8 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(true);	// Register HL not in use.
 
 #if 0
-  std::cout << "HLinst_ok: at (" << i << ", " << ic->key << ")\nL = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+  if (ic->key == 40)
+    std::cout << "HLinst_ok: at (" << i << ", " << ic->key << ")\nL = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 #endif
 
   const operand *left = IC_LEFT(ic);
@@ -675,16 +679,16 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(result_only_HL && ic->op == PCALL)
     return(true);
 
-  if(exstk && (operand_on_stack(result, a, i, G) || operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)))	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
+  if(exstk && (operand_on_stack(result, a, i, G) + operand_on_stack(left, a, i, G) + operand_on_stack(right, a, i, G) >= 2) && (result && IS_SYMOP(result) && getSize(operandType(result)) >= 2 || !result_only_HL))	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
     return(false);
 
-  if(ic->op == '+' && getSize(operandType(IC_RESULT(ic))) >= 2 &&
+  if(ic->op == '+' && getSize(operandType(result)) >= 2 &&
     (IS_TRUE_SYMOP (result) || IS_TRUE_SYMOP (left) || IS_TRUE_SYMOP (right))) // Might use (hl).
     return(false);
 
   if(ic->op == '+' && input_in_HL && (IS_TRUE_SYMOP (result) || operand_on_stack(result, a, i, G) && exstk)) // Might use (hl) for result.
     return(false);
-  
+
   // HL overwritten by result.
   if(result_only_HL && !POINTER_SET(ic) &&
       (ic->op == ADDRESS_OF ||
@@ -709,7 +713,7 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
     return(true);
   if(SKIP_IC2(ic))
     return(true);
-  if(ic->op == IPUSH && input_in_H && (getSize(operandType(IC_LEFT(ic))) <= 2 || I[ia.registers[REG_L][1]].byte == 2 && I[ia.registers[REG_H][1]].byte == 3))
+  if(ic->op == IPUSH && input_in_H && (getSize(operandType(IC_LEFT(ic))) <= 2 || ia.registers[REG_L][1] > 0 && I[ia.registers[REG_L][1]].byte == 2 && ia.registers[REG_H][1] > 0 && I[ia.registers[REG_H][1]].byte == 3))
     return(true);
   if(ic->op == IPUSH && ic->next && ic->next->op == CALL)
     return(true);
@@ -724,9 +728,9 @@ bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
   if(POINTER_GET(ic) && input_in_L && input_in_H && (getSize(operandType(IC_RESULT(ic))) == 1 || !result_in_HL))
     return(true);
   if(!IS_GB && ic->op == ADDRESS_OF &&
-    (operand_in_reg(result, REG_IYL, ia, i, G) && I[ia.registers[REG_IYL][1]].byte == 0 && operand_in_reg(result, REG_IYH, ia, i, G) ||
-    !OP_SYMBOL_CONST (left)->onStack && operand_in_reg(result, REG_C, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && operand_in_reg(result, REG_B, ia, i, G) ||
-    !OP_SYMBOL_CONST (left)->onStack && operand_in_reg(result, REG_E, ia, i, G) && I[ia.registers[REG_E][1]].byte == 0 && operand_in_reg(result, REG_D, ia, i, G)))
+    (operand_in_reg(result, REG_IYL, ia, i, G) && ia.registers[REG_IYL][1] > 0 && I[ia.registers[REG_IYL][1]].byte == 0 && operand_in_reg(result, REG_IYH, ia, i, G) ||
+    !OP_SYMBOL_CONST (left)->onStack && operand_in_reg(result, REG_C, ia, i, G) && ia.registers[REG_C][1] > 0 && I[ia.registers[REG_C][1]].byte == 0 && operand_in_reg(result, REG_B, ia, i, G) ||
+    !OP_SYMBOL_CONST (left)->onStack && operand_in_reg(result, REG_E, ia, i, G) && ia.registers[REG_E][1] > 0 && I[ia.registers[REG_E][1]].byte == 0 && operand_in_reg(result, REG_D, ia, i, G)))
     return(true);
 
   if(ic->op == LEFT_OP && isOperandLiteral(IC_RIGHT(ic)))
@@ -794,8 +798,8 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   const i_assignment_t &ia = a.i_assignment;
 
-  //if(ic->key == 118)
-//		std::cout << "1IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";
+  /*if(ic->key == 40)
+		std::cout << "1IYinst_ok: at (" << i << ", " << ic->key << ")\nIYL = (" << ia.registers[REG_IYL][0] << ", " << ia.registers[REG_IYL][1] << "), IYH = (" << ia.registers[REG_IYH][0] << ", " << ia.registers[REG_IYH][1] << ")inst " << i << ", " << ic->key << "\n";*/
 
   bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127));
 
@@ -837,7 +841,7 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 
   if(unused_IYL && unused_IYH)
     return(true);	// Register IY not in use.
-    
+
   if(exstk && (operand_on_stack(result, a, i, G) || operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)))	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
     return(false);
 
@@ -919,6 +923,53 @@ bool IYinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_
 }
 
 template <class G_t, class I_t>
+static bool DEinst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  if(!IS_GB) // Only gbz80 might need de for code generation.
+    return(true);
+
+  const i_assignment_t &ia = a.i_assignment;
+
+  bool unused_E = (ia.registers[REG_E][1] < 0);
+  bool unused_D = (ia.registers[REG_D][1] < 0);
+
+  if(unused_E && unused_D)
+    return(true);	// Register DE not in use.
+
+  const iCode *ic = G[i].ic;
+  const operand *left = IC_LEFT(ic);
+  const operand *right = IC_RIGHT(ic);
+  const operand *result = IC_RESULT(ic);
+
+  //const std::set<var_t> &dying = G[i].dying;
+
+  if(ic->op == PCALL)
+    return(false);
+
+  if(ic->op == GET_VALUE_AT_ADDRESS && (getSize(operandType(result)) >= 2 || !operand_is_pair(left, a, i, G)))
+    return(false);
+
+  if (ic->op == '=' && POINTER_SET(ic) && !operand_is_pair(result, a, i, G))
+    return(false);
+
+  if((ic->op == '=' || ic->op == CAST) && getSize(operandType(result)) >= 2 &&
+     (operand_on_stack(right, a, i, G) || operand_in_reg(right, REG_L, ia, i, G) || operand_in_reg(right, REG_H, ia, i, G)) &&
+     (operand_on_stack(result, a, i, G) || operand_in_reg(result, REG_L, ia, i, G) || operand_in_reg(result, REG_H, ia, i, G)))
+    return(false);
+
+  if(ic->op == '+' && getSize(operandType(result)) >= 2)
+    return(false);
+
+  if(ic->op == UNARYMINUS || ic->op == '-' || ic->op == '*')
+    return(false);
+
+  if(ic->op == '>' || ic->op == '<')
+    return(false);
+
+  return(true);
+}
+
+template <class G_t, class I_t>
 static void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
 {
   iCode *ic = G[i].ic;
@@ -952,7 +1003,7 @@ void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int
       var_t v = oi->second;
       if(a.global[v] >= 0)
         { 
-          if((a.global[v] != REG_A || !OPTRALLOC_A) && (a.global[v] != REG_IYL && a.global[v] != REG_IYH || !OPTRALLOC_IY))
+          if(a.global[v] != REG_A && (a.global[v] != REG_IYL && a.global[v] != REG_IYH || !OPTRALLOC_IY))
             {
               sym->regs[I[v].byte] = regsZ80 + a.global[v];
               sym->accuse = 0;
@@ -1016,10 +1067,13 @@ float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, 
   if(!inst_sane(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
+  if(!Ainst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
   if(OPTRALLOC_HL && !HLinst_ok(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
+
+  if(!DEinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
   if(OPTRALLOC_IY && !IYinst_ok(a, i, G, I))
@@ -1153,12 +1207,12 @@ bool local_assignment_insane(const assignment &a, const I_t &I, var_t lastvar)
   return(false);
 }
 
-// For early removel of assignments that cannot be extended to valid assignments.
+// For early removal of assignments that cannot be extended to valid assignments.
 template <class G_t, class I_t>
-bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar)
+static bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar)
 {
   // Can check for Ainst_ok() since A only contains 1-byte variables.
-  if(OPTRALLOC_A && !Ainst_ok(a, i, G, I))
+  if(!Ainst_ok(a, i, G, I))
     return(true);
 
   if(local_assignment_insane(a, I, lastvar))
@@ -1203,7 +1257,7 @@ void get_best_local_assignment_biased(assignment &a, typename boost::graph_trait
         {
           varset_t::const_iterator vi, vi_end;
           for(vi = ai->local.begin(), vi_end = ai->local.end(); vi != vi_end; ++vi)
-            if(OPTRALLOC_A && ai->global[*vi] == REG_A || OPTRALLOC_HL && (ai->global[*vi] == REG_H || ai->global[*vi] == REG_L) || OPTRALLOC_IY && (ai->global[*vi] == REG_IYH || ai->global[*vi] == REG_IYL))
+            if(ai->global[*vi] == REG_A || OPTRALLOC_HL && (ai->global[*vi] == REG_H || ai->global[*vi] == REG_L) || OPTRALLOC_IY && (ai->global[*vi] == REG_IYH || ai->global[*vi] == REG_IYL))
               goto too_risky;
           ai_best = ai;
         }
@@ -1233,7 +1287,7 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
     !HLinst_ok(a, i, G, I))
     c += 8.0f;
 
-  if(OPTRALLOC_A && ia.registers[REG_A][1] < 0)
+  if(ia.registers[REG_A][1] < 0)
     c += 0.03f;
 
   if(OPTRALLOC_HL && ia.registers[REG_L][1] < 0)
@@ -1274,10 +1328,10 @@ float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &
 // Returns 0 iff the found assignment is provably optimal.
 #ifndef TD_SALLOC
 template <class T_t, class G_t, class I_t>
-int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
+bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 #else
 template <class T_t, class G_t, class I_t, class SI_t>
-int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
+bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
 #endif
 {
   bool assignment_optimal;
@@ -1323,7 +1377,7 @@ int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
       if(winner.global[v] >= 0)
         {
-          if((winner.global[v] != REG_A || !OPTRALLOC_A) && (winner.global[v] != REG_IYL && winner.global[v] != REG_IYH || !OPTRALLOC_IY))
+          if(winner.global[v] != REG_A && (winner.global[v] != REG_IYL && winner.global[v] != REG_IYH || !OPTRALLOC_IY))
             {
               sym->regs[I[v].byte] = regsZ80 + winner.global[v];
               sym->accuse = 0;
@@ -1362,6 +1416,8 @@ int tree_dec_ralloc(T_t &T, G_t &G, const I_t &I, SI_t &SI)
 #if defined(TD_SALLOC) || defined(CH_SALLOC)
   set_spilt(G, I, SI);
 #endif
+
+  return(!assignment_optimal);
 
   return(!assignment_optimal);
 }

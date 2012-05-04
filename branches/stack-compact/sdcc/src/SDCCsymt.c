@@ -695,7 +695,7 @@ mergeSpec (sym_link * dest, sym_link * src, const char *name)
   if ((SPEC_SHORT (src) || SPEC_LONG (src) || SPEC_LONGLONG (src)) &&
     (SPEC_SHORT (dest) || SPEC_LONG (dest) || SPEC_LONGLONG (dest)))
     {
-      if (!(options.std_c99 && SPEC_LONG (src) && SPEC_LONG (dest) && TARGET_Z80_LIKE)) /* C99 has long long */
+      if (!(options.std_c99 && SPEC_LONG (src) && SPEC_LONG (dest) && (TARGET_Z80_LIKE || TARGET_IS_HC08))) /* C99 has long long */
         werror (E_SHORTLONG, name);
     }
 
@@ -2870,7 +2870,7 @@ checkFunction (symbol * sym, symbol * csym)
     sym->type->next = sym->etype = newIntLink ();
 
   /* function cannot return aggregate */
-  if (IS_AGGREGATE (sym->type->next) || IS_LONGLONG (sym->type->next))
+  if (IS_AGGREGATE (sym->type->next) || IS_LONGLONG (sym->type->next) && !(TARGET_Z80_LIKE || TARGET_IS_HC08))
     {
       werror (E_FUNC_AGGR, sym->name);
       return 0;
@@ -3362,7 +3362,7 @@ dbuf_printTypeChain (sym_link * start, struct dbuf_s *dbuf)
             case ARRAY:
               if (DCL_ELEM (type))
                 {
-                  dbuf_printf (dbuf, "[%d]", DCL_ELEM (type));
+                  dbuf_printf (dbuf, "[%ud]", (unsigned int) DCL_ELEM (type));
                 }
               else
                 {
@@ -3612,7 +3612,7 @@ printTypeChainRaw (sym_link * start, FILE * of)
             case ARRAY:
               if (DCL_ELEM (type))
                 {
-                  fprintf (of, "[%d] ", DCL_ELEM (type));
+                  fprintf (of, "[%ud] ", (unsigned int) DCL_ELEM (type));
                 }
               else
                 {
@@ -3679,7 +3679,9 @@ printTypeChainRaw (sym_link * start, FILE * of)
           switch (SPEC_NOUN (type))
             {
             case V_INT:
-              if (IS_LONG (type))
+              if (IS_LONGLONG (type))
+                fprintf (of, "longlong-");
+              else if (IS_LONG (type))
                 fprintf (of, "long-");
               fprintf (of, "int");
               break;
@@ -3788,16 +3790,16 @@ symbol *fps16x16_lteq;
 symbol *fps16x16_gt;
 symbol *fps16x16_gteq;
 
-/* Dims: mul/div/mod, BYTE/WORD/DWORD, SIGNED/UNSIGNED/BOTH */
-symbol *muldiv[3][3][4];
-/* Dims: BYTE/WORD/DWORD SIGNED/UNSIGNED */
-sym_link *multypes[3][2];
-/* Dims: to/from float, BYTE/WORD/DWORD, SIGNED/USIGNED */
-symbol *conv[2][3][2];
-/* Dims: to/from fixed16x16, BYTE/WORD/DWORD/FLOAT, SIGNED/USIGNED */
-symbol *fp16x16conv[2][4][2];
-/* Dims: shift left/shift right, BYTE/WORD/DWORD, SIGNED/UNSIGNED */
-symbol *rlrr[2][3][2];
+/* Dims: mul/div/mod, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED/BOTH */
+symbol *muldiv[3][4][4];
+/* Dims: BYTE/WORD/DWORD/QWORD SIGNED/UNSIGNED */
+sym_link *multypes[4][2];
+/* Dims: to/from float, BYTE/WORD/DWORD/QWORD, SIGNED/USIGNED */
+symbol *conv[2][4][2];
+/* Dims: to/from fixed16x16, BYTE/WORD/DWORD/QWORD/FLOAT, SIGNED/USIGNED */
+symbol *fp16x16conv[2][5][2];
+/* Dims: shift left/shift right, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED */
+symbol *rlrr[2][4][2];
 
 sym_link *charType;
 sym_link *floatType;
@@ -3823,6 +3825,7 @@ _mangleFunctionName (const char *in)
 /*                      's' - short                                */
 /*                      'i' - int                                  */
 /*                      'l' - long                                 */
+/*                      'L' - long long                            */
 /*                      'f' - float                                */
 /*                      'q' - fixed16x16                           */
 /*                      'v' - void                                 */
@@ -3870,6 +3873,11 @@ typeFromStr (const char *s)
           r->xclass = SPECIFIER;
           SPEC_NOUN (r) = V_INT;
           SPEC_LONG (r) = 1;
+          break;
+        case 'L':
+          r->xclass = SPECIFIER;
+          SPEC_NOUN (r) = V_INT;
+          SPEC_LONGLONG (r) = 1;
           break;
         case 'f':
           r->xclass = SPECIFIER;
@@ -3944,16 +3952,21 @@ initCSupport (void)
     "mul", "div", "mod"
   };
   const char *sbwd[] = {
-    "char", "int", "long", "fixed16x16",
+    "char", "int", "long", "longlong", "fixed16x16",
   };
   const char *fp16x16sbwd[] = {
-    "char", "int", "long", "float",
+    "char", "int", "long", "longlong", "float",
   };
   const char *ssu[] = {
     "s", "su", "us", "u"
   };
   const char *srlrr[] = {
     "rl", "rr"
+  };
+  /* type as character codes for typeFromStr() */
+  const char *sbwdCodes[] = {
+    "c",  "i",  "l",  "L",
+    "uc", "ui", "ul", "uL"
   };
 
   int bwd, su, muldivmod, tofrom, slsr;
@@ -3964,7 +3977,7 @@ initCSupport (void)
       return;
     }
 
-  for (bwd = 0; bwd < 3; bwd++)
+  for (bwd = 0; bwd < 4; bwd++)
     {
       sym_link *l = NULL;
       switch (bwd)
@@ -3977,6 +3990,9 @@ initCSupport (void)
           break;
         case 2:
           l = newLongLink ();
+          break;
+        case 3:
+          l = newLongLongLink ();
           break;
         default:
           assert (0);
@@ -4014,7 +4030,7 @@ initCSupport (void)
 
   for (tofrom = 0; tofrom < 2; tofrom++)
     {
-      for (bwd = 0; bwd < 3; bwd++)
+      for (bwd = 0; bwd < 4; bwd++)
         {
           for (su = 0; su < 2; su++)
             {
@@ -4038,7 +4054,7 @@ initCSupport (void)
 
   for (tofrom = 0; tofrom < 2; tofrom++)
     {
-      for (bwd = 0; bwd < 4; bwd++)
+      for (bwd = 0; bwd < 5; bwd++)
         {
           for (su = 0; su < 2; su++)
             {
@@ -4048,7 +4064,7 @@ initCSupport (void)
               if (tofrom)
                 {
                   dbuf_printf (&dbuf, "__fps16x162%s%s", ssu[su * 3], fp16x16sbwd[bwd]);
-                  if (bwd == 3)
+                  if (bwd == 4)
                     fp16x16conv[tofrom][bwd][su] =
                       funcOfType (dbuf_c_str (&dbuf), floatType, fixed16x16Type, 1, options.float_rent);
                   else
@@ -4058,7 +4074,7 @@ initCSupport (void)
               else
                 {
                   dbuf_printf (&dbuf, "__%s%s2fps16x16", ssu[su * 3], fp16x16sbwd[bwd]);
-                  if (bwd == 3)
+                  if (bwd == 4)
                     fp16x16conv[tofrom][bwd][su] =
                       funcOfType (dbuf_c_str (&dbuf), fixed16x16Type, floatType, 1, options.float_rent);
                   else
@@ -4073,7 +4089,7 @@ initCSupport (void)
 /*
   for (muldivmod = 0; muldivmod < 3; muldivmod++)
     {
-      for (bwd = 0; bwd < 3; bwd++)
+      for (bwd = 0; bwd < 4; bwd++)
         {
           for (su = 0; su < 2; su++)
             {
@@ -4115,7 +4131,7 @@ initCSupport (void)
         }
     }
 
-  for (bwd = 1; bwd < 3; bwd++)
+  for (bwd = 1; bwd < 4; bwd++)
     {
       for (su = 0; su < 2; su++)
         {
@@ -4162,8 +4178,8 @@ initCSupport (void)
   muldivmod = 0;
   /* signed only */
   su = 0;
-  /* word and doubleword */
-  for (bwd = 1; bwd < 3; bwd++)
+  /* word, doubleword, and quadword */
+  for (bwd = 1; bwd < 4; bwd++)
     {
       /* mul, int/long */
       struct dbuf_s dbuf;
@@ -4179,17 +4195,24 @@ initCSupport (void)
 
   for (slsr = 0; slsr < 2; slsr++)
     {
-      for (bwd = 0; bwd < 3; bwd++)
+      for (bwd = 0; bwd < 4; bwd++)
         {
           for (su = 0; su < 2; su++)
             {
               struct dbuf_s dbuf;
+              symbol *sym;
+              const char *params[2];
+
+              params[0] = sbwdCodes[bwd + 4*su];
+              params[1] = sbwdCodes[0];
 
               dbuf_init (&dbuf, 128);
               dbuf_printf (&dbuf, "_%s%s%s", srlrr[slsr], ssu[su * 3], sbwd[bwd]);
-              rlrr[slsr][bwd][su] =
-                funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)), multypes[bwd][su], multypes[0][0], 2,
-                            options.intlong_rent);
+              rlrr[slsr][bwd][su] = sym =
+                funcOfTypeVarg (_mangleFunctionName (dbuf_c_str (&dbuf)), 
+                                sbwdCodes[bwd + 4*su], 2, &params[0]);
+              FUNC_ISREENT (sym->type) = options.intlong_rent ? 1 : 0;
+              FUNC_NONBANKED (sym->type) = 1;
               dbuf_destroy (&dbuf);
             }
         }
@@ -4211,7 +4234,7 @@ initBuiltIns ()
   for (i = 0; port->builtintable[i].name; i++)
     {
       sym = funcOfTypeVarg (port->builtintable[i].name, port->builtintable[i].rtype,
-                            port->builtintable[i].nParms, port->builtintable[i].parm_types);
+                            port->builtintable[i].nParms, (const char **)port->builtintable[i].parm_types);
       FUNC_ISBUILTIN (sym->type) = 1;
       FUNC_ISREENT (sym->type) = 0;     /* can never be reentrant */
     }

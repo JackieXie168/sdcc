@@ -1,6 +1,6 @@
 // Philipp Klaus Krause, philipp@informatik.uni-frankfurt.de, pkk@spth.de, 2010 - 2011
 //
-// (c) 2010-2011 Goethe-Universität Frankfurt
+// (c) 2010-2012 Goethe-Universität Frankfurt
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -49,23 +49,14 @@
 #include <boost/icl/discrete_interval.hpp>
 #include <boost/icl/interval_set.hpp>
 
-#include "SDCCtree_dec.hpp"
+#include "common.h"
 
 extern "C"
 {
-#include "SDCCsymt.h"
-#include "SDCCicode.h"
-#include "SDCCBBlock.h"
 #include "SDCCbtree.h"
-#include "SDCCopt.h"
-#include "SDCClrange.h"
-#include "SDCCy.h"
-
-#include "port.h"
-#include "ralloc.h"
-
-iCode *ifxForOp (operand *op, const iCode *ic); // Todo: Move this port-dependency somewhere else!
 }
+
+#include "SDCCtree_dec.hpp"
 
 #ifdef HAVE_STX_BTREE_SET_H
 #include <stx/btree_set.h>
@@ -78,7 +69,8 @@ typedef short int var_t;
 typedef signed char reg_t;
 
 // Todo: Move this port-dependency somewehere else?
-#define NUM_REGS ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT) ? 9 : ((TARGET_IS_GBZ80 || TARGET_IS_HC08)? 3 : 0))
+#define NUM_REGS ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT) ? 9 : ((TARGET_IS_GBZ80 || TARGET_IS_HC08)? 5 : 0))
+
 // Upper bound on NUM_REGS
 #define MAX_NUM_REGS 9
 
@@ -240,21 +232,19 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> cfg_
 
 // Cost function. Port-specific.
 template <class G_t, class I_t>
-float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+static float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
 
 // For early removel of assignments that cannot be extended to valid assignments. Port-specific.
 template <class G_t, class I_t>
-bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar);
+static bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar);
 
 // Rough cost estimate. Port-specific.
 template <class G_t, class I_t>
-float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
+static float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I);
 
 // Avoid overwriting operands that are still needed by the result. Port-specific.
-template <class I_t> void
-z80_add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
-template <class I_t> void
-hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
+template <class I_t>
+static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
 
 inline void
 add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
@@ -285,6 +275,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
   {
     int i;
     var_t j;
+    wassertl (!boost::num_vertices(cfg), "CFG non-empty before creation.");
     for (ic = start_ic, i = 0, j = 0; ic; ic = ic->next, i++)
       {
         boost::add_vertex(cfg);
@@ -340,18 +331,35 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
   // Get control flow graph from sdcc.
   for (ic = start_ic; ic; ic = ic->next)
     {
+      wassertl (key_to_index[ic->key] < boost::num_vertices(cfg), "Node not in CFG.");
+
       if (ic->op != GOTO && ic->op != RETURN && ic->op != JUMPTABLE && ic->next)
-        boost::add_edge(key_to_index[ic->key], key_to_index[ic->next->key], cfg);
+        {
+          wassertl (key_to_index[ic->next->key] < boost::num_vertices(cfg), "Next node not in CFG.");
+          boost::add_edge(key_to_index[ic->key], key_to_index[ic->next->key], cfg);
+        }
 
       if (ic->op == GOTO)
-        boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, ic->label)->sch->key], cfg);
+        {
+          wassertl (key_to_index[eBBWithEntryLabel(ebbi, ic->label)->sch->key] < boost::num_vertices(cfg), "GOTO target not in CFG.");
+          boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, ic->label)->sch->key], cfg);
+        }
       else if (ic->op == RETURN)
-        boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, returnLabel)->sch->key], cfg);
+        {
+          wassertl (key_to_index[eBBWithEntryLabel(ebbi, returnLabel)->sch->key] < boost::num_vertices(cfg), "RETURN target not in CFG.");
+          boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, returnLabel)->sch->key], cfg);
+        }
       else if (ic->op == IFX)
-        boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, IC_TRUE(ic) ? IC_TRUE(ic) : IC_FALSE(ic))->sch->key], cfg);
+        {
+          wassertl (key_to_index[eBBWithEntryLabel(ebbi, IC_TRUE(ic) ? IC_TRUE(ic) : IC_FALSE(ic))->sch->key] < boost::num_vertices(cfg), "IFX target not in CFG.");
+          boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, IC_TRUE(ic) ? IC_TRUE(ic) : IC_FALSE(ic))->sch->key], cfg);
+        }
       else if (ic->op == JUMPTABLE)
         for (symbol *lbl = (symbol *)(setFirstItem (IC_JTLABELS (ic))); lbl; lbl = (symbol *)(setNextItem (IC_JTLABELS (ic))))
-          boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, lbl)->sch->key], cfg);
+          {
+            wassertl (key_to_index[eBBWithEntryLabel(ebbi, lbl)->sch->key] < boost::num_vertices(cfg), "GOTO target not in CFG.");
+            boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, lbl)->sch->key], cfg);
+          }
 
       for (int i = 0; i <= operandKey; i++)
         {
@@ -362,7 +370,12 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
             {
               symbol *isym = (symbol *)(hTabItemWithKey(liveRanges, i));
               for (reg_t k = 0; k < isym->nRegs; k++)
-                cfg[key_to_index[ic->key]].alive.insert(sym_to_index[std::pair<int, int>(i, k)]);
+                {
+                  wassert (key_to_index.find(ic->key) != key_to_index.end());
+                  wassert (sym_to_index.find(std::pair<int, int>(i, k)) != sym_to_index.end());
+                  wassertl (key_to_index[ic->key] < boost::num_vertices(cfg), "Node not in CFG.");
+                  cfg[key_to_index[ic->key]].alive.insert(sym_to_index[std::pair<int, int>(i, k)]);
+                }
                 
               if(isym->block)
                 isym->block = btree_lowest_common_ancestor(isym->block, ic->block);
@@ -371,14 +384,18 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
             }
         }
 
-      add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RESULT(ic), sym_to_index);
-      add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_LEFT(ic), sym_to_index);
-      add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RIGHT(ic), sym_to_index);
-      
-      if (TARGET_Z80_LIKE)
-        z80_add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
+      if (ic->op == IFX)
+        add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_COND(ic), sym_to_index);
+      else if (ic->op == JUMPTABLE)
+        add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_JTCOND(ic), sym_to_index);
       else
-        hc08_add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
+        {
+          add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RESULT(ic), sym_to_index);
+          add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_LEFT(ic), sym_to_index);
+          add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RIGHT(ic), sym_to_index);
+        }
+
+      add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
     }
 
 #if 0
@@ -466,7 +483,7 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
           // Conflict between operands are handled by add_operand_conflicts_in_node().
           if (cfg[i].dying.find (*v) != cfg[i].dying.end())
             continue;
-          if (IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)))
+          if (ic->op != IFX && ic->op != JUMPTABLE && IC_RESULT(ic) && IS_SYMOP(IC_RESULT(ic)))
             {
               operand_map_t::const_iterator oi, oi_end; 
               for(boost::tie(oi, oi_end) = cfg[i].operands.equal_range(OP_SYMBOL_CONST(IC_RESULT(ic))->key); oi != oi_end; ++oi)
@@ -917,7 +934,7 @@ void get_best_local_assignment_biased(assignment &a, typename boost::graph_trait
 
 // Handle nodes in the tree decomposition, by detecting their type and calling the appropriate function. Recurses.
 template <class T_t, class G_t, class I_t>
-void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I, const assignment& ac, bool *const assignment_optimal)
+static void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G, const I_t &I, const assignment& ac, bool *const assignment_optimal)
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
 
@@ -956,7 +973,7 @@ void tree_dec_ralloc_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_des
 
 // Find the best root selecting from t_old and the leafs under t.
 template <class T_t>
-std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_best_root(const T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, size_t t_s, typename boost::graph_traits<T_t>::vertex_descriptor t_old, size_t t_old_s)
+static std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_best_root(const T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, size_t t_s, typename boost::graph_traits<T_t>::vertex_descriptor t_old, size_t t_old_s)
 {
   typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
   adjacency_iter_t c, c_end;
@@ -987,7 +1004,7 @@ std::pair<typename boost::graph_traits<T_t>::vertex_descriptor, size_t> find_bes
 
 // Change the root to t.
 template <class T_t>
-void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
+static void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 {
   typename boost::graph_traits<T_t>::vertex_descriptor s0, s1, s2;
   typename boost::graph_traits<T_t>::in_edge_iterator e, e_end;
@@ -1013,7 +1030,7 @@ void re_root(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t)
 
 // Change the root to improve the assignment removal heuristic.
 template <class T_t>
-void good_re_root(T_t &T)
+static void good_re_root(T_t &T)
 {
   typename boost::graph_traits<T_t>::vertex_descriptor t;
 
@@ -1038,8 +1055,7 @@ void good_re_root(T_t &T)
 }
 
 // Dump conflict graph, with numbered and named nodes.
-static
-void dump_con(const con_t &con)
+static void dump_con(const con_t &con)
 {
   if(!currFunc)
     return;
@@ -1060,8 +1076,7 @@ void dump_con(const con_t &con)
 }
 
 // Dump cfg, with numbered nodes, show live variables at each node.
-static
-void dump_cfg(const cfg_t &cfg)
+static void dump_cfg(const cfg_t &cfg)
 {
   if(!currFunc)
     return;
@@ -1084,8 +1099,7 @@ void dump_cfg(const cfg_t &cfg)
 }
 
 // Dump tree decomposition, show bag and live variables at each node.
-static
-void dump_tree_decomposition(const tree_dec_t &tree_dec)
+static void dump_tree_decomposition(const tree_dec_t &tree_dec)
 {
   if(!currFunc)
     return;

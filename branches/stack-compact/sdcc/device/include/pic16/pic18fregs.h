@@ -5,7 +5,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -56,8 +56,14 @@
 #elif defined(pic18f1220)
 #  include <pic18f1220.h>
 
+#elif defined(pic18f1230)
+#  include <pic18f1230.h>
+
 #elif defined(pic18f1320)
 #  include <pic18f1320.h>
+
+#elif defined(pic18f1330)
+#  include <pic18f1330.h>
 
 #elif defined(pic18f13k50)
 #  include <pic18f13k50.h>

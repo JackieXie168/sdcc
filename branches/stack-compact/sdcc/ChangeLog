@@ -1,3 +1,957 @@
+2012-05-03 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/z80/gen.c (aopPut3): added missing declarations
+
+2012-05-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* configure: regenerated from new configure.in
+
+2012-05-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  More efficent storing of registers pairs to top of stack.
+
+2012-05-02 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-20101013-1.c:
+	  Disable test until nonzero integer constants work.
+
+2012-05-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCval.h,
+	* src/SDCCval.c (byteOfVal): new function
+	* src/z80/gen.c (aopGet, gencjneshort),
+	* src/SCCglue.c (aopLiteralLong): use byteOfVal() to access value
+	* configure.in,
+	* sdcc_vc_in.h,
+	* sdccconf_in.h: find/define appropriate 64-bit integer
+	* src/SDCCsymt.h: start of support for 64-bit literal
+
+2012-04-30 Leland Morrison <enigmalee AT sourceforge.net>
+	* sim/ucsim/app.cc:  reduced the frequency of checks for user input
+	
+2012-04-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Improve code generation for comparison to zero.
+
+2012-04-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/librarian/sdcclib.c:
+	  Do not depend on PATH_MAX, fix #3521650.
+	* sdas/asxxsrc/asxxxx.h:
+	  Use FILENAME_MAX if PATH_MAX is not defined.
+
+2012-04-25 Borut Razem <borut.razem AT gmail.com>
+
+	* src/common.h, src/ds390/main.c: include SDCCsystem.h in common.h
+	* src/SDCCmain.c: added newline at end of file
+	* src/SDCCicode.c: use TRUE instead of undefined true
+	* src/SDCCicode.h: fixed declaration of isOperandLiteral()
+
+2012-04-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/peeph-gbz80.def:
+	  Removed peephole that resulted in invalid or operand on gbz80.
+
+2012-04-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Fix #3521024.
+
+2012-04-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.c,
+	  src/SDCCopt.c,
+	  src/z80/gen.c:
+	  GET_VALUE_AT_ADDRESS with offset for z80, z180 and r2k.
+
+2012-04-23 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.c:
+	  Enable replacing division by power of two by conditional addition and shift (for hc08, z80, z180, gbz80 and r2k).
+	* src/z80/gen.c,
+	  src/mcs51/gen.c:
+	  Fortify a "/* I assume that […]" comment by an assertion that would have saved me some time.
+
+2012-04-22 Raphael Neider <rneider AT web.de>
+
+	* device/lib/pic16/libsdcc/gptr/eeprom{8,16}_gptrput[1234].c:
+	  fix accessing EECON1.WREN
+
+2012-04-22 Raphael Neider <rneider AT web.de>
+
+	* device/non-free/lib/pic14/libdev/Makefile.in:
+	  build 16f72[01] only if --enable-new-pics is given, as the
+	  devices are not supported in the current gputils release 0.14.1
+
+2012-04-21 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/ds390/main.c: undo removed include to fix implicit declaration
+
+2012-04-21 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCicode.c:
+	  Preparations for replacing division by power of two by conditional addition and shift.
+	* support/regression/tests/longlong.c,
+	  support/regression/tests/gcc-torture-execute-pr42269-2.c,
+	  support/regression/tests/gcc-torture-execute-20080529-1.c,
+	  support/regression/tests/gcc-torture-execute-950503-1.c,
+	  support/regression/tests/float_single.c:
+	  Enable more tests for hc08.
+
+2012-04-19 Raphael Neider <rneider AT web.de>
+
+	* device/lib/pic16/libc/stdio/strmmssp.c:
+	  fixed use of access bank vs. BSR
+
+	* device/lib/pic16/libsdcc/gptr/eeprom{8,16}_gptr{get,put}[1234].c,
+	  device/lib/pic16/libsdcc/gptr/eeprom{8,16}_write.c:
+	  implement EEPROM read/write access
+
+	* device/lib/pic16/libsdcc/gptr/gptr{get,put}[1234].c:
+	  call EEPROM dispatchers on EEPROM accesses
+
+	* device/lib/pic16/libsdcc/Makefile.am:
+	  add gptr EEPROM accessors
+
+	* device/non-free/lib/pic16/libdev/gptr/*:
+	  dispatch EEPROM accesses to the appropriate implementations
+	  based on device capabilities (no eeprom, 8 or 16 bit EEPROM
+	  address space)
+
+	* device/non-free/lib/pic16/libdev/mkmk.sh,
+	  device/non-free/lib/pic16/libdev/newdevices.txt:
+	  improved to automatically add SSPBUF workaround
+	  plus EEPROM dispatchers as required by the devices
+
+	* device/non-free/lib/pic16/libdev/pic18f1330.c,
+	  device/non-free/lib/pic16/libdev/pic18f1220.c,
+	  device/non-free/lib/pic16/libdev/pic18f4450.c:
+	  removed manual SSPBUF workaround
+
+	* device/non-free/lib/pic16/libdev/fake_sspbuf.c:
+	  provide automatic SSPBUF workaround
+
+	* device/lib/pic16/libsdcc/Makefile.in,
+	  device/non-free/lib/pic16/libdev/Makefile.am,
+	  device/non-free/lib/pic16/libdev/Makefile.in:
+	  regenerated
+
+2012-04-14 Raphael Neider <rneider AT web.de>
+
+	* src/pic16/genarith.c (pic16_genMult8XLit_n,pic16_genMult8X8_n):
+	  work around early clobbering of input operands, fixes #3515677;
+	  clean up, eliminate dead code
+
+2012-04-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.h,
+	  src/SDCCicode.c:
+	  Made isOperandLiteral() work on const operand *.
+	* support/regression/tests/gcc-torture-execute-920428-1.c:
+	  Reformatted test.
+
+2012-04-11 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCcse.c (ifOperandsHave): fixed bug #3516746
+
+2012-04-11 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/string.c:
+	  Added test for strrchr().
+	* src/z80/gen.c,
+	  src/SDCCpeeph.c:
+	  Fixed memory leaks.
+
+2012-04-09 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/Makefile.in,
+	  support/regression/collate-results.py : another fix for bug #3477347
+	* support/regression/ports/hc08/spec.mk: increase timeout to 30 seconds
+
+2012-04-08 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCgen.c:
+	  don't emit leading whitespaces in inline asm, 2nd try
+	  fixed bug #3515390 - asm with leading whitespace passed to backends
+	* src/z80/peep.c: made z80instructionSize() function more
+	  ropbust: accept arbitrary number of arbitrary space characters
+	  between mnemonic and the first operand
+
+2012-04-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc2.cc:
+	  Fix invalid reads.
+	* src/z80/gen.c:
+	  Fix a memory leak.
+
+2012-04-07 Borut Razem <borut.razem AT gmail.com>
+
+	* src/common.h, SDCCglobal.h: fixed mingw32 build on derna:
+	  macros min and max should not be defined when compiled with C++
+	* src/pic16/device.c, src/pic16/genarith.c, src/pic16/gen.c,
+	  src/pic16/pcode.c, src/pic16/glue.c:
+	  applied patch #3515647 - Correction patch on the PIC16's branch,
+	  thanks to Molnar Karoly
+
+2012-04-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCralloc.hpp:
+	  Additional assertion to track down #3475617 and #3506333.
+
+2012-04-06 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCgen.c, src/SDCCgen.h, src/SDCCralloc.hpp, src/common.h,
+	  src/mcs51/gen.c, src/pic14/gen.c, src/z80/gen.c,
+	  src/pic16/gen.c, src/ds390/gen.c, src/hc08/gen.c:
+	  fixed NetBSD sparc64 build, code beautification,
+	  additional unification of target code generation
+	* support/cpp/configure.in, support/cpp/configure,
+	  support/cpp/system.h: fixed sdcc configure include paths
+	* src/SDCCgen.c: don't emit leading whitespaces in inline asm;
+	  fixed bug #3515390 - asm with leading whitespace passed to backends
+
+2012-04-05 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/gcc-torture-execute-20080529-1.c:
+	  Disable test for gcc older than 5.0.
+	* src/z80/ralloc2.cc,
+	  src/SDCCralloc.hpp,
+	  src/z80/gen.h,
+	  src/z80/gen.c:
+	  Made optimal allocator less z80-specific.
+
+2012-04-04 Borut Razem <borut.razem AT gmail.com>
+
+	* support/cpp/system.h, support/cpp/libiberty/filenames.h,
+	  support/cpp/libiberty/md5.c, support/cpp/libiberty/obstack.h:
+	  sdcpp partially synchronized with GCC CPP release version 4.7.0
+	* support/cpp/sdcpp.vcxproj: enhancements, added custom build messages
+
+2012-04-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCralloc.hpp:
+	  Additional assertions to track down #3475617 and #3506333.
+
+2012-04-02 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCsymt.c
+	  src/z80/main.c
+	  src/hc08/main.c
+	  src/hc08/gen.c
+	  src/hc08/ralloc.c
+	  device/include/stdint.h
+	  device/lib/_rlslonglong.c
+	  device/lib/_divslonglong.c
+	  device/lib/z180/Makefile.in
+	  device/lib/z180/stubs.s
+	  device/lib/_mullonglong.c
+	  device/lib/_rrslonglong.c
+	  device/lib/z80/Makefile.in
+	  device/lib/z80/stubs.s
+	  device/lib/gbz80/stubs.s
+	  device/lib/gbz80/Makefile.in
+	  device/lib/_rlulonglong.c
+	  device/lib/Makefile.in
+	  device/lib/_divulonglong.c
+	  device/lib/_divslonglong_rrx_s.c
+	  device/lib/_rrslonglong_rrx_s.c
+	  device/lib/_divulonglong_rrx_s.c
+	  device/lib/_rrulonglong_rrx_s.c
+	  device/lib/_rrulonglong.c
+	  device/lib/_rlslonglong_rrx_s.c
+	  device/lib/r2k/Makefile.in
+	  device/lib/r2k/stubs.s
+	  device/lib/_rlulonglong_rrx_s.c
+	  device/lib/hc08/Makefile.in
+	  device/lib/hc08/_ret.c
+	  support/regression/tests/gcc-torture-execute-991216-1.c
+	  support/regression/tests/gcc-torture-execute-pr47337.c
+	  support/regression/tests/gcc-torture-execute-991216-2.c
+	  support/regression/tests/gcc-torture-execute-pr20187-1.c
+	  support/regression/tests/gcc-torture-execute-20000121-1.c
+	  support/regression/tests/gcc-torture-execute-960801-1.c
+	  support/regression/tests/gcc-torture-execute-930111-1.c
+	  support/regression/tests/gcc-torture-execute-20001112-1.c
+	  support/regression/tests/gcc-torture-execute-20101013-1.c:
+	  long long for hc08.
+	* src/z80/gen.c,
+	  support/regression/tests/gcc-torture-execute-pr47337.c,
+	  support/regression/tests/gcc-torture-execute-961213-1.c:
+	  Fixed bug #3513892.
+	* src/SDCCralloc.hpp:
+	  Additional assertions to track down #3475617.
+	* src/z80/ralloc.c:
+	  Assertion for local variables outside of functions.
+
+2012-04-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/lib/Makefile.in,
+	  device/lib/*/Makefile.in,
+	  device/lib/*/stubs.s,
+	  device/lib/_divslonglong_rrx_s.c,
+	  device/lib/_rrslonglong_rrx_s.c,
+	  support/regression/tests/gcc-torture-execute-20101013-1.c,
+	  support/regression/tests/gcc-torture-execute-950512-1.c:
+	  long long division.
+	* support/regression/tests/gcc-torture-execute-920612-1.c,
+	  support/regression/tests/gcc-torture-execute-920711-1.c:
+	  Disable tests for gcc older than 5.0.
+	* support/regression/tests/longlong.c,
+	  support/regression/tests/gcc-torture-execute-960801-1.c,
+	  support/regression/tests/longlong.c:
+	  Disable long long tests since they fail on 32-bit systems.
+
+2012-03-31 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCgen.c, src/SDCCgen.h, src/ds390/gen.c,
+	  src/ds390/main.c, src/hc08/gen.c, src/hc08/main.c,
+	  src/mcs51/gen.c, src/pic14/gen.c, src/pic16/gen.c,
+	  src/z80/gen.c, src/z80/gen.h:
+	  introduced labelKey2num label handling macro
+
+2012-03-30 Borut Razem <borut.razem AT gmail.com>
+
+	* src/common.h, src/Makefile.in, src/SDCCgen.c, src/SDCCgen.h,
+	  src/SDCCasm.c, src/SDCCasm.h, src/SDCCdebug.c,
+	  src/SDCCdebug.h, src/SDCCpeeph.c, src/SDCCpeeph.h,
+	  src/avr/gen.c, src/ds390/gen.c, src/ds390/gen.h,
+	  src/ds390/main.c, src/ds390/main.h, src/hc08/gen.c,
+	  src/mcs51/gen.c, src/mcs51/main.c, src/mcs51/main.h,
+	  src/pic14/gen.c, src/pic16/gen.c, src/z80/gen.c,
+	  sdcc_vc_in.h, src/sdcc.vcxproj, src/sdcc.vcxproj.filters:
+	  unification of target code generation
+
+2012-03-30 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/lib/z180/stubs.s,
+	  device/lib/z80/stubs.s,
+	  device/lib/gbz80/stubs.s,
+	  support/regression/tests/longlong.c,
+	  support/regression/tests/gcc-torture-execute-*.c:
+	  Made TODO comments more specific wrt. to what sdcc functionality is required for enabling the test, enabled more long long tests.
+
+2012-03-30 Borut Razem <borut.razem AT gmail.com>
+
+	* configure.in, configure, sdccconf_in.h:
+	  added check if c supports tags in unnamed struct,
+	  fixed IS_VALID_OPTION
+	* sim/ucsim/configure.in, sim/ucsim/configure:
+	  fixed IS_VALID_OPTION
+	* sim/ucsim/aclocal.m4: regenerated
+	* src/pic14/Makefile.in: removed unneeded PORT
+
+2012-03-30 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fix for returning long long, fixes #3512403.
+	* device/lib/z180/stubs.s,
+	  device/lib/z80/stubs.s,
+	  device/lib/gbz80/stubs.s,
+	  support/regression/tests/longlong.c:
+	  More tests for long long.
+	* support/regression/tests/gcc-torture-execute-*.c:
+	  Made TODO comments more specific wrt. to what sdcc functionality is required for enabling the test.
+	* device/lib/_rrslonglong_rrx_s.c,
+	  device/lib/_rrulonglong_rrx_s.c,
+	  device/lib/_rlulonglong_rrx_s.c:
+	  Fixes for long long shift.
+
+2012-03-29 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCsymt.c (initCSupport),
+	  device/lib/_rrslonglong_rrx_s.c,
+	  device/lib/_rrulonglong_rrx_s.c:
+	  Fixed declarations for shift support functions.
+	* device/lib/*z*/Makefile.in,
+	  device/lib/Makefile.in,
+	  device/lib/_r??longlong_rrx_s.c,
+	   device/lib/_mullonglong.c:
+	  Shift and multiplication support for long long.
+
+2012-03-29 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  More flexible use of de for gbz80.
+
+2012-03-29 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCsymt.c (initCSupport): fixed declarations for shift support functions
+	* src/SDCCsymt.c (initBuiltIns),
+	  src/SDCCast.c (funcOfTypeVarg),
+	  src/SDCCast.h: added some const qualifiers 
+
+2012-03-29 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  More flexible use of de for gbz80.
+
+2012-03-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/ralloc2.cc:
+	  Allow some use of de on gbz80.
+	* src/z80/gen.c:
+	  gbz80 >> fix.
+	* device/lib/_rrslonglong_rrx_s.c,
+	  device/lib/_rrulonglong_rrx_s.c:
+	  Support functions for shifting long long.
+
+2012-03-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/ralloc2.cc,
+	  src/z80/ralloc.c,
+	  src/z80/z80.h:
+	  Remove support for using the old allocator for A, while using the new allocator for other registers.
+
+2012-03-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/z80.h:
+	  Enabled exact cost function for gbz80.
+	* src/z80/gen.c:
+	  Fixed a gbz80 comparison bug.
+
+2012-03-28 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCval.c, src/SDCCval.h, src/SDCCicode.c:
+	  double2ul converted from macro to a function
+
+2012-03-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Better support for returning long long, now works for gbz80, too.
+
+2012-03-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Better assignment for large variables.
+	* src/z80/peep.c:
+	  Fix code size calculation bug.
+
+2012-03-28 Borut Razem <borut.razem AT gmail.com>
+
+	* configure.in, configure, sdccconf_in.h,
+	  sim/ucsim/configure.in, sim/ucsim/configure,
+	  sim/ucsim/ddconfig_in.h:
+	  use AC_C_BIGENDIAN instead of SDCC_BUILD_BIGENDIAN
+	* support/cpp/config.in: regenerated
+	* custom_in.h, sim/ucsim/custom_in.h: removed
+
+2012-03-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* device/include/stdint.h:
+	  Use long long for intmax_t where available.
+
+2012-03-28 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/tests/gcc-torture-execute-981001-1.c: Revert my
+	  previous edit since it was not needed
+
+2012-03-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c,
+	  support/regression/tests/longlong.c:
+	  Fixed returning long long, and reenabled test.
+
+2012-03-28 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/tests/gcc-torture-execute-981001-1.c: Only use
+	  __reentrant for SDCC and not for test-host
+	* support/regression/tests/gcc-torture-execute-930106-1.c: Reenabled
+
+2012-03-28 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/gcc-torture-execute-981001-1.c:
+	  Fixed #3511512 / #3511513.
+
+2012-03-27 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCsymt.c,
+	  src/z80/gen.c,
+	  support/regression/tests/gcc-torture-execute-960801-1.c,
+	  support/regression/tests/longlong.c:
+	  Support for returning long long and unsigned long long in z80, z180 and r2k port.
+
+2012-03-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Fixed stack unbalance bug.
+
+2012-03-26 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCasm.c (FileBaseName): fixed bug 3511092
+
+2012-03-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-9*.c:
+	  Added some more tests from the execute part of the gcc torture regression test suite.
+
+2012-03-26 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/mcs51/ralloc.c (packForPush),
+	  src/ds390/ralloc.c (packForPush),
+	  src/hc08/ralloc.c (packForPush): fixed bug #3502628
+	* support/regression/tests/gcc-torture-execute-20010403-1.c: reenabled
+	* src/hc08/ralloc.c (packRegisters, packForPush): use packForPush
+	  for SEND iCodes too.
+
+2012-03-25 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/mcs51/ralloc.c (packForPush): fixed bug 3502621
+	* support/regression/tests/gcc-torture-execute-20030117-1.c: enabled test
+
+2012-03-25 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCast.c (isConformingBody): fixed bug #3509715
+	* support/regression/tests/gcc-torture-execute-930513-2.c: reenabled
+	* src/SDCCast.c (decorateType): fixed bug #3509713
+	* support/regression/tests/gcc-torture-execute-930429-1.c: reenabled
+	* src/SDCCicode.c (geniCodeAssign): fixed bug #3509712
+	* support/regression/tests/gcc-torture-execute-921016-1.c: reenabled
+	* src/SDCCopt.c (optimizeCastCast): fixed bug #3509711
+	* support/regression/tests/gcc-torture-execute-921218-1.c: reenabled
+
+2012-03-24 Borut Razem <borut.razem AT gmail.com>
+
+	* support/makebin/makebin.c: applied modified patch
+	  #3510671 - [makebin / gbz80] add nintendo logo info in ROM header,
+	  thanks to Noel Lemouel
+
+2012-03-24 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/Makefile.in,
+	  support/regression/ports/ds390/spec.mk,
+	  support/regression/ports/hc08/spec.mk,
+	  support/regression/ports/mcs51-common/spec.mk,
+	  support/regression/ports/pic14/spec.mk,
+	  support/regression/ports/pic16/spec.mk,
+	  support/regression/ports/ucgbz80/spec.mk,
+	  support/regression/ports/ucr2k/spec.mk,
+	  support/regression/ports/ucz180/spec.mk,
+	  support/regression/ports/ucz80/spec.mk,
+	  support/regression/ports/xa51/spec.mk: attempt to fix bug #3477347
+	  
+2012-03-24 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCcse.h,
+	  src/SDCCcse.c: handle possible pointer aliasing more conservatively
+	* src/z80/gen.c (genFunction): reset stack.pushed at function start too
+
+2012-03-22 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/gcc-torture-execute-941021-1.c:
+	  Disable test for gcc older than 5.0.
+
+2012-03-22 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/sdccman.lyx: double underlined keywords,
+	  fixed bug #3510011 - Wrong keyword
+	* src/sdcc.vcxproj, src/sdcc.vcxproj.filters:
+	  added some missing header files
+
+2012-03-22 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCsymt.h,
+	  src/SDCCsymt.c (initCSupport, typeFromStr, printTypeChainRaw),
+	  src/SDCCopt.c (cnvToFloatCast, cnvToFixed16x16Cast, cnvFromFloatCast, 
+	  cnvFromFixed16x16Cast, convilong): ongoing upgrades for long long type
+
+2012-03-22 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c (transferAopAop): fixed bug 3509707
+	* support/regression/tests/gcc-torture-execute-930603-1.c: reenabled
+
+2012-03-21 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-92*,
+	  support/regression/tests/gcc-torture-execute-93*,
+	  support/regression/tests/gcc-torture-execute-94*:
+	  Added some more tests from the execute part of the gcc torture regression test suite.
+
+2012-03-20 Borut Razem <borut.razem AT gmail.com>
+
+	* src/mcs51/gen.c, src/SDCCasm.c, src/SDCCasm.h, src/z80/gen.c,
+	  src/SDCCutil.c, src/ds390/gen.c, src/hc08/gen.c:
+	  code cleaning, optimization, ...
+
+2012-03-20 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* device/include/stdint.h,
+	  device/include/string.h,
+	  device/include/stddef.h,
+	  device/include/stdlib.h,
+	  device/include/stdio.h,
+	  device/include/time.h,
+	  device/include/errno.h:
+	  rsize_t, errno_t, constraint_handler_t, RSIZE_MAX from annex K (bounds-checking) of the C11 standard.
+
+2012-03-19 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCC.lex, doc/sdccman.lyx: removed asm() pseudo function
+	  since it is not standard-compliant
+
+2012-03-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCpeeph.c:
+	  Handle gbz80 (hl+) and (hl-).
+
+2012-03-19 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/Makefile.in,
+	  support/regression/collate-results.py: Summarize any failures in a
+	  nicer format instead of all run together on one line
+	* src/ds390/gen.c (genPlusIncr): fix problem with dereferencing a
+	  generic pointer via a struct losing pointer type byte
+
+2012-03-18 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/sdccman.lyx,src/avr/gen.c, src/ds390/gen.c,
+	  src/hc08/gen.c, src/mcs51/gen.c, src/pic14/gen.c,
+	  src/pic16/device.c, src/pic16/gen.c, src/pic16/glue.c,
+	  src/pic16/pcode.c, src/SDCC.lex, src/SDCC.y, src/SDCCast.c,
+	  src/SDCCglue.c, src/SDCCsymt.h, src/SDCCutil.c,
+	  src/SDCCutil.h, src/SDCCval.c:
+	  implemented feature request #2815320 - please add asm()
+	  pseudo function as alternate
+	* sdcc.sln, src/sdcc.vcxproj, src/sdcc.vcxproj.filters,
+	  src/yacc.vcxproj:
+	  re-itroduced yacc project
+	* .version, doc/sdccman.lyx: bumped version to 3.1.4
+	* config.vcxproj, src/ds390/ds390.vcxproj,
+	  src/hc08/hc08.vcxproj, src/mcs51/mcs51.vcxproj,
+	  src/pic14/pic14.vcxproj, src/pic16/pic16.vcxproj,
+	  src/sdcc.vcxproj, src/yacc.vcxproj, src/z80/z80.vcxproj,
+	  all.vcxproj, all.vcxproj.filters:
+	  VS project enhancements
+	* src/SDCC.y, src/SDCCsymt.h, src/SDCCutil.c, src/SDCCutil.h,
+	  src/SDCCval.c: fixed flaws in previous commit
+	* src/SDCCsymt.c, src/pic14/glue.c, src/cdbFile.c:
+	  fixed printing size_t type numbers
+
+2012-03-18 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* src/ds390/gen.c (aopGet, aopPut),
+	* src/mcs51/gen.c (aopGet, aopPut): fixed bug 3496842
+	* support/regression/tests/sfr16.c: enabled test and fixed for ds390
+
+2012-03-17 Borut Razem <borut.razem AT gmail.com>
+
+	* support/regression/tests/strstr.c,
+	  support/regression/tests/strcpy.c,
+	  support/regression/tests/strcmp.c,
+	  support/regression/tests/strtok.c,
+	  support/regression/tests/strncmp.c,
+	  support/regression/tests/strspn.c,
+	  support/regression/tests/strpbrk.c,
+	  support/regression/tests/string.c:
+	  merged strstr.c, strcpy.c, strcmp.c, strtok.c, strncmp.c,
+	  strspn.c, and strpbrk.c to string.c, added test for
+	  bug #3506236
+
+2012-03-16 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* sdas/linksrc/lkarea.c (lnksect2): applied fix from Tim Schuerewegen
+	  (bug 3495316)
+
+2012-03-16 Borut Razem <borut.razem AT gmail.com>
+
+	* sdcc.sln, src\sdcc.vcxproj, src\sdcc.vcxproj.filters,
+	  src\yacc.vcxproj:
+	  project src renamed to sdcc, removed project yacc
+	* doc\sdccman.lyx, src\SDCCasm.c, src\SDCCicode.h,
+	  src\SDCCast.c, src\SDCCast.h, src\pic16\main.c:
+	  implemeted pragma config for pic16 target, solution
+	  of bug #3486890 - pic16 port config directive warning
+	* src/Makefile.in, src/sdcc.vcxproj:
+	  fixed bug #3506236: sdcc.exe unicode problem? by generating
+	  8-bit scanner
+
+2012-03-16 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* sdas/linksrc/lkarea.c (allocate_space,find_empty_space): fixed bound
+	  checking errors on allocation bitmap (possbile fix for bug #3502626)
+
+2012-03-16 Raphael Neider <rneider AT web.de>
+
+	* device/non-free/lib/pic16/libdev/pic18f1330.c:
+	  add dummy SSPBUF symbol as required by __stream_putchar/printf
+	* device/non-free/lib/pic16/libdev/testall.sh:
+	  test using printf_tiny() for greater confidence
+
+2012-03-14 Borut Razem <borut.razem AT gmail.com>
+
+	* debugger/mcs51/sdcdb.c, src/mcs51/gen.c, src/SDCCopt.c,
+	  src/hc08/gen.c, src/hc08/ralloc.c, src/ds390/gen.c,
+	  src/ds390/ralloc.c, sim/ucsim/cmd.src/cmdset.cc,
+	  sim/ucsim/cmd.src/cmdstat.cc, sim/ucsim/cmd.src/cmdgui.cc,
+	  sim/ucsim/z80.src/inst.cci, sdas/asxxsrc/asout.c:
+	  fixed gcc 4.6.1 warnimgs, mainly warning: 'xxx' may be used
+	  uninitialized in this function [-Wuninitialized] 
+
+2012-03-14 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/ralloc.c,
+	  support/regression/tests/bug3502965.c:
+	  Fixed bug #3502965.
+	* support/regression/tests/gcc-torture-execute-20030209-1.c,
+	  support/regression/tests/gcc-torture-execute-20031012-1.c:
+	  Added explanation for why tests don't work on gbz80.
+	* src/SDCCmain.c:
+	  Reenable non-compliant SDCC macros (but not for --std-c89, --std-c99, --std-c11).
+	* src/z80/ralloc2.cc:
+	  More flexible handling of accumulator in multiplication and return.
+
+2012-03-14 Borut Razem <borut.razem AT gmail.com>
+
+	* device/non-free/include/*, device/non-free/lib/*:
+	  added info about "The header files should state that they are
+	  only to be used with authentic Microchip devices" Microchip
+	  requirement and GPL incompatibility
+
+2012-03-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-20010224-1.c,
+	  support/regression/tests/gcc-torture-execute-20030714-1.c:
+	  Disable tests for gcc older than 5.0.
+
+2012-03-13 Borut Razem <borut.razem AT gmail.com>
+
+	* device/include/*, device/lib/*: corrected GPL license version
+	  from 2.1 to 2: GPLv2.1 does not exist
+
+2012-03-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-2001*.c,
+	  support/regression/tests/gcc-torture-execute-2003*.c:
+	  Added some more tests from the execute part of the gcc torture regression test suite.
+
+2012-03-12 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/TININative.txt: removed, available at 
+	  http://sourceforge.net/apps/trac/sdcc/wiki/Using%20SDCC%20to%20develop%20Native%20Java%20functions
+	* doc/Makefile.in:
+	  don't generate unusable html and txt versions of sdccman
+
+2012-03-11 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCpeeph.c,
+	  src/z80/peeph-r2k.def,
+	  src/z80/peeph-z80.def,
+	  support/regression/tests/bug3501942.c:
+	  Fixed bug #3501942.
+
+2012-03-11 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fixed bug that made copying from hl to iy ineffcient on r2k,
+	  fix another check in commitPair(), improved stack adjustment
+	  after function call.
+
+2012-03-11 Raphael Neider <rneider AT web.de>
+
+	* device/lib/pic16/libio/usart/uopen.c:
+	  properly setup BAUDCONbits.BRG16, closes #3495815
+
+	* device/non-free/include/pic16/pic18f1220.h:
+	  added BAUDCON alias and structure definition for BAUDCTL
+
+2012-03-10 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/sdccman.lyx:
+	  documented support for 18f1230/18f1330 device family
+
+2012-03-10 Raphael Neider <rneider AT web.de>
+
+	* Makefile.in:
+	  device/lib build depends on sdcc-sdbinutils
+
+	* device/include/pic16/adc.h,
+	  device/include/pic16/pic16devices.txt,
+	  device/include/pic16/pic18fregs.h,
+	  device/lib/pic16/libio/Makefile.am,
+	  device/lib/pic16/libio/adc/adcbusy.c,
+	  device/lib/pic16/libio/adc/adcopen.c,
+	  device/lib/pic16/libio/adc/adcsetch.c,
+	  device/lib/pic16/libio/i2c.ignore,
+	  device/lib/pic16/libio/usart/uopen.c,
+	  device/non-free/include/pic16/pic18f1230.h,
+	  device/non-free/include/pic16/pic18f1330.h,
+	  device/non-free/lib/pic16/libdev/Makefile.am,
+	  device/non-free/lib/pic16/libdev/pic18f1230.c,
+	  device/non-free/lib/pic16/libdev/pic18f1330.c,
+	  device/non-free/lib/pic16/pics.all,
+	  support/scripts/pic18fam-h-gen.pl:
+	  add support for 18f1230 and 18f1330 devices
+
+	* device/lib/pic16/libio/mkmk.sh:
+	  adjust path to pics.all
+
+	* device/lib/pic16/libdev:
+	  removed obsolete, empty directory
+
+	* device/lib/pic16/libio/Makefile.in,
+	  device/non-free/include/pic16/pic18fam.h,
+	  device/non-free/lib/pic16/libdev/Makefile.in:
+	  regenerated
+
+2012-03-10 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/README.txt, doc/sdccman.lyx:
+	  backslashes replaced with slashes in non-free paths;
+	  obsoleted special sdcc keywords which are not preceded
+	  by a double underscore
+	* support/scripts/inc2h-pic16.pl, support/scripts/inc2h.pl:
+	  added comment about Microchip "The header files should state
+	  that they are only to be used with authentic Microchip
+	  devices" requirement.
+
+2012-03-10 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fixed bug #3501019.
+
+2012-03-09 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/mcs51/gen.c (genCast): fixed bug #3486542
+	* support/regression/tests/gcc-torture-execute-pr15296.c: re-enabled
+
+2012-03-09 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/README.txt:
+	  added info about included code from gcc test suite
+	* Makefile.in:
+	  replaced test -e with -f, since -e is not available in sh
+	  on Solaris
+
+2012-03-08 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Use 16-bit addition instructions for 8-bit additions when cheaper and possible.
+
+2012-03-07 Borut Razem <borut.razem AT gmail.com>
+
+	* Makefile.in: copy correct sdbinutils executables to bin
+
+2012-03-07 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCopt.c (getAddrspaceiCode),
+	  src/SDCCralloc.hpp (create_cfg): properly handle IFX and
+	  JUMPTABLE operands
+
+2012-03-06 Borut Razem <borut.razem AT gmail.com>
+
+	* Makefile.in, support/sdbinutils/binutils/Makefile.am,
+	  support/sdbinutils/binutils/Makefile.in,
+	  support/scripts/sdcc.nsi,
+	  support/sdbinutils/bfd/asxxxx.c,
+	  support/sdbinutils/binutils/nm.c:
+	  added sdnm sdbinutils utility
+
+2012-03-06 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Fixed bug #3496508.
+
+2012-03-05 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCicode.c:
+	  disable -O2 optimization for gcc 4.6.3, see bug #3285611
+	* support/scripts/sdcc_mingw32: minor cosmetical fix
+	* configure.in, configure, config.guess, config.sub:
+	  added host and build type detection
+	* device/lib/pic14/Makefile.in,
+	  device/lib/pic14/libm/Makefile.in: regenerated
+
+2012-03-05 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCopt.c (separateAddressSpaces): fixed bug #3476041
+
+2012-03-04 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/README.txt, doc/sdccman.lyx: small corrections
+	* src/SDCC.lex: removed forward declaration of non existing
+	  function deprecated_keyword(), removed macro TKEYWORDSDCC
+	* support/cpp/opts.c, support/cpp/sdcpp.c,
+	  support/cpp/version.c, support/cpp/version.h:
+	  updated version to 4.6.3
+
+2012-03-04 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCsymt.h,
+	* src/SDCCerr.c,
+	* src/SDCCerr.h,
+	* src/SDCC.y: fix struct/union tag scope problems
+	  (including bug #3487670)
+	* support/regression/tests/structscope.c: new tests
+
+2012-03-03 Borut Razem <borut.razem AT gmail.com>
+
+	* support/regression/ports/ucz80/spec.mk,
+	  support/regression/ports/ucz180/spec.mk:
+	  simulation timeout doubled due to several tests
+	  failures on sparc64-unknown-netbsd platform
+
+2012-03-02 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc.c,
+	  support/regression/tests/bug-3495411.c,
+	  Fixed #3495411 and another --oldralloc bug.
+
+2012-03-02 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/sdccman.lyx: fixed pdf generation;
+	  added chapter 1.2 SDCC Suite Licenses;
+	  libraries license should be at least as liberal as the GPLv2+LE;
+	  note about GPL incompatible pic device libraries;
+	  added link to "List of the SDCC library" wiki page;
+	  added link to "SDCC - Small Device C Compiler Wiki" wiki page;
+	  use term "SDCC suite";
+	  formatting cleaning
+	* doc/README.txt: changed chapters Licenses and Authors and interested persons
+
+2012-03-01 Borut Razem <borut.razem AT gmail.com>
+
+	* support/regression/ports/ucz80/spec.mk:
+	  simulation timeout increased to 20s due to several tests
+	  failures on sparc64-unknown-netbsd platform
+	* configure.in, configure: report CPPFLAGS and LDFLAGS settings
+	* support/sdbinutils/bfd/configure.in,
+	  support/sdbinutils/bfd/configure,
+	  PKGVERSION set to (sdbinutils derived from GNU Binutils),
+	  BUGURL set to http://sourceforge.net/tracker/?group_id=599&atid=100599
+	* support/sdbinutils/binutils/version.c:
+	  --vesion shows sd* names instead GNU *
+
+2012-03-01 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-20080506-1.c,
+	  support/regression/tests/gcc-torture-execute-20080506-2.c:
+	  Disable tests for gcc versions earlier than 5.0.
+
+2012-03-01 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* support/regression/tests/cse.c: new tests checking for CSE problems
+
+2012-02-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/2000*.c:
+	  More tests from gcc.
+
+2012-02-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/gcc-torture-execute-20000402-1.c:
+	  Disable test since unsigned long long is not yet fully supported.
+	* support/regression/tests/gcc-torture-execute-20000314-1.c:
+	  Silence warning.
+
+2012-02-27 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/tests/2000*.c:
+	  More tests from gcc.
+
 2012-02-26 Borut Razem <borut.razem AT gmail.com>
 
 	* support/regression/ports/ds390/spec.mk:
@@ -41,7 +995,7 @@
 2012-02-25 Borut Razem <borut.razem AT gmail.com>
 
 	* configure.in, configure, Makefile.in, sdcc.sln,
-	  doc/sdccman.lyx, support/sdranlib/*: support\sdranlib removed
+	  doc/sdccman.lyx, support/sdranlib/*: support/sdranlib removed
 	* .version, doc/sdccman.lyx: bumped version to 3.1.3
 
 2012-02-25 Raphael Neider <rneider AT web.de>

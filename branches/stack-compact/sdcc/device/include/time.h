@@ -5,7 +5,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -31,6 +31,21 @@
 
 #ifndef __TIME_UNSIGNED
 #define __TIME_UNSIGNED 1
+#endif
+
+/* Bounds-checking interfaces from annex K of the C11 standard. */
+#if defined (__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__
+
+#ifndef __RSIZE_T_DEFINED
+#define __RSIZE_T_DEFINED
+typedef size_t rsize_t;
+#endif
+
+#ifndef __ERRNO_T_DEFINED
+#define __ERRNO_T_DEFINED
+typedef int errno_t;
+#endif
+
 #endif
 
 #if __TIME_UNSIGNED
