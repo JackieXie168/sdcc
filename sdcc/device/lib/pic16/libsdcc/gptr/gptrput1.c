@@ -6,7 +6,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -28,35 +28,32 @@
 -------------------------------------------------------------------------*/
 
 /* write address is expected to be in WREG:PRODL:FSR0L while
- * write value is in TBLPTRL:TBLPTRH:PRODH:[stack] */
+ * write value is in TBLPTRH:TBLPTRL:PRODH:[stack] */
  
+extern FSR0H;
 extern POSTINC0;
 extern PREINC1;
-extern INDF0;
-extern FSR0L;
-extern FSR0H;
-extern WREG;
-extern TBLPTRL;
-extern TBLPTRH;
-extern TBLPTRU;
-extern TABLAT;
 extern PRODL;
-extern PRODH;
+extern WREG;
+extern __eeprom_gptrput1;
 
 void _gptrput1(void) __naked
 {
   __asm
     /* decode generic pointer MSB (in WREG) bits 6 and 7:
      * 00 -> code (unimplemented)
-     * 01 -> EEPROM (unimplemented)
+     * 01 -> EEPROM
      * 10 -> data
-     * 11 -> unimplemented
+     * 11 -> data
+     *
+     * address: (WREG, PRODL, FSR0L)
+     * value: (TBLPTRH, TBLPTRL, PRODH, STACK1[+1])
      */
     btfss	_WREG, 7
     bra		_lab_01_
     
     /* data pointer  */
-    /* data are already in FSR0 */
+    /* FSR0L is already set up */
     movff	_PRODL, _FSR0H
     
     movff	_PREINC1, _POSTINC0
@@ -66,17 +63,11 @@ void _gptrput1(void) __naked
 
 _lab_01_:
     /* code or eeprom */
-    btfss	_WREG, 6
-    return
-    
+    btfsc	_WREG, 6
+    goto        ___eeprom_gptrput1
+
     /* code pointer, cannot write code pointers */
-    
-_lab_02_:
-    /* EEPROM pointer */
+    return
 
-    /* unimplemented yet */
-
-
-  return
   __endasm;
 }

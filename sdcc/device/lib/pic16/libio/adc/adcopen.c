@@ -5,7 +5,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -34,7 +34,7 @@
  * parameters are:
  *   channel: one of ADC_CHN_*
  *   fosc:    one of ADC_FOSC_* | ADC_ACQT_* | ADC_CAL
- *   pcfg:    one of ADC_CFG_* (a bitmask with set bits denoting digital ports for 1220/65j50-style)
+ *   pcfg:    one of ADC_CFG_* (a bitmask with set bits denoting digital ports for many styles)
  *   config:  ADC_FRM_* | ADC_INT_* | ADC_VCFG_* | ADC_NVCFG_* | ADC_PVCFG_*
  */
 
@@ -57,6 +57,10 @@ adc_open(unsigned char channel, unsigned char fosc, sdcc_pcfg_t pcfg, unsigned c
   ADCON0 = ((channel & 0x07) | (config & ADC_VCFG_AN3_AN2)) << 2;
   ADCON1 = (pcfg & 0x7f);
   ADCON2 = (ADCON2 & 0x38) | (fosc & 0x07) | (config & ADC_FRM_RJUST);
+#elif (__SDCC_ADC_STYLE == 1812300)
+  ADCON0 = ((channel & 0x03) << 2);
+  ADCON1 = (pcfg & 0x0f) | (config & ADC_VCFG_VREF);
+  ADCON2 = (fosc & 0x7f) | (config & ADC_FRM_RJUST);
 #elif (__SDCC_ADC_STYLE == 1813502)
   ANSEL = pcfg;
   ANSELH = (pcfg >> 8);

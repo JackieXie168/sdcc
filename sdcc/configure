@@ -670,6 +670,14 @@ VERSIONHI
 VERSION
 PACKAGE
 AWK
+host_os
+host_vendor
+host_cpu
+host
+build_os
+build_vendor
+build_cpu
+build
 target_alias
 host_alias
 build_alias
@@ -1362,6 +1370,10 @@ Program names:
   --program-prefix=PREFIX            prepend PREFIX to installed program names
   --program-suffix=SUFFIX            append SUFFIX to installed program names
   --program-transform-name=PROGRAM   run sed PROGRAM on installed program names
+
+System types:
+  --build=BUILD     configure for building on BUILD [guessed]
+  --host=HOST       cross-compile to build programs to run on HOST [BUILD]
 _ACEOF
 fi
 
@@ -2546,7 +2558,111 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-ac_config_headers="$ac_config_headers sdccconf.h:sdccconf_in.h custom.h:custom_in.h sdas/linksrc/asxxxx_config.h"
+
+# Determine the host and build type.
+# ===========================================================================
+ac_aux_dir=
+for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
+  if test -f "$ac_dir/install-sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install-sh -c"
+    break
+  elif test -f "$ac_dir/install.sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install.sh -c"
+    break
+  elif test -f "$ac_dir/shtool"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/shtool install -c"
+    break
+  fi
+done
+if test -z "$ac_aux_dir"; then
+  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
+fi
+
+# These three variables are undocumented and unsupported,
+# and are intended to be withdrawn in a future Autoconf release.
+# They can cause serious problems if a builder's source tree is in a directory
+# whose full name contains unusual characters.
+ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
+ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
+ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
+
+
+# Make sure we can run config.sub.
+$SHELL "$ac_aux_dir/config.sub" sun4 >/dev/null 2>&1 ||
+  as_fn_error $? "cannot run $SHELL $ac_aux_dir/config.sub" "$LINENO" 5
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking build system type" >&5
+$as_echo_n "checking build system type... " >&6; }
+if ${ac_cv_build+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_build_alias=$build_alias
+test "x$ac_build_alias" = x &&
+  ac_build_alias=`$SHELL "$ac_aux_dir/config.guess"`
+test "x$ac_build_alias" = x &&
+  as_fn_error $? "cannot guess build type; you must specify one" "$LINENO" 5
+ac_cv_build=`$SHELL "$ac_aux_dir/config.sub" $ac_build_alias` ||
+  as_fn_error $? "$SHELL $ac_aux_dir/config.sub $ac_build_alias failed" "$LINENO" 5
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_build" >&5
+$as_echo "$ac_cv_build" >&6; }
+case $ac_cv_build in
+*-*-*) ;;
+*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5;;
+esac
+build=$ac_cv_build
+ac_save_IFS=$IFS; IFS='-'
+set x $ac_cv_build
+shift
+build_cpu=$1
+build_vendor=$2
+shift; shift
+# Remember, the first character of IFS is used to create $*,
+# except with old shells:
+build_os=$*
+IFS=$ac_save_IFS
+case $build_os in *\ *) build_os=`echo "$build_os" | sed 's/ /-/g'`;; esac
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking host system type" >&5
+$as_echo_n "checking host system type... " >&6; }
+if ${ac_cv_host+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test "x$host_alias" = x; then
+  ac_cv_host=$ac_cv_build
+else
+  ac_cv_host=`$SHELL "$ac_aux_dir/config.sub" $host_alias` ||
+    as_fn_error $? "$SHELL $ac_aux_dir/config.sub $host_alias failed" "$LINENO" 5
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_host" >&5
+$as_echo "$ac_cv_host" >&6; }
+case $ac_cv_host in
+*-*-*) ;;
+*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5;;
+esac
+host=$ac_cv_host
+ac_save_IFS=$IFS; IFS='-'
+set x $ac_cv_host
+shift
+host_cpu=$1
+host_vendor=$2
+shift; shift
+# Remember, the first character of IFS is used to create $*,
+# except with old shells:
+host_os=$*
+IFS=$ac_save_IFS
+case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
+
+
+
+ac_config_headers="$ac_config_headers sdccconf.h:sdccconf_in.h sdas/linksrc/asxxxx_config.h"
 
 
 for ac_prog in gawk mawk nawk awk
@@ -3839,35 +3955,6 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-ac_aux_dir=
-for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
-
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
 # incompatible versions:
@@ -4882,24 +4969,24 @@ done
 # Macro definitions
 # ===========================================================================
 
-# _bor_EXECUTE_IFELSE_BODY(COMMAND)
+# _sdcc_EXECUTE_IFELSE_BODY(COMMAND)
 # -----------------------
 # Shell function body for _AC_EXECUTE_IFELSE.
-# _bor_EXECUTE_IFELSE_BODY
+# _sdcc_EXECUTE_IFELSE_BODY
 
-# bor_EXECUTE_IFELSE(COMMAND[ACTION-IF-TRUE], [ACTION-IF-FALSE])
+# sdcc_EXECUTE_IFELSE(COMMAND[ACTION-IF-TRUE], [ACTION-IF-FALSE])
 # ----------------------------------------------------------------
 # Try to execute COMMAND.
-# bor_EXECUTE_IFELSE
+# sdcc_EXECUTE_IFELSE
 
 # Check whether the compiler for the current language is SunPRO.
 
 
 
-# bor_IS_VALID_OPTION macro checks if the current compiler, selected by
+# sdcc_IS_VALID_OPTION macro checks if the current compiler, selected by
 # AC_LANG, supports option specified as the 1st parameter. The test fails if
 # the compiler returns an error or in case something is writeen to stderr.
-# For example: bor_VALID_OPT(fPIC)
+# For example: sdcc_VALID_OPT(-fPIC)
 
 
 
@@ -4987,14 +5074,15 @@ fi
 $as_echo "$sdcc_cv_MM" >&6; }
 
   # This is the first time when CFLAGS are set/modified!!
-  ac_test_CFLAGS=${CFLAGS+set}
-bor_save_CFLAGS=$CFLAGS
+  arg1=`echo -ggdb | sed -e"s/^-*//" -e"s/-/_/"`
+ac_test_CFLAGS=${CFLAGS+set}
+sdcc_save_CFLAGS=$CFLAGS
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C accepts -ggdb" >&5
 $as_echo_n "checking whether C accepts -ggdb... " >&6; }
-if ${bor_cv_c_ggdb+:} false; then :
+if eval \${sdcc_cv_c_$arg1+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  bor_save_c_werror_flag=$ac_c_werror_flag
+  sdcc_save_c_werror_flag=$ac_c_werror_flag
    ac_c_werror_flag=yes
 
    CFLAGS="-ggdb"
@@ -5010,30 +5098,32 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  bor_cv_c_ggdb=yes
+  eval sdcc_cv_c_$arg1=yes
 else
-  bor_cv_c_ggdb=no
+  eval sdcc_cv_c_$arg1=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-   ac_c_werror_flag=$bor_save_c_werror_flag
+   ac_c_werror_flag=$sdcc_save_c_werror_flag
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $bor_cv_c_ggdb" >&5
-$as_echo "$bor_cv_c_ggdb" >&6; }
-   CFLAGS=$bor_save_CFLAGS
+eval ac_res=\$sdcc_cv_c_$arg1
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+   CFLAGS=$sdcc_save_CFLAGS
 
-  if test "$bor_cv_c_ggdb" = "yes"; then
+  if test "$sdcc_cv_c_ggdb" = "yes"; then
     CFLAGS="-ggdb ${CFLAGS}"
     CXXFLAGS="-ggdb ${CXXFLAGS}"
   fi
 
-  ac_test_CFLAGS=${CFLAGS+set}
-bor_save_CFLAGS=$CFLAGS
+  arg1=`echo -pipe | sed -e"s/^-*//" -e"s/-/_/"`
+ac_test_CFLAGS=${CFLAGS+set}
+sdcc_save_CFLAGS=$CFLAGS
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C accepts -pipe" >&5
 $as_echo_n "checking whether C accepts -pipe... " >&6; }
-if ${bor_cv_c_pipe+:} false; then :
+if eval \${sdcc_cv_c_$arg1+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  bor_save_c_werror_flag=$ac_c_werror_flag
+  sdcc_save_c_werror_flag=$ac_c_werror_flag
    ac_c_werror_flag=yes
 
    CFLAGS="-pipe"
@@ -5049,18 +5139,19 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  bor_cv_c_pipe=yes
+  eval sdcc_cv_c_$arg1=yes
 else
-  bor_cv_c_pipe=no
+  eval sdcc_cv_c_$arg1=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-   ac_c_werror_flag=$bor_save_c_werror_flag
+   ac_c_werror_flag=$sdcc_save_c_werror_flag
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $bor_cv_c_pipe" >&5
-$as_echo "$bor_cv_c_pipe" >&6; }
-   CFLAGS=$bor_save_CFLAGS
+eval ac_res=\$sdcc_cv_c_$arg1
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+   CFLAGS=$sdcc_save_CFLAGS
 
-  if test "$bor_cv_c_pipe" = "yes"; then
+  if test "$sdcc_cv_c_pipe" = "yes"; then
     CFLAGS="-pipe ${CFLAGS}"
     # Don't use "-pipe" on x86 Solaris g++, since src/z80/ralloc2.cc dies with:
     # Assembler: ralloc2.cc
@@ -5076,7 +5167,7 @@ $as_echo "$bor_cv_c_pipe" >&6; }
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we are using the SunPRO C compiler" >&5
 $as_echo_n "checking whether we are using the SunPRO C compiler... " >&6; }
-if ${bor_cv_c_compiler_sunpro+:} false; then :
+if ${sdcc_cv_c_compiler_sunpro+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -5094,17 +5185,16 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  bor_compiler_sunpro=yes
+  sdcc_cv_c_compiler_sunpro=yes
 else
-  bor_compiler_sunpro=no
+  sdcc_cv_c_compiler_sunpro=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-bor_cv_c_compiler_sunpro=$bor_compiler_sunpro
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $bor_cv_c_compiler_sunpro" >&5
-$as_echo "$bor_cv_c_compiler_sunpro" >&6; }
-  if test "$bor_cv_c_compiler_sunpro" = "yes"; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $sdcc_cv_c_compiler_sunpro" >&5
+$as_echo "$sdcc_cv_c_compiler_sunpro" >&6; }
+  if test "$sdcc_cv_c_compiler_sunpro" = "yes"; then
     C99_FLAG="-xc99"
     CFLAGS="-xO2 ${C99_FLAG} ${CFLAGS}"
     CXXFLAGS="-xO2 ${CXXFLAGS}"
@@ -5115,6 +5205,107 @@ fi
 
 
 
+
+
+# SDCC_C_UNNAMED_STRUCT_TAG ()
+# chech whether C compiler supports tag in unnamed struct
+# -------------------------------------------------------------------------
+
+
+
+  if test "$ac_cv_c_compiler_gnu" = "yes"; then
+    arg1=`echo -fms-extensions | sed -e"s/^-*//" -e"s/-/_/"`
+ac_test_CFLAGS=${CFLAGS+set}
+sdcc_save_CFLAGS=$CFLAGS
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C accepts -fms-extensions" >&5
+$as_echo_n "checking whether C accepts -fms-extensions... " >&6; }
+if eval \${sdcc_cv_c_$arg1+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  sdcc_save_c_werror_flag=$ac_c_werror_flag
+   ac_c_werror_flag=yes
+
+   CFLAGS="-fms-extensions"
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval sdcc_cv_c_$arg1=yes
+else
+  eval sdcc_cv_c_$arg1=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+   ac_c_werror_flag=$sdcc_save_c_werror_flag
+fi
+eval ac_res=\$sdcc_cv_c_$arg1
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+   CFLAGS=$sdcc_save_CFLAGS
+
+  else
+    sdcc_cv_c_fms_extensions=no
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C supports tag in unnamed struct" >&5
+$as_echo_n "checking whether C supports tag in unnamed struct... " >&6; }
+if ${sdcc_cv_c_unnamed_struct_tag+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test "$sdcc_cv_c_fms_extensions" = "yes"; then
+      CFLAGS="-fms-extensions ${CFLAGS}"
+    fi
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+struct s1 {
+  int a;
+};
+
+struct s2 {
+  struct s1;
+  int b;
+};
+
+int
+main ()
+{
+
+  struct s2 s;
+
+  s.a = 1;
+  s.b = 2;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+        sdcc_cv_c_unnamed_struct_tag=yes
+
+cat >>confdefs.h <<_ACEOF
+#define UNNAMED_STRUCT_TAG 1
+_ACEOF
+
+
+else
+
+        sdcc_cv_c_unnamed_struct_tag=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $sdcc_cv_c_unnamed_struct_tag" >&5
+$as_echo "$sdcc_cv_c_unnamed_struct_tag" >&6; }
 
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -5285,6 +5476,39 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+# The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of long long" >&5
+$as_echo_n "checking size of long long... " >&6; }
+if ${ac_cv_sizeof_long_long+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (long long))" "ac_cv_sizeof_long_long"        "$ac_includes_default"; then :
+
+else
+  if test "$ac_cv_type_long_long" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute sizeof (long long)
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_sizeof_long_long=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_long_long" >&5
+$as_echo "$ac_cv_sizeof_long_long" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_LONG_LONG $ac_cv_sizeof_long_long
+_ACEOF
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether char is unsigned" >&5
 $as_echo_n "checking whether char is unsigned... " >&6; }
 if ${ac_cv_c_char_unsigned+:} false; then :
@@ -5336,6 +5560,10 @@ type_name()
     echo "long"
     exit
   fi
+  if expr "$ac_cv_sizeof_long_long" '>=' "$1" >/dev/null; then
+    echo "long long"
+    exit
+  fi
   echo "long"
 }
 
@@ -5359,6 +5587,11 @@ $as_echo_n "checking type name for dword... " >&6; }
 TYPE_DWORD=`type_name 4`
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $TYPE_DWORD" >&5
 $as_echo "$TYPE_DWORD" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking type name for qword" >&5
+$as_echo_n "checking type name for qword... " >&6; }
+TYPE_QWORD=`type_name 8`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $TYPE_QWORD" >&5
+$as_echo "$TYPE_QWORD" >&6; }
 
 
 cat >>confdefs.h <<_ACEOF
@@ -5373,6 +5606,11 @@ _ACEOF
 
 cat >>confdefs.h <<_ACEOF
 #define TYPE_DWORD $TYPE_DWORD
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define TYPE_QWORD $TYPE_QWORD
 _ACEOF
 
 
@@ -5392,29 +5630,68 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+cat >>confdefs.h <<_ACEOF
+#define TYPE_UQWORD unsigned $TYPE_QWORD
+_ACEOF
 
-# SDCC_BUILD_BIGENDIAN ([ACTION-IF-TRUE], [ACTION-IF-FALSE], [ACTION-IF-UNKNOWN])
-# -------------------------------------------------------------------------
-# SDCC_BUILD_BIGENDIAN
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether host machine byte ordering is bigendian" >&5
-$as_echo_n "checking whether host machine byte ordering is bigendian... " >&6; }
-if ${sdcc_cv_build_bigendian+:} false; then :
+# Checking whether byte ordering is bigendian
+# ===========================================================================
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
+$as_echo_n "checking whether byte ordering is bigendian... " >&6; }
+if ${ac_cv_c_bigendian+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  # See if sys/param.h defines the BYTE_ORDER macro.
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+  ac_cv_c_bigendian=unknown
+    # See if we're dealing with a universal compiler.
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifndef __APPLE_CC__
+	       not a universal capable compiler
+	     #endif
+	     typedef int dummy;
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+	# Check for potential -arch flags.  It is not universal unless
+	# there are at least two -arch flags with different values.
+	ac_arch=
+	ac_prev=
+	for ac_word in $CC $CFLAGS $CPPFLAGS $LDFLAGS; do
+	 if test -n "$ac_prev"; then
+	   case $ac_word in
+	     i?86 | x86_64 | ppc | ppc64)
+	       if test -z "$ac_arch" || test "$ac_arch" = "$ac_word"; then
+		 ac_arch=$ac_word
+	       else
+		 ac_cv_c_bigendian=universal
+		 break
+	       fi
+	       ;;
+	   esac
+	   ac_prev=
+	 elif test "x$ac_word" = "x-arch"; then
+	   ac_prev=arch
+	 fi
+       done
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test $ac_cv_c_bigendian = unknown; then
+      # See if sys/param.h defines the BYTE_ORDER macro.
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/types.h>
-#include <sys/param.h>
+	     #include <sys/param.h>
 
 int
 main ()
 {
-#if  ! (defined BYTE_ORDER && defined BIG_ENDIAN && defined LITTLE_ENDIAN \
-        && BYTE_ORDER && BIG_ENDIAN && LITTLE_ENDIAN)
- bogus endian macros
-#endif
+#if ! (defined BYTE_ORDER && defined BIG_ENDIAN \
+		     && defined LITTLE_ENDIAN && BYTE_ORDER && BIG_ENDIAN \
+		     && LITTLE_ENDIAN)
+	      bogus endian macros
+	     #endif
 
   ;
   return 0;
@@ -5422,61 +5699,116 @@ main ()
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   # It does; now see whether it defined to BIG_ENDIAN or not.
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/types.h>
-#include <sys/param.h>
+		#include <sys/param.h>
 
 int
 main ()
 {
 #if BYTE_ORDER != BIG_ENDIAN
- not big endian
-#endif
+		 not big endian
+		#endif
 
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  sdcc_cv_build_bigendian=yes
+  ac_cv_c_bigendian=yes
 else
-  sdcc_cv_build_bigendian=no
+  ac_cv_c_bigendian=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-else
-  # It does not; compile a test program.
-if test "$cross_compiling" = yes; then :
-  # try to guess the endianness by grepping values into an object file
-  sdcc_cv_build_bigendian=unknown
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    fi
+    if test $ac_cv_c_bigendian = unknown; then
+      # See if <limits.h> defines _LITTLE_ENDIAN or _BIG_ENDIAN (e.g., Solaris).
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-short int ascii_mm[] = { 0x4249, 0x4765, 0x6E44, 0x6961, 0x6E53, 0x7953, 0 };
-short int ascii_ii[] = { 0x694C, 0x5454, 0x656C, 0x6E45, 0x6944, 0x6E61, 0 };
-void _ascii () { char *s = (char *) ascii_mm; s = (char *) ascii_ii; }
-short int ebcdic_ii[] = { 0x89D3, 0xE3E3, 0x8593, 0x95C5, 0x89C4, 0x9581, 0 };
-short int ebcdic_mm[] = { 0xC2C9, 0xC785, 0x95C4, 0x8981, 0x95E2, 0xA8E2, 0 };
-void _ebcdic () { char *s = (char *) ebcdic_mm; s = (char *) ebcdic_ii; }
+#include <limits.h>
+
 int
 main ()
 {
- _ascii (); _ebcdic ();
+#if ! (defined _LITTLE_ENDIAN || defined _BIG_ENDIAN)
+	      bogus endian macros
+	     #endif
+
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  if grep BIGenDianSyS conftest.$ac_objext >/dev/null ; then
-  sdcc_cv_build_bigendian=yes
+  # It does; now see whether it defined to _BIG_ENDIAN or not.
+	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <limits.h>
+
+int
+main ()
+{
+#ifndef _BIG_ENDIAN
+		 not big endian
+		#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_c_bigendian=yes
+else
+  ac_cv_c_bigendian=no
 fi
-if grep LiTTleEnDian conftest.$ac_objext >/dev/null ; then
-  if test "$sdcc_cv_build_bigendian" = unknown; then
-    sdcc_cv_build_bigendian=no
-  else
-    # finding both strings is unlikely to happen, but who knows?
-    sdcc_cv_build_bigendian=unknown
-  fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    fi
+    if test $ac_cv_c_bigendian = unknown; then
+      # Compile a test program.
+      if test "$cross_compiling" = yes; then :
+  # Try to guess by grepping values from an object file.
+	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+short int ascii_mm[] =
+		  { 0x4249, 0x4765, 0x6E44, 0x6961, 0x6E53, 0x7953, 0 };
+		short int ascii_ii[] =
+		  { 0x694C, 0x5454, 0x656C, 0x6E45, 0x6944, 0x6E61, 0 };
+		int use_ascii (int i) {
+		  return ascii_mm[i] + ascii_ii[i];
+		}
+		short int ebcdic_ii[] =
+		  { 0x89D3, 0xE3E3, 0x8593, 0x95C5, 0x89C4, 0x9581, 0 };
+		short int ebcdic_mm[] =
+		  { 0xC2C9, 0xC785, 0x95C4, 0x8981, 0x95E2, 0xA8E2, 0 };
+		int use_ebcdic (int i) {
+		  return ebcdic_mm[i] + ebcdic_ii[i];
+		}
+		extern int foo;
+
+int
+main ()
+{
+return use_ascii (foo) == use_ebcdic (foo);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  if grep BIGenDianSyS conftest.$ac_objext >/dev/null; then
+	      ac_cv_c_bigendian=yes
+	    fi
+	    if grep LiTTleEnDian conftest.$ac_objext >/dev/null ; then
+	      if test "$ac_cv_c_bigendian" = unknown; then
+		ac_cv_c_bigendian=no
+	      else
+		# finding both strings is unlikely to happen, but who knows?
+		ac_cv_c_bigendian=unknown
+	      fi
+	    fi
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 else
@@ -5487,44 +5819,47 @@ int
 main ()
 {
 
-  /* Are we little or big endian?  From Harbison&Steele.  */
-  union
-  {
-    long int l;
-    char c[sizeof (long int)];
-  } u;
-  u.l = 1;
-  return u.c[sizeof (long int) - 1] == 1;
+	     /* Are we little or big endian?  From Harbison&Steele.  */
+	     union
+	     {
+	       long int l;
+	       char c[sizeof (long int)];
+	     } u;
+	     u.l = 1;
+	     return u.c[sizeof (long int) - 1] == 1;
 
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_run "$LINENO"; then :
-  sdcc_cv_build_bigendian=no
+  ac_cv_c_bigendian=no
 else
-  sdcc_cv_build_bigendian=yes
+  ac_cv_c_bigendian=yes
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
+    fi
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $sdcc_cv_build_bigendian" >&5
-$as_echo "$sdcc_cv_build_bigendian" >&6; }
-case $sdcc_cv_build_bigendian in
-  yes)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_bigendian" >&5
+$as_echo "$ac_cv_c_bigendian" >&6; }
+ case $ac_cv_c_bigendian in #(
+   yes)
+     $as_echo "#define WORDS_BIGENDIAN 1" >>confdefs.h
+;; #(
+   no)
+      ;; #(
+   universal)
 
-$as_echo "#define BUILD_WORDS_BIGENDIAN 1" >>confdefs.h
- ;;
-  no)
-     ;;
-  *)
-    as_fn_error $? "unknown endianness
-presetting sdcc_cv_build_bigendian=no (or yes) will help" "$LINENO" 5 ;;
-esac
+$as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
+
+     ;; #(
+   *)
+     as_fn_error $? "unknown endianness
+ presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5 ;;
+ esac
 
 
 # Set standard installation paths
@@ -7195,6 +7530,7 @@ LTLIBOBJS=$ac_ltlibobjs
 
 
 
+
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0
 ac_clean_files_save=$ac_clean_files
@@ -7789,7 +8125,6 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "sdccconf.h") CONFIG_HEADERS="$CONFIG_HEADERS sdccconf.h:sdccconf_in.h" ;;
-    "custom.h") CONFIG_HEADERS="$CONFIG_HEADERS custom.h:custom_in.h" ;;
     "sdas/linksrc/asxxxx_config.h") CONFIG_HEADERS="$CONFIG_HEADERS sdas/linksrc/asxxxx_config.h" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
     "src/avr/Makefile") CONFIG_FILES="$CONFIG_FILES src/avr/Makefile" ;;
@@ -8789,13 +9124,15 @@ nonFreeLibPath3=`echo "$nonFreeLibPath3" | sed 's,\\\\\\\\,\\\\,g'`
 { $as_echo "$as_me:${as_lineno-$LINENO}: result:
 sdcc ${VERSION} is now configured for
 
-  Build:                ${build_alias}
-  Host:                 ${host_alias}
+  Build:                ${build}
+  Host:                 ${host}
   Source directory:     ${srcdir}
   C compiler:           ${CC}
   CFLAGS:               ${CFLAGS}
   C++ compiler:         ${CXX}
   CXXFLAGS:             ${CXXFLAGS}
+  CPPFLAGS:             ${CPPFLAGS}
+  LDFLAGS:              ${LDFLAGS}
 
   ENABLED Ports:
     avr                 ${enable_avr_port}
@@ -8850,13 +9187,15 @@ sdcc ${VERSION} is now configured for
 $as_echo "
 sdcc ${VERSION} is now configured for
 
-  Build:                ${build_alias}
-  Host:                 ${host_alias}
+  Build:                ${build}
+  Host:                 ${host}
   Source directory:     ${srcdir}
   C compiler:           ${CC}
   CFLAGS:               ${CFLAGS}
   C++ compiler:         ${CXX}
   CXXFLAGS:             ${CXXFLAGS}
+  CPPFLAGS:             ${CPPFLAGS}
+  LDFLAGS:              ${LDFLAGS}
 
   ENABLED Ports:
     avr                 ${enable_avr_port}

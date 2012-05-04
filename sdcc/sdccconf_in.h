@@ -3,15 +3,14 @@
 #ifndef SDCCCONF_HEADER
 #define SDCCCONF_HEADER
 
+/* Define if building universal (internal helper macro) */
+#undef AC_APPLE_UNIVERSAL_BUILD
+
 /* XXX */
 #undef BIN2DATA_DIR
 
 /* XXX */
 #undef BINDIR
-
-/* Define to 1 if your processor stores words with the most significant byte
-   first (like Motorola and SPARC, unlike Intel and VAX). */
-#undef BUILD_WORDS_BIGENDIAN
 
 /* XXX */
 #undef DATADIR
@@ -261,10 +260,16 @@
 #undef TYPE_DWORD
 
 /* XXX */
+#undef TYPE_QWORD
+
+/* XXX */
 #undef TYPE_UBYTE
 
 /* XXX */
 #undef TYPE_UDWORD
+
+/* XXX */
+#undef TYPE_UQWORD
 
 /* XXX */
 #undef TYPE_UWORD
@@ -272,10 +277,24 @@
 /* XXX */
 #undef TYPE_WORD
 
+/* Define to 1 if c supports tags in unnamed struct. */
+#undef UNNAMED_STRUCT_TAG
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif
+
 /* Define to 1 if type `char' is unsigned and you are not using gcc.  */
 #ifndef __CHAR_UNSIGNED__
 # undef __CHAR_UNSIGNED__
 #endif
 
-#include "custom.h"
 #endif /* SDCCCONF_HEADER */

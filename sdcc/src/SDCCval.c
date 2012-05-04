@@ -674,7 +674,24 @@ cheapestVal (value * val)
   return (val);
 }
 
-/*--------------------------------------------------------------------*/
+/*-----------------------------------------------------------------*/
+/* double2ul - double to unsigned long conversion                  */
+/*-----------------------------------------------------------------*/
+unsigned long
+double2ul (double val)
+{
+/*
+ * See ISO/IEC 9899, chapter 6.3.1.4 Real floating and integer:
+ * If the value of the integral part cannot be represented by the integer type, the behavior is undefined.
+ * This shows up on Mac OS X i386 platform which useus SSE unit instead of the x87 FPU for floating-point operations
+ */
+/*
+ * on Mac OS X ppc (long) 2147483648.0 equals to 2147483647, so we explicitely convert it to 0x80000000
+ * on other known platforms (long) 2147483648.0 equals to -2147483648
+ */
+  return ((val) < 0) ? (((val) < -2147483647.0) ? 0x80000000UL : (unsigned long) -((long) -(val))) : (unsigned long) (val);
+}
+ /*--------------------------------------------------------------------*/
 /* checkConstantRange - check if constant fits in numeric range of    */
 /* var type in comparisons and assignments                            */
 /*--------------------------------------------------------------------*/
@@ -1227,8 +1244,7 @@ strVal (const char *s)
   SPEC_SCLS (val->etype) = S_LITERAL;
   SPEC_CONST (val->etype) = 1;
 
-  SPEC_CVAL (val->etype).v_char = Safe_alloc (strlen (s) + 1);
-  DCL_ELEM (val->type) = copyStr (SPEC_CVAL (val->etype).v_char, s);
+  SPEC_CVAL (val->etype).v_char = copyStr (s, &DCL_ELEM (val->type));
 
   return val;
 }
@@ -1521,6 +1537,88 @@ ulFromVal (value * val)
   werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "ulFromVal: unknown value");
   return 0;
 }
+
+/*------------------------------------------------------------------*/
+/* byteOfVal - extract a byte of a value                            */
+/*             offset = 0 (LSB) ... n-1 (MSB)                       */
+/*             higher offsets of signed ints will be sign extended, */
+/*             other types will be extended with zero padding       */
+/*------------------------------------------------------------------*/
+unsigned char
+byteOfVal (value * val, int offset)
+{
+  unsigned char *p;
+  int shift = 8*offset;
+
+  if (!val)
+    return 0;
+
+  if (val->etype && SPEC_SCLS (val->etype) != S_LITERAL)
+    {
+      werror (E_CONST_EXPECTED, val->name);
+      return 0;
+    }
+ 
+  /* if it is not a specifier then we can assume that */
+  /* it will be an unsigned long                      */
+  /* 2012-Apr-30 EEP - Why is this true?              */
+  if (!IS_SPEC (val->type))
+    return offset < 4 ? (SPEC_CVAL (val->etype).v_ulong >> shift) & 0xff : 0;
+
+  if (SPEC_NOUN (val->etype) == V_FLOAT)
+    {
+      float f = SPEC_CVAL (val->etype).v_float;
+
+      if (offset > 3)
+        return 0;
+      p = (unsigned char *)&f;
+#ifdef WORDS_BIGENDIAN
+      p += 3 - offset;
+#else
+      p += offset;
+#endif
+      return *p;      
+    }
+
+  if (SPEC_NOUN (val->etype) == V_FIXED16X16)
+    return offset < 4 ? (SPEC_CVAL (val->etype).v_fixed16x16 >> shift) & 0xff : 0;
+
+  if (SPEC_LONG (val->etype))
+    {
+      if (SPEC_USIGN (val->etype))
+        return offset < 4 ? (SPEC_CVAL (val->etype).v_ulong >> shift) & 0xff : 0;
+      else
+        return offset < 4 ? (SPEC_CVAL (val->etype).v_long >> shift) & 0xff : 
+               (SPEC_CVAL (val->etype).v_long < 0 ? 0xff : 0);
+    }
+
+  if (SPEC_NOUN (val->etype) == V_INT)
+    {
+      if (SPEC_USIGN (val->etype))
+        return offset < 2 ? (SPEC_CVAL (val->etype).v_uint >> shift) & 0xff : 0;
+      else
+        return offset < 2 ? (SPEC_CVAL (val->etype).v_int >> shift) & 0xff :
+               (SPEC_CVAL (val->etype).v_int < 0 ? 0xff : 0);
+    }
+
+  if (SPEC_NOUN (val->etype) == V_CHAR)
+    {
+      if (SPEC_USIGN (val->etype))
+        return offset < 1 ? SPEC_CVAL (val->etype).v_uint & 0xff : 0;
+      else
+        return offset < 1 ? SPEC_CVAL (val->etype).v_int & 0xff :
+               (SPEC_CVAL (val->etype).v_int < 0 ? 0xff : 0);
+    }
+
+  if (IS_BOOL (val->etype) || IS_BITVAR (val->etype))
+    return offset < 2 ? (SPEC_CVAL (val->etype).v_uint >> shift) & 0xff : 0;
+
+  /* we are lost ! */
+  werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "byteOfVal: unknown value");
+  return 0;
+  
+}
+
 
 /*-----------------------------------------------------------------*/
 /* doubleFromFixed16x16 - convert a fixed16x16 to double           */

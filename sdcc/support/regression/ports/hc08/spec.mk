@@ -1,7 +1,5 @@
 # Regression test specification for the hc08 target running with uCsim
 
-CC_FOR_BUILD = $(CC)
-
 # path to uCsim
 ifdef SDCC_BIN_PATH
   UCHC08C = $(SDCC_BIN_PATH)/shc08$(EXEEXT)
@@ -60,12 +58,9 @@ $(PORT_CASES_DIR)/fwk.lib: $(srcdir)/fwk/lib/fwk.lib
 # run simulator with 10 seconds timeout
 %.out: %$(BINEXT) $(CASES_DIR)/timeout
 	mkdir -p $(dir $@)
-	-$(CASES_DIR)/timeout 10 $(EMU) $< < $(PORTS_DIR)/$(PORT)/uCsim.cmd > $@ \
+	-$(CASES_DIR)/timeout 30 $(EMU) $< < $(PORTS_DIR)/$(PORT)/uCsim.cmd > $@ \
 	  || echo -e --- FAIL: \"timeout, simulation killed\" in $(<:$(BINEXT)=.c)"\n"--- Summary: 1/1/1: timeout >> $@
 	python $(srcdir)/get_ticks.py < $@ >> $@
 	-grep -n FAIL $@ /dev/null || true
-
-$(CASES_DIR)/timeout: $(srcdir)/fwk/lib/timeout.c
-	$(CC_FOR_BUILD) $(CFLAGS) $< -o $@
 
 _clean:

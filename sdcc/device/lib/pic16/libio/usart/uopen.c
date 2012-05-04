@@ -5,7 +5,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -62,9 +62,16 @@ usart_open (unsigned char config, sdcc_spbrg_t spbrg) __wparam
     RCSTAbits.SREN = 1;
 
   if (config & 0x10)
-    TXSTAbits.BRGH = 1;
+    {
+      TXSTAbits.BRGH = 1;
+#if !__SDCC_NO_SPBRGH
+      BAUDCONbits.BRG16 = 1;
+    }
   else
-    TXSTAbits.BRGH = 0;
+    {
+      BAUDCONbits.BRG16 = 0;
+#endif  /* !__SDCC_NO_SPBRGH */
+    }
 
   /* TX interrupts */
 #if defined(pic18f66j60) || defined(pic18f66j65) || \
@@ -122,6 +129,10 @@ usart_open (unsigned char config, sdcc_spbrg_t spbrg) __wparam
   /* Configure RX/TX pins as inputs. */
   TRISBbits.TRISB1 = 1;
   TRISBbits.TRISB4 = 1;
+#elif (__SDCC_USART_STYLE == 1812300)
+  /* Configure RX/TX pins as inputs. */
+  TRISAbits.TRISA2 = 1;
+  TRISAbits.TRISA3 = 1;
 #elif (__SDCC_USART_STYLE == 1813502)
   /* Configure RX pin as digital pin. */
   ANSELHbits.ANS11 = 0;

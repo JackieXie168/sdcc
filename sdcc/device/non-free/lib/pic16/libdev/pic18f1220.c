@@ -6,7 +6,7 @@
  *
  * January, 2004
  * The GNU PIC Library is maintained by,
- * 	Vangelis Rokas <vrokas@otenet.gr>
+ *      Vangelis Rokas <vrokas@otenet.gr>
  *
  * $Id$
  *
@@ -91,7 +91,6 @@ volatile __ADCON0bits_t __at (0xfc2) ADCON0bits;
 
 __sfr __at (0xfc3) ADRESL;
 __sfr __at (0xfc4) ADRESH;
-__sfr __at (0xfc9) SSPBUF; /* unimplemented */
 __sfr __at (0xfca) T2CON;
 volatile __T2CONbits_t __at (0xfca) T2CONbits;
 

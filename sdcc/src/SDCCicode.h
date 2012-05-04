@@ -185,7 +185,7 @@ typedef struct iCode
 
   symbol *label;                /* for a goto statement     */
 
-  char *inlineAsm;              /* pointer to inline assembler code */
+  const char *inlineAsm;        /* pointer to inline assembler code */
   literalList *arrayInitList;   /* point to array initializer list. */
 
   int lineno;                   /* file & lineno for debug information */
@@ -313,7 +313,7 @@ iCode *iCodeFromAst (ast *);
 int isiCodeEqual (iCode *, iCode *);
 int isOperandEqual (operand *, operand *);
 iCodeTable *getTableEntry (int);
-int isOperandLiteral (operand *);
+int isOperandLiteral (const operand * const);
 operand *operandOperation (operand *, operand *, int, sym_link *);
 double operandLitValue (operand *);
 operand *operandFromLit (double);

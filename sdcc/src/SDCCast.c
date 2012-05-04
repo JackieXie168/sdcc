@@ -72,13 +72,13 @@ void PA (ast * t);
 int inInitMode = 0;
 memmap *GcurMemmap = NULL;      /* points to the memmap that's currently active */
 struct dbuf_s *codeOutBuf;
+
 int
 ptt (ast * tree)
 {
   printTypeChain (tree->ftype, stdout);
   return 0;
 }
-
 
 /*-----------------------------------------------------------------*/
 /* newAst - creates a fresh node for an expression tree            */
@@ -704,7 +704,7 @@ funcOfType (const char *name, sym_link * type, sym_link * argType, int nArgs, in
 /* funcOfTypeVarg :- function of type with name and argtype        */
 /*-----------------------------------------------------------------*/
 symbol *
-funcOfTypeVarg (char *name, char *rtype, int nArgs, char **atypes)
+funcOfTypeVarg (const char *name, const char *rtype, int nArgs, const char **atypes)
 {
   symbol *sym;
   int i;
@@ -1249,7 +1249,6 @@ createIvalArray (ast * sym, sym_link * type, initList * ilist, ast * rootValue)
   return decorateType (resolveSymbols (rast), RESULT_TYPE_NONE);
 }
 
-
 /*-----------------------------------------------------------------*/
 /* createIvalCharPtr - generates initial values for char pointers  */
 /*-----------------------------------------------------------------*/
@@ -1291,7 +1290,7 @@ createIvalCharPtr (ast * sym, sym_link * type, ast * iexpr, ast * rootVal)
     {
       /* for each character generate an assignment */
       /* to the array element */
-      char *s = SPEC_CVAL (iexpr->etype).v_char;
+      const char *s = SPEC_CVAL (iexpr->etype).v_char;
       unsigned int i = 0;
       unsigned int symsize = getSize (type);
 
@@ -2056,7 +2055,6 @@ isConformingBody (ast * pbody, symbol * sym, ast * body)
             return FALSE;
         }
 
-
 /*------------------------------------------------------------------*/
     case '|':
     case '^':
@@ -2159,9 +2157,9 @@ isConformingBody (ast * pbody, symbol * sym, ast * body)
       /*       function call        */
       /*----------------------------*/
     case CALL:
-      /* if local & not passed as parameter &
+      /* if local & no parameters &
          not used to find the function then ok */
-      if (sym->level && !astHasSymbol (pbody->right, sym) && !astHasSymbol (pbody->left, sym))
+      if (sym->level && !pbody->right && !astHasSymbol (pbody->left, sym))
         {
           return TRUE;
         }
@@ -3962,10 +3960,11 @@ decorateType (ast * tree, RESULT_TYPE resultType)
           if (tree->opval.op == LEFT_OP || (tree->opval.op == RIGHT_OP && SPEC_USIGN (LETYPE (tree))))
             {
               werrorfl (tree->filename, tree->lineno, W_SHIFT_CHANGED, (tree->opval.op == LEFT_OP ? "left" : "right"));
-              tree->type = EX_VALUE;
-              tree->left = tree->right = NULL;
-              tree->opval.val = constCharVal (0);
-              TETYPE (tree) = TTYPE (tree) = tree->opval.val->type;
+	      /* Change shift op to comma op and replace the right operand with 0. */
+	      /* This preserves the left operand in case there were side-effects. */
+              tree->opval.op = ',';
+              tree->right->opval.val = constCharVal (0);
+              TETYPE (tree) = TTYPE (tree) = tree->right->opval.val->type;
               return tree;
             }
         }
@@ -4638,7 +4637,6 @@ decorateType (ast * tree, RESULT_TYPE resultType)
       TETYPE (tree) = getSpec (TTYPE (tree));
       return tree;
 
-
 #if 0                           // assignment operators are converted by the parser
       /*------------------------------------------------------------------*/
       /*----------------------------*/
@@ -5017,7 +5015,6 @@ sizeofOp (sym_link * type)
   return val;
 }
 
-
 #define IS_AND(ex) (ex->type == EX_OP && ex->opval.op == AND_OP )
 #define IS_OR(ex)  (ex->type == EX_OP && ex->opval.op == OR_OP )
 #define IS_NOT(ex) (ex->type == EX_OP && ex->opval.op == '!' )
@@ -5032,7 +5029,6 @@ sizeofOp (sym_link * type)
 static ast *
 backPatchLabels (ast * tree, symbol * trueLabel, symbol * falseLabel)
 {
-
   if (!tree)
     return NULL;
 
@@ -5129,7 +5125,6 @@ backPatchLabels (ast * tree, symbol * trueLabel, symbol * falseLabel)
 
   return tree;
 }
-
 
 /*-----------------------------------------------------------------*/
 /* createBlock - create expression tree for block                  */
@@ -5387,7 +5382,6 @@ createDo (symbol * trueLabel, symbol * continueLabel, symbol * falseLabel, ast *
 {
   ast *doTree;
 
-
   /* if the body does not exist then it is simple */
   if (!doBody)
     {
@@ -5453,7 +5447,6 @@ createFor (symbol * trueLabel, symbol * continueLabel,
 
   if (condExpr && !IS_IFX (condExpr))
     condExpr = newIfxNode (condExpr, trueLabel, falseLabel);
-
 
   /* attach condition label to condition */
   condExpr = createLabel (condLabel, condExpr);
@@ -5820,7 +5813,6 @@ tryNext2:
   /* (?symbol << 7) | (?symbol >> 1) */
   if (IS_RIGHT_OP (root->right) && IS_LEFT_OP (root->left))
     {
-
       if (!SPEC_USIGN (TETYPE (root->left->left)))
         return root;
 
@@ -5843,7 +5835,6 @@ tryNext2:
 
       /* whew got the first case : create the AST */
       return newNode (RRC, root->left->left, NULL);
-
     }
 
   /* not found return root */
@@ -5893,7 +5884,6 @@ optimizeSWAP (ast * root)
       /* found it : create the AST */
       return newNode (SWAP, root->left->left, NULL);
     }
-
 
   /* not found return root */
   return root;
@@ -6119,7 +6109,6 @@ fixupInlineInDeclarators (struct initList *ival, int level)
         }
     }
 }
-
 
 /*-----------------------------------------------------------------*/
 /* fixupInline - perform various fixups on an inline function tree */
@@ -6386,7 +6375,6 @@ expandInlineFuncsInDeclarators (struct initList *ival, ast * block)
     }
 }
 
-
 /*-----------------------------------------------------------------*/
 /* expandInlineFuncs - replace calls to inline functions with the  */
 /*                     function itself                             */
@@ -6437,7 +6425,6 @@ expandInlineFuncs (ast * tree, ast * block)
           copyAstLoc (temptree, tree);
           inlinetree2 = temptree;
 
-
           /* Handle the return type */
           if (!IS_VOID (func->type->next))
             {
@@ -6453,7 +6440,6 @@ expandInlineFuncs (ast * tree, ast * block)
               retsym = inlineTempVar (func->type->next, block->level);
               inlineAddDecl (retsym, block, TRUE, TRUE);
             }
-
 
           inlinetree = newNode (BLOCK, NULL, inlinetree2);
           copyAstLoc (inlinetree, tree);
@@ -6724,7 +6710,6 @@ skipall:
   addSet (&operKeyReset, name);
   applyToSet (operKeyReset, resetParmKey);
 
-
   if (options.debug)
     cdbStructBlock (1);
 
@@ -6739,6 +6724,35 @@ skipall:
   return NULL;
 }
 
+/*-----------------------------------------------------------------*/
+/* createConfigure - This is the key node that calls the iCode for */
+/*                  generating the code for a pic16 cofigure. Note */
+/*                  code is generated function by function, later  */
+/*                  when add inter-procedural analysis this will   */
+/*                  change                                         */
+/*-----------------------------------------------------------------*/
+ast *
+createConfigure (ast * body, const char * str)
+{
+  ast *ex;
+
+  ex = newNode (INLINEASM, NULL, NULL);
+  ex->values.inlineasm = str;
+  ex->decorated = 1;
+
+  if (options.dump_tree)
+    PA (ex);
+
+  if (!fatalError)
+    {
+      /* create the node & generate intermediate code */
+      GcurMemmap = code;
+      codeOutBuf = &code->oBuf;
+      eBBlockFromiCode (iCodeFromAst (ex));
+    }
+
+  return NULL;
+}
 
 #define INDENT(x,f) do { fprintf (f, "%s:%d:", tree->filename, tree->lineno); fprintf (f, "%*s", (x) & 0xff, ""); } while (0)
 /*-----------------------------------------------------------------*/
@@ -7051,7 +7065,6 @@ ast_print (ast * tree, FILE * outfile, int indent)
       ast_print (tree->left, outfile, indent + 2);
       ast_print (tree->right, outfile, indent + 2);
       return;
-
 
     /*------------------------------------------------------------------*/
     /*----------------------------*/

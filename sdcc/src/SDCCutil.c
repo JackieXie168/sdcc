@@ -847,51 +847,75 @@ octalEscape (const char **str)
 }
 
 /*!
-  /fn int copyStr (char *dest, char *src)
+  /fn const char *copyStr (const char *src, size_t *size)
 
-  Copies a source string to a dest buffer interpreting escape sequences
-  and special characters
+  Copies source string to a dynamically allocated buffer interpreting
+  escape sequences and special characters
 
-  /param dest Buffer to receive the resultant string
   /param src  Buffer containing the source string with escape sequecnes
-  /return Number of characters in output string
-
+  /param size Pointer to loction where the resulting buffer length is written
+  /return Dynamically allocated resulting buffer
 */
 
-int
-copyStr (char *dest, const char *src)
+const char *
+copyStr (const char *src, size_t *size)
 {
-  char *OriginalDest = dest;
+ const char *begin = NULL;
+ struct dbuf_s dbuf;
+
+  dbuf_init(&dbuf, 128);
 
   while (*src)
     {
       if (*src == '\"')
-        ++src;
+        {
+          if (begin)
+            {
+              /* copy what we have until now */
+              dbuf_append (&dbuf, begin, src - begin);
+              begin = NULL;
+            }
+          ++src;
+        }
       else if (*src == '\\')
         {
+          int c;
+
+          if (begin)
+            {
+              /* copy what we have until now */
+              dbuf_append (&dbuf, begin, src - begin);
+              begin = NULL;
+            }
           ++src;
           switch (*src)
             {
             case 'n':
-              *dest++ = '\n';
+              c = '\n';
               break;
+
             case 't':
-              *dest++ = '\t';
+              c = '\t';
               break;
+
             case 'v':
-              *dest++ = '\v';
+              c = '\v';
               break;
+
             case 'b':
-              *dest++ = '\b';
+              c = '\b';
               break;
+
             case 'r':
-              *dest++ = '\r';
+              c = '\r';
               break;
+
             case 'f':
-              *dest++ = '\f';
+              c = '\f';
               break;
+
             case 'a':
-              *dest++ = '\a';
+              c = '\a';
               break;
 
             case '0':
@@ -902,47 +926,57 @@ copyStr (char *dest, const char *src)
             case '5':
             case '6':
             case '7':
-              *dest++ = octalEscape (&src);
+              c = octalEscape (&src);
               --src;
               break;
 
             case 'x':
-              *dest++ = hexEscape (&src);
+              c = hexEscape (&src);
               --src;
               break;
 
             case 'u':
-              *dest++ = universalEscape (&src, 4);
+              c = universalEscape (&src, 4);
               --src;
               break;
 
             case 'U':
-              *dest++ = universalEscape (&src, 8);
+              c = universalEscape (&src, 8);
               --src;
               break;
 
             case '\\':
-              *dest++ = '\\';
-              break;
             case '\?':
-              *dest++ = '\?';
-              break;
             case '\'':
-              *dest++ = '\'';
-              break;
             case '\"':
-              *dest++ = '\"';
-              break;
             default:
-              *dest++ = *src;
+              c = *src;
+              break;
             }
+          dbuf_append_char (&dbuf, c);
           ++src;
         }
       else
-        *dest++ = *src++;
+        {
+          if (!begin)
+            begin = src;
+          ++src;
+        }
     }
 
-  *dest++ = '\0';
+  if (begin)
+    {
+      /* copy what we have until now */
+      dbuf_append (&dbuf, begin, src - begin);
+      begin = NULL;
+    }
 
-  return dest - OriginalDest;
+  if (size)
+    {
+      /* include null terminator character
+         appended by dbuf_detach_c_str() */
+      *size = dbuf_get_length (&dbuf) + 1;
+    }
+
+  return dbuf_detach_c_str (&dbuf);
 }

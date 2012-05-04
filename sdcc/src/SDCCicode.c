@@ -894,7 +894,7 @@ isOperandVolatile (operand * op, bool chkTemp)
 /* isOperandLiteral - returns 1 if an operand contains a literal   */
 /*-----------------------------------------------------------------*/
 int
-isOperandLiteral (operand * op)
+isOperandLiteral (const operand *const op)
 {
   sym_link *opetype;
 
@@ -1135,13 +1135,6 @@ getBuiltinParms (iCode * fic, int *pcount, operand ** parms)
   return ic;
 }
 
-/* This seems to be a GCC 4.6.[012] bug on i386 Linux and mingw platforms
- * see http://sourceforge.net/tracker/?func=detail&aid=3285611&group_id=599&atid=300599
- */
-#if (defined(__linux__) || defined(__MINGW32__)) && defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 6 && (__GNUC_PATCHLEVEL__ >= 0 && __GNUC_PATCHLEVEL__ <= 2)
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
-#endif
 /*-----------------------------------------------------------------*/
 /* operandOperation - performs operations on operands              */
 /*-----------------------------------------------------------------*/
@@ -1397,12 +1390,6 @@ operandOperation (operand * left, operand * right, int op, sym_link * type)
 
   return retval;
 }
-/* This seems to be a GCC 4.6.[012] bug on i386 Linux and mingw platforms
- * see http://sourceforge.net/tracker/?func=detail&aid=3285611&group_id=599&atid=300599
- */
-#if (defined(__linux__) || defined(__MINGW32__)) && defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 6 && (__GNUC_PATCHLEVEL__ >= 0 && __GNUC_PATCHLEVEL__ <= 2)
-#pragma GCC pop_options
-#endif
 
 /*-----------------------------------------------------------------*/
 /* isOperandEqual - compares two operand & return 1 if they are =  */
@@ -1903,7 +1890,7 @@ geniCodeRValue (operand * op, bool force)
       return op;
     }
 
-  ic = newiCode (GET_VALUE_AT_ADDRESS, op, NULL);
+  ic = newiCode (GET_VALUE_AT_ADDRESS, op, operandFromLit (0));
   if (IS_PTR (type) && op->isaddr && force)
     type = type->next;
 
@@ -2075,11 +2062,18 @@ geniCodeMultiply (operand * left, operand * right, RESULT_TYPE resultType)
   return IC_RESULT (ic);
 }
 
+static operand *
+geniCodeAdd (operand *left, operand *right, RESULT_TYPE resultType, int lvl);
+static operand *
+geniCodeLogic (operand *left, operand *right, int op, ast *tree);
+operand *
+geniCodeRightShift (operand *left, operand *right);
+
 /*-----------------------------------------------------------------*/
 /* geniCodeDivision - gen intermediate code for division           */
 /*-----------------------------------------------------------------*/
 static operand *
-geniCodeDivision (operand * left, operand * right, RESULT_TYPE resultType)
+geniCodeDivision (operand *left, operand *right, RESULT_TYPE resultType)
 {
   iCode *ic;
   int p2 = 0;
@@ -2092,9 +2086,33 @@ geniCodeDivision (operand * left, operand * right, RESULT_TYPE resultType)
   resType = usualBinaryConversions (&left, &right, resultType, '/');
 
   /* if the right is a literal & power of 2
+     and left is signed then make it a conditional addition
+     followed by right shift */
+#if 1
+  if (IS_LITERAL (retype) &&
+      !IS_FLOAT (letype) &&
+      !IS_FIXED (letype) && !IS_UNSIGNED (letype) && ((p2 = powof2 ((TYPE_TARGET_ULONG) ulFromVal (OP_VALUE (right)))) > 0) &&
+      (TARGET_Z80_LIKE || TARGET_IS_HC08))
+    {
+      operand *tmp;
+      symbol *label = newiTempLabel (NULL);
+
+      tmp = newiTempOperand (ltype, 0);
+      geniCodeAssign (tmp, left, 0, 0);
+
+      ic = newiCodeCondition (geniCodeLogic (tmp, operandFromLit (0), '<', 0), 0, label);
+      ADDTOCHAIN (ic);
+
+      geniCodeAssign (tmp, geniCodeAdd (tmp, operandFromLit ((1 << p2) - 1), 0, 0), 0, 0);
+      geniCodeLabel (label);
+      return (geniCodeCast (resType, geniCodeRightShift (tmp, operandFromLit (p2)), TRUE));
+    }
+  /* if the right is a literal & power of 2
      and left is unsigned then make it a
      right shift */
-  if (IS_LITERAL (retype) &&
+  else
+#endif
+       if (IS_LITERAL (retype) &&
       !IS_FLOAT (letype) &&
       !IS_FIXED (letype) && IS_UNSIGNED (letype) && ((p2 = powof2 ((TYPE_TARGET_ULONG) ulFromVal (OP_VALUE (right)))) > 0))
     {
@@ -3120,6 +3138,7 @@ operand *
 geniCodeAssign (operand * left, operand * right, int nosupdate, int strictLval)
 {
   iCode *ic;
+  sym_link *ltype;
 
   if (!left->isaddr && (!IS_ITEMP (left) || strictLval))
     {
@@ -3164,7 +3183,11 @@ geniCodeAssign (operand * left, operand * right, int nosupdate, int strictLval)
   ic->nosupdate = nosupdate;
   /* left could be a pointer assignment,
      return the properly casted right instead */
-  return right;
+  ltype = operandType (left);
+  if ((IS_PTR (ltype) && IS_BITVAR (ltype->next)) || IS_BITVAR (ltype))
+    return left;
+  else
+    return right;
 }
 
 /*-----------------------------------------------------------------*/

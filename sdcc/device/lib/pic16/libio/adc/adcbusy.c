@@ -5,7 +5,7 @@
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
-   Free Software Foundation; either version 2.1, or (at your option) any
+   Free Software Foundation; either version 2, or (at your option) any
    later version.
 
    This library is distributed in the hope that it will be useful,
@@ -46,6 +46,7 @@ char adc_busy(void) __naked
     return
   __endasm;
 #elif (__SDCC_ADC_STYLE == 1812200) \
+   || (__SDCC_ADC_STYLE == 1812300) \
    || (__SDCC_ADC_STYLE == 1813502) \
    || (__SDCC_ADC_STYLE == 1822200) \
    || (__SDCC_ADC_STYLE == 1823222) \

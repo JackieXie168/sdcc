@@ -82,78 +82,98 @@ all: test-ports
 
 # Test all of the ports
 test-ports:
+	$(MAKE) test-common
 	for i in $(ALL_PORTS); do $(MAKE) make_library test-port PORT=$$i; done
 
 # Helper rule for testing the z80 port only
 test-z80:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=z80
 
 # Helper rule for testing the z80 port only
 test-gbz80:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=gbz80
 
 # Helper rule for testing the mcs51 port only
 test-mcs51: test-mcs51-small test-mcs51-medium test-mcs51-large test-mcs51-huge test-mcs51-stack-auto test-mcs51-xstack-auto
 
 test-mcs51-small:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=mcs51-small
 
 test-mcs51-medium:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=mcs51-medium
 
 test-mcs51-large:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=mcs51-large
 
 test-mcs51-huge:
+	$(MAKE) test-common
 	$(MAKE) make_library test-port PORT=mcs51-huge
 
 test-mcs51-stack-auto:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=mcs51-stack-auto
 
 test-mcs51-xstack-auto:
+	$(MAKE) test-common
 	$(MAKE) make_library test-port PORT=mcs51-xstack-auto
 
 # Helper rule for testing the ds390 port only
 test-ds390:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=ds390
 
 # Helper rule for testing the z80 port only(use ucSim simulator)
 test-ucz80:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=ucz80
 
 # Helper rule for testing the z180 port only(use ucSim simulator)
 test-ucz180:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=ucz180
 
 # Helper rule for testing the gb/lr35902 port only(use ucSim simulator)
 test-ucgbz80:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=ucgbz80
 
 # Helper rule for testing the r2k port only(use ucSim simulator)
 test-ucr2k:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=ucr2k
 
 # Helper rule for testing the hc08 port only(use ucSim simulator)
 test-hc08:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=hc08
 
 # Helper rule for testing the xa51 port only(use ucSim simulator)
 test-xa51:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=xa51
 
 # Helper rule for testing the pic16 port only(use gpsim simulator)
 test-pic16:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=pic16
 
 # Helper rule for testing the pic14 port only(use gpsim simulator)
 test-pic14:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=pic14
 
 ### Helper rule for testing the host cc only
 test-host:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=host
 
 test-host2:
+	$(MAKE) test-common
 	$(MAKE) test-port PORT=host
 
 # Begin per-port rules
@@ -188,6 +208,8 @@ BINEXT = .bin
 # Currently unused.  Extension to append to intermediate directories.
 DIREXT =
 
+CC_FOR_BUILD = $(CC)
+
 # Only include if we're in a per-port call.
 ifdef PORT
   # include ./$(PORT)/spec.mk if exists, else include $(PORTS_DIR)/$(PORT)/spec.mk
@@ -209,11 +231,17 @@ endif
 # disk space is free.
 .PRECIOUS: $(PORT_CASES_DIR)/% %$(OBJEXT) %$(EXEEXT) %$(BINEXT)
 
-$(CASES_DIR):
-	mkdir -p $@
+# $(CASES_DIR)/stamp is really a proxy for $(CASES_DIR). We shouldn't use
+# $(CASES_DIR) as a dependency directly, because as a directory its time
+# stamp updates every time something in the directory is updated (which
+# can then cause spurious rebuilds of other targets that can conflict
+# with parallel make jobs)
+$(CASES_DIR)/stamp:
+	mkdir -p $(CASES_DIR)
+	touch $@
 
 # Rule to generate .c files from .m4 files
-$(CASES_DIR)/%.c: $(TESTS_DIR)/%.m4
+$(CASES_DIR)/%.c: $(TESTS_DIR)/%.m4 $(CASES_DIR)/stamp
 	m4 -I $(srcdir)/m4include rtmacros.m4 $< > $@
 
 # Rule to generate the iterations of a test suite off the source suite.
@@ -231,16 +259,23 @@ $(PORT_RESULTS_DIR)/%.out: $(PORT_CASES_DIR)/%/iterations.stamp
 
 # Rule to summarise the results for one port after all of the tests
 # have been run.
-port-results: port-dirs $(PORT_RESULTS)
-	echo Summary for \'$(PORT)\': `cat $(PORT_RESULTS) | python $(srcdir)/collate-results.py`
-	echo
+port-results: $(PORT_RESULTS)
+	cat $(PORT_RESULTS) | python $(srcdir)/collate-results.py $(PORT)
+
+port-fwklib: $(EXTRAS) $(FWKLIB)
 
 port-dirs:
 	mkdir -p $(PORT_CASES_DIR) $(PORT_RESULTS_DIR)
 	echo Running $(PORT) regression tests
 
-test-port: $(CASES_DIR) $(M_CASES)
+# Files shared between all ports need to be built by the test-common target,
+# which should always be built before the port specific targets.
+test-common: $(CASES_DIR)/stamp $(M_CASES) $(CASES_DIR)/timeout
+
+test-port:
 	# recurse: force vpath to re-read the $(CASES_DIR)
+	$(MAKE) port-dirs PORT=$(PORT)
+	$(MAKE) port-fwklib PORT=$(PORT)
 	$(MAKE) port-results PORT=$(PORT)
 
 # Begin rules that process each iteration generated from the source
@@ -258,6 +293,9 @@ iterations: $(RESULTS)
 # Rule to generate the overall target from the sub results.
 $(RESULTS): $(SUB_RESULTS)
 	cat $(SUB_RESULTS) > $@
+
+$(CASES_DIR)/timeout: $(srcdir)/fwk/lib/timeout.c $(CASES_DIR)/stamp
+	$(CC_FOR_BUILD) $(CFLAGS) $< -o $@
 
 # The remainder of the rules are in $PORT/spec.mk.  The port needs to
 # be able to turn an iterated test suite into a sub result, normally

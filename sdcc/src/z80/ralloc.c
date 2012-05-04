@@ -482,10 +482,13 @@ createStackSpil (symbol * sym)
 
   sloc->isref = 1;              /* to prevent compiler warning */
 
+  wassertl (currFunc, "Local variable used outside of function.");
+
   /* if it is on the stack then update the stack */
   if (IN_STACK (sloc->etype))
     {
-      currFunc->stack += getSize (sloc->type);
+      if (currFunc)
+        currFunc->stack += getSize (sloc->type);
       //_G.stackExtend += getSize (sloc->type);
     }
   else
@@ -1290,6 +1293,16 @@ fillGaps ()
       int i;
       int pdone = 0;
 
+      if (sym->accuse == ACCUSE_SCRATCH)
+        {
+          sym->nRegs = getSize (sym->type);
+          sym->regs[0] = regsZ80 + L_IDX;
+          sym->regs[1] = regsZ80 + H_IDX;
+          sym->accuse = 0;
+          sym->isspilt = FALSE;
+          continue;
+        }
+
       if (!sym->spillA || !sym->clashes || sym->remat)
         continue;
 
@@ -1418,7 +1431,7 @@ rUmaskForOp (const operand * op)
   if (sym->isspilt || !sym->nRegs)
     return NULL;
 
-  rumask = newBitVect (_G.nRegs);
+  rumask = newBitVect (_G.nRegs + (IS_GB ? 0 : 2));
 
   for (j = 0; j < sym->nRegs; j++)
     {
@@ -1444,7 +1457,7 @@ z80_rUmaskForOp (const operand * op)
 bitVect *
 regsUsedIniCode (iCode * ic)
 {
-  bitVect *rmask = newBitVect (_G.nRegs);
+  bitVect *rmask = newBitVect (_G.nRegs + (IS_GB ? 0 : 2));
 
   /* do the special cases first */
   if (ic->op == IFX)
@@ -1508,7 +1521,7 @@ createRegMask (eBBlock ** ebbs, int count)
           /* now create the register mask for those
              registers that are in use : this is a
              super set of ic->rUsed */
-          ic->rMask = newBitVect (_G.nRegs + 1);
+          ic->rMask = newBitVect (_G.nRegs + 1 + (IS_GB ? 0 : 2));
 
           /* for all live Ranges alive at this point */
           for (j = 1; j < ic->rlive->size; j++)
@@ -2094,7 +2107,6 @@ isBitwiseOptimizable (iCode * ic)
   return FALSE;
 }
 
-// HL handled by new register allocator
 static iCode *
 packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
 {
@@ -2102,6 +2114,7 @@ packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
   symbol *sym;
   iCode *ic, *dic;
   bool isFirst = TRUE;
+  bool exstk = (currFunc && currFunc->stack > 127);
 
   D (D_PACK_HLUSE3,
      ("Checking HL on %p lic key %u first def %u line %u:\n", OP_SYMBOL (op), lic->key, bitVectFirstBit (OP_DEFS (op)),
@@ -2123,7 +2136,7 @@ packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
   if (bitVectnBitsOn (OP_DEFS (op)) > 1)
     return NULL;
 
-  if ((!z80_opts.oldralloc && OPTRALLOC_A) ? getSize (operandType (op)) != 2 : getSize (operandType (op)) > 2)
+  if (!z80_opts.oldralloc ? getSize (operandType (op)) != 2 : getSize (operandType (op)) > 2)
     return NULL;
 
   /* And this is the definition */
@@ -2170,7 +2183,7 @@ packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
             continue;
         }
 
-      if (IC_RESULT (ic) && IS_SYMOP (IC_RESULT (ic)) && isOperandInDirSpace (IC_RESULT (ic)))
+      if (IC_RESULT (ic) && IS_SYMOP (IC_RESULT (ic)) && (isOperandInDirSpace (IC_RESULT (ic)) || exstk))
         return NULL;
 
       if (IC_LEFT (ic) && IS_SYMOP (IC_LEFT (ic)) && isOperandInDirSpace (IC_LEFT (ic)))
@@ -2210,19 +2223,12 @@ packRegsForHLUse3 (iCode * lic, operand * op, eBBlock * ebp)
           ic->op == UNARYMINUS ||
           ic->op == RETURN ||
           ic->op == RIGHT_OP ||
-          ic->op == '-' ||
+          (ic->op == '-'  && getSize (operandType (IC_RESULT (ic))) == 1) ||
           ic->op == BITWISEAND ||
           ic->op == '|' ||
           ic->op == '>' || ic->op == '<' || ic->op == EQ_OP || (ic->op == '+' && getSize (operandType (IC_RESULT (ic))) == 1))
         /* 16 bit addition uses add hl, rr */
         continue;
-
-      /* Strangely this leads to a code size increase for some functions. */
-      if(!z80_opts.oldralloc)
-        {
-          if (ic->op == '+' && getSize (operandType (IC_RESULT (ic))) == 2 && isOperandEqual (op, IC_RESULT (ic)))
-            continue;
-        }
 
       if (ic->op == '*' && isOperandEqual (op, IC_LEFT (ic)))
         continue;
@@ -2784,7 +2790,7 @@ packRegisters (eBBlock * ebp)
       if ((z80_opts.oldralloc || !OPTRALLOC_IY) && !DISABLE_PACK_IY && !IY_RESERVED && IS_ITEMP (IC_RESULT (ic)) && !IS_GB)
         packRegsForIYUse (ic, IC_RESULT (ic), ebp);
 
-      if ((z80_opts.oldralloc || !OPTRALLOC_A) && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
+      if (z80_opts.oldralloc && !DISABLE_PACK_ACC && IS_ITEMP (IC_RESULT (ic)) &&
           getSize (operandType (IC_RESULT (ic))) == 1)
         packRegsForAccUse2 (ic);
     }

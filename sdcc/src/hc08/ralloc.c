@@ -1830,9 +1830,9 @@ regTypeNum (eBBlock *ebbs)
                         getSize (sym->type = aggrToPtr (sym->type, FALSE)) :
                         getSize (sym->type));
 
-          if (sym->nRegs > 4)
+          if (sym->nRegs > 8)
             {
-              fprintf (stderr, "allocated more than 4 or 0 registers for type ");
+              fprintf (stderr, "allocated more than 8 registers for type ");
               printTypeChain (sym->type, stderr);
               fprintf (stderr, "\n");
             }
@@ -2636,7 +2636,6 @@ static int
 canUseAccOperand (iCode * ic, operand * op)
 {
   int size;
-  operand * otherOp;
 
   if (ic->op == IFX)
     {
@@ -2657,11 +2656,7 @@ canUseAccOperand (iCode * ic, operand * op)
   if (POINTER_SET (ic) && isOperandEqual (op, IC_RESULT (ic)))
     return 1;
 
-  if (isOperandEqual (op, IC_LEFT (ic)))
-    otherOp = IC_RIGHT (ic);
-  else if (isOperandEqual (op, IC_RIGHT (ic)))
-    otherOp = IC_LEFT (ic);
-  else
+  if (!isOperandEqual (op, IC_LEFT (ic)) && !isOperandEqual (op, IC_RIGHT (ic)))
     return 0;
 
   /* Generation of SEND is deferred until CALL; not safe */
@@ -2744,8 +2739,9 @@ packForPush (iCode * ic, eBBlock ** ebpp, int blockno)
   iCode *dic, *lic;
   bitVect *dbv;
   struct eBBlock * ebp=ebpp[blockno];
+  int disallowHiddenAssignment = 0;
 
-  if (ic->op != IPUSH || !IS_ITEMP (IC_LEFT (ic)))
+  if ((ic->op != IPUSH && ic->op != SEND) || !IS_ITEMP (IC_LEFT (ic)))
     return;
 
   /* must have only definition & one usage */
@@ -2777,6 +2773,12 @@ packForPush (iCode * ic, eBBlock ** ebpp, int blockno)
 
   if (IS_SYMOP(IC_RIGHT(dic)))
     {
+      if (IC_RIGHT (dic)->isvolatile)
+        return;
+
+      if (OP_SYMBOL (IC_RIGHT (dic))->addrtaken || isOperandGlobal (IC_RIGHT (dic)))
+        disallowHiddenAssignment = 1;
+
       /* make sure the right side does not have any definitions
          inbetween */
       dbv = OP_DEFS(IC_RIGHT(dic));
@@ -2784,6 +2786,8 @@ packForPush (iCode * ic, eBBlock ** ebpp, int blockno)
         {
           if (bitVectBitValue(dbv,lic->key))
             return ;
+          if (disallowHiddenAssignment && (lic->op == CALL || lic->op == PCALL || POINTER_SET (lic)))
+            return;
         }
       /* make sure they have the same type */
       if (IS_SPEC(operandType(IC_LEFT(ic))))
@@ -3108,7 +3112,7 @@ packRegisters (eBBlock ** ebpp, int blockno)
          -------------
          push V1
        */
-      if (ic->op == IPUSH)
+      if (ic->op == IPUSH || ic->op == SEND)
         {
           packForPush (ic, ebpp, blockno);
         }

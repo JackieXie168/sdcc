@@ -27,8 +27,8 @@ extern "C"
   #include "ralloc.h"
 };
 
-template <class I_t> void
-hc08_add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
+template <class I_t>
+static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
   const iCode *ic = n.ic;
   

@@ -94,11 +94,13 @@ typedef struct structdef
 {
   char tag[SDCC_NAME_MAX + 1];  /* tag part of structure      */
   unsigned char level;          /* Nesting level              */
+  int block;                    /* belongs to which block     */
   struct symbol *fields;        /* pointer to fields          */
   unsigned size;                /* sizeof the table in bytes  */
   int type;                     /* STRUCT or UNION            */
   bool b_flexArrayMember;       /* has got a flexible array member,
                                    only needed for syntax checks */
+  struct symbol *tagsym;        /* tag symbol (NULL if no tag) */
 }
 structdef;
 
@@ -148,6 +150,8 @@ STORAGE_CLASS;
 #define TYPE_TARGET_UCHAR TYPE_UBYTE
 #define TYPE_TARGET_UINT  TYPE_UWORD
 #define TYPE_TARGET_ULONG TYPE_UDWORD
+#define TYPE_TARGET_LONGLONG TYPE_QWORD
+#define TYPE_TARGET_ULONGLONG TYPE_UQWORD
 
 /* specifier is the last in the type-chain */
 typedef struct specifier
@@ -179,15 +183,17 @@ typedef struct specifier
   unsigned _stack;                  /* stack offset for stacked v */
   int argreg;                       /* reg no for regparm         */
   union
-  {                                 /* Values if constant or enum */
-    TYPE_TARGET_INT v_int;          /* 2 bytes: int and char values           */
-    char *v_char;                   /*          character string              */
-    TYPE_TARGET_UINT v_uint;        /* 2 bytes: unsigned int const value      */
-    TYPE_TARGET_LONG v_long;        /* 4 bytes: long constant value           */
-    TYPE_TARGET_ULONG v_ulong;      /* 4 bytes: unsigned long constant value  */
-    double v_float;                 /*          floating point constant value */
-    TYPE_TARGET_ULONG v_fixed16x16; /* 4 bytes: fixed point constant value    */
-    struct symbol *v_enum;          /* ptr to enum_list if enum==1            */
+  {                                   /* Values if constant or enum */
+    TYPE_TARGET_INT v_int;            /* 2 bytes: int and char values            */
+    const char *v_char;               /*          character string               */
+    TYPE_TARGET_UINT v_uint;          /* 2 bytes: unsigned int const value       */
+    TYPE_TARGET_LONG v_long;          /* 4 bytes: long constant value            */
+    TYPE_TARGET_ULONG v_ulong;        /* 4 bytes: unsigned long constant value   */
+    TYPE_TARGET_LONGLONG v_longlong;  /* 8 bytes: long long constant value       */
+    TYPE_TARGET_ULONGLONG v_ulonglong;/* 8 bytes: unsigned long long const value */
+    double v_float;                   /*          floating point constant value  */
+    TYPE_TARGET_ULONG v_fixed16x16;   /* 4 bytes: fixed point constant value     */
+    struct symbol *v_enum;            /* ptr to enum_list if enum==1             */
   }
   const_val;
   struct structdef *v_struct;       /* structure pointer      */
@@ -213,7 +219,7 @@ DECLARATOR_TYPE;
 typedef struct declarator
 {
   DECLARATOR_TYPE dcl_type;         /* POINTER,ARRAY or FUNCTION  */
-  unsigned int num_elem;            /* # of elems if type==array, */
+  size_t num_elem;                  /* # of elems if type==array, */
   /* always 0 for flexible arrays */
   unsigned ptr_const:1;             /* pointer is constant        */
   unsigned ptr_volatile:1;          /* pointer is volatile        */
@@ -586,16 +592,16 @@ extern symbol *fps16x16_lteq;
 extern symbol *fps16x16_gt;
 extern symbol *fps16x16_gteq;
 
-/* Dims: mul/div/mod, BYTE/WORD/DWORD, SIGNED/UNSIGNED/BOTH */
-extern symbol *muldiv[3][3][4];
-/* Dims: BYTE/WORD/DWORD SIGNED/UNSIGNED */
-extern sym_link *multypes[3][2];
-/* Dims: to/from float, BYTE/WORD/DWORD, SIGNED/USIGNED */
-extern symbol *conv[2][3][2];
-/* Dims: to/from fixed16x16, BYTE/WORD/DWORD/FLOAT, SIGNED/USIGNED */
-extern symbol *fp16x16conv[2][4][2];
-/* Dims: shift left/shift right, BYTE/WORD/DWORD, SIGNED/UNSIGNED */
-extern symbol *rlrr[2][3][2];
+/* Dims: mul/div/mod, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED/BOTH */
+extern symbol *muldiv[3][4][4];
+/* Dims: BYTE/WORD/DWORD/QWORD SIGNED/UNSIGNED */
+extern sym_link *multypes[4][2];
+/* Dims: to/from float, BYTE/WORD/DWORD/QWORD, SIGNED/USIGNED */
+extern symbol *conv[2][4][2];
+/* Dims: to/from fixed16x16, BYTE/WORD/DWORD/QWORD/FLOAT, SIGNED/USIGNED */
+extern symbol *fp16x16conv[2][5][2];
+/* Dims: shift left/shift right, BYTE/WORD/DWORD/QWORD, SIGNED/UNSIGNED */
+extern symbol *rlrr[2][4][2];
 
 #define SCHARTYPE       multypes[0][0]
 #define UCHARTYPE       multypes[0][1]
@@ -603,6 +609,8 @@ extern symbol *rlrr[2][3][2];
 #define UINTTYPE        multypes[1][1]
 #define LONGTYPE        multypes[2][0]
 #define ULONGTYPE       multypes[2][1]
+#define LONGLONGTYPE    multypes[3][0]
+#define ULONGLONGTYPE   multypes[3][1]
 
 extern sym_link *floatType;
 extern sym_link *fixed16x16Type;
