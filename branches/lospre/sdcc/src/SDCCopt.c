@@ -2132,9 +2132,9 @@ eBBlockFromiCode (iCode * ic)
      other support routines, since we can assume that there is no
      bank switching happening in those other support routines
      (but assume that it can happen in other functions) */
-  adjustIChain(ebbi->bbOrder, ebbi->count);
+  adjustIChain (ebbi->bbOrder, ebbi->count);
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
-  if(switchAddressSpacesOptimally (ic, ebbi))
+  if (switchAddressSpacesOptimally (ic, ebbi))
     switchAddressSpaces (ic); /* Fallback. Very unlikely to be triggered, unless --max-allocs-per-node is set to very small values or very weird control-flow graphs */
 
   /* Break down again and redo some steps to not confuse live range analysis. */
