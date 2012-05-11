@@ -2,7 +2,7 @@
 
 	* src/z80/ralloc2.cc,
 	  src/hc08/ralloc2.c:
-	  Bypass dry run for generatedm ic.
+	  Bypass dry run for generated ic.
 
 2012-05-10 Maarten Brock <sourceforge.brock AT dse.nl>
 

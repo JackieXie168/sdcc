@@ -23,7 +23,7 @@
 
 // A quick-and-dirty function to get the CFG from sdcc (a simplified version of the function from SDCCralloc.hpp).
 void
-create_cfg_naddr(cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
+create_cfg_lospre(cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
 {
   iCode *ic;
 
@@ -55,5 +55,17 @@ create_cfg_naddr(cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
         for (symbol *lbl = (symbol *)(setFirstItem (IC_JTLABELS (ic))); lbl; lbl = (symbol *)(setNextItem (IC_JTLABELS (ic))))
           boost::add_edge(key_to_index[ic->key], key_to_index[eBBWithEntryLabel(ebbi, lbl)->sch->key], 6.0f, cfg);
     }
+}
+
+void
+lospre (iCode *ic, ebbIndex *ebbi)
+{
+  cfg_lospre_t control_flow_graph;
+  tree_dec_lospre_t tree_decomposition;
+
+  create_cfg_lospre(control_flow_graph, ic, ebbi);
+
+  thorup_tree_decomposition(tree_decomposition, control_flow_graph);
+  nicify(tree_decomposition);
 }
 
