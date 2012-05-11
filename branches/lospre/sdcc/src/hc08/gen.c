@@ -78,7 +78,6 @@ extern struct dbuf_s *codeOutBuf;
 //static void saveRBank (int, iCode *, bool);
 static bool operandsEqu (operand * op1, operand * op2);
 static void loadRegFromConst (reg_info * reg, char *c);
-static char *aopName (asmop * aop);
 static asmop *newAsmop (short type);
 static char *aopAdrStr (asmop * aop, int loffset, bool bit16);
 #define RESULTONSTACK(x) \
@@ -519,7 +518,7 @@ adjustStack (int n)
     }
 }
 
-
+#if DD(1) -1 == 0
 /*--------------------------------------------------------------------------*/
 /* aopName - Return a string with debugging information about an asmop.     */
 /*--------------------------------------------------------------------------*/
@@ -567,6 +566,7 @@ aopName (asmop * aop)
 
   return "?";
 }
+#endif
 
 /*--------------------------------------------------------------------------*/
 /* loadRegFromAop - Load register reg from logical offset loffset of aop.   */
@@ -2577,8 +2577,6 @@ asmopToBool (asmop *aop, bool resultInA)
     }
 }
 
-
-
 /*-----------------------------------------------------------------*/
 /* genNot - generate code for ! operation                          */
 /*-----------------------------------------------------------------*/
@@ -2840,7 +2838,7 @@ pushSide (operand * oper, int size, iCode * ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* assignResultValue -               */
+/* assignResultValue -                                             */
 /*-----------------------------------------------------------------*/
 static void
 assignResultValue (operand * oper)
@@ -2853,7 +2851,7 @@ assignResultValue (operand * oper)
       if (!offset && AOP_TYPE (oper) == AOP_REG && AOP_SIZE (oper) > 1 && AOP (oper)->aopu.aop_reg[0]->rIdx == X_IDX)
         {
           pushReg (hc08_reg_a, TRUE);
-          delayed_x = true;
+          delayed_x = TRUE;
         }
       else
         transferAopAop (hc08_aop_pass[offset], 0, AOP (oper), offset);
@@ -2868,38 +2866,35 @@ assignResultValue (operand * oper)
 
 
 /*-----------------------------------------------------------------*/
-/* genIpush - genrate code for pushing this gets a little complex  */
+/* genIpush - generate code for pushing this gets a little complex */
 /*-----------------------------------------------------------------*/
 static void
 genIpush (iCode * ic)
 {
   int size, offset = 0;
 
-  D (emitcode (";     genIpush", ""));
+  D (emitcode (";", "genIpush"));
 
   /* if this is not a parm push : ie. it is spill push
      and spill push is always done on the local stack */
   if (!ic->parmPush)
     {
-
       /* and the item is spilt then do nothing */
       if (OP_SYMBOL (IC_LEFT (ic))->isspilt)
         return;
 
       aopOp (IC_LEFT (ic), ic, FALSE);
       size = AOP_SIZE (IC_LEFT (ic));
-      offset = 0;
       /* push it on the stack */
       while (size--)
         {
           loadRegFromAop (hc08_reg_a, AOP (IC_LEFT (ic)), offset++);
           pushReg (hc08_reg_a, TRUE);
         }
-
       return;
     }
 
-  /* this is a paramter push: in this case we call
+  /* this is a parameter push: in this case we call
      the routine to find the call and save those
      registers that need to be saved */
   if (!regalloc_dry_run) /* Cost for saving registers is counted at CALL or PCALL */
@@ -2908,10 +2903,8 @@ genIpush (iCode * ic)
   /* then do the push */
   aopOp (IC_LEFT (ic), ic, FALSE);
 
-
   // pushSide(IC_LEFT(ic), AOP_SIZE(IC_LEFT(ic)));
   size = AOP_SIZE (IC_LEFT (ic));
-  offset = 0;
 
 //  l = aopGet (AOP (IC_LEFT (ic)), 0, FALSE, TRUE);
   if (AOP_TYPE (IC_LEFT (ic)) == AOP_IMMD || AOP_TYPE (IC_LEFT (ic)) == AOP_LIT ||IS_AOP_HX (AOP (IC_LEFT (ic))))
@@ -2951,7 +2944,7 @@ genIpop (iCode * ic)
 {
   int size, offset;
 
-  D (emitcode (";     genIpop", ""));
+  D (emitcode (";", "genIpop"));
 
   /* if the temp was not pushed then */
   if (OP_SYMBOL (IC_LEFT (ic))->isspilt)
@@ -2965,9 +2958,9 @@ genIpop (iCode * ic)
       pullReg (hc08_reg_a);
       storeRegToAop (hc08_reg_a, AOP (IC_LEFT (ic)), offset--);
     }
+
   freeAsmop (IC_LEFT (ic), NULL, ic, TRUE);
 }
-
 
 /*-----------------------------------------------------------------*/
 /* genSend - gen code for SEND                                     */
@@ -3362,7 +3355,6 @@ genFunction (iCode * ic)
           regalloc_dry_run_cost++;
         }
     }
-
 }
 
 /*-----------------------------------------------------------------*/
@@ -3449,7 +3441,6 @@ genEndFunction (iCode * ic)
                     emitcode ("pop", "%s", hc08_regWithIdx (i)->name); /* Todo: Cost. Can't find this instruction in manual! */
                 }
             }
-
         }
 
       /* if debug then send end of function */
@@ -3461,7 +3452,6 @@ genEndFunction (iCode * ic)
       emitcode ("rts", "");
       regalloc_dry_run_cost++;
     }
-
 }
 
 /*-----------------------------------------------------------------*/
@@ -5116,7 +5106,7 @@ genCmpEQorNE (iCode * ic, iCode * ifx)
 /* hasInchc08 - operand is incremented before any other use        */
 /*-----------------------------------------------------------------*/
 iCode *
-hasInchc08 (const operand *op, const iCode *ic, int osize)
+hasInchc08 (operand *op, const iCode *ic, int osize)
 {
   sym_link *type = operandType (op);
   sym_link *retype = getSpec (type);
@@ -9015,8 +9005,9 @@ genReceive (iCode * ic)
 {
   int size;
   int offset;
-  D (emitcode (";     genReceive", ""));
   bool delayed_x = FALSE;
+
+  D (emitcode (";", "genReceive"));
 
   aopOp (IC_RESULT (ic), ic, FALSE);
   size = AOP_SIZE (IC_RESULT (ic));
