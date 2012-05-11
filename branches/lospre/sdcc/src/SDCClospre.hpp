@@ -23,13 +23,86 @@
 
 #include "SDCCtree_dec.hpp"
 
+extern "C"
+{
+#include "SDCCsymt.h"
+#include "SDCCicode.h"
+#include "SDCCBBlock.h"
+#include "SDCCopt.h"
+#include "SDCCy.h"
+}
+
+#ifdef HAVE_STX_BTREE_SET_H
+#include <stx/btree_set.h>
+#endif
+
+#ifdef HAVE_STX_BTREE_SET_H
+typedef stx::btree_set<bool> lospreset_t; // Faster than std::set
+#else
+typedef std::set<bool> lospreset_t;
+#endif
+
+struct assignment_lospre
+{
+  float s;
+  lospreset_t local;
+  std::vector<bool> global;
+
+  bool operator<(const assignment_lospre& a) const
+  {
+    lospreset_t::const_iterator i, ai, i_end, ai_end;
+
+    i_end = local.end();
+    ai_end = a.local.end();
+
+    for (i = local.begin(), ai = a.local.begin();; ++i, ++ai)
+      {
+        if (i == i_end)
+          return(true);
+        if (ai == ai_end)
+          return(false);
+
+        if (*i < *ai)
+          return(true);
+        if (*i > *ai)
+          return(false);
+
+        if (global[*i] < a.global[*ai])
+          return(true);
+        if (global[*i] > a.global[*ai])
+          return(false);
+      }
+  }
+};
+
+bool assignments_lospre_locally_same(const assignment_lospre &a1, const assignment_lospre &a2)
+{
+  if (a1.local != a2.local)
+    return(false);
+
+  lospreset_t::const_iterator i, i_end;
+  for (i = a1.local.begin(), i_end = a1.local.end(); i != i_end; ++i)
+    if (a1.global[*i] != a2.global[*i])
+      return(false);
+
+  return(true);
+}
+
 struct cfg_lospre_node
 {
   iCode *ic;
 };
 
+typedef std::list<assignment_lospre> assignment_list_lospre_t;
+
 struct tree_dec_lospre_node
 {
   std::set<unsigned int> bag;
+  assignment_list_lospre_t assignments;
 };
+
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_lospre_node, float> cfg_lospre_t; // The edge property is the cost of subdividing the edge and inserting an instruction (for now we always use 1, optimizing for code size, but relative execution frequency could be used when optimizing for speed or total energy consumption; aggregates thereof can be a good idea as well).
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, tree_dec_lospre_node> tree_dec_lospre_t;
+
+
 

@@ -237,7 +237,7 @@ static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I);
 template <class T_t>
 static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T);
 
-// Code for anotehr ic is generated when generating this one. Mark the other as generated. Port-specific.
+// Code for another ic is generated when generating this one. Mark the other as generated. Port-specific.
 static void extra_ic_generated(const iCode *ic);
 
 inline void
