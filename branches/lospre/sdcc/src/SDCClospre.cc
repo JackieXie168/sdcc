@@ -100,13 +100,13 @@ same_expression (const iCode *const lic, const iCode *const ric)
 }
 
 static void
-get_candidate_set(std::set<int> *c, iCode *sic)
+get_candidate_set(std::set<int> *c, const iCode *const sic)
 {
-  for (iCode *ic = sic; ic; ic = ic->next)
+  for (const iCode *ic = sic; ic; ic = ic->next)
     {
       if (!candidate_expression (ic))
         continue;
-      for (iCode *pic = sic; pic != ic; pic = pic->next)
+      for (const iCode *pic = sic; pic != ic; pic = pic->next)
         if (candidate_expression (pic) && same_expression (ic, pic) && c->find (pic->key) == c->end ())
           {
             // Found expression that occurs at least twice.
@@ -116,13 +116,31 @@ get_candidate_set(std::set<int> *c, iCode *sic)
     }
 }
 
+static void
+setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
+{
+  typedef boost::graph_traits<cfg_lospre_t>::vertex_descriptor vertex_t;
+
+  for (vertex_t i = 0; i < boost::num_vertices (*cfg); i++)
+    {
+       const iCode *const ic = (*cfg)[i].ic;
+       (*cfg)[i].uses = same_expression (eic, ic);
+       (*cfg)[i].invalidates = false;
+       // Todo: Do not invalidate pointer when dereferencing?
+       if (IC_RESULT (ic) && IC_LEFT (eic) && !IS_OP_LITERAL (IC_LEFT (eic)) && isOperandEqual (IC_LEFT (eic), IC_RESULT (ic)))
+         (*cfg)[i].invalidates = true;
+       if (IC_RESULT (ic) && IC_RIGHT (eic) && !IS_OP_LITERAL (IC_RIGHT (eic)) && isOperandEqual (IC_RIGHT (eic), IC_RESULT (ic)))
+         (*cfg)[i].invalidates = true;
+    }
+}
+
 void
-lospre (iCode *ic, ebbIndex *ebbi)
+lospre (iCode *sic, ebbIndex *ebbi)
 {
   cfg_lospre_t control_flow_graph;
   tree_dec_lospre_t tree_decomposition;
 
-  create_cfg_lospre (control_flow_graph, ic, ebbi);
+  create_cfg_lospre (control_flow_graph, sic, ebbi);
 
   thorup_tree_decomposition (tree_decomposition, control_flow_graph);
   nicify (tree_decomposition);
@@ -132,11 +150,19 @@ lospre (iCode *ic, ebbIndex *ebbi)
       change = false;
 
       std::set<int> candidate_set;
-      get_candidate_set (&candidate_set, ic);
+      get_candidate_set (&candidate_set, sic);
 
       std::set<int>::iterator ci, ci_end;
       for (ci = candidate_set.begin(), ci_end = candidate_set.end(); ci != ci_end; ++ci)
         {
+          const iCode *ic;
+          for (ic = sic; ic && ic->key != *ci; ic = ic->next);
+
+          if (!ic || !candidate_expression (ic))
+            continue;
+
+          setup_cfg_for_expression (&control_flow_graph, ic);
+
           std::cout << "Would look into removing redundancy for ic " << *ci << " now.\n";
         }
     }

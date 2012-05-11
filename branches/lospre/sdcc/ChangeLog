@@ -1,6 +1,7 @@
 2012-05-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCCopt.c,
+	  src/SDCCopt.c,
 	  src/SDCClospre.cc,
 	  Preparations for finding lospre optimization candidates.
 

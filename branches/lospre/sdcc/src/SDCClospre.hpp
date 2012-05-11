@@ -91,6 +91,9 @@ bool assignments_lospre_locally_same(const assignment_lospre &a1, const assignme
 struct cfg_lospre_node
 {
   iCode *ic;
+
+  bool uses;
+  bool invalidates;
 };
 
 typedef std::list<assignment_lospre> assignment_list_lospre_t;
