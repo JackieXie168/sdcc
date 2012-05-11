@@ -1651,7 +1651,7 @@ operandFromSymbol (symbol * sym)
 /* operandFromValue - creates an operand from value                */
 /*-----------------------------------------------------------------*/
 operand *
-operandFromValue (value * val)
+operandFromValue (value *val)
 {
   operand *op;
 

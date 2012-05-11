@@ -2122,6 +2122,16 @@ eBBlockFromiCode (iCode * ic)
 
   offsetFold (ebbi->bbOrder, ebbi->count);
 
+  /* lospre */
+  adjustIChain (ebbi->bbOrder, ebbi->count);
+  ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
+  lospre (ic, ebbi);
+  /* Break down again and redo some steps to not confuse live range analysis. */
+  ebbi = iCodeBreakDown (ic);
+  computeControlFlow (ebbi);
+  loops = createLoopRegions (ebbi);
+  computeDataFlow (ebbi);
+
   /* sort it back by block number */
   //qsort (ebbs, saveCount, sizeof (eBBlock *), bbNumCompare);
 

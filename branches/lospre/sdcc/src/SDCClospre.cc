@@ -23,7 +23,7 @@
 
 // A quick-and-dirty function to get the CFG from sdcc (a simplified version of the function from SDCCralloc.hpp).
 void
-create_cfg_lospre(cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
+create_cfg_lospre (cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
 {
   iCode *ic;
 
@@ -57,15 +57,88 @@ create_cfg_lospre(cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
     }
 }
 
+static bool
+candidate_expression (const iCode *const ic)
+{
+  // Todo: Allow more operations!
+  if (ic->op != '+' &&
+    ic->op != '-' &&
+    ic->op != RIGHT_OP)
+    return (false);
+
+  const operand *const left = IC_LEFT (ic);
+  const operand *const right = IC_RIGHT (ic);
+  const operand *const result = IC_RESULT (ic);
+
+  // Todo: Allow more operands!
+  if (left && !(IS_ITEMP (left) || IS_OP_LITERAL (left)) ||
+    right && !(IS_ITEMP (right) || IS_OP_LITERAL (right)) ||
+    result && !(IS_ITEMP (result) || IS_OP_LITERAL (result)))
+    return (false);
+
+  return (true);
+}
+
+static bool
+same_expression (const iCode *const lic, const iCode *const ric)
+{
+  if (lic->op != ric->op)
+    return (false);
+
+  const operand *lleft = IC_LEFT (lic);
+  const operand *lright = IC_RIGHT (lic);
+  const operand *rleft = IC_LEFT (ric);
+  const operand *rright = IC_RIGHT (ric);
+
+  // Todo: Go back chain of single-definition temporaries? Might be unsafe. Alternative: Eliminate such assignments somewhere.
+
+  if (isOperandEqual (lleft, rleft) && isOperandEqual (lright, rright) ||
+    IS_COMMUTATIVE (lic) && isOperandEqual (lleft, rright) && isOperandEqual (lright, rleft))
+    return (true);
+
+  return (false);
+}
+
+static void
+get_candidate_set(std::set<int> *c, iCode *sic)
+{
+  for (iCode *ic = sic; ic; ic = ic->next)
+    {
+      if (!candidate_expression (ic))
+        continue;
+      for (iCode *pic = sic; pic != ic; pic = pic->next)
+        if (candidate_expression (pic) && same_expression (ic, pic) && c->find (pic->key) == c->end ())
+          {
+            // Found expression that occurs at least twice.
+            c->insert (pic->key);
+            break;
+          }
+    }
+}
+
 void
 lospre (iCode *ic, ebbIndex *ebbi)
 {
   cfg_lospre_t control_flow_graph;
   tree_dec_lospre_t tree_decomposition;
 
-  create_cfg_lospre(control_flow_graph, ic, ebbi);
+  create_cfg_lospre (control_flow_graph, ic, ebbi);
 
-  thorup_tree_decomposition(tree_decomposition, control_flow_graph);
-  nicify(tree_decomposition);
+  thorup_tree_decomposition (tree_decomposition, control_flow_graph);
+  nicify (tree_decomposition);
+
+  for (bool change = true; change;)
+    {
+      change = false;
+
+      std::set<int> candidate_set;
+      get_candidate_set (&candidate_set, ic);
+
+      std::set<int>::iterator ci, ci_end;
+      for (ci = candidate_set.begin(), ci_end = candidate_set.end(); ci != ci_end; ++ci)
+        {
+          std::cout << "Would look into removing redundancy for ic " << *ci << " now.\n";
+        }
+    }
 }
 
