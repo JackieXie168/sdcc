@@ -164,6 +164,8 @@ lospre (iCode *sic, ebbIndex *ebbi)
           setup_cfg_for_expression (&control_flow_graph, ic);
 
           std::cout << "Would look into removing redundancy for ic " << *ci << " now.\n";
+
+          tree_dec_lospre(tree_decomposition, control_flow_graph);
         }
     }
 }
