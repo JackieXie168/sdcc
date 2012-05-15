@@ -158,6 +158,57 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
 template <class T_t, class G_t>
 void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
 {
+  typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
+  adjacency_iter_t c, c_end;
+  boost::tie(c, c_end) = adjacent_vertices(t, T);
+
+  assignment_list_lospre_t &alist = T[t].assignments;
+
+  std::swap(alist, T[*c].assignments);
+
+  std::set<unsigned short int> old_inst;
+  std::set_difference(T[*c].bag.begin(), T[*c].bag.end(), T[t].bag.begin(), T[t].bag.end(), std::inserter(old_inst, old_inst.end()));
+  unsigned short int i = *(old_inst.begin());
+
+  assignment_list_lospre_t::iterator ai, aif;
+
+  // Restrict assignments (locally) to current variables.
+  for (ai = alist.begin(); ai != alist.end(); ++ai)
+    {
+      ai->local.erase(i);
+      typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
+      n_iter_t n, n_end;    
+      for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
+        {
+          if (ai->global[boost::source(*n, G)] >= (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].uses))
+            continue;
+          ai->s += G[*n];
+        }
+    }
+
+  alist.sort();
+
+  // Collapse (locally) identical assignments.
+  for (ai = alist.begin(); ai != alist.end();)
+    {
+      aif = ai;
+
+      for (++ai; ai != alist.end() && assignments_lospre_locally_same(*aif, *ai);)
+        {
+          if (aif->s > ai->s)
+            {
+              alist.erase(aif);
+              aif = ai;
+              ++ai;
+            }
+          else
+            {
+              alist.erase(ai);
+              ai = aif;
+              ++ai;
+            }
+        }
+    }
 }
 
 // Handle join nodes in the nice tree decomposition
