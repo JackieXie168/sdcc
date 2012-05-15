@@ -1,7 +1,24 @@
+2012-05-15 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* sim/ucsim/hc08.src/hc08.cc,
+	* sim/ucsim/hc08.src/inst.cc: Fixed simulation of brset/brclr. Keep
+	  track of instruction cycle times.
+	* src/hc08/gen.c (genAnd): Use brset/brclr where possible
+
+2012-05-14 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* sim/ucsim/stypes.h,
+	* sim/ucsim/globals.cc: add R3KA (rabbit 3000A) processor type
+	* sim/ucsim/z80.src/r2k.cc,
+	* sim/ucsim/z80.src/simz80.cc: added initialization code for R3KA support
+	* sim/ucsim/z80.src/r2kcl.h,
+	* sim/ucsim/z80.src/inst_ed_r2k.cc: support for r3ka instructions
+	* sim/ucsim/z80.src/inst_ed.cc: change to allow overloading of inst_ed_
+
 2012-05-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCClospre.hpp:
-	  Early preparations for lospre.
+	  Early preparations for lospre.	
 
 2012-05-14 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
