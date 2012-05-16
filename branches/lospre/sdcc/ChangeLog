@@ -1,3 +1,9 @@
+2012-05-16 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Early preparations for lospre.
+
 2012-05-15 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c (genAnd): added forgotten ifx->generated = TRUE
@@ -27,7 +33,7 @@
 2012-05-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCClospre.hpp:
-	  Early preparations for lospre.	
+	  Early preparations for lospre.
 
 2012-05-14 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 

@@ -90,7 +90,7 @@ same_expression (const iCode *const lic, const iCode *const ric)
   const operand *rleft = IC_LEFT (ric);
   const operand *rright = IC_RIGHT (ric);
 
-  // Todo: Go back chain of single-definition temporaries? Might be unsafe. Alternative: Eliminate such assignments somewhere.
+  // Todo: Go back chain of single-definition temporaries? Might be unsafe. Better alternative: Eliminate such assignments somewhere or avoid creating them.
 
   if (isOperandEqual (lleft, rleft) && isOperandEqual (lright, rright) ||
     IS_COMMUTATIVE (lic) && isOperandEqual (lleft, rright) && isOperandEqual (lright, rleft))

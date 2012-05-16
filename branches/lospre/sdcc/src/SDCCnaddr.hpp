@@ -399,7 +399,7 @@ int tree_dec_naddrswitch_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex
 }
 
 template <class G_t>
-void implement_assignment(const assignment_naddr &a, const G_t &G, const std::map<naddrspace_t, const symbol *> addrspaces)
+static void implement_naddr_assignment(const assignment_naddr &a, const G_t &G, const std::map<naddrspace_t, const symbol *> addrspaces)
 {
   typedef typename boost::graph_traits<G_t>::vertex_descriptor vertex_t;
   typedef typename boost::graph_traits<G_t>::edge_iterator ei_t;
@@ -443,7 +443,7 @@ int tree_dec_address_switch(T_t &T, const G_t &G, const std::map<naddrspace_t, c
   std::cout.flush();
 #endif
 
-  implement_assignment(winner, G, addrspaces);
+  implement_naddr_assignment(winner, G, addrspaces);
 
   return(0);
 }

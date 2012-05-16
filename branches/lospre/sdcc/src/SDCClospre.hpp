@@ -44,7 +44,7 @@ typedef std::set<bool> lospreset_t;
 
 struct assignment_lospre
 {
-  float s;
+  float s; // Todo: Make this a 2-tuple to get lifetime-optimality.
   lospreset_t local;
   std::vector<bool> global;
 
@@ -299,10 +299,20 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 }
 
 template <class T_t, class G_t>
+static void implement_lospre_assignment(const assignment_lospre &a, T_t &T, const G_t &G)
+{
+  // TODO: Implement assignment, modify tree-decomposition accordingly.
+}
+
+template <class T_t, class G_t>
 int tree_dec_lospre (T_t &T, const G_t &G)
 {
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
+
+  const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
+
+  implement_lospre_assignment(winner, T, G);
 
   return(0);
 }
