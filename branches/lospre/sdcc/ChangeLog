@@ -1,5 +1,14 @@
 2012-05-15 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
+	* src/hc08/gen.c (genAnd): added forgotten ifx->generated = TRUE
+
+2012-05-15 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* support/regression/tests/gcc-torture-execute-961017-2.c: use less loops to
+	  reduce test time
+
+2012-05-15 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
 	* sim/ucsim/hc08.src/hc08.cc,
 	* sim/ucsim/hc08.src/inst.cc: Fixed simulation of brset/brclr. Keep
 	  track of instruction cycle times.
