@@ -22,6 +22,7 @@
     it easier to set a breakpoint using the debugger.
 */
 #include "common.h"
+#include "hc08.h"
 #include "main.h"
 #include "ralloc.h"
 #include "gen.h"
@@ -31,10 +32,17 @@ extern char * iComments2;
 extern DEBUGFILE dwarf2DebugFile;
 extern int dwarf2FinalizeFile(FILE *);
 
-static char _defaultRules[] =
+static char _hc08_defaultRules[] =
 {
 #include "peeph.rul"
 };
+
+static char _s08_defaultRules[] =
+{
+#include "peeph.rul"
+};
+
+HC08_OPTS hc08_opts;
 
 /* list of key words used by msc51 */
 static char *_hc08_keywords[] =
@@ -74,6 +82,14 @@ static int regParmFlg = 0;      /* determine if we can register a parameter */
 static void
 _hc08_init (void)
 {
+  hc08_opts.sub = SUB_HC08;
+  asm_addTree (&asm_asxxxx_mapping);
+}
+
+static void
+_s08_init (void)
+{
+  hc08_opts.sub = SUB_S08;
   asm_addTree (&asm_asxxxx_mapping);
 }
 
@@ -434,7 +450,7 @@ PORT hc08_port =
     _libs,                      /* libs */
   },
   {                             /* Peephole optimizer */
-    _defaultRules
+    _hc08_defaultRules
   },
   {
         /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
@@ -572,7 +588,7 @@ PORT s08_port =
     _libs,                      /* libs */
   },
   {                             /* Peephole optimizer */
-    _defaultRules
+    _s08_defaultRules
   },
   {
         /* Sizes: char, short, int, long, long long, ptr, fptr, gptr, bit, float, max */
@@ -640,7 +656,7 @@ PORT s08_port =
     10,         /* sizeofDispatch */
   },
   "_",
-  _hc08_init,
+  _s08_init,
   _hc08_parseOptions,
   _hc08_options,
   NULL,
