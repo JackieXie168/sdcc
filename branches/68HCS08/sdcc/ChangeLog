@@ -1,3 +1,47 @@
+2012-05-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/stdarg.h,
+	  device/include/string.h,
+	  device/include/setjmp.h,
+	  device/lib/Makefile.in,
+	  configure.in,
+	  src/SDCCopt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  src/z80/z80.h,
+	  src/SDCCmain.c,
+	  src/port.h,
+	  sim/ucsim/aclocal.m4,
+	  sim/ucsim/configure,
+	  device/lib/r3ka:
+	  Dummy (behaves as Rabbit 2000/3000) Rabbit 3000A port.
+
+2012-05-17 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* sim/ucsim/hc08/hc08.cc: Fix for opcodes 0xAE, 0xBE, and 0xCE op-decode
+
+2012-05-17 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/bug3521024.c:
+	  Regression test for bug #3521024.
+
+2012-05-17 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Use non-destructive bit tests when possible
+	  (rfe #3526285). Fixed loss of association between generated
+	  assembly and iCodes.
+	* src/hc08/peeph.def: Additional rules for conditional branches and
+	  to remove unused labels.
+
+2012-05-16 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* support/regression/Makefile.in: renamed test-z80 and test-gbz80 to test-rr...
+	* support/regression/ports/gbz80,
+	* support/regression/ports/rrgbz80: renamed to rrgbz80
+	* support/regression/ports/z80,
+	* support/regression/ports/rrz80: renamed to rrz80
+	* support/regression/tests/gcc-torture-execute-921013-1.c: disabled for xstack
+
 2012-05-15 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c (genAnd): added forgotten ifx->generated = TRUE
@@ -23,7 +67,7 @@
 	* sim/ucsim/z80.src/r2kcl.h,
 	* sim/ucsim/z80.src/inst_ed_r2k.cc: support for r3ka instructions
 	* sim/ucsim/z80.src/inst_ed.cc: change to allow overloading of inst_ed_
-	
+
 2012-05-14 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c: correct some dry run costs, update genDivOneByte()
