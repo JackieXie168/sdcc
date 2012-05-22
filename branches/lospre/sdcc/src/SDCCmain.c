@@ -322,6 +322,9 @@ static PORT *_ports[] = {
 #if !OPT_DISABLE_R2K
   &r2k_port,
 #endif
+#if !OPT_DISABLE_R3KA
+  &r3ka_port,
+#endif
 #if !OPT_DISABLE_AVR
   &avr_port,
 #endif
@@ -345,6 +348,9 @@ static PORT *_ports[] = {
 #endif
 #if !OPT_DISABLE_HC08
   &hc08_port,
+#endif
+#if !OPT_DISABLE_S08
+  &s08_port,
 #endif
 };
 
@@ -1633,7 +1639,7 @@ linkEdit (char **envp)
           WRITE_SEG_LOC (BIT_NAME, 0);
 
           /* stack start */
-          if ((options.stack_loc) && (options.stack_loc < 0x100) && !TARGET_IS_HC08)
+          if ((options.stack_loc) && (options.stack_loc < 0x100) && !TARGET_HC08_LIKE)
             {
               WRITE_SEG_LOC ("SSEG", options.stack_loc);
             }

@@ -1,8 +1,213 @@
-2012-05-16 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2012-05-21 Philipp Klaus Krause <pkk AT spth.de>
 
-	* src/SDCClospre.hpp,
-	  src/SDCClospre.cc:
-	  Early preparations for lospre.
+	* support/regression/tests/memory.c,
+	  src/z80/gen.c,
+	  src/port.h,
+	  src/SDCCglue.c,
+	  src/z80/main.c,
+	  src/z80/peep.c:
+	  Use lsidr for built-in memset() for r3ka.
+	* src/hc08/gen.c:
+	  Use ldhx, sthx for memory-to-memory assignment and cast.
+	* src/hc08/peeph.def:
+	  Basic tail call optimization.
+
+2012-05-21 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/hc08/gen.c:
+	  More efficient loading of H and HX for hc08 and s08.
+
+2012-05-21 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/setjmp.c:
+	  Enable test for r3ka.
+	* support/regression/tests/gcc-torture-execute-pr28982a.c,
+	  support/regression/tests/gcc-torture-execute-20010224-1.c,
+	  support/regression/tests/gcc-torture-execute-20030408-1.c:
+	  Disable tests for r3ka.
+	* support/regression/Makefile.in:
+	  Add ucr3ka target to z80 target.
+
+2012-05-21 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* SDCCpeeph.c, peep.c: Fixed so that R2K instructions are
+	  recognized for -mr3ka target by the peephole optimizer.
+
+2012-05-20 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* support/regression/Makefile.in, support/regression/ports/ucr3ka/*,
+	  support/regression/fwk/include/testfwk.h: added test-ucr3ka to
+	  run regression tests on the rabbit 3000A port
+
+2012-05-20 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* device/include/sdcc-lib.h, device/include/math.h: Added conditional
+	  for rabbit 3000
+	* devince/include/asm/r3ka/features.h: Added to allow customizations
+	  for -mr3ka
+
+2012-05-20 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* src/sdas/asrab/rabbitpst.c: Added mnemonics for rabbit 3000A
+	* src/sdas/asrab/rabbitmch.c: Added .r3k flag and rabbit 3000A
+	  instructions, changed much of the indentation to make gnu style,
+	  and update two functions declarations from K&R style
+	* src/sdas/asrab/rabbit.h: Added constants for rabbit 3000 support
+
+2012-05-20 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/hc08/gen.c:
+	  Emit cost information only when --fverbose-asm is used.
+
+2012-05-20 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Fixed yet more problems with registers possibly
+	  clobbered in division/modulus. Optimized GET_VALUE_AT_ADDRESS
+	  including handling non-zero right operand.
+	* src/hc08/ralloc.c: Allow packRegsForSupport() to optimize
+	  conditions computed for IFX. Handle non-zero right operand
+	  for GET_VALUE_AT_ADDRESS when generating pseudo symbol.
+	* src/SDCCopt.c: Let GET_VALUE_AT_ADDRESS have non-zero right
+	  operand for HC08-like ports. Fix def/use info on operands
+	  converted to integer support function calls.
+
+2012-05-20 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sdccconf_in.h:
+	  Regenerated, so building with r3ka port disabled works now.
+
+2012-05-20 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/hc08/gen.c:
+	  Improved code for PCALL.
+
+2012-05-20 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/hc08/gen.c,
+	  src/hc08/ralloc2.cc:
+	  Improved code for GET_VALUE_AT_ADDRESS.
+
+2012-05-19 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/hc08/gen.c:
+	  Improve addition for hc08 and s08.
+	* src/z80/main.c:
+	  Fix name of r3ka library.
+	* src/hc08/main.c:
+	  Fix name of s08 library.
+
+2012-05-19 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/hc08.src/hc08.cc:
+	  Fix sthx with ext operand on s08.
+	* src/hc08/gen.c:
+	  Use ldhx, cphx and sthx with ext operands for s08 in places where we use them for hc08 with imm operands.
+
+2012-05-19 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sdas/as6808/m08mch.c,
+	  sdas/as6808/m6808.h,
+	  sdas/as6808/m08pst.c,
+	  src/SDCCralloc.hpp,
+	  src/SDCCglue.c,
+	  src/hc08/main.c,
+	  src/hc08/ralloc2.cc:
+	  Asm for s08.
+
+2012-05-19 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/bug3223041.c:
+	  Do not handle hc08 as special case.
+
+2012-05-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/lib/r3ka/Makefile.in:
+	  Fix building of r3ka lib.
+	* device/lib/s08/Makefile.in:
+	  Fix building of s08 lib.
+	* support/regression/Makefile.in,
+	  support/regression/ports/s08,
+	  support/regression/fwk/include/testfwk.h,
+	  support/regression/tests/gcc-torture-execute-func-ptr-1.c,
+	  support/regression/tests/gcc-torture-execute-991112-1.c,
+	  support/regression/tests/gcc-torture-execute-921208-1.c,
+	  support/regression/tests/bug3379723.c,
+	  support/regression/tests/gcc-torture-execute-930702-1.c,
+	  support/regression/tests/float_single.c,
+	  support/regression/tests/gcc-torture-execute-20000412-2.c,
+	  support/regression/tests/gcc-torture-execute-20080529-1.c,
+	  support/regression/tests/gcc-torture-execute-20030209-1.c,
+	  support/regression/tests/gcc-torture-execute-950915-1.c,
+	  support/regression/tests/bug1723128.c,
+	  support/regression/tests/gcc-torture-execute-20001221-1.c,
+	  support/regression/tests/gcc-torture-execute-20030307-1.c,
+	  support/regression/tests/gcc-torture-execute-950612-1.c,
+	  support/regression/tests/gcc-torture-execute-20001108-1.c,
+	  support/regression/tests/cse.c:
+	  Regression testing for s08 port.
+	* device/include/stdarg.h:
+	  Fix variable arguments for s08.
+	* device/lib/_mullong.c:
+	  Fix long multiplication for s08.
+
+2012-05-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* configure.in,
+	  src/SDCCicode.c,
+	  src/SDCCsymt.c,
+	  src/SDCCmain.c,
+	  src/port.h,
+	  src/SDCCglue.c,
+	  src/hc08/main.c,
+	  src/SDCCpeeph.c,
+	  src/hc08/hc08.h,
+	  device/lib/Makefile.in,
+	  device/lib/s08:
+	  Dummy (behaves as HC08) S08 port.
+
+2012-05-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/stdarg.h,
+	  device/include/string.h,
+	  device/include/setjmp.h,
+	  device/lib/Makefile.in,
+	  configure.in,
+	  src/SDCCopt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  src/z80/z80.h,
+	  src/SDCCmain.c,
+	  src/port.h,
+	  sim/ucsim/aclocal.m4,
+	  sim/ucsim/configure,
+	  device/lib/r3ka:
+	  Dummy (behaves as Rabbit 2000/3000) Rabbit 3000A port.
+
+2012-05-17 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* sim/ucsim/hc08/hc08.cc: Fix for opcodes 0xAE, 0xBE, and 0xCE op-decode
+
+2012-05-17 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/bug3521024.c:
+	  Regression test for bug #3521024.
+
+2012-05-17 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Use non-destructive bit tests when possible
+	  (rfe #3526285). Fixed loss of association between generated
+	  assembly and iCodes.
+	* src/hc08/peeph.def: Additional rules for conditional branches and
+	  to remove unused labels.
+
+2012-05-16 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* support/regression/Makefile.in: renamed test-z80 and test-gbz80 to test-rr...
+	* support/regression/ports/gbz80,
+	* support/regression/ports/rrgbz80: renamed to rrgbz80
+	* support/regression/ports/z80,
+	* support/regression/ports/rrz80: renamed to rrz80
+	* support/regression/tests/gcc-torture-execute-921013-1.c: disabled for xstack
 
 2012-05-15 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
@@ -29,6 +234,12 @@
 	* sim/ucsim/z80.src/r2kcl.h,
 	* sim/ucsim/z80.src/inst_ed_r2k.cc: support for r3ka instructions
 	* sim/ucsim/z80.src/inst_ed.cc: change to allow overloading of inst_ed_
+
+2012-05-16 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Early preparations for lospre.
 
 2012-05-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

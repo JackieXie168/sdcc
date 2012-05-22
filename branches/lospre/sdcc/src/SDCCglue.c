@@ -1807,8 +1807,12 @@ glue (void)
   /* initial comments */
   initialComments (asmFile);
 
-  if (TARGET_IS_Z180)
+  if (TARGET_IS_S08)
+    fprintf (asmFile, "\t.cs08\n");
+  else if (TARGET_IS_Z180)
     fprintf (asmFile, "\t.hd64\n");
+  else if (TARGET_IS_R3KA)
+    fprintf (asmFile, "\t.r3k\n");
 
   /* print module name */
   tfprintf (asmFile, "\t!module\n", moduleName);
@@ -1854,7 +1858,7 @@ glue (void)
         fprintf (asmFile, " --parms-in-bank1");
       fprintf (asmFile, "\n");
     }
-  else if ((TARGET_Z80_LIKE || TARGET_IS_HC08) && !options.noOptsdccInAsm)
+  else if ((TARGET_Z80_LIKE || TARGET_HC08_LIKE) && !options.noOptsdccInAsm)
     {
       fprintf (asmFile, "\t.optsdcc -m%s\n", port->target);
     }

@@ -308,7 +308,7 @@ FBYNAME (labelIsReturnOnly)
     ;
 
   retInst = "ret";
-  if (TARGET_IS_HC08)
+  if (TARGET_HC08_LIKE)
     retInst = "rts";
   if (strcmp(p, retInst) == 0)
     return TRUE;
@@ -363,8 +363,11 @@ FBYNAME (labelIsUncondJump)
 
   if (TARGET_MCS51_LIKE)
     jpInst = "ljmp";
-  if (TARGET_IS_HC08)
-    jpInst = "jmp";
+  if (TARGET_HC08_LIKE)
+    {
+      jpInst = "jmp";
+      jpInst2 = "bra";
+    }
   if (TARGET_Z80_LIKE)
     {
       jpInst = "jp";
@@ -911,9 +914,9 @@ operandBaseName (const char *op)
         return "bc";
       if (!strcmp (op, "h") || !strcmp (op, "l") || !strcmp (op, "(hl)") || !strcmp (op, "(hl+)")  || !strcmp (op, "(hl-)"))
         return "hl";
-      if (!strcmp (op, "iyh") || !strcmp (op, "iyl") || !strcmp (op, "(iy)"))
+      if (!strcmp (op, "iyh") || !strcmp (op, "iyl") || strstr (op, "iy"))
         return "iy";
-      if (!strcmp (op, "ixh") || !strcmp (op, "ixl") || !strcmp (op, "(ix)"))
+      if (!strcmp (op, "ixh") || !strcmp (op, "ixl") || strstr (op, "ix"))
         return "ix";
     }
 

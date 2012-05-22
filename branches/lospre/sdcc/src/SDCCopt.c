@@ -673,10 +673,20 @@ convilong (iCode * ic, eBBlock * ebp)
   int bwd;
   int su;
   int bytesPushed=0;
+  operand *left;
+  operand *right;
   sym_link *leftType = operandType (IC_LEFT (ic));
   sym_link *rightType = operandType (IC_RIGHT (ic));
 
   remiCodeFromeBBlock (ebp, ic);
+
+  left = IC_LEFT (ic);
+  right = IC_RIGHT (ic);
+
+  if (IS_SYMOP (left))
+      bitVectUnSetBit (OP_USES (left), ic->key);
+  if (IS_SYMOP (right))
+      bitVectUnSetBit (OP_USES (right), ic->key);
 
   if (getSize (leftType) == 1 && getSize (rightType) == 1)
     {
@@ -757,6 +767,8 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      if (IS_SYMOP (left))
+          OP_USES (left) = bitVectSetBit (OP_USES (left), newic->key);
 
       /* second one */
       if (IS_REGPARM (FUNC_ARGS(func->type)->next->etype))
@@ -772,6 +784,8 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      if (IS_SYMOP (right))
+          OP_USES (right) = bitVectSetBit (OP_USES (right), newic->key);
     }
   else
     {
@@ -792,6 +806,8 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      if (IS_SYMOP (right))
+          OP_USES (right) = bitVectSetBit (OP_USES (right), newic->key);
 
       /* insert push left */
       if (IS_REGPARM (FUNC_ARGS(func->type)->etype))
@@ -809,11 +825,15 @@ found:
       addiCodeToeBBlock (ebp, newic, ip);
       newic->filename = filename;
       newic->lineno = lineno;
+      if (IS_SYMOP (left))
+          OP_USES (left) = bitVectSetBit (OP_USES (left), newic->key);
     }
 
   /* for the result */
   newic = newiCode (CALL, operandFromSymbol (func), NULL);
   IC_RESULT (newic) = IC_RESULT (ic);
+  bitVectUnSetBit (OP_DEFS (IC_RESULT (ic)), ic->key);
+  OP_USES (IC_RESULT (newic)) = bitVectSetBit (OP_USES (IC_RESULT (newic)), newic->key);
   newic->filename = filename;
   newic->lineno = lineno;
   newic->parmBytes+=bytesPushed; // to clear the stack after the call
@@ -870,7 +890,7 @@ convbuiltin (iCode *const ic, eBBlock *ebp)
 
   /* Now we can be sure to have found a builtin function. */
 
-  if ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_R2K) && (!strcmp (bif->name, "__builtin_memcpy") || !strcmp (bif->name, "__builtin_memset")))
+  if ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT) && (!strcmp (bif->name, "__builtin_memcpy") || !strcmp (bif->name, "__builtin_memset")))
     {
       /* Replace iff return value is used or last parameter is not an integer constant. */
       if (bitVectIsZero (OP_USES (IC_RESULT (icc))) && IS_OP_LITERAL (IC_LEFT (lastparam)))
@@ -1958,7 +1978,7 @@ offsetFold (eBBlock **ebbs, int count)
   iCode *ic;
   iCode *uic;
 
-  if (!TARGET_IS_Z80 && !TARGET_IS_Z180 && !TARGET_IS_R2K)
+  if (!TARGET_IS_Z80 && !TARGET_IS_Z180 && !TARGET_IS_RABBIT && !TARGET_HC08_LIKE)
     return;
 
   for (i = 0; i < count; i++)

@@ -39,6 +39,9 @@
 #elif defined(__SDCC_r2k)
 #include <asm/r2k/features.h>
 
+#elif defined(__SDCC_r3ka)
+#include <asm/r3ka/features.h>
+
 #elif defined(__SDCC_gbz80)
 #include <asm/gbz80/features.h>
 
