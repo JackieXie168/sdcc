@@ -332,9 +332,9 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 }
 
 template <class T_t, class G_t>
-static void split_edge(T_t &T, const G_t &G, typename boost::graph_traits<G_t>::edge_descriptor e, const iCode *ic, operand *tmpop)
+static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_descriptor e, const iCode *ic, operand *tmpop)
 {
-  // TODO: Implement assignment, modify tree-decomposition accordingly.
+  // Insert new iCode into chain.
   iCode *newic = newiCode (ic->op, IC_LEFT (ic), IC_RIGHT (ic));
   IC_RESULT(newic) = tmpop;
   newic->filename = ic->filename;
@@ -343,10 +343,38 @@ static void split_edge(T_t &T, const G_t &G, typename boost::graph_traits<G_t>::
   newic->next = G[boost::target(e, G)].ic;
   G[boost::source(e, G)].ic->next = newic;
   G[boost::target(e, G)].ic->prev = newic;
+
+  // Insert node into cfg.
+  typename boost::graph_traits<G_t>::vertex_descriptor n = boost::add_vertex(G);
+  // TODO: Exact cost.
+  boost::add_edge(boost::source(e, G), n, G[e], G);
+  boost::add_edge(n, boost::target(e, G), 3.0, G);
+
+  // Update tree-decomposition.
+  // TODO: More efficiently.
+  for(typename boost::graph_traits<T_t>::vertex_descriptor n1 = 0; n1 < boost::num_vertices(T); ++n1)
+    {
+      if(T[n1].bag.find(boost::source(e, G)) == T[n1].bag.end())
+        continue;
+      if(T[n1].bag.find(boost::target(e, G)) == T[n1].bag.end())
+        continue;
+      // Found bag that contains both endpoints of original edge.
+
+      // Add new tree node with bag there. Let nicify() sort things out later.
+      typename boost::graph_traits<T_t>::vertex_descriptor n2 = boost::add_vertex(T);
+      T[n2].bag.insert(boost::source(e, G));
+      T[n2].bag.insert(boost::target(e, G));
+      T[n2].bag.insert(n);
+      boost::add_edge(n1, n2, T);
+      break;
+    }
+
+  // Remove old edge from cfg.
+  boost::remove_edge(e, G);
 }
 
 template <class T_t, class G_t>
-static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, const G_t &G, const iCode *ic)
+static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &G, const iCode *ic)
 {
   operand *tmpop;
 
@@ -378,7 +406,7 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, const
       if(!a.global[boost::source(*e, G)])
         continue;
       std::cout << "Substituting ic " << ic->key << ".\n";
-      // TODO: Handle temporaries defined at ic and used only nearby.
+      // Todo: split unconnected iTemps, unify with dummy iTemps.
       iCode *ic = G[*v].ic;
       IC_LEFT(ic) = 0;
       IC_RIGHT(ic) = tmpop;
@@ -388,7 +416,7 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, const
 }
 
 template <class T_t, class G_t>
-int tree_dec_lospre (T_t &T, const G_t &G, const iCode *ic)
+int tree_dec_lospre (T_t &T, G_t &G, const iCode *ic)
 {
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
