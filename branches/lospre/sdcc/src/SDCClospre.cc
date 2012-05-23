@@ -44,8 +44,7 @@ create_cfg_lospre (cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
     {
       if((ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND) && ifxForOp (IC_RESULT (ic), ic))
         boost::add_edge(key_to_index[ic->key], key_to_index[ic->next->key], 4.0f, cfg); // Try not to separate op from ifx.
-
-      if (ic->op != GOTO && ic->op != RETURN && ic->op != JUMPTABLE && ic->next)
+      else if (ic->op != GOTO && ic->op != RETURN && ic->op != JUMPTABLE && ic->next)
         boost::add_edge(key_to_index[ic->key], key_to_index[ic->next->key], 3.0f, cfg);
 
       if (ic->op == GOTO)
@@ -74,9 +73,9 @@ candidate_expression (const iCode *const ic)
   const operand *const result = IC_RESULT (ic);
 
   // Todo: Allow more operands!
-  if (left && !(IS_ITEMP (left) || IS_OP_LITERAL (left)) ||
-    right && !(IS_ITEMP (right) || IS_OP_LITERAL (right)) ||
-    result && !(IS_ITEMP (result) || IS_OP_LITERAL (result)))
+  if (left && !(IS_SYMOP (left) || IS_OP_LITERAL (left)) ||
+    right && !(IS_SYMOP (right) || IS_OP_LITERAL (right)) ||
+    result && !(IS_SYMOP (result) || IS_OP_LITERAL (result)))
     return (false);
 
   return (true);
@@ -85,6 +84,9 @@ candidate_expression (const iCode *const ic)
 static bool
 same_expression (const iCode *const lic, const iCode *const ric)
 {
+  wassert(lic);
+  wassert(ric);
+
   if (lic->op != ric->op)
     return (false);
 
@@ -190,8 +192,6 @@ lospre (iCode *sic, ebbIndex *ebbi)
             continue;
 
           setup_cfg_for_expression (&control_flow_graph, ic);
-
-          std::cout << "Would look into removing redundancy for ic " << *ci << " now.\n";
 
           change = (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);
         }

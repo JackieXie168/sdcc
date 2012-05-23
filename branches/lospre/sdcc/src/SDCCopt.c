@@ -2152,6 +2152,8 @@ eBBlockFromiCode (iCode * ic)
   loops = createLoopRegions (ebbi);
   computeDataFlow (ebbi);
 
+  killDeadCode (ebbi);
+
   /* sort it back by block number */
   //qsort (ebbs, saveCount, sizeof (eBBlock *), bbNumCompare);
 
