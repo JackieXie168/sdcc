@@ -1,3 +1,9 @@
+2012-05-23 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Preparations for lospre.
+
 2012-05-23 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.c: Preparations for further pointer offset

@@ -20,6 +20,8 @@
 // Lifetime-optimal speculative partial redundancy elimination.
 
 #include <boost/graph/graphviz.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include "SDCCtree_dec.hpp"
 
@@ -44,7 +46,7 @@ typedef std::set<bool> lospreset_t;
 
 struct assignment_lospre
 {
-  float s; // Todo: Make this a 2-tuple to get lifetime-optimality.
+  boost::tuple<float, float> s; // First entry: Calculation costs, second entry: Lietime costs.
   lospreset_t local;
   std::vector<bool> global;
 
@@ -176,13 +178,14 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     {
       ai->local.erase(i);
+      ai->s.get<1>() += ai->global[i]; // Add lifetime cost.
       typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
-      n_iter_t n, n_end;    
+      n_iter_t n, n_end; 
       for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
         {
           if (ai->global[boost::source(*n, G)] >= (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].uses))
             continue;
-          ai->s += G[*n];
+          ai->s.get<0>() += G[*n]; // Add calculation cost.
         }
     }
 
@@ -235,7 +238,8 @@ void tree_dec_lospre_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
     {
       if (assignments_lospre_locally_same(*ai2, *ai3))
         {
-          ai2->s += ai3->s;
+          ai2->s.get<0>() += ai3->s.get<0>();
+          ai2->s.get<1>() += ai3->s.get<1>();
           for (size_t i = 0; i < ai2->global.size(); i++)
             ai2->global[i] = (ai2->global[i] || ai3->global[i]);
           alist1.push_back(*ai2);
@@ -301,6 +305,17 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 template <class T_t, class G_t>
 static void implement_lospre_assignment(const assignment_lospre &a, T_t &T, const G_t &G)
 {
+  typedef typename boost::graph_traits<G_t>::edge_iterator edge_iter_t;
+  typedef typename boost::graph_traits<G_t>::edge_descriptor edge_desc_t;
+  std::set<edge_desc_t> calculation_edges; // Use descriptor, not iterator due to possible invalidation of iterators when inserting vertices or edges.
+  edge_iter_t e, e_end;
+  for(boost::tie(e, e_end) = edges(G); e != e_end; ++e)
+    if(a.global[boost::source(*e, G)] < a.global[boost::target(*e, G)])
+      calculation_edges.insert(*e);
+
+  if(!calculation_edges.size())
+    return;
+
   // TODO: Implement assignment, modify tree-decomposition accordingly.
 }
 
