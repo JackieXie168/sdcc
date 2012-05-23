@@ -48,9 +48,9 @@ extern "C"
 typedef short int naddrspace_t; // Named address spaces. -1: Undefined, Others: see map.
 
 #ifdef HAVE_STX_BTREE_SET_H
-typedef stx::btree_set<naddrspace_t> naddrspaceset_t; // Faster than std::set
+typedef stx::btree_set<unsigned short int> naddrspaceset_t; // Faster than std::set
 #else
-typedef std::set<naddrspace_t> naddrspaceset_t;
+typedef std::set<unsigned short int> naddrspaceset_t;
 #endif
 
 struct assignment_naddr
@@ -113,7 +113,7 @@ struct tree_dec_naddr_node
   assignment_list_naddr_t assignments;
 };
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_naddr_node, float> cfg_t; // The edge property is the cost of subdividing he edge and inserting a bank switching instruction.
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_naddr_node, float> cfg_t; // The edge property is the cost of subdividing the edge and inserting a bank switching instruction.
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, tree_dec_naddr_node> tree_dec_naddr_t;
 
 // Annotate nodes of the control flow graph with the set of possible named address spaces active there.

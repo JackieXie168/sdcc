@@ -29,6 +29,7 @@ extern "C"
 {
 #include "SDCCsymt.h"
 #include "SDCCicode.h"
+#include "SDCCgen.h"
 #include "SDCCBBlock.h"
 #include "SDCCopt.h"
 #include "SDCCy.h"
@@ -39,9 +40,9 @@ extern "C"
 #endif
 
 #ifdef HAVE_STX_BTREE_SET_H
-typedef stx::btree_set<bool> lospreset_t; // Faster than std::set
+typedef stx::btree_set<unsigned short int> lospreset_t; // Faster than std::set
 #else
-typedef std::set<bool> lospreset_t;
+typedef std::set<unsigned short int> lospreset_t;
 #endif
 
 struct assignment_lospre
@@ -83,9 +84,9 @@ bool assignments_lospre_locally_same(const assignment_lospre &a1, const assignme
     return(false);
 
   lospreset_t::const_iterator i, i_end;
-  for (i = a1.local.begin(), i_end = a1.local.end(); i != i_end; ++i)
+  for (i = a1.local.begin(), i_end = a1.local.end(); i != i_end; ++i){std::cout << "Same at " << *i << "?\n";
     if (a1.global[*i] != a2.global[*i])
-      return(false);
+      return(false);}
 
   return(true);
 }
@@ -109,6 +110,19 @@ struct tree_dec_lospre_node
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_lospre_node, float> cfg_lospre_t; // The edge property is the cost of subdividing the edge and inserting an instruction (for now we always use 1, optimizing for code size, but relative execution frequency could be used when optimizing for speed or total energy consumption; aggregates thereof can be a good idea as well).
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, tree_dec_lospre_node> tree_dec_lospre_t;
 
+#if 1
+void print_assignment(const assignment_lospre &a, cfg_lospre_t G)
+{
+  for(unsigned int i = 0; i < boost::num_vertices (G); i++)
+    std::cout << "(" << i << ", " << a.global[i] << "),";
+  std::cout << "\n";
+  std::cout << "Cost: " << a.s << "\nLocal:";
+  for(lospreset_t::const_iterator i = a.local.begin(); i != a.local.end(); ++i)
+    std::cout << *i << " ";
+  std::cout << "\n";
+}
+#endif
+
 // Handle Leaf nodes in the nice tree decomposition
 template <class T_t, class G_t>
 void tree_dec_lospre_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
@@ -116,7 +130,8 @@ void tree_dec_lospre_leaf(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
   assignment_lospre a;
   assignment_list_lospre_t &alist = T[t].assignments;
 
-  a.s = 0;
+  a.s.get<0>() = 0;
+  a.s.get<1>() = 0;
   a.global.resize(boost::num_vertices(G));
   alist.push_back(a);
 }
@@ -136,19 +151,14 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
   std::set<unsigned short> new_inst;
   std::set_difference(T[t].bag.begin(), T[t].bag.end(), T[*c].bag.begin(), T[*c].bag.end(), std::inserter(new_inst, new_inst.end()));
   unsigned short int i = *(new_inst.begin());
-
+std::cout << "Introducing " << i << "\n";
   for(ai = alist.begin(); ai != alist.end(); ++ai)
     {
       ai->local.insert(i);
-
+      ai->global[i] = false;
+      alist2.push_back(*ai);
       ai->global[i] = true;
       alist2.push_back(*ai);
-
-      if (!G[i].uses)
-        {
-          ai->global[i] = false;
-          alist2.push_back(*ai);
-        }
     }
 
   alist.clear();
@@ -173,20 +183,37 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   unsigned short int i = *(old_inst.begin());
 
   assignment_list_lospre_t::iterator ai, aif;
-
+std::cout << "Forgetting " << i << "\n";
   // Restrict assignments (locally) to current variables.
   for (ai = alist.begin(); ai != alist.end(); ++ai)
-    {
+    { 
+      std::cout << "Assignment: ";
+      print_assignment(*ai, G);
+
       ai->local.erase(i);
       ai->s.get<1>() += ai->global[i]; // Add lifetime cost.
-      typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
-      n_iter_t n, n_end; 
-      for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
-        {
-          if (ai->global[boost::source(*n, G)] >= (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].uses))
-            continue;
-          ai->s.get<0>() += G[*n]; // Add calculation cost.
-        }
+      {
+        typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
+        n_iter_t n, n_end;
+        for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
+          {
+            if (ai->local.find(boost::target(*n, G)) == ai->local.end() || (ai->global[i] && !G[i].invalidates) >= (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].uses))
+              continue;
+std::cout << "Adding cost for edge from " << boost::source(*n, G) << " to " << boost::target(*n, G) << "\n";
+            ai->s.get<0>() += G[*n]; // Add calculation cost.
+          }
+      }
+      {
+        typedef typename boost::graph_traits<cfg_lospre_t>::in_edge_iterator n_iter_t;
+        n_iter_t n, n_end;
+        for (boost::tie(n, n_end) = boost::in_edges(i, G);  n != n_end; ++n)
+          {
+            if (ai->local.find(boost::source(*n, G)) == ai->local.end() || (ai->global[boost::source(*n, G)] && !G[i].invalidates) >= (ai->global[i] || G[i].uses))
+              continue;
+std::cout << "Adding cost for edge from " << boost::source(*n, G) << " to " << boost::target(*n, G) << "\n";
+            ai->s.get<0>() += G[*n]; // Add calculation cost.
+          }
+      }
     }
 
   alist.sort();
@@ -199,13 +226,13 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
       for (++ai; ai != alist.end() && assignments_lospre_locally_same(*aif, *ai);)
         {
           if (aif->s > ai->s)
-            {
+            {std::cout << aif->s << " > " << ai->s << "\n";
               alist.erase(aif);
               aif = ai;
               ++ai;
             }
           else
-            {
+            {std::cout << aif->s << " <= " << ai->s << "\n";
               alist.erase(ai);
               ai = aif;
               ++ai;
@@ -232,7 +259,7 @@ void tree_dec_lospre_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 
   alist2.sort();
   alist3.sort();
-
+std::cout << "Joining\n";
   assignment_list_lospre_t::iterator ai2, ai3;
   for (ai2 = alist2.begin(), ai3 = alist3.begin(); ai2 != alist2.end() && ai3 != alist3.end();)
     {
@@ -243,6 +270,8 @@ void tree_dec_lospre_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
           for (size_t i = 0; i < ai2->global.size(); i++)
             ai2->global[i] = (ai2->global[i] || ai3->global[i]);
           alist1.push_back(*ai2);
+std::cout << "Assignment: ";
+print_assignment(*ai2, G);
           ++ai2;
           ++ai3;
         }
@@ -303,32 +332,76 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
 }
 
 template <class T_t, class G_t>
-static void implement_lospre_assignment(const assignment_lospre &a, T_t &T, const G_t &G)
+static void split_edge(T_t &T, const G_t &G, typename boost::graph_traits<G_t>::edge_descriptor e, const iCode *ic, operand *tmpop)
 {
+  // TODO: Implement assignment, modify tree-decomposition accordingly.
+  iCode *newic = newiCode (ic->op, IC_LEFT (ic), IC_RIGHT (ic));
+  IC_RESULT(newic) = tmpop;
+  newic->filename = ic->filename;
+  newic->lineno = ic->lineno;
+  newic->prev = G[boost::source(e, G)].ic;
+  newic->next = G[boost::target(e, G)].ic;
+  G[boost::source(e, G)].ic->next = newic;
+  G[boost::target(e, G)].ic->prev = newic;
+}
+
+template <class T_t, class G_t>
+static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, const G_t &G, const iCode *ic)
+{
+  operand *tmpop;
+
   typedef typename boost::graph_traits<G_t>::edge_iterator edge_iter_t;
   typedef typename boost::graph_traits<G_t>::edge_descriptor edge_desc_t;
   std::set<edge_desc_t> calculation_edges; // Use descriptor, not iterator due to possible invalidation of iterators when inserting vertices or edges.
   edge_iter_t e, e_end;
-  for(boost::tie(e, e_end) = edges(G); e != e_end; ++e)
+  for(boost::tie(e, e_end) = boost::edges(G); e != e_end; ++e)
     if(a.global[boost::source(*e, G)] < a.global[boost::target(*e, G)])
       calculation_edges.insert(*e);
 
   if(!calculation_edges.size())
-    return;
+    return(0);
 
-  // TODO: Implement assignment, modify tree-decomposition accordingly.
+  std::cout << "Would optimize something.\n";
+
+  tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
+
+  for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
+    split_edge(T, G, *i, ic, tmpop);
+
+  typedef typename boost::graph_traits<G_t>::vertex_iterator vertex_iter_t;
+  vertex_iter_t v, v_end;
+  for(boost::tie(v, v_end) = boost::vertices(G); v != v_end; ++v)
+    {
+      if(!G[*v].uses)
+        continue;
+      typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
+      if(!a.global[boost::source(*e, G)])
+        continue;
+      std::cout << "Substituting ic " << ic->key << ".\n";
+      // TODO: Handle temporaries defined at ic and used only nearby.
+      iCode *ic = G[*v].ic;
+      IC_LEFT(ic) = 0;
+      IC_RIGHT(ic) = tmpop;
+      ic->op = '=';
+    }
+  return(1);
 }
 
 template <class T_t, class G_t>
-int tree_dec_lospre (T_t &T, const G_t &G)
+int tree_dec_lospre (T_t &T, const G_t &G, const iCode *ic)
 {
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
 
   const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
 
-  implement_lospre_assignment(winner, T, G);
+  std::cout << "Winner: ";
+  print_assignment(winner, G);
 
-  return(0);
+  int change;
+  if (change = implement_lospre_assignment(winner, T, G, ic))
+    nicify (T);
+  return(change);
 }
+
 

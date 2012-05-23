@@ -507,7 +507,7 @@ inline void alive_tree_dec(tree_dec_t &tree_dec, const cfg_t &cfg)
 }
 
 #if defined(DEBUG_RALLOC_DEC) || defined (DEBUG_RALLOC_DEC_ASS)
-void print_assignment(const assignment &a)
+static void print_assignment(const assignment &a)
 {
   varset_t::const_iterator i;
   std::cout << "[";

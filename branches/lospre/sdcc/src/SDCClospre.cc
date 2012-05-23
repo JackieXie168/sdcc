@@ -42,6 +42,9 @@ create_cfg_lospre (cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
   // Get control flow graph from sdcc.
   for (ic = start_ic; ic; ic = ic->next)
     {
+      if((ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND) && ifxForOp (IC_RESULT (ic), ic))
+        boost::add_edge(key_to_index[ic->key], key_to_index[ic->next->key], 4.0f, cfg); // Try not to separate op from ifx.
+
       if (ic->op != GOTO && ic->op != RETURN && ic->op != JUMPTABLE && ic->next)
         boost::add_edge(key_to_index[ic->key], key_to_index[ic->next->key], 3.0f, cfg);
 
@@ -87,13 +90,14 @@ same_expression (const iCode *const lic, const iCode *const ric)
 
   const operand *lleft = IC_LEFT (lic);
   const operand *lright = IC_RIGHT (lic);
+  const operand *lresult = IC_RESULT (lic);
   const operand *rleft = IC_LEFT (ric);
   const operand *rright = IC_RIGHT (ric);
+  const operand *rresult = IC_RESULT (ric);
 
-  // Todo: Go back chain of single-definition temporaries? Might be unsafe. Better alternative: Eliminate such assignments somewhere or avoid creating them.
-  // Todo: Result type!
-  if (isOperandEqual (lleft, rleft) && isOperandEqual (lright, rright) ||
-    IS_COMMUTATIVE (lic) && isOperandEqual (lleft, rright) && isOperandEqual (lright, rleft))
+  if ((isOperandEqual (lleft, rleft) && isOperandEqual (lright, rright) ||
+    IS_COMMUTATIVE (lic) && isOperandEqual (lleft, rright) && isOperandEqual (lright, rleft)) &&
+    (lresult && rresult && compareType (operandType (lresult), operandType (rresult)) > 0))
     return (true);
 
   return (false);
@@ -131,7 +135,28 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
          (*cfg)[i].invalidates = true;
        if (IC_RESULT (ic) && IC_RIGHT (eic) && !IS_OP_LITERAL (IC_RIGHT (eic)) && isOperandEqual (IC_RIGHT (eic), IC_RESULT (ic)))
          (*cfg)[i].invalidates = true;
+       if (ic->op == FUNCTION)
+         (*cfg)[i].invalidates = true;
     }
+}
+
+// Dump cfg, with numbered nodes.
+void dump_cfg_lospre(const cfg_lospre_t &cfg)
+{
+  if(!currFunc)
+    return;
+
+  std::ofstream dump_file((std::string(dstFileName) + ".dumplosprecfg" + currFunc->rname + ".dot").c_str());
+
+  std::string *name = new std::string[num_vertices(cfg)];
+  for (unsigned int i = 0; i < boost::num_vertices(cfg); i++)
+    {
+      std::ostringstream os;
+      os << i << ", " << cfg[i].ic->key;
+      name[i] = os.str();
+    }
+  boost::write_graphviz(dump_file, cfg, boost::make_label_writer(name));
+  delete[] name;
 }
 
 void
@@ -141,6 +166,9 @@ lospre (iCode *sic, ebbIndex *ebbi)
   tree_dec_lospre_t tree_decomposition;
 
   create_cfg_lospre (control_flow_graph, sic, ebbi);
+
+  if(options.dump_graphs)
+    dump_cfg_lospre(control_flow_graph);
 
   thorup_tree_decomposition (tree_decomposition, control_flow_graph);
   nicify (tree_decomposition);
@@ -158,14 +186,14 @@ lospre (iCode *sic, ebbIndex *ebbi)
           const iCode *ic;
           for (ic = sic; ic && ic->key != *ci; ic = ic->next);
 
-          if (!ic || !candidate_expression (ic))
+          if (!candidate_expression (ic))
             continue;
 
           setup_cfg_for_expression (&control_flow_graph, ic);
 
           std::cout << "Would look into removing redundancy for ic " << *ci << " now.\n";
 
-          tree_dec_lospre(tree_decomposition, control_flow_graph);
+          change = (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);
         }
     }
 }
