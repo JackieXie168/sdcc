@@ -1588,6 +1588,8 @@ aopOp (operand * op, const iCode * ic, bool result, bool requires_a)
   for (i = 0; i < sym->nRegs; i++)
     {
       wassertl (sym->regs[i], "Symbol in register, but no register assigned.");
+      if(!sym->regs[i])
+        fprintf(stderr, "Symbol %s at ic %d.\n", sym->name, ic->key);
       aop->aopu.aop_reg[i] = sym->regs[i];
     }
 }

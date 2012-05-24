@@ -193,7 +193,7 @@ lospre (iCode *sic, ebbIndex *ebbi)
 
           setup_cfg_for_expression (&control_flow_graph, ic);
 
-          change = (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);
+          change = (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);change = false;
         }
     }
 }
