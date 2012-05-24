@@ -1,14 +1,14 @@
 2012-05-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/SDCClospre.hpp,
-	  src/SDCClospre.cc:
-	  Preparations for lospre.
-
-2012-05-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
-
 	* src/z80/ralloc2.cc,
 	  src/z80/gen.c:
 	  Non-destructive & with bit literal.
+
+2012-05-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Preparations for lospre.
 
 2012-05-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
