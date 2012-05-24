@@ -33,6 +33,7 @@ extern "C"
 #include "SDCCBBlock.h"
 #include "SDCCopt.h"
 #include "SDCCy.h"
+#include "SDCCasm.h"
 }
 
 #ifdef HAVE_STX_BTREE_SET_H
@@ -390,10 +391,10 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
   if(!calculation_edges.size())
     return(0);
 
-  std::cout << "Optimizing at " << ic->key << "\n";
+  //std::cout << "Optimizing at " << ic->key << "\n";
 
   tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
-std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n";
+  //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n";
   for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
     split_edge(T, G, *i, ic, tmpop);
 
@@ -404,9 +405,9 @@ std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n";
       if(!G[*v].uses)
         continue;
       typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
-      if(!a.global[boost::source(*e, G)])
+      if(!(a.global[boost::source(*e, G)] || a.global[*v] && !G[*v].invalidates))
         continue;
-      std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
+      //std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
       // Todo: split unconnected iTemps, unify with dummy iTemps.
       iCode *ic = G[*v].ic;
       IC_LEFT(ic) = 0;
@@ -426,8 +427,8 @@ int tree_dec_lospre (T_t &T, G_t &G, const iCode *ic)
 
   const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
 
-  std::cout << "Winner: ";
-  print_assignment(winner, G);
+  //std::cout << "Winner: ";
+  //print_assignment(winner, G);
 
   int change;
   if (change = implement_lospre_assignment(winner, T, G, ic))

@@ -108,6 +108,7 @@ same_expression (const iCode *const lic, const iCode *const ric)
 static void
 get_candidate_set(std::set<int> *c, const iCode *const sic)
 {
+  // TODO: For loop invariant code motion allow expression that only occurs once, too!
   for (const iCode *ic = sic; ic; ic = ic->next)
     {
       if (!candidate_expression (ic))
@@ -153,8 +154,10 @@ void dump_cfg_lospre(const cfg_lospre_t &cfg)
   std::string *name = new std::string[num_vertices(cfg)];
   for (unsigned int i = 0; i < boost::num_vertices(cfg); i++)
     {
+      const char *iLine = printILine (cfg[i].ic);
       std::ostringstream os;
-      os << i << ", " << cfg[i].ic->key;
+      os << i << ", " << cfg[i].ic->key << " : " << iLine;
+      dbuf_free (iLine);
       name[i] = os.str();
     }
   boost::write_graphviz(dump_file, cfg, boost::make_label_writer(name));
@@ -193,7 +196,7 @@ lospre (iCode *sic, ebbIndex *ebbi)
 
           setup_cfg_for_expression (&control_flow_graph, ic);
 
-          change = (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);change = false;
+          change = (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);
         }
     }
 }
