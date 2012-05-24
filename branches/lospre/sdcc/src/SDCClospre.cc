@@ -63,9 +63,34 @@ static bool
 candidate_expression (const iCode *const ic)
 {
   // Todo: Allow more operations!
-  if (ic->op != '+' &&
+  if (
+    ic->op != '!' &&
+    ic->op != '~' &&
+    ic->op != UNARYMINUS &&
+    ic->op != '+' &&
     ic->op != '-' &&
-    ic->op != RIGHT_OP)
+    ic->op != '*' &&
+    ic->op != '/' &&
+    ic->op != '%' &&
+    ic->op != '>' &&
+    ic->op != '<' &&
+    ic->op != LE_OP &&
+    ic->op != GE_OP &&
+    ic->op != NE_OP &&
+    ic->op != EQ_OP &&
+    ic->op != AND_OP &&
+    ic->op != OR_OP &&
+    ic->op != '^' &&
+    ic->op != '|' &&
+    ic->op != BITWISEAND &&
+    ic->op != RRC &&
+    ic->op != RLC &&
+    ic->op != GETABIT &&
+    ic->op != GETHBIT &&
+    ic->op != LEFT_OP &&
+    ic->op != RIGHT_OP &&
+    // TODO: pointerSet, pointerGet.
+    ic->op != CAST)
     return (false);
 
   const operand *const left = IC_LEFT (ic);
