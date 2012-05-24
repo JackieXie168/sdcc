@@ -98,7 +98,7 @@ candidate_expression (const iCode *const ic)
   const operand *const result = IC_RESULT (ic);
 
   // Todo: Allow more operands!
-  if (left && !(IS_SYMOP (left) || IS_OP_LITERAL (left)) ||
+  if (ic->op != CAST && left && !(IS_SYMOP (left) || IS_OP_LITERAL (left)) ||
     right && !(IS_SYMOP (right) || IS_OP_LITERAL (right)) ||
     result && !(IS_SYMOP (result) || IS_OP_LITERAL (result)))
     return (false);
