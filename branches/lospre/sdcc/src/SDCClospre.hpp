@@ -157,8 +157,12 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
     {
       ai->local.insert(i);
       ai->global[i] = false;
+//std::cout << "Assignment1: ";
+//print_assignment(*ai, G);
       alist2.push_back(*ai);
       ai->global[i] = true;
+//std::cout << "Assignment2: ";
+//print_assignment(*ai, G);
       alist2.push_back(*ai);
     }
 
@@ -189,7 +193,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     { 
       //std::cout << "Assignment: ";
-      //print_assignment(*ai, G);
+      ////print_assignment(*ai, G);
 
       ai->local.erase(i);
       ai->s.get<1>() += ai->global[i]; // Add lifetime cost.
@@ -198,6 +202,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
         n_iter_t n, n_end;
         for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
           {
+//std::cout << "Considering edge from " << i << " to " << boost::target(*n, G) << ":" << ai->global[i] << "," << G[i].invalidates << "," << ai->global[boost::target(*n, G)] << ", " << G[boost::target(*n, G)].uses << "\n";
             if (ai->local.find(boost::target(*n, G)) == ai->local.end() || (ai->global[i] && !G[i].invalidates) >= (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].uses))
               continue;
 //std::cout << "Adding cost for edge from " << boost::source(*n, G) << " to " << boost::target(*n, G) << "\n";
@@ -415,6 +420,14 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
       ic->op = '=';
       IC_RESULT (ic) = operandFromOperand (IC_RESULT (ic));
       IC_RESULT (ic)->isaddr = 0;
+      if (OP_SYMBOL (IC_RESULT (ic))->liveTo == ic->next->seq)
+        {//std::cout << "Could merge.\n";
+          // TODO: Handle pointer set.
+          if (isOperandEqual (IC_RESULT (ic), IC_LEFT(ic->next)))
+            {IC_LEFT(ic->next) = tmpop;}
+          if (isOperandEqual (IC_RESULT (ic), IC_RIGHT(ic->next)))
+            IC_RIGHT(ic->next) = tmpop;
+        }
     }
   return(1);
 }
@@ -427,12 +440,13 @@ int tree_dec_lospre (T_t &T, G_t &G, const iCode *ic)
 
   const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
 
-  std::cout << "Winner: ";
-  print_assignment(winner, G);
+  //std::cout << "Winner: ";
+  //print_assignment(winner, G);
 
   int change;
   if (change = implement_lospre_assignment(winner, T, G, ic))
     nicify (T);
+  T[find_root(T)].assignments.clear();
   return(change);
 }
 

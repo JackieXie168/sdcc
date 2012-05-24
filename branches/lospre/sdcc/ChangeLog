@@ -1,7 +1,8 @@
 2012-05-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/SDCClospre.cc:
-	  Preparations for lospre.
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  lospre.
 
 2012-05-24 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

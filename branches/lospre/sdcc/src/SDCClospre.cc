@@ -165,6 +165,8 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
          (*cfg)[i].invalidates = true;
        if (ic->op == FUNCTION)
          (*cfg)[i].invalidates = true;
+//if((*cfg)[i].uses) std::cout << "Used at " << i << " / " << ic->key << "\n";
+//if((*cfg)[i].invalidates) std::cout << "Invalidated at " << i << " / " << ic->key << "\n";
     }
 }
 
@@ -189,12 +191,35 @@ void dump_cfg_lospre(const cfg_lospre_t &cfg)
   delete[] name;
 }
 
+// Dump tree decomposition.
+static void dump_tree_decomposition(const tree_dec_lospre_t &tree_dec)
+{
+  std::ofstream dump_file((std::string(dstFileName) + ".dumplospredec" + currFunc->rname + ".dot").c_str());
+
+  unsigned int w = 0;
+
+  std::string *name = new std::string[num_vertices(tree_dec)];
+  for (unsigned int i = 0; i < boost::num_vertices(tree_dec); i++)
+    {
+      if (tree_dec[i].bag.size() > w)
+        w = tree_dec[i].bag.size();
+      std::ostringstream os;
+      std::set<unsigned int>::const_iterator v1;
+       os << i << " | ";
+      for (v1 = tree_dec[i].bag.begin(); v1 != tree_dec[i].bag.end(); ++v1)
+        os << *v1 << " ";
+      name[i] = os.str();
+    }
+  boost::write_graphviz(dump_file, tree_dec, boost::make_label_writer(name));
+  delete[] name;
+}
+
 void
 lospre (iCode *sic, ebbIndex *ebbi)
 {
   cfg_lospre_t control_flow_graph;
   tree_dec_lospre_t tree_decomposition;
-
+int c = 0;
   create_cfg_lospre (control_flow_graph, sic, ebbi);
 
   if(options.dump_graphs)
@@ -220,7 +245,6 @@ lospre (iCode *sic, ebbIndex *ebbi)
             continue;
 
           setup_cfg_for_expression (&control_flow_graph, ic);
-
           change = (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);
         }
     }
