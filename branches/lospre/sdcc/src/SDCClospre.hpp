@@ -149,6 +149,9 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
   assignment_list_lospre_t &alist2 = T[t].assignments;
   assignment_list_lospre_t &alist = T[*c].assignments;
 
+  if(alist.size() > options.max_allocs_per_node / 2)
+    return(-1);
+
   std::set<unsigned short> new_inst;
   std::set_difference(T[t].bag.begin(), T[t].bag.end(), T[*c].bag.begin(), T[*c].bag.end(), std::inserter(new_inst, new_inst.end()));
   unsigned short int i = *(new_inst.begin());
@@ -168,7 +171,7 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
 
   alist.clear();
 
-  return((int)alist2.size() <= options.max_allocs_per_node ? 0 : -1);
+  return(0);
 }
 
 // Handle forget nodes in the nice tree decomposition
