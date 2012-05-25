@@ -155,9 +155,9 @@ static void
 setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
 {
   typedef boost::graph_traits<cfg_lospre_t>::vertex_descriptor vertex_t;
-  const operand *const eleft = IC_LEFT(eic);
-  const operand *const eright = IC_RIGHT(eic);
-  const bool uses_global = (isOperandGlobal(eleft) || isOperandGlobal(eright) || OP_SYMBOL_CONST(eleft)->addrtaken || OP_SYMBOL_CONST(eright)->addrtaken);
+  const operand *const eleft = IC_LEFT (eic);
+  const operand *const eright = IC_RIGHT (eic);
+  const bool uses_global = (isOperandGlobal (eleft) || isOperandGlobal (eright) || IS_SYMOP (eleft) && OP_SYMBOL_CONST (eleft)->addrtaken || IS_SYMOP (eright) && OP_SYMBOL_CONST (eright)->addrtaken);
 
   for (vertex_t i = 0; i < boost::num_vertices (*cfg); i++)
     {
@@ -173,7 +173,7 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
          (*cfg)[i].invalidates = true;
        if(uses_global && (ic->op == CALL || ic->op == PCALL))
          (*cfg)[i].invalidates = true;
-       if(uses_global && POINTER_SET(ic)) // TODO: More accuracy here!
+       if(uses_global && POINTER_SET (ic)) // TODO: More accuracy here!
          (*cfg)[i].invalidates = true;
 //if((*cfg)[i].uses) std::cout << "Used at " << i << " / " << ic->key << "\n";
 //if((*cfg)[i].invalidates) std::cout << "Invalidated at " << i << " / " << ic->key << "\n";
