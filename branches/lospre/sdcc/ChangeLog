@@ -1,3 +1,11 @@
+2012-05-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCicode.h,
+	  src/SDCCicode.c,
+	  src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Fixes for handling of globals and volatile in lospre.
+
 2012-05-25 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* support/scripts/sdcc.nsi: fix my typo in r3ka path

@@ -1,4 +1,4 @@
-// Philipp Klaus Krause, philipp@informatik.uni-frankfurt.de, pkk@spth.de, 2011
+// Philipp Klaus Krause, philipp@informatik.uni-frankfurt.de, pkk@spth.de, 2012
 //
 // (c) 2012 Goethe-Universität Frankfurt
 //
@@ -97,6 +97,9 @@ candidate_expression (const iCode *const ic)
   const operand *const right = IC_RIGHT (ic);
   const operand *const result = IC_RESULT (ic);
 
+  if(IS_OP_VOLATILE (left) || IS_OP_VOLATILE (right))
+    return (false);
+
   // Todo: Allow more operands!
   if (ic->op != CAST && left && !(IS_SYMOP (left) || IS_OP_LITERAL (left)) ||
     right && !(IS_SYMOP (right) || IS_OP_LITERAL (right)) ||
@@ -133,7 +136,7 @@ same_expression (const iCode *const lic, const iCode *const ric)
 static void
 get_candidate_set(std::set<int> *c, const iCode *const sic)
 {
-  // TODO: For loop invariant code motion allow expression that only occurs once, too!
+  // TODO: For loop invariant code motion allow expression that only occurs once, too - will be needed when optimizing for speed.
   for (const iCode *ic = sic; ic; ic = ic->next)
     {
       if (!candidate_expression (ic))
@@ -152,18 +155,25 @@ static void
 setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
 {
   typedef boost::graph_traits<cfg_lospre_t>::vertex_descriptor vertex_t;
+  const operand *const eleft = IC_LEFT(eic);
+  const operand *const eright = IC_RIGHT(eic);
+  const bool uses_global = (isOperandGlobal(eleft) || isOperandGlobal(eright) || OP_SYMBOL_CONST(eleft)->addrtaken || OP_SYMBOL_CONST(eright)->addrtaken);
 
   for (vertex_t i = 0; i < boost::num_vertices (*cfg); i++)
     {
        const iCode *const ic = (*cfg)[i].ic;
        (*cfg)[i].uses = same_expression (eic, ic);
        (*cfg)[i].invalidates = false;
-       // Todo: Do not invalidate pointer when dereferencing?
-       if (IC_RESULT (ic) && IC_LEFT (eic) && !IS_OP_LITERAL (IC_LEFT (eic)) && isOperandEqual (IC_LEFT (eic), IC_RESULT (ic)))
+       // Todo: Do not invalidate pointer when dereferencing? Invalidate global and addrtaken upon function call, pointer write.
+       if (IC_RESULT (ic) && eleft && !IS_OP_LITERAL (eleft) && isOperandEqual (eleft, IC_RESULT (ic)))
          (*cfg)[i].invalidates = true;
-       if (IC_RESULT (ic) && IC_RIGHT (eic) && !IS_OP_LITERAL (IC_RIGHT (eic)) && isOperandEqual (IC_RIGHT (eic), IC_RESULT (ic)))
+       if (IC_RESULT (ic) && eright && !IS_OP_LITERAL (eright) && isOperandEqual (eright, IC_RESULT (ic)))
          (*cfg)[i].invalidates = true;
        if (ic->op == FUNCTION)
+         (*cfg)[i].invalidates = true;
+       if(uses_global && (ic->op == CALL || ic->op == PCALL))
+         (*cfg)[i].invalidates = true;
+       if(uses_global && POINTER_SET(ic)) // TODO: More accuracy here!
          (*cfg)[i].invalidates = true;
 //if((*cfg)[i].uses) std::cout << "Used at " << i << " / " << ic->key << "\n";
 //if((*cfg)[i].invalidates) std::cout << "Invalidated at " << i << " / " << ic->key << "\n";
@@ -219,7 +229,7 @@ lospre (iCode *sic, ebbIndex *ebbi)
 {
   cfg_lospre_t control_flow_graph;
   tree_dec_lospre_t tree_decomposition;
-int c = 0;
+
   create_cfg_lospre (control_flow_graph, sic, ebbi);
 
   if(options.dump_graphs)

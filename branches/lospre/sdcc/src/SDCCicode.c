@@ -864,7 +864,7 @@ isParameterToCall (value * args, operand * op)
 /* isOperandGlobal   - return 1 if operand is a global variable    */
 /*-----------------------------------------------------------------*/
 int
-isOperandGlobal (operand * op)
+isOperandGlobal (const operand *op)
 {
   if (!op)
     return 0;
@@ -883,8 +883,11 @@ isOperandGlobal (operand * op)
 /* isOperandVolatile - return 1 if the operand is volatile         */
 /*-----------------------------------------------------------------*/
 int
-isOperandVolatile (operand * op, bool chkTemp)
+isOperandVolatile (const operand *op, bool chkTemp)
 {
+  if (!op)
+    return 0;
+
   if (IS_ITEMP (op) && !chkTemp)
     return 0;
 

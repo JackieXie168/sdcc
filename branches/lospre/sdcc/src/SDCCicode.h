@@ -303,8 +303,8 @@ iCodeTable;
 /*-----------------------------------------------------------------*/
 iCode *reverseiCChain ();
 bool isOperandOnStack (operand *);
-int isOperandVolatile (operand *, bool);
-int isOperandGlobal (operand *);
+int isOperandVolatile (const operand *, bool);
+int isOperandGlobal (const operand *);
 void printiCChain (iCode *, FILE *);
 operand *ast2iCode (ast *, int);
 operand *geniCodePtrPtrSubtract (operand *, operand *);
