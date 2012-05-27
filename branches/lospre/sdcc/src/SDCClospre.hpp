@@ -40,7 +40,7 @@ extern "C"
 #include <stx/btree_set.h>
 #endif
 
-#ifdef HAVE_STX_BTREE_SET_H
+#if 0 //def HAVE_STX_BTREE_SET_H
 typedef stx::btree_set<unsigned short int> lospreset_t; // Faster than std::set
 #else
 typedef std::set<unsigned short int> lospreset_t;
@@ -114,6 +114,7 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, t
 #if 1
 void print_assignment(const assignment_lospre &a, cfg_lospre_t G)
 {
+  wassert(a.global.size() == boost::num_vertices (G));
   for(unsigned int i = 0; i < boost::num_vertices (G); i++)
     std::cout << "(" << i << ", " << a.global[i] << "),";
   std::cout << "\n";
@@ -121,6 +122,7 @@ void print_assignment(const assignment_lospre &a, cfg_lospre_t G)
   for(lospreset_t::const_iterator i = a.local.begin(); i != a.local.end(); ++i)
     std::cout << *i << " ";
   std::cout << "\n";
+  std::cout.flush();
 }
 #endif
 
@@ -149,8 +151,11 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
   assignment_list_lospre_t &alist2 = T[t].assignments;
   assignment_list_lospre_t &alist = T[*c].assignments;
 
-  if(alist.size() > options.max_allocs_per_node / 2)
-    return(-1);
+  if(alist.size() > size_t(options.max_allocs_per_node) / 2)
+    {
+      alist.clear();
+      return(-1);
+    }
 
   std::set<unsigned short> new_inst;
   std::set_difference(T[t].bag.begin(), T[t].bag.end(), T[*c].bag.begin(), T[*c].bag.end(), std::inserter(new_inst, new_inst.end()));
@@ -248,6 +253,9 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             }
         }
     }
+
+  if(!alist.size())
+    std::cerr << "No surviving assignments at forget node.\n";
 }
 
 // Handle join nodes in the nice tree decomposition
@@ -317,7 +325,8 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
       break;
     case 1:
       c0 = *c;
-      tree_dec_lospre_nodes(T, c0, G);
+      if(tree_dec_lospre_nodes(T, c0, G) < 0)
+        return(-1);
       if (T[c0].bag.size() < T[t].bag.size())
         {
         if (tree_dec_lospre_introduce(T, t, G))
@@ -329,8 +338,10 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
     case 2:
       c0 = *c++;
       c1 = *c;
-      tree_dec_lospre_nodes(T, c0, G);
-      tree_dec_lospre_nodes(T, c1, G);
+      if(tree_dec_lospre_nodes(T, c0, G) < 0)
+        return(-1);
+      if(tree_dec_lospre_nodes(T, c1, G) < 0)
+        return(-1);
       tree_dec_lospre_join(T, t, G);
       break;
     default:
@@ -387,6 +398,7 @@ template <class T_t, class G_t>
 static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &G, const iCode *ic)
 {
   operand *tmpop;
+  unsigned substituted = 0;
 
   typedef typename boost::graph_traits<G_t>::edge_iterator edge_iter_t;
   typedef typename boost::graph_traits<G_t>::edge_descriptor edge_desc_t;
@@ -416,6 +428,7 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
       if(!(a.global[boost::source(*e, G)] || a.global[*v] && !G[*v].invalidates))
         continue;
       //std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
+      substituted++;
       // Todo: split unconnected iTemps, unify with dummy iTemps.
       iCode *ic = G[*v].ic;
       IC_LEFT(ic) = 0;
@@ -432,6 +445,9 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
             IC_RIGHT(ic->next) = tmpop;
         }
     }
+  if(!substituted)
+    std::cout << "Introduced " << OP_SYMBOL(tmpop)->name << ", but did not substitute any calculations.\n";
+
   return(1);
 }
 
@@ -441,6 +457,7 @@ int tree_dec_lospre (T_t &T, G_t &G, const iCode *ic)
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
 
+  wassert(T[find_root(T)].assignments.begin() != T[find_root(T)].assignments.end());
   const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
 
   //std::cout << "Winner: ";

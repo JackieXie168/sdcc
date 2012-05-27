@@ -62,7 +62,8 @@ create_cfg_lospre (cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
 static bool
 candidate_expression (const iCode *const ic)
 {
-  // Todo: Allow more operations!
+  wassert(ic);
+
   if (
     ic->op != '!' &&
     ic->op != '~' &&
