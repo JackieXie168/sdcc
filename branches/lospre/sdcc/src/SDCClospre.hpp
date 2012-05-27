@@ -422,6 +422,8 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
   vertex_iter_t v, v_end;
   for(boost::tie(v, v_end) = boost::vertices(G); v != v_end; ++v)
     {
+      iCode *nic;
+
       if(!G[*v].uses)
         continue;
       typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
@@ -429,20 +431,34 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
         continue;
       //std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
       substituted++;
-      // Todo: split unconnected iTemps, unify with dummy iTemps.
+      // Todo: split unconnected iTemps.
       iCode *ic = G[*v].ic;
       IC_LEFT(ic) = 0;
       IC_RIGHT(ic) = tmpop;
       ic->op = '=';
       IC_RESULT (ic) = operandFromOperand (IC_RESULT (ic));
       IC_RESULT (ic)->isaddr = 0;
-      if (OP_SYMBOL (IC_RESULT (ic))->liveTo == ic->next->seq)
-        {//std::cout << "Could merge.\n";
-          // TODO: Handle pointer set.
-          if (isOperandEqual (IC_RESULT (ic), IC_LEFT(ic->next)))
-            {IC_LEFT(ic->next) = tmpop;}
-          if (isOperandEqual (IC_RESULT (ic), IC_RIGHT(ic->next)))
-            IC_RIGHT(ic->next) = tmpop;
+
+      if (IS_OP_VOLATILE (IC_RESULT (ic)))
+        continue;
+      for (nic = ic->next; nic; nic = nic->next)
+        {  
+          if (isOperandEqual (IC_RESULT (ic), IC_LEFT(nic)))
+            IC_LEFT(nic) = tmpop;
+          if (isOperandEqual (IC_RESULT (ic), IC_RIGHT(nic)))
+            IC_RIGHT(nic) = tmpop;
+          if (POINTER_SET(nic) && isOperandEqual (IC_RESULT (ic), IC_RESULT(nic)))
+            {    
+              IC_RESULT(nic) = operandFromOperand (tmpop);
+              IC_RESULT(nic)->isaddr = true;
+            }
+
+          if (isOperandEqual (IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
+            break;  
+          if (nic->op == LABEL || nic->op == GOTO)
+            break;   
+          if ((ic->op == CALL || ic->op == PCALL || POINTER_SET(ic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
+            break;     
         }
     }
   if(!substituted)

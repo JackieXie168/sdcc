@@ -60,7 +60,7 @@ create_cfg_lospre (cfg_lospre_t &cfg, iCode *start_ic, ebbIndex *ebbi)
 }
 
 static bool
-candidate_expression (const iCode *const ic)
+candidate_expression (const iCode *const ic, int lkey)
 {
   wassert(ic);
 
@@ -90,6 +90,7 @@ candidate_expression (const iCode *const ic)
     ic->op != GETHBIT &&
     ic->op != LEFT_OP &&
     ic->op != RIGHT_OP &&
+    !(ic->op == '=' && !POINTER_SET(ic) && !(IS_ITEMP(IC_RIGHT(ic)) && IC_RIGHT(ic)->key > lkey)) &&
     // TODO: pointerSet, pointerGet.
     ic->op != CAST)
     return (false);
@@ -135,15 +136,15 @@ same_expression (const iCode *const lic, const iCode *const ric)
 }
 
 static void
-get_candidate_set(std::set<int> *c, const iCode *const sic)
+get_candidate_set(std::set<int> *c, const iCode *const sic, int lkey)
 {
   // TODO: For loop invariant code motion allow expression that only occurs once, too - will be needed when optimizing for speed.
   for (const iCode *ic = sic; ic; ic = ic->next)
     {
-      if (!candidate_expression (ic))
+      if (!candidate_expression (ic, lkey))
         continue;
       for (const iCode *pic = sic; pic != ic; pic = pic->next)
-        if (candidate_expression (pic) && same_expression (ic, pic) && c->find (pic->key) == c->end ())
+        if (candidate_expression (pic, lkey) && same_expression (ic, pic) && c->find (pic->key) == c->end ())
           {
             // Found expression that occurs at least twice.
             c->insert (pic->key);
@@ -239,12 +240,14 @@ lospre (iCode *sic, ebbIndex *ebbi)
   thorup_tree_decomposition (tree_decomposition, control_flow_graph);
   nicify (tree_decomposition);
 
+  int lkey = operandKey;
+
   for (bool change = true; change;)
     {
       change = false;
 
       std::set<int> candidate_set;
-      get_candidate_set (&candidate_set, sic);
+      get_candidate_set (&candidate_set, sic, lkey);
 
       std::set<int>::iterator ci, ci_end;
       for (ci = candidate_set.begin(), ci_end = candidate_set.end(); ci != ci_end; ++ci)
@@ -252,7 +255,7 @@ lospre (iCode *sic, ebbIndex *ebbi)
           const iCode *ic;
           for (ic = sic; ic && ic->key != *ci; ic = ic->next);
 
-          if (!candidate_expression (ic))
+          if (!candidate_expression (ic, lkey))
             continue;
 
           setup_cfg_for_expression (&control_flow_graph, ic);
