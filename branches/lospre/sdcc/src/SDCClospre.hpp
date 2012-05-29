@@ -395,7 +395,7 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
 }
 
 template <class T_t, class G_t>
-static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &G, const iCode *ic)
+static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G, const iCode *ic) // Assignment has to be passes as a copy (not reference), since the transformations on the tree-decomposition will invalidate it otherwise.
 {
   operand *tmpop;
   unsigned substituted = 0;
@@ -411,15 +411,16 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
   if(!calculation_edges.size())
     return(0);
 
-  //std::cout << "Optimizing at " << ic->key << "\n";
+  //std::cout << "Optimizing at " << ic->key << "\n"; std::cout.flush();
 
   tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
-  //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n";
+  //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n"; std::cout.flush();
+
   for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
     split_edge(T, G, *i, ic, tmpop);
-
   typedef typename boost::graph_traits<G_t>::vertex_iterator vertex_iter_t;
   vertex_iter_t v, v_end;
+
   for(boost::tie(v, v_end) = boost::vertices(G); v != v_end; ++v)
     {
       iCode *nic;
@@ -427,7 +428,7 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
       if(!G[*v].uses)
         continue;
       typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
-      if(!(a.global[boost::source(*e, G)] || a.global[*v] && !G[*v].invalidates))
+      if(!(a.global[*v] && !G[*v].invalidates || boost::source(*e, G) < a.global.size() && a.global[boost::source(*e, G)]))
         continue;
       //std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
       substituted++;
@@ -458,17 +459,21 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
           if (nic->op == LABEL || nic->op == GOTO)
             break;   
           if ((ic->op == CALL || ic->op == PCALL || POINTER_SET(ic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
-            break;     
+            break;
         }
     }
-  if(!substituted)
-    std::cout << "Introduced " << OP_SYMBOL(tmpop)->name << ", but did not substitute any calculations.\n";
+  if(substituted <= 0)
+    std::cerr << "Introduced " << OP_SYMBOL(tmpop)->name << ", but did not substitute any calculations.\n";
+
+  if(substituted <= 1) // Todo: Remove this warning when optimization for speed instead of code size is implemented!
+    std::cout << "Introduced " << OP_SYMBOL(tmpop)->name << ", but did not substitute any calculations.\n"; std::cout.flush();
 
   return(1);
 }
 
-template <class T_t, class G_t>
-int tree_dec_lospre (T_t &T, G_t &G, const iCode *ic)
+/* Using a template here confuses debugging tool ssuch as valgrind. */
+/*template <class T_t, class G_t>*/
+static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
 {
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
@@ -485,5 +490,4 @@ int tree_dec_lospre (T_t &T, G_t &G, const iCode *ic)
   T[find_root(T)].assignments.clear();
   return(change);
 }
-
 
