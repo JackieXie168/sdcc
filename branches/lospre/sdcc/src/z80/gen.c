@@ -9226,7 +9226,9 @@ genIfx (iCode * ic, iCode * popIc)
 static void
 genAddrOf (const iCode * ic)
 {
-  symbol *sym = OP_SYMBOL (IC_LEFT (ic));
+  symbol *sym;
+  wassert (IS_TRUE_SYMOP (IC_LEFT (ic)));
+  sym = OP_SYMBOL (IC_LEFT (ic));
 
   aopOp (IC_RESULT (ic), ic, FALSE, FALSE);
 

@@ -443,7 +443,7 @@ static int implement_lospre_assignment(const assignment_lospre &a, T_t &T, G_t &
         continue;
       for (nic = ic->next; nic; nic = nic->next)
         {  
-          if (isOperandEqual (IC_RESULT (ic), IC_LEFT(nic)))
+          if (isOperandEqual (IC_RESULT (ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF)
             IC_LEFT(nic) = tmpop;
           if (isOperandEqual (IC_RESULT (ic), IC_RIGHT(nic)))
             IC_RIGHT(nic) = tmpop;

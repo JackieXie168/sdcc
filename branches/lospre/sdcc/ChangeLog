@@ -1,5 +1,11 @@
 2012-05-29 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCClospre.hpp,
+	  src/z80/gen.c:
+	  Fix handling of ADDRESS_OF in lospre forward assignment.
+
+2012-05-29 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/gen.c:
 	  Fixed bug #3530276.
 
