@@ -177,8 +177,6 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
          (*cfg)[i].invalidates = true;
        if(uses_global && POINTER_SET (ic)) // TODO: More accuracy here!
          (*cfg)[i].invalidates = true;
-//if((*cfg)[i].uses) std::cout << "Used at " << i << " / " << ic->key << "\n";
-//if((*cfg)[i].invalidates) std::cout << "Invalidated at " << i << " / " << ic->key << "\n";
     }
 }
 

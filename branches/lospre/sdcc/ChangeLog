@@ -1,5 +1,10 @@
 2012-05-29 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCClospre.hpp:
+	  Fix for handling global variables over calls in lospre.
+
+2012-05-29 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/gen.c,
 	  src/hc08/gen.c:
 	  Added assertions to debug rematerialization issues.

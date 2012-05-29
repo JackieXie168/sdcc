@@ -165,12 +165,8 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
     {
       ai->local.insert(i);
       ai->global[i] = false;
-//std::cout << "Assignment1: ";
-//print_assignment(*ai, G);
       alist2.push_back(*ai);
       ai->global[i] = true;
-//std::cout << "Assignment2: ";
-//print_assignment(*ai, G);
       alist2.push_back(*ai);
     }
 
@@ -443,7 +439,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       if (IS_OP_VOLATILE (IC_RESULT (ic)))
         continue;
       for (nic = ic->next; nic; nic = nic->next)
-        {  
+        {
           if (isOperandEqual (IC_RESULT (ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF)
             IC_LEFT(nic) = tmpop;
           if (isOperandEqual (IC_RESULT (ic), IC_RIGHT(nic)))
@@ -458,7 +454,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
             break;  
           if (nic->op == LABEL || nic->op == GOTO)
             break;   
-          if ((ic->op == CALL || ic->op == PCALL || POINTER_SET(ic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
+          if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
             break;
         }
     }
