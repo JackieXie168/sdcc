@@ -1,3 +1,16 @@
+2012-05-29 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Fixed bug #3530276.
+
+2012-05-29 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCbitv.c (bitVectSetBit, bitVectUnSetBit),
+	* src/hc08/ralloc2.cc (set_surviving_regs),
+	* src/z80/ralloc2.cc (set_surviving_regs): Prohibit negative bit
+	  position in bit vectors to avoid memory corruption
+	* device/lib/clean.mk: add s08 and r3ka ports to cleaning
+
 2012-05-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
