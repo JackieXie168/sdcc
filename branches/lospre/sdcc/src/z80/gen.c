@@ -8812,6 +8812,7 @@ genPackBits (sym_link * etype, operand * right, int pair, const iCode * ic)
   unsigned char mask;           /* bitmask within current byte */
   int extraPair;                /* a tempory register */
   bool needPopExtra = 0;        /* need to restore original value of temp reg */
+  unsigned int pairincrement = 0;
 
   emitDebug ("; genPackBits", "");
 
@@ -8906,6 +8907,7 @@ genPackBits (sym_link * etype, operand * right, int pair, const iCode * ic)
         {
           emit2 ("inc %s", _pairs[pair].name);
           regalloc_dry_run_cost += 1;
+          pairincrement++;
           _G.pairs[pair].offset++;
         }
       else
@@ -8997,6 +8999,14 @@ genPackBits (sym_link * etype, operand * right, int pair, const iCode * ic)
           regalloc_dry_run_cost += 1;
         }
     }
+  if (!isPairDead(pair, ic))
+    while (pairincrement)
+      {
+        emit2 ("dec %s", _pairs[pair].name);
+        regalloc_dry_run_cost += 1;
+        pairincrement--;
+        _G.pairs[pair].offset--;
+      }
 }
 
 /*-----------------------------------------------------------------*/
