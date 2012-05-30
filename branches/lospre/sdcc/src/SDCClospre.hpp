@@ -410,7 +410,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
   //std::cout << "Optimizing at " << ic->key << "\n"; std::cout.flush();
 
   tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
-  std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n"; std::cout.flush();
+  //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n"; std::cout.flush();
 
   for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
     split_edge(T, G, *i, ic, tmpop);
@@ -426,7 +426,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
       if(!(a.global[*v] && !G[*v].invalidates || boost::source(*e, G) < a.global.size() && a.global[boost::source(*e, G)]))
         continue;
-      std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
+      //std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
       substituted++;
       // Todo: split unconnected iTemps.
       iCode *ic = G[*v].ic;
@@ -477,8 +477,8 @@ static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G,
   wassert(T[find_root(T)].assignments.begin() != T[find_root(T)].assignments.end());
   const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
 
-  std::cout << "Winner: ";
-  print_assignment(winner, G);
+  //std::cout << "Winner: ";
+  //print_assignment(winner, G);
 
   int change;
   if (change = implement_lospre_assignment(winner, T, G, ic))
