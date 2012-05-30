@@ -6355,6 +6355,32 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
 
           if (sign)             /* Map signed operands to unsigned ones. This pre-subtraction workaroud to lack of signed comparison is cheaper than the post-subtraction one at fix. */
             {
+              if (size == 2 && !IS_GB && isPairDead (PAIR_HL, ic) && (isPairDead (PAIR_DE, ic) || isPairDead (PAIR_BC, ic)) && (getPairId (AOP (left)) == PAIR_HL || IS_RAB && (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_EXSTK)))
+                {
+                  PAIR_ID litpair = (isPairDead (PAIR_DE, ic) ? PAIR_DE : PAIR_BC);
+                  fetchPair (PAIR_HL, AOP (left));
+                  emit2 ("ld %s, #0x%X", _pairs[litpair].name, (lit ^ 0x8000u) & 0xffffu);
+                  regalloc_dry_run_cost += 3;
+                  emit2 ("add hl, hl");
+                  emit2 ("ccf");
+                  regalloc_dry_run_cost += 2;
+                  if (IS_RAB)
+                    {
+                      emit2 ("rr hl");
+                      regalloc_dry_run_cost += 1;
+                    }
+                  else
+                    {
+                      emit2 ("rr h");
+                      emit2 ("rr l");
+                      regalloc_dry_run_cost += 2;
+                    }
+                  emit2 ("sbc hl, %s", _pairs[litpair].name);
+                  regalloc_dry_run_cost += 2;
+                  result_in_carry = TRUE;
+                  goto release;
+                }
+
               cheapMove (ASMOP_A, 0, AOP (left), offset);
               if (size == 1)
                 {
@@ -9361,7 +9387,9 @@ genAssign (const iCode * ic)
       emit2 ("ld (%s), %s", AOP (result)->aopu.aop_dir, getPairName (AOP (right)));
       regalloc_dry_run_cost += (getPairId (AOP (right)) == PAIR_HL) ? 3 : 4;
     }
-  else if (!IS_GB && AOP_TYPE (right) == AOP_STK && AOP_TYPE (result) == AOP_IY && size == 2 && isPairDead (PAIR_HL, ic))
+  else if (size == 2 && isPairDead (PAIR_HL, ic) &&
+    (!IS_GB && AOP_TYPE (right) == AOP_STK && AOP_TYPE (result) == AOP_IY ||
+    IS_RAB && (AOP_TYPE(result) == AOP_STK || AOP_TYPE(result) == AOP_EXSTK) && (AOP_TYPE(right) == AOP_LIT || AOP_TYPE (right) == AOP_IMMD)))
     {
       fetchPair (PAIR_HL, AOP (right));
       commitPair (AOP (result), PAIR_HL, ic, FALSE);
