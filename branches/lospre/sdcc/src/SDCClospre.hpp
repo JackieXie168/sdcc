@@ -192,12 +192,12 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   unsigned short int i = *(old_inst.begin());
 
   assignment_list_lospre_t::iterator ai, aif;
-//std::cout << "Forgetting " << i << "\n";
+//if(i >= 19 && i <= 21) std::cout << "Forgetting " << i << "\n";
   // Restrict assignments (locally) to current variables.
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     { 
-      //std::cout << "Assignment: ";
-      ////print_assignment(*ai, G);
+//if(i >= 19 && i <= 21) std::cout << "Assignment: ";
+//if(i >= 19 && i <= 21) print_assignment(*ai, G);
 
       ai->local.erase(i);
       ai->s.get<1>() += ai->global[i]; // Add lifetime cost.
@@ -206,10 +206,11 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
         n_iter_t n, n_end;
         for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
           {
+//if(i >= 19 && i <= 21)
 //std::cout << "Considering edge from " << i << " to " << boost::target(*n, G) << ":" << ai->global[i] << "," << G[i].invalidates << "," << ai->global[boost::target(*n, G)] << ", " << G[boost::target(*n, G)].uses << "\n";
             if (ai->local.find(boost::target(*n, G)) == ai->local.end() || (ai->global[i] && !G[i].invalidates) >= (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].uses))
               continue;
-//std::cout << "Adding cost for edge from " << boost::source(*n, G) << " to " << boost::target(*n, G) << "\n";
+//if(i >= 19 && i <= 21) std::cout << "Adding cost for edge from " << boost::source(*n, G) << " to " << boost::target(*n, G) << "\n";
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
       }
@@ -218,9 +219,9 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
         n_iter_t n, n_end;
         for (boost::tie(n, n_end) = boost::in_edges(i, G);  n != n_end; ++n)
           {
-            if (ai->local.find(boost::source(*n, G)) == ai->local.end() || (ai->global[boost::source(*n, G)] && !G[i].invalidates) >= (ai->global[i] || G[i].uses))
+            if (ai->local.find(boost::source(*n, G)) == ai->local.end() || (ai->global[boost::source(*n, G)] && !G[boost::source(*n, G)].invalidates) >= (ai->global[i] || G[i].uses))
               continue;
-//std::cout << "Adding cost for edge from " << boost::source(*n, G) << " to " << boost::target(*n, G) << "\n";
+//if(i >= 19 && i <= 21) std::cout << "Adding cost for edge from " << boost::source(*n, G) << " to " << boost::target(*n, G) << "\n";
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
       }
@@ -401,7 +402,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
   std::set<edge_desc_t> calculation_edges; // Use descriptor, not iterator due to possible invalidation of iterators when inserting vertices or edges.
   edge_iter_t e, e_end;
   for(boost::tie(e, e_end) = boost::edges(G); e != e_end; ++e)
-    if(a.global[boost::source(*e, G)] < a.global[boost::target(*e, G)])
+    if((a.global[boost::source(*e, G)] && !G[boost::source(*e, G)].invalidates) < a.global[boost::target(*e, G)])
       calculation_edges.insert(*e);
 
   if(!calculation_edges.size())
