@@ -1,3 +1,22 @@
+2012-06-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCClospre.cc:
+	  Disable lospre for literla assignments (can be reenabled once ports can rematerialize this).
+	* src/SDCClospre.hpp:
+	  Improve handling of volatile.
+
+2012-06-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Always use 16-bit addition when an operand and the result are in hl.
+
+2012-06-01 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Preparations for further pointer offset
+	  optimizations. Bug fixes for certain register assignment cases
+	  in complement, unary minus, bitwise operators, and bitfield
+	  unpacking.
+
 2012-05-31 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:

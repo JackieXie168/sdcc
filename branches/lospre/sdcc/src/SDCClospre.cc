@@ -71,7 +71,7 @@ candidate_expression (const iCode *const ic, int lkey)
     ic->op != '+' &&
     ic->op != '-' &&
     ic->op != '*' &&
-    ic->op != '/' &&
+    //ic->op != '/' && // Would this be OK for all architectures?
     ic->op != '%' &&
     ic->op != '>' &&
     ic->op != '<' &&
@@ -98,6 +98,10 @@ candidate_expression (const iCode *const ic, int lkey)
   const operand *const left = IC_LEFT (ic);
   const operand *const right = IC_RIGHT (ic);
   const operand *const result = IC_RESULT (ic);
+
+  // Todo: Allow literal right operand once backends can rematerialize literals!
+  if(ic->op == '=' && IS_OP_LITERAL (right))
+    return (false);
 
   if(IS_OP_VOLATILE (left) || IS_OP_VOLATILE (right))
     return (false);

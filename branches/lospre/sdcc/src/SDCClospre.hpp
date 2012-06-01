@@ -411,6 +411,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
   //std::cout << "Optimizing at " << ic->key << "\n"; std::cout.flush();
 
   tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
+  tmpop->isvolatile = false;
   //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n"; std::cout.flush();
 
   for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
