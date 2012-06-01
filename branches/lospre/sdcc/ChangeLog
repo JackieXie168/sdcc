@@ -1,5 +1,13 @@
 2012-06-01 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCClospre.cc,
+	  src/SDCCsymt.h,
+	  src/SDCCsymt.c,
+	  src/SDCClospre.hpp:
+	  Relax lospre type checking.
+
+2012-06-01 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCClospre.cc:
 	  Disable lospre for literla assignments (can be reenabled once ports can rematerialize this).
 	* src/SDCClospre.hpp:

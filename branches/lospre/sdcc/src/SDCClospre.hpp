@@ -412,7 +412,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
 
   tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
   tmpop->isvolatile = false;
-  //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << "\n"; std::cout.flush();
+  //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << " "; printTypeChain(operandType (IC_RESULT(ic)), stdout); std::cout << "\n";
 
   for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
     split_edge(T, G, *i, ic, tmpop);
@@ -435,24 +435,33 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       IC_LEFT(ic) = 0;
       IC_RIGHT(ic) = tmpop;
       ic->op = '=';
-      IC_RESULT (ic) = operandFromOperand (IC_RESULT (ic));
-      IC_RESULT (ic)->isaddr = 0;
-
-      if (IS_OP_VOLATILE (IC_RESULT (ic)))
+      IC_RESULT(ic) = operandFromOperand (IC_RESULT (ic));
+      IC_RESULT(ic)->isaddr = 0;
+      if(IS_OP_VOLATILE(IC_RESULT (ic)))
         continue;
       for (nic = ic->next; nic; nic = nic->next)
         {
-          if (isOperandEqual (IC_RESULT (ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF)
-            IC_LEFT(nic) = tmpop;
-          if (isOperandEqual (IC_RESULT (ic), IC_RIGHT(nic)))
-            IC_RIGHT(nic) = tmpop;
-          if (POINTER_SET(nic) && isOperandEqual (IC_RESULT (ic), IC_RESULT(nic)))
-            {    
+          if (isOperandEqual(IC_RESULT(ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF && (!POINTER_GET(nic) || !IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_LEFT(nic))->next) || compareType(operandType(IC_LEFT(nic)), operandType(tmpop)) == 1))
+            {
+              //const operand *const oldop = IC_LEFT(nic);
+              IC_LEFT(nic) = operandFromOperand (tmpop);
+              //setOperandType (IC_LEFT(nic), operandType (oldop));
+            }
+          if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
+            {
+              //const operand *const oldop = IC_RIGHT(nic);
+              IC_RIGHT(nic) = operandFromOperand (tmpop);
+              //setOperandType (IC_RIGHT(nic), operandType (oldop));
+            }
+          if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
+            {
+              //const operand *const oldop = IC_RESULT(nic);
               IC_RESULT(nic) = operandFromOperand (tmpop);
+              //setOperandType(IC_RESULT(nic), operandType (oldop));
               IC_RESULT(nic)->isaddr = true;
             }
 
-          if (isOperandEqual (IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
+          if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
             break;  
           if (nic->op == LABEL || nic->op == GOTO)
             break;   

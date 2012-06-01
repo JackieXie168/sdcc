@@ -133,7 +133,7 @@ same_expression (const iCode *const lic, const iCode *const ric)
 
   if ((isOperandEqual (lleft, rleft) && isOperandEqual (lright, rright) ||
     IS_COMMUTATIVE (lic) && isOperandEqual (lleft, rright) && isOperandEqual (lright, rleft)) &&
-    (lresult && rresult && compareType (operandType (lresult), operandType (rresult)) > 0))
+    (lresult && rresult && compareTypeInexact (operandType (lresult), operandType (rresult)) > 0))
     return (true);
 
   return (false);
