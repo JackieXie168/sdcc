@@ -1,3 +1,49 @@
+2012-06-04 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c (loadRegIndex, storeRegIndexed): added missing
+	  rematOfs
+
+2012-06-03 Borut Razem <borut.razem AT gmail.com>
+
+	* src/pic14/main.c, src/pic16/main.c: re-enabled deprecated
+	  macros not starting with double underscore characters in
+	  combination with --std-cXX
+	* device/include/pic16/pic18fregs.h: modified for __SDCC_PICXXX
+
+2012-06-03 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fix handling of extended stack operands in 16-bit unary minus and signed comparison.
+
+2012-06-03 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/SDCCopt.c,
+	* src/hc08/ralloc.c: RFE 3526269 and 3526268
+
+2012-06-02 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/port.h:
+	  Fixed bug #3531540.
+
+2012-06-02 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.c, src/SDCCerr.h: added W_STRING_CANNOT_BE_TERMINATED
+	  src/SDCCast.c (createIvalCharPtr): fixed #3007799: generate different warning
+	  for initializer strings that fit in buffer without terminating '\0'. Accordding
+	  C99 $6.7.8:14 this is allowed. With --less-pedantic no warning is generated.
+	  Modified version of patch by Jan Waclawek.
+
+2012-06-02 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCCmain.c, src/pic14/main.c, src/pic16/main.c,
+	  support/scripts/pic14fam-h-gen.pl,
+	  applied modified patch
+	  #3531337 - The pic14 port, automatically creates the -DpicXXX,
+	  thanks to Molnar Karoly
+	* support/scripts/pic16fam-h-gen.pl: modified for __SDCC_PICXXX
+	* device/non-free/include/pic14/pic14fam.h,
+	  device/non-free/include/pic16/pic16fam.h: (re)generated
+
 2012-06-01 Borut Razem <borut.razem AT gmail.com>
 
 	* doc/README.txt, doc/INSTALL.txt: updated for SDCC 3.2.0 release
