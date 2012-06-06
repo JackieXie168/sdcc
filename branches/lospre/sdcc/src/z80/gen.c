@@ -5479,9 +5479,9 @@ genPlus (iCode * ic)
         }
       else
         emit3_o (A_ADC, ASMOP_A, 0, AOP (IC_RIGHT (ic)), offset);
-      if (size != 0 &&
-          (requiresHL (AOP (IC_RIGHT (ic))) && !AOP_TYPE (IC_RIGHT (ic)) == AOP_REG || requiresHL (AOP (IC_LEFT (ic)))
-           && !AOP_TYPE (IC_LEFT (ic)) == AOP_REG) && AOP_TYPE (IC_RESULT (ic)) == AOP_REG
+      if (size &&
+          (requiresHL (AOP (IC_RIGHT (ic))) && AOP_TYPE (IC_RIGHT (ic)) != AOP_REG || requiresHL (AOP (IC_LEFT (ic)))
+           && AOP_TYPE (IC_LEFT (ic)) != AOP_REG) && AOP_TYPE (IC_RESULT (ic)) == AOP_REG
           && (AOP (IC_RESULT (ic))->aopu.aop_reg[offset]->rIdx == L_IDX
               || AOP (IC_RESULT (ic))->aopu.aop_reg[offset]->rIdx == H_IDX))
         {
@@ -8694,6 +8694,10 @@ genPointerGet (const iCode *ic)
     {
       size = AOP_SIZE (result);
       offset = 0;
+
+      /* might use ld a,(hl) followed by ld d (iy),a */
+      if ((AOP_TYPE (result) == AOP_EXSTK || AOP_TYPE (result) == AOP_STK) && surviving_a && !pushed_a)
+        _push (PAIR_AF), pushed_a = TRUE;
 
       if (size >= 2 && pair == PAIR_HL && AOP_TYPE (result) == AOP_REG)
         {
