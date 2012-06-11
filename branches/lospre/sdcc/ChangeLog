@@ -1,7 +1,7 @@
 2012-06-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCClospre.hpp:
-	  Fix handling of IFX in orward substitution.
+	  Fix handling of IFX in forward substitution.
 
 2012-06-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

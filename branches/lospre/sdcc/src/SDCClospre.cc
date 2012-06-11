@@ -19,6 +19,8 @@
 //
 // Lifetime-optimal speculative partial redundancy elimination.
 
+//#define DEBUG_LOSPRE // Uncomment to get debug messages while doing lospre.
+
 #include "SDCClospre.hpp"
 
 // A quick-and-dirty function to get the CFG from sdcc (a simplified version of the function from SDCCralloc.hpp).
@@ -182,7 +184,7 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
        if(uses_global && POINTER_SET (ic)) // TODO: More accuracy here!
          (*cfg)[i].invalidates = true;
 
-       (*cfg)[i].forward = -1;
+       (*cfg)[i].forward = std::pair<int, int>(-1, -1);
     }
 }
 
@@ -235,6 +237,11 @@ lospre (iCode *sic, ebbIndex *ebbi)
 {
   cfg_lospre_t control_flow_graph;
   tree_dec_lospre_t tree_decomposition;
+
+#ifdef DEBUG_LOSPRE
+  if (currFunc)
+    std::cout << "lospre for " << currFunc->rname << "()\n";
+#endif
 
   create_cfg_lospre (control_flow_graph, sic, ebbi);
 

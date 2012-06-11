@@ -99,7 +99,7 @@ struct cfg_lospre_node
   bool uses;
   bool invalidates;
 
-  int forward;
+  std::pair<int, int> forward;
 };
 
 typedef std::list<assignment_lospre> assignment_list_lospre_t;
@@ -402,28 +402,32 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
   adjacency_iter_t c, c_end;
 
   operand *tmpop = IC_RIGHT(ic);
+  const std::pair<int, int> forward(IC_RESULT(ic)->key, IC_RIGHT(ic)->key);
 
-  for(boost::tie(c, c_end) = adjacent_vertices(i, G); c != c_end; boost::tie(c, c_end) = adjacent_vertices(*c, G))
+  for(;;)
     {
-      if (G[*c].forward == IC_RESULT(ic)->key)
+      if (G[i].forward == forward)
         break; // Was here before.
 
-      iCode *nic = G[*c].ic;
+      iCode *nic = G[i].ic;
 
       if (isOperandEqual(IC_RESULT(ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF && (!POINTER_GET(nic) || !IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_LEFT(nic))->next) || compareType(operandType(IC_LEFT(nic)), operandType(tmpop)) == 1))
         {
+          //std::cout << "Forward substituted left operand at " << nic->key << "\n";
           //const operand *const oldop = IC_LEFT(nic);
           IC_LEFT(nic) = operandFromOperand (tmpop);
           //setOperandType (IC_LEFT(nic), operandType (oldop));
         }
       if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
         {
+          //std::cout << "Forward substituted right operand at " << nic->key << "\n";
           //const operand *const oldop = IC_RIGHT(nic);
           IC_RIGHT(nic) = operandFromOperand (tmpop);
           //setOperandType (IC_RIGHT(nic), operandType (oldop));
         }
       if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
         {
+          //std::cout << "Forward substituted result operand at " << nic->key << "\n";
           //const operand *const oldop = IC_RESULT(nic);
           IC_RESULT(nic) = operandFromOperand (tmpop);
           //setOperandType(IC_RESULT(nic), operandType (oldop));
@@ -434,8 +438,8 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
         {
           typedef typename boost::graph_traits<G_t>::in_edge_iterator in_edge_iter_t;
           in_edge_iter_t e, e_end;
-          for (boost::tie(e, e_end) = boost::in_edges(*c, G); e != e_end; ++e)
-            if (G[boost::source(*e, G)].forward != IC_RESULT(ic)->key)
+          for (boost::tie(e, e_end) = boost::in_edges(i, G); e != e_end; ++e)
+            if (G[boost::source(*e, G)].forward != forward)
               break;
           if(e != e_end)
             break;
@@ -445,14 +449,20 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
       if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
         break;
 
-      G[*c].forward = IC_RESULT(ic)->key;
+      G[i].forward = forward;
 
       if (nic->op == GOTO || nic->op == IFX || nic->op == JUMPTABLE)
         {
-          for(boost::tie(c, c_end) = boost::adjacent_vertices(*c, G); c != c_end; ++c) 
+          adjacency_iter_t c, c_end;
+          for(boost::tie(c, c_end) = boost::adjacent_vertices(i, G); c != c_end; ++c) 
             forward_lospre_assignment(G, *c, ic);
           break;
         }
+
+      boost::tie(c, c_end) = adjacent_vertices(i, G);
+      if (c == c_end)
+        break;
+      i = *c;
     }
 }
 
@@ -473,11 +483,15 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
   if(!calculation_edges.size())
     return(0);
 
-  //std::cout << "Optimizing at " << ic->key << "\n"; std::cout.flush();
+#ifdef DEBUG_LOSPRE
+  std::cout << "Optimizing at " << ic->key << "\n"; std::cout.flush();
+#endif
 
   tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
   tmpop->isvolatile = false;
-  //std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << " "; printTypeChain(operandType (IC_RESULT(ic)), stdout); std::cout << "\n";
+#ifdef DEBUG_LOSPRE
+  std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << " "; printTypeChain(operandType (IC_RESULT(ic)), stdout); std::cout << "\n";
+#endif
 
   for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
     split_edge(T, G, *i, ic, tmpop);
@@ -491,7 +505,9 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
       if(!(a.global[*v] && !G[*v].invalidates || boost::source(*e, G) < a.global.size() && a.global[boost::source(*e, G)]))
         continue;
-      //std::cout << "Substituting ic " << G[*v].ic->key << ".\n";
+#ifdef DEBUG_LOSPRE
+      std::cout << "Substituting ic " << G[*v].ic->key << "\n";
+#endif
       substituted++;
       // Todo: split unconnected iTemps.
       iCode *ic = G[*v].ic;
@@ -503,7 +519,13 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       if(IS_OP_VOLATILE(IC_RESULT (ic)))
         continue;
 
-      forward_lospre_assignment(G, *v, ic);
+      {
+        typedef typename boost::graph_traits<G_t>::adjacency_iterator adjacency_iter_t;
+        adjacency_iter_t c, c_end;
+        boost::tie(c, c_end) = adjacent_vertices(*v, G);
+        if (c != c_end)
+          forward_lospre_assignment(G, *c, ic);
+      }
     }
 
   if(substituted <= 0)
