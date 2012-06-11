@@ -1,5 +1,10 @@
 2012-06-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCClospre.cc:
+	  Disable lospre of assignments with iTemp source.
+
+2012-06-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCClospre.hpp,
 	  src/SDCClospre.cc:
 	  Reorganize forward substitution code, lospre for GET_VALUE_AT_ADDRESS.
