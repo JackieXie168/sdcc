@@ -1110,7 +1110,6 @@ bitsForType (sym_link * p)
 
   if (IS_SPEC (p))
     {                           /* if this is the specifier then */
-
       switch (SPEC_NOUN (p))
         {                       /* depending on the specifier type */
         case V_INT:
@@ -1156,7 +1155,6 @@ bitsForType (sym_link * p)
       return (FPTRSIZE * 8);
     case GPOINTER:
       return (GPTRSIZE * 8);
-
     default:
       return 0;
     }
@@ -1981,7 +1979,7 @@ cleanUpBlock (bucket ** table, int block)
 }
 
 /*------------------------------------------------------------------*/
-/* cleanUpLevel - cleansup the symbol table specified for all the   */
+/* cleanUpLevel - cleans up the symbol table specified for all the  */
 /*                symbols in the given level                        */
 /*------------------------------------------------------------------*/
 void
@@ -2181,7 +2179,10 @@ computeType (sym_link * type1, sym_link * type2, RESULT_TYPE resultType, int op)
 
   /* if result is a literal then make not so */
   if (IS_LITERAL (reType))
-    SPEC_SCLS (reType) = S_REGISTER;
+    {
+      SPEC_SCLS (reType) = S_REGISTER;
+      SPEC_CONST (reType) = 0;
+    }
 
   switch (resultType)
     {
@@ -2233,25 +2234,11 @@ computeType (sym_link * type1, sym_link * type2, RESULT_TYPE resultType, int op)
           /* promotion of some special cases */
           switch (op)
             {
-            case ':':
-              /* mcs51, xa51 and ds390 do not really support _Bool yet */
-              if (TARGET_IS_MCS51 || TARGET_IS_XA51 || TARGET_IS_DS390)
-                break;
-              /* Avoid unnecessary cast to _Bool if both operands are _Bool */
-              if ((IS_BOOL (etype1) || (IS_LITERAL (etype1) &&
-                                        (floatFromVal (valFromType (etype1)) == 1.0 ||
-                                         floatFromVal (valFromType (etype1)) == 0.0))) &&
-                  (IS_BOOL (etype2) || (IS_LITERAL (etype2) &&
-                                        (floatFromVal (valFromType (etype2)) == 1.0 ||
-                                         floatFromVal (valFromType (etype2)) == 0.0))))
-                {
-                  SPEC_NOUN (reType) = V_BOOL;
-                }
-              break;
             case '|':
             case '^':
               return computeTypeOr (etype1, etype2, reType);
             case '&':
+            case BITWISEAND:
               if (SPEC_USIGN (etype1) != SPEC_USIGN (etype2))
                 {
                   SPEC_USIGN (reType) = 1;
@@ -2433,7 +2420,7 @@ comparePtrType (sym_link * dest, sym_link * src, bool bMustCast)
   if (res == 1)
     return bMustCast ? -1 : 1;
   else if (res == -2)
-    return -2;
+    return bMustCast ? -1 : -2;
   else
     return 0;
 }
