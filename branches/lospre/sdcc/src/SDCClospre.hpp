@@ -395,7 +395,7 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
 
 
 template <class G_t>
-static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>::vertex_iterator i, const iCode *ic)
+static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>::vertex_descriptor i, const iCode *ic)
 {
   typedef typename boost::graph_traits<G_t>::adjacency_iterator adjacency_iter_t;
 
@@ -403,7 +403,7 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
 
   operand *tmpop = IC_RIGHT(ic);
 
-  for(boost::tie(c, c_end) = adjacent_vertices(*i, G); c != c_end; boost::tie(c, c_end) = adjacent_vertices(*c, G))
+  for(boost::tie(c, c_end) = adjacent_vertices(i, G); c != c_end; boost::tie(c, c_end) = adjacent_vertices(*c, G))
     {
       if (G[*c].forward == IC_RESULT(ic)->key)
         break; // Was here before.
@@ -430,19 +430,6 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
           IC_RESULT(nic)->isaddr = true;
         }
 
-      G[*c].forward = IC_RESULT(ic)->key;
-
-      if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
-        break;  
-      if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
-        break;
-
-      if (nic->op == GOTO)
-        {
-          boost::tie(c, c_end) = boost::adjacent_vertices(*c, G);
-          nic = G[*c].ic;
-        }
-
       if (nic->op == LABEL) // Reached label. Continue only if all edges goining here are safe.
         {
           typedef typename boost::graph_traits<G_t>::in_edge_iterator in_edge_iter_t;
@@ -452,7 +439,19 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
               break;
           if(e != e_end)
             break;
-          G[*c].forward = IC_RESULT(ic)->key;
+        }
+      if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
+        break;  
+      if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
+        break;
+
+      G[*c].forward = IC_RESULT(ic)->key;
+
+      if (nic->op == GOTO || nic->op == IFX || nic->op == JUMPTABLE)
+        {
+          for(boost::tie(c, c_end) = boost::adjacent_vertices(*c, G); c != c_end; ++c) 
+            forward_lospre_assignment(G, *c, ic);
+          break;
         }
     }
 }
@@ -504,7 +503,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       if(IS_OP_VOLATILE(IC_RESULT (ic)))
         continue;
 
-      forward_lospre_assignment(G, v, ic);
+      forward_lospre_assignment(G, *v, ic);
     }
 
   if(substituted <= 0)

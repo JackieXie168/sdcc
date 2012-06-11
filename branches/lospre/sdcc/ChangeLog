@@ -1,5 +1,10 @@
 2012-06-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCClospre.hpp:
+	  Fix handling of IFX in orward substitution.
+
+2012-06-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCClospre.cc:
 	  Disable lospre of assignments with iTemp source.
 
