@@ -91,7 +91,7 @@ candidate_expression (const iCode *const ic, int lkey)
     ic->op != LEFT_OP &&
     ic->op != RIGHT_OP &&
     !(ic->op == '=' && !POINTER_SET(ic) && !(IS_ITEMP(IC_RIGHT(ic)) && IC_RIGHT(ic)->key > lkey)) &&
-    // TODO: pointerSet, pointerGet.
+    ic->op != GET_VALUE_AT_ADDRESS &&
     ic->op != CAST)
     return (false);
 
@@ -163,7 +163,7 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
   typedef boost::graph_traits<cfg_lospre_t>::vertex_descriptor vertex_t;
   const operand *const eleft = IC_LEFT (eic);
   const operand *const eright = IC_RIGHT (eic);
-  const bool uses_global = (isOperandGlobal (eleft) || isOperandGlobal (eright) || IS_SYMOP (eleft) && OP_SYMBOL_CONST (eleft)->addrtaken || IS_SYMOP (eright) && OP_SYMBOL_CONST (eright)->addrtaken);
+  const bool uses_global = (eic->op == GET_VALUE_AT_ADDRESS || isOperandGlobal (eleft) || isOperandGlobal (eright) || IS_SYMOP (eleft) && OP_SYMBOL_CONST (eleft)->addrtaken || IS_SYMOP (eright) && OP_SYMBOL_CONST (eright)->addrtaken);
 
   for (vertex_t i = 0; i < boost::num_vertices (*cfg); i++)
     {
@@ -181,6 +181,8 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
          (*cfg)[i].invalidates = true;
        if(uses_global && POINTER_SET (ic)) // TODO: More accuracy here!
          (*cfg)[i].invalidates = true;
+
+       (*cfg)[i].forward = -1;
     }
 }
 

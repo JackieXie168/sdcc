@@ -98,6 +98,8 @@ struct cfg_lospre_node
 
   bool uses;
   bool invalidates;
+
+  int forward;
 };
 
 typedef std::list<assignment_lospre> assignment_list_lospre_t;
@@ -391,8 +393,72 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
   boost::remove_edge(e, G);
 }
 
+
+template <class G_t>
+static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>::vertex_iterator i, const iCode *ic)
+{
+  typedef typename boost::graph_traits<G_t>::adjacency_iterator adjacency_iter_t;
+
+  adjacency_iter_t c, c_end;
+
+  operand *tmpop = IC_RIGHT(ic);
+
+  for(boost::tie(c, c_end) = adjacent_vertices(*i, G); c != c_end; boost::tie(c, c_end) = adjacent_vertices(*c, G))
+    {
+      if (G[*c].forward == IC_RESULT(ic)->key)
+        break; // Was here before.
+
+      iCode *nic = G[*c].ic;
+
+      if (isOperandEqual(IC_RESULT(ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF && (!POINTER_GET(nic) || !IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_LEFT(nic))->next) || compareType(operandType(IC_LEFT(nic)), operandType(tmpop)) == 1))
+        {
+          //const operand *const oldop = IC_LEFT(nic);
+          IC_LEFT(nic) = operandFromOperand (tmpop);
+          //setOperandType (IC_LEFT(nic), operandType (oldop));
+        }
+      if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
+        {
+          //const operand *const oldop = IC_RIGHT(nic);
+          IC_RIGHT(nic) = operandFromOperand (tmpop);
+          //setOperandType (IC_RIGHT(nic), operandType (oldop));
+        }
+      if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
+        {
+          //const operand *const oldop = IC_RESULT(nic);
+          IC_RESULT(nic) = operandFromOperand (tmpop);
+          //setOperandType(IC_RESULT(nic), operandType (oldop));
+          IC_RESULT(nic)->isaddr = true;
+        }
+
+      G[*c].forward = IC_RESULT(ic)->key;
+
+      if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
+        break;  
+      if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
+        break;
+
+      if (nic->op == GOTO)
+        {
+          boost::tie(c, c_end) = boost::adjacent_vertices(*c, G);
+          nic = G[*c].ic;
+        }
+
+      if (nic->op == LABEL) // Reached label. Continue only if all edges goining here are safe.
+        {
+          typedef typename boost::graph_traits<G_t>::in_edge_iterator in_edge_iter_t;
+          in_edge_iter_t e, e_end;
+          for (boost::tie(e, e_end) = boost::in_edges(*c, G); e != e_end; ++e)
+            if (G[boost::source(*e, G)].forward != IC_RESULT(ic)->key)
+              break;
+          if(e != e_end)
+            break;
+          G[*c].forward = IC_RESULT(ic)->key;
+        }
+    }
+}
+
 template <class T_t, class G_t>
-static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G, const iCode *ic) // Assignment has to be passes as a copy (not reference), since the transformations on the tree-decomposition will invalidate it otherwise.
+static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G, const iCode *ic) // Assignment has to be passed as a copy (not reference), since the transformations on the tree-decomposition will invalidate it otherwise.
 {
   operand *tmpop;
   unsigned substituted = 0;
@@ -421,8 +487,6 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
 
   for(boost::tie(v, v_end) = boost::vertices(G); v != v_end; ++v)
     {
-      iCode *nic;
-
       if(!G[*v].uses)
         continue;
       typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
@@ -439,36 +503,10 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       IC_RESULT(ic)->isaddr = 0;
       if(IS_OP_VOLATILE(IC_RESULT (ic)))
         continue;
-      for (nic = ic->next; nic; nic = nic->next)
-        {
-          if (isOperandEqual(IC_RESULT(ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF && (!POINTER_GET(nic) || !IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_LEFT(nic))->next) || compareType(operandType(IC_LEFT(nic)), operandType(tmpop)) == 1))
-            {
-              //const operand *const oldop = IC_LEFT(nic);
-              IC_LEFT(nic) = operandFromOperand (tmpop);
-              //setOperandType (IC_LEFT(nic), operandType (oldop));
-            }
-          if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
-            {
-              //const operand *const oldop = IC_RIGHT(nic);
-              IC_RIGHT(nic) = operandFromOperand (tmpop);
-              //setOperandType (IC_RIGHT(nic), operandType (oldop));
-            }
-          if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
-            {
-              //const operand *const oldop = IC_RESULT(nic);
-              IC_RESULT(nic) = operandFromOperand (tmpop);
-              //setOperandType(IC_RESULT(nic), operandType (oldop));
-              IC_RESULT(nic)->isaddr = true;
-            }
 
-          if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
-            break;  
-          if (nic->op == LABEL || nic->op == GOTO)
-            break;   
-          if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
-            break;
-        }
+      forward_lospre_assignment(G, v, ic);
     }
+
   if(substituted <= 0)
     std::cerr << "Introduced " << OP_SYMBOL(tmpop)->name << ", but did not substitute any calculations.\n";
 

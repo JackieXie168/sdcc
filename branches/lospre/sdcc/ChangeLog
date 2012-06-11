@@ -1,3 +1,9 @@
+2012-06-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Reorganize forward substitution code, lospre for GET_VALUE_AT_ADDRESS.
+
 2012-06-10 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* src/SDCCast.c (decorateType, &/|/^): optimize bool with literal,
