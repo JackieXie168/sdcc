@@ -1,5 +1,12 @@
 2012-06-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCmain.c,
+	  src/SDCCopt.c,
+	  src/SDCCglobl.h:
+	  Implement --nolospre option for disabling lospre.
+
+2012-06-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCicode.c:
 	  Fix debug output for GET_VALUE_AT_ADDRESS right operand.
 

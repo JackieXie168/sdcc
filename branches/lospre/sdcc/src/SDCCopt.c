@@ -2189,7 +2189,8 @@ eBBlockFromiCode (iCode * ic)
   /* lospre */
   adjustIChain (ebbi->bbOrder, ebbi->count);
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
-  lospre (ic, ebbi);
+  if (optimize.lospre)
+    lospre (ic, ebbi);
   /* Break down again and redo some steps to not confuse live range analysis. */
   ebbi = iCodeBreakDown (ic);
   computeControlFlow (ebbi);
