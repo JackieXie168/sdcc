@@ -5182,7 +5182,15 @@ genPlus (iCode * ic)
         }
     }
 
-  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY)
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY && (getPairId (AOP (IC_LEFT (ic))) == PAIR_HL && isPair (AOP (IC_RIGHT (ic))) || getPairId (AOP (IC_RIGHT (ic))) == PAIR_HL && isPair (AOP (IC_LEFT(ic)))) && isPairDead (PAIR_HL, ic))
+    {
+      PAIR_ID pair = (getPairId (AOP (IC_LEFT (ic))) == PAIR_HL ? getPairId (AOP (IC_RIGHT (ic))) : getPairId (AOP (IC_LEFT (ic))));
+      emit2 ("add hl, %s", _pairs[pair].name);
+      _push (PAIR_HL);
+      _pop (PAIR_IY);
+      goto release;
+    }
+  else if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY)
     {
       bool save_pair = FALSE;
       PAIR_ID pair;
