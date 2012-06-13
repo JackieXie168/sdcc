@@ -7121,6 +7121,12 @@ genAnd (const iCode * ic, iCode * ifx)
                     emit2 ("bit %d, %s", isLiteralBit (bytelit), aopGet (AOP (left), offset, FALSE));
                   regalloc_dry_run_cost += AOP_TYPE (left) == AOP_STK ? 4 : 2;
                 }
+              else if (IS_Z180 && AOP_TYPE (left) == AOP_ACC)
+                {
+                  if (!regalloc_dry_run)
+                    emit2 (/*"tst a, %s" - todo: Use this one bug #3534833 is fixed!*/"tst %s", aopGet (AOP (right), 0, FALSE));
+                  regalloc_dry_run_cost += (AOP_TYPE (right) == AOP_LIT ? 3 : 2);
+                }
               else
                 {
                   cheapMove (ASMOP_A, 0, AOP (left), offset);

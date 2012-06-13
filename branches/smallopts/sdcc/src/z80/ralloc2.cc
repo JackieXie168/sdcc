@@ -430,10 +430,29 @@ static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, 
   if(!o || !IS_SYMOP(o))
     return(false);
 
+  if(r >= NUM_REGS)
+    return(false);
+
   operand_map_t::const_iterator oi, oi_end;
   for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
     if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
       return(true);
+
+  return(false);
+}
+
+// Return true, iff the operand is placed in a reg.
+template <class G_t>
+static bool operand_in_reg(const operand *o, const i_assignment_t &ia, unsigned short int i, const G_t &G)
+{
+  if(!o || !IS_SYMOP(o))
+    return(false);
+
+  operand_map_t::const_iterator oi, oi_end;
+  for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+    for(reg_t r = 0; r < NUM_REGS; r++)
+      if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
+        return(true);
 
   return(false);
 }
@@ -500,6 +519,8 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
   if(ia.registers[REG_A][1] < 0)
     return(true);	// Register A not in use.
 
+  bool exstk = (should_omit_frame_ptr || (currFunc && currFunc->stack > 127) || IS_GB);
+
   //std::cout << "Ainst_ok: A = (" << ia.registers[REG_A][0] << ", " << ia.registers[REG_A][1] << "), inst " << i << ", " << ic->key << "\n";
 
   // Code generator cannot handle variables that are only partially in A.
@@ -525,7 +546,9 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
     }
 
   // bit instructions do not disturb a.
-  if(!IS_GB && ic->op == BITWISEAND && ifxForOp (IC_RESULT(ic), ic) && (IS_OP_LITERAL(left) && IS_TRUE_SYMOP (IC_RIGHT(ic)) || IS_OP_LITERAL(right) && IS_TRUE_SYMOP (left)))
+  if(ic->op == BITWISEAND && ifxForOp (IC_RESULT(ic), ic) &&
+    (IS_OP_LITERAL(left) && (!(IS_GB && IS_TRUE_SYMOP (right) || !exstk && operand_on_stack(right, a, i, G)) || operand_in_reg(right, ia, i, G) && !operand_in_reg(right, REG_IYL, ia, i, G) && !operand_in_reg(right, REG_IYH, ia, i, G)) ||
+    IS_OP_LITERAL(right) && (!(IS_GB && IS_TRUE_SYMOP (left) || !exstk && operand_on_stack(left, a, i, G)) || operand_in_reg(left, ia, i, G) && !operand_in_reg(left, REG_IYL, ia, i, G) && !operand_in_reg(left, REG_IYH, ia, i, G))))
     {
       operand *const litop = IS_OP_LITERAL(left) ? IC_LEFT(ic) : IC_RIGHT(ic);
       for(int i = 0; i < getSize(operandType(result)); i++)
@@ -534,10 +557,20 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
           if (byte != 0x00 && byte != 0x01 && byte != 0x02 && byte != 0x04 && byte != 0x08 && byte != 0x10 && byte != 0x20 && byte != 0x40 && byte != 0x80)
             goto nobit;
         }
-      //std::cout << "Bit: Accepting at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
+      //std::cout << "tst Accepting at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
       return(true);
     }
   nobit:
+
+  // The Z180 has a non-destructive testing and.
+  if(IS_Z180 && ic->op == BITWISEAND && ifxForOp (IC_RESULT(ic), ic) &&
+    (operand_in_reg(left, REG_A, ia, i, G) && (IS_OP_LITERAL(right) /*|| operand_in_reg(right, ia, i, G) && !operand_in_reg(right, REG_IYL, ia, i, G) && !operand_in_reg(right, REG_IYH, ia, i, G)*/) ||
+    operand_in_reg(right, REG_A, ia, i, G) && (IS_OP_LITERAL(left) /*|| operand_in_reg(left, ia, i, G) && !operand_in_reg(left, REG_IYL, ia, i, G) && !operand_in_reg(left, REG_IYH, ia, i, G)*/)))
+    {
+      operand *const litop = IS_OP_LITERAL(left) ? IC_LEFT(ic) : IC_RIGHT(ic);
+      //std::cout << "tst: Accepting at " << i << ", " << ic->key << "(" << int(ic->op) << ")\n";
+      return(true);
+    }
 
   const std::set<var_t> &dying = G[i].dying;
 
@@ -597,7 +630,7 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
          ic->op != IFX &&
          ic->op != JUMPTABLE)
     {
-      //if(i == 15) std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
+      //std::cout << "Intermediate use: Dropping at " << i << ", " << ic->key << "(" << int(ic->op) << "\n";
       return(false);
     }
 

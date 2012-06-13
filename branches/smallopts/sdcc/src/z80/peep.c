@@ -311,7 +311,10 @@ z80MightRead(const lineNode *pl, const char *what)
   if(ISINST(pl->line, "djnz\t"))
     return(strchr(what, 'b') != 0);
 
-  if(ISINST(pl->line, "mlt\t"))
+  if(IS_Z180 && ISINST(pl->line, "mlt\t"))
+    return(strstr(pl->line + 4, what) != 0);
+
+  if(IS_Z180 && ISINST(pl->line, "tst\t"))
     return(strstr(pl->line + 4, what) != 0);
 
   return TRUE;
@@ -881,6 +884,9 @@ int z80instructionSize(lineNode *pl)
 
   if(IS_Z180 && ISINST(pl->line, "mlt"))
     return(2);
+
+  if(IS_Z180 && ISINST(pl->line, "tst"))
+    return((op1start[0] == '#' || op2start && op1start[0] == '#') ? 3 : 2);
   
   if(IS_RAB && ISINST(pl->line, "mul"))
     return(1);
