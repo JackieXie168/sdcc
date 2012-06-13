@@ -2856,13 +2856,13 @@ commitPair (asmop *aop, PAIR_ID id, const iCode *ic, bool dont_destroy)
   else
     {
       /* Special cases */
-      if (id == PAIR_HL && aop->type == AOP_IY && aop->size == 2)
+      if (aop->type == AOP_IY && aop->size == 2)
         {
           if (!regalloc_dry_run)
             {
               emit2 ("ld (%s),%s", aopGetLitWordLong (aop, 0, FALSE), _pairs[id].name);
             }
-          regalloc_dry_run_cost += 3;
+          regalloc_dry_run_cost += (id == PAIR_HL ? 3 : 4);
         }
       else
         {
@@ -7760,10 +7760,16 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
 static void
 shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCount, const iCode *ic)
 {
+  operand *shiftoperand = result;
+
   if (sameRegs (AOP (result), AOP (left)) && ((offl + MSB16) == offr))
     {
       wassert (0);
     }
+
+  if (AOP_TYPE (result) != AOP_REG && AOP_TYPE (left) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[0]->rIdx) && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[1]->rIdx) ||
+    getPairId (AOP (left)) == PAIR_HL && isPairDead (PAIR_HL, ic))
+    shiftoperand = left;
   else if (isPair (AOP (result)) && !offr)
     fetchPairLong (getPairId (AOP (result)), AOP(left), ic, offl);
   else
@@ -7774,9 +7780,8 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
     }
 
   if (shCount == 0)
-    return;
-
-  if (getPairId (AOP (result)) == PAIR_HL)
+    ;
+  else if (getPairId (AOP (shiftoperand)) == PAIR_HL)
     {
       while (shCount--)
         {
@@ -7784,13 +7789,26 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
           regalloc_dry_run_cost += 1;
         }
     }
-  else if (getPairId (AOP (result)) == PAIR_IY)
+  else if (getPairId (AOP (shiftoperand)) == PAIR_IY)
     {
       while (shCount--)
         {
           emit2 ("add iy, iy");
           regalloc_dry_run_cost += 2;
         }
+    }
+  else if (IS_RAB && getPairId (AOP (shiftoperand)) == PAIR_DE && (!bitVectBitValue (ic->rSurv, A_IDX) || shCount > 3 || optimize.codeSize && shCount > 1))
+    {
+      if (bitVectBitValue (ic->rSurv, A_IDX))
+        _push (PAIR_AF);
+      emit3 (A_XOR, ASMOP_A, ASMOP_A);
+      while (shCount--)
+        {
+          emit2 ("rl de");
+          regalloc_dry_run_cost++;
+        }
+      if (bitVectBitValue (ic->rSurv, A_IDX))
+        _pop (PAIR_AF);
     }
   else
     {
@@ -7799,12 +7817,12 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
       symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
       symbol *tlbl1 = regalloc_dry_run ? 0 : newiTempLabel (0);
 
-      if (AOP (result)->type == AOP_REG)
+      if (AOP (shiftoperand)->type == AOP_REG)
         {
           while (shCount--)
             {
               for (offset = 0; offset < size; offset++)
-                emit3_o (offset ? A_RL : A_SLA, AOP (result), offset, 0, 0);
+                emit3_o (offset ? A_RL : A_SLA, AOP (shiftoperand), offset, 0, 0);
             }
         }
       else
@@ -7823,7 +7841,7 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
 
           while (size--)
             {
-              emit3_o (offset ? A_RL : A_SLA, AOP (result), offset, 0, 0);
+              emit3_o (offset ? A_RL : A_SLA, AOP (shiftoperand), offset, 0, 0);
 
               offset++;
             }
@@ -7837,6 +7855,20 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
                 }
               regalloc_dry_run_cost += 4;
             }
+        }
+    }
+
+  if (shiftoperand != result)
+    {
+      if (isPair (AOP (result)) && !offr)
+        fetchPairLong (getPairId (AOP (result)), AOP(shiftoperand), ic, offl);
+      else if (isPair (AOP (shiftoperand)))
+        commitPair (AOP (result), getPairId (AOP (shiftoperand)), ic, FALSE);
+      else
+        {
+          /* Copy left into result */
+          movLeft2Result (shiftoperand, offl, result, offr, 0);
+          movLeft2Result (shiftoperand, offl + 1, result, offr + 1, 0);
         }
     }
 }

@@ -681,7 +681,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     return(true);	// Register HL not in use.
 
 #if 0
-  if (ic->key == 40)
+  //if (ic->key == 40)
     std::cout << "HLinst_ok: at (" << i << ", " << ic->key << ")\nL = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 #endif
 
@@ -742,6 +742,10 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   if(exstk && (operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)) && ic->op == '>' || ic->op == '<')
     return(false);
 
+  if(ic->op == '+' && getSize(operandType(result)) == 2 && (IS_OP_LITERAL (right) && ulFromVal (OP_VALUE (IC_RIGHT(ic))) <= 3 || IS_OP_LITERAL (left) && ulFromVal (OP_VALUE (IC_LEFT(ic))) <= 3) && 
+    (operand_in_reg(result, REG_L, ia, i, G) && I[ia.registers[REG_L][1]].byte == 0 && operand_in_reg(result, REG_H, ia, i, G)))
+    return(true); // Uses inc hl.
+
   if(ic->op == '+' && getSize(operandType(result)) >= 2 &&
     (IS_TRUE_SYMOP (result) || IS_TRUE_SYMOP (left) || exstk && operand_on_stack(left, a, i, G) || IS_TRUE_SYMOP (right) || exstk && operand_on_stack(right, a, i, G))) // Might use (hl).
     return(false);
@@ -757,6 +761,9 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
        ic->op == '*' ||
        ic->op == '=' ||
        ic->op == CAST))
+    return(true);
+
+  if(ic->op == LEFT_OP && getSize(operandType(result)) <= 2 && IS_OP_LITERAL (right) && result_only_HL)
     return(true);
 
   if(result && IS_SYMOP(result) && isOperandInDirSpace(IC_RESULT(ic)))
