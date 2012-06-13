@@ -7681,7 +7681,20 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
   int size = 2;
   symbol *tlbl;
 
-  if (IS_RAB && !is_signed && shCount >= 2 && isPairDead (PAIR_HL, ic) &&
+  if (IS_RAB && !is_signed && shCount < 4 && !bitVectBitValue (ic->rSurv, A_IDX) &&
+    (getPairId (AOP (result)) == PAIR_HL || getPairId (AOP (result)) == PAIR_DE))
+    {
+      bool op_de = (getPairId (AOP (result)) == PAIR_DE);
+      fetchPairLong (getPairId (AOP (result)), AOP(left), ic, offl);
+      while (shCount--)
+        {
+          emit3 (A_XOR, ASMOP_A, ASMOP_A);
+          emit2 (op_de? "rr de" : "rr hl");
+          regalloc_dry_run_cost++;
+        }
+      return;
+    }
+  else if (IS_RAB && !is_signed && shCount >= 2 && isPairDead (PAIR_HL, ic) &&
       ((isPair (AOP (left)) && getPairId (AOP (left)) == PAIR_HL || isPair (AOP (result))
         && getPairId (AOP (result)) == PAIR_HL) && isPairDead (PAIR_DE, ic) || isPair (AOP (left))
        && getPairId (AOP (left)) == PAIR_DE))
@@ -7697,10 +7710,7 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
       regalloc_dry_run_cost += 3;
       while (shCount--)
         {
-          if (op_de)
-            emit2 ("rr de");
-          else
-            emit2 ("rr hl");
+          emit2 (op_de ? "rr de" : "rr hl");
           regalloc_dry_run_cost++;
         }
       emit2 ("and hl, de");
@@ -7775,7 +7785,7 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
       wassert (0);
     }
 
-  if (AOP_TYPE (result) != AOP_REG && AOP_TYPE (left) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[0]->rIdx) && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[1]->rIdx) ||
+  if (AOP_TYPE (result) != AOP_REG && AOP_TYPE (left) == AOP_REG && AOP_SIZE (left) >= 2 && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[0]->rIdx) && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[1]->rIdx) ||
     getPairId (AOP (left)) == PAIR_HL && isPairDead (PAIR_HL, ic))
     shiftoperand = left;
   else if (isPair (AOP (result)) && !offr)
@@ -7805,13 +7815,13 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
           regalloc_dry_run_cost += 2;
         }
     }
-  else if (IS_RAB && getPairId (AOP (shiftoperand)) == PAIR_DE && (!bitVectBitValue (ic->rSurv, A_IDX) || shCount > 3 || optimize.codeSize && shCount > 1))
+  else if (IS_RAB && getPairId (AOP (shiftoperand)) == PAIR_DE && (!bitVectBitValue (ic->rSurv, A_IDX) || shCount > 4 || optimize.codeSize && shCount > 1))
     {
       if (bitVectBitValue (ic->rSurv, A_IDX))
         _push (PAIR_AF);
-      emit3 (A_XOR, ASMOP_A, ASMOP_A);
       while (shCount--)
         {
+          emit3 (A_XOR, ASMOP_A, ASMOP_A);
           emit2 ("rl de");
           regalloc_dry_run_cost++;
         }

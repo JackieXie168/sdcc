@@ -2038,7 +2038,7 @@ offsetFold (eBBlock **ebbs, int count)
               if (bitVectnBitsOn (OP_USES (IC_RESULT (ic))) != 1)
                 continue;
 
-              /* This use must be a GET_VALUE_ATA_DDRESS */
+              /* This use must be a GET_VALUE_TA_DDRESS */
               uic = hTabItemWithKey (iCodehTab,
                         bitVectFirstBit (OP_USES (IC_RESULT (ic))));
               if (!POINTER_GET (uic))
