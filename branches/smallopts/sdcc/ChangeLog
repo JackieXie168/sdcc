@@ -1,7 +1,7 @@
 2012-06-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
-	  Improve 16-bit right shift for Rabbit.
+	  Improve right shift.
 
 2012-06-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

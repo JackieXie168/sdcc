@@ -8173,7 +8173,7 @@ genLeftShift (const iCode * ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* genrshOne - left shift two bytes by known amount != 0           */
+/* genrshOne - left shift one byte  by known amount != 0           */
 /*-----------------------------------------------------------------*/
 static void
 genrshOne (operand * result, operand * left, int shCount, int is_signed)
@@ -8184,7 +8184,18 @@ genrshOne (operand * result, operand * left, int shCount, int is_signed)
   wassert (size == 1);
   wassert (shCount < 8);
 
-  if (AOP (result)->type == AOP_REG)
+  if (!is_signed && (AOP (result)->type == AOP_ACC || AOP (result)->type != AOP_REG) && shCount >= 4)
+    {
+      int shCount2 = 8 - shCount;
+      cheapMove (AOP (result), 0, AOP (left), 0);
+      while (shCount2--)
+        {
+          emit2 ("rra");
+          regalloc_dry_run_cost++;
+        }
+      emit2 ("and a, !immedbyte", 0xff >> shCount);
+    }
+  else if (AOP (result)->type == AOP_REG)
     {
       cheapMove (AOP (result), 0, AOP (left), 0);
       while (shCount--)
