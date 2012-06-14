@@ -5185,7 +5185,9 @@ genPlus (iCode * ic)
         }
     }
 
-  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY && (getPairId (AOP (IC_LEFT (ic))) == PAIR_HL && isPair (AOP (IC_RIGHT (ic))) || getPairId (AOP (IC_RIGHT (ic))) == PAIR_HL && isPair (AOP (IC_LEFT(ic)))) && isPairDead (PAIR_HL, ic))
+  if (getPairId (AOP (IC_RESULT (ic))) == PAIR_IY &&
+    (getPairId (AOP (IC_LEFT (ic))) == PAIR_HL && isPair (AOP (IC_RIGHT (ic))) && getPairId (AOP (IC_RIGHT (ic))) != PAIR_IY || getPairId (AOP (IC_RIGHT (ic))) == PAIR_HL && isPair (AOP (IC_LEFT (ic))) && getPairId (AOP (IC_LEFT (ic))) != PAIR_IY) &&
+    isPairDead (PAIR_HL, ic))
     {
       PAIR_ID pair = (getPairId (AOP (IC_LEFT (ic))) == PAIR_HL ? getPairId (AOP (IC_RIGHT (ic))) : getPairId (AOP (IC_LEFT (ic))));
       emit2 ("add hl, %s", _pairs[pair].name);

@@ -1,6 +1,11 @@
 2012-06-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
+	  Fix for 16-bit addition to avoid generating invalid add hl, iy.
+
+2012-06-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
 	  Improve multiplication for Rabbits.
 
 2012-06-13 Leland Morrison <enigmalee AT sourceforge.net>
