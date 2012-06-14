@@ -207,7 +207,8 @@ enum asminst
   A_SRA,
   A_SRL,
   A_SUB,
-  A_XOR
+  A_XOR,
+  A_SWAP
 };
 
 const char *asminstnames[] =
@@ -233,7 +234,8 @@ const char *asminstnames[] =
   "sra",
   "srl",
   "sub",
-  "xor"
+  "xor",
+  "swap"
 };
 
 /** Code generator persistent data.
@@ -858,6 +860,7 @@ emit3Cost (enum asminst inst, asmop * op1, int offset1, asmop * op2, int offset2
     case A_SLA:
     case A_SRA:
     case A_SRL:
+    case A_SWAP:
       return (bit8_cost (op1));
     default:
       wassertl (0, "Tried get cost for unknown instruction");
@@ -7129,10 +7132,10 @@ genAnd (const iCode * ic, iCode * ifx)
                     emit2 ("bit %d, %s", isLiteralBit (bytelit), aopGet (AOP (left), offset, FALSE));
                   regalloc_dry_run_cost += AOP_TYPE (left) == AOP_STK ? 4 : 2;
                 }
-              else if (IS_Z180 && AOP_TYPE (left) == AOP_ACC)
+              else if (IS_Z180 && AOP_TYPE (left) == AOP_ACC && bitVectBitValue (ic->rSurv, A_IDX) && bytelit != 0x0ff)
                 {
                   if (!regalloc_dry_run)
-                    emit2 (/*"tst a, %s" - todo: Use this one bug #3534833 is fixed!*/"tst %s", aopGet (AOP (right), 0, FALSE));
+                    emit2 ("tst a, %s", aopGet (AOP (right), 0, FALSE));
                   regalloc_dry_run_cost += (AOP_TYPE (right) == AOP_LIT ? 3 : 2);
                 }
               else
@@ -7904,12 +7907,17 @@ AccRol (int shCount)
     case 4:
       if (IS_GB)
         {
-          emit2 ("swap a");
-          regalloc_dry_run_cost += 2;
+          emit3 (A_SWAP, ASMOP_A, 0);
           break;
         }
       emit3 (A_RLCA, 0, 0);
     case 3:
+      if (IS_GB)
+        {
+          emit3 (A_SWAP, ASMOP_A, 0);
+          emit3 (A_RRCA, 0, 0);
+          break;
+        }
       emit3 (A_RLCA, 0, 0);
     case 2:
       emit3 (A_RLCA, 0, 0);
@@ -7918,6 +7926,12 @@ AccRol (int shCount)
     case 0:
       break;
     case 5:
+      if (IS_GB)
+        {
+          emit3 (A_SWAP, ASMOP_A, 0);
+          emit3 (A_RLCA, 0, 0);
+          break;
+        }
       emit3 (A_RRCA, 0, 0);
     case 6:
       emit3 (A_RRCA, 0, 0);
@@ -8173,31 +8187,59 @@ genLeftShift (const iCode * ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* genrshOne - left shift one byte  by known amount != 0           */
+/* AccRsh - right shift accumulator by known count                 */
 /*-----------------------------------------------------------------*/
 static void
-genrshOne (operand * result, operand * left, int shCount, int is_signed)
+AccRsh (int shCount)
+{
+  if (shCount >= 2)
+    {
+      /* rotate right accumulator */
+      AccRol (8 - shCount);
+      /* and kill the higher order bits */
+      if (!regalloc_dry_run)
+        emit2 ("and a,!immedbyte", 0xff >> shCount);
+      regalloc_dry_run_cost += 2;
+    }
+  else if(shCount)
+    emit3 (A_SRL, ASMOP_A, 0);
+}
+
+/*-----------------------------------------------------------------*/
+/* genrshOne - right shift one byte by known amount                */
+/*-----------------------------------------------------------------*/
+static void
+genrshOne (operand *result, operand *left, int shCount, int is_signed)
 {
   /* Errk */
   int size = AOP_SIZE (result);
 
   wassert (size == 1);
-  wassert (shCount < 8);
 
-  if (!is_signed && (AOP (result)->type == AOP_ACC || AOP (result)->type != AOP_REG) && shCount >= 4)
+  // Shifting in the accumulator is cheap for unsigned operands.
+  if (!is_signed &&
+    (AOP (result)->type == AOP_ACC ||
+    AOP (result)->type != AOP_REG ||
+    (shCount >= 4 && !IS_GB || AOP (left)->type == AOP_ACC) /*&& !bitVectBitValue (ic->rSurv, A_IDX)*/))
     {
-      int shCount2 = 8 - shCount;
-      cheapMove (AOP (result), 0, AOP (left), 0);
-      while (shCount2--)
-        {
-          emit2 ("rra");
-          regalloc_dry_run_cost++;
-        }
-      emit2 ("and a, !immedbyte", 0xff >> shCount);
+      cheapMove (ASMOP_A, 0, AOP (left), 0);
+      AccRsh (shCount);
+      cheapMove (AOP (result), 0, ASMOP_A, 0);
     }
-  else if (AOP (result)->type == AOP_REG)
+  else if (AOP (result)->type == AOP_REG) // Can shift in destination for register result.
     {
       cheapMove (AOP (result), 0, AOP (left), 0);
+      if (!is_signed && IS_GB && shCount >= 3)
+        {
+          if (shCount == 3)
+            {
+              emit3 (A_RLC, AOP (result), 0);
+              shCount++;
+            }
+          emit3 (A_SWAP, AOP (result), 0);
+          regalloc_dry_run_cost += 2;
+          shCount -= 4;
+        }
       while (shCount--)
         emit3 (is_signed ? A_SRA : A_SRL, AOP (result), 0);
     }
@@ -8207,28 +8249,6 @@ genrshOne (operand * result, operand * left, int shCount, int is_signed)
       while (shCount--)
         emit3 (is_signed ? A_SRA : A_SRL, ASMOP_A, 0);
       cheapMove (AOP (result), 0, ASMOP_A, 0);
-    }
-}
-
-/*-----------------------------------------------------------------*/
-/* AccRsh - right shift accumulator by known count                 */
-/*-----------------------------------------------------------------*/
-static void
-AccRsh (int shCount)
-{
-  static const unsigned char SRMask[] =
-  {
-    0xFF, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01, 0x00
-  };
-
-  if (shCount != 0)
-    {
-      /* rotate right accumulator */
-      AccRol (8 - shCount);
-      /* and kill the higher order bits */
-      if (!regalloc_dry_run)
-        emit2 ("and a,!immedbyte", SRMask[shCount]);
-      regalloc_dry_run_cost += 2;
     }
 }
 

@@ -1,3 +1,8 @@
+2012-06-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Improve one-byte shifts, use fix of #3534833 in non-destructive and.
+
 2012-06-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
