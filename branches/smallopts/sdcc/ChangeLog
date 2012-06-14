@@ -1,6 +1,16 @@
 2012-06-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
+	  Improve multiplication for Rabbits.
+
+2012-06-13 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* sdas/asz80/z80mch.c:  Allow the tst instruction for z180/.hd64 to
+	  use the two operand form (tst a,X) (fixes bug #3534833)
+
+2012-06-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
 	  Improve one-byte shifts, use fix of #3534833 in non-destructive and.
 
 2012-06-13 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>

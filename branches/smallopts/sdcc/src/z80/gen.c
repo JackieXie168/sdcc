@@ -5829,6 +5829,46 @@ genMultOneChar (const iCode * ic)
         }
     }
 
+  if (IS_RAB && isPairDead (PAIR_HL, ic) && isPairDead (PAIR_BC, ic))
+    {
+      const bool save_de = (resultsize > 1 && bitVectBitValue (ic->rSurv, D_IDX) ||
+        bitVectBitValue (ic->rSurv, E_IDX) && !(AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX) && !(AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX));
+      if (save_de)
+        _push (PAIR_DE);
+
+      if (AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == E_IDX)
+         cheapMove (ASMOP_C, 0, AOP (IC_LEFT (ic)), 0);
+      else if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX)
+         cheapMove (ASMOP_C, 0, AOP (IC_RIGHT (ic)), 0);
+      else if (AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == C_IDX)
+         cheapMove (ASMOP_E, 0, AOP (IC_LEFT (ic)), 0);
+      else if (AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX)
+         cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), 0);
+      else 
+        {
+          cheapMove (ASMOP_C, 0, AOP (IC_LEFT (ic)), 0);
+          cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), 0);
+        }
+
+      if (resultsize > 1)
+        {
+          cheapMove (ASMOP_D, 0, ASMOP_ZERO, 0);
+          cheapMove (ASMOP_B, 0, ASMOP_D, 0);
+        }
+
+      emit2 ("mul");
+      regalloc_dry_run_cost++;
+
+      if (resultsize > 1)
+        commitPair (result, PAIR_BC, ic, FALSE);
+      else
+        cheapMove (result, 0, ASMOP_C, 0);
+
+      if (save_de)
+        _pop (PAIR_DE);
+      return;
+    }
+
   if (!isPairDead (PAIR_DE, ic))
     {
       _push (PAIR_DE);
