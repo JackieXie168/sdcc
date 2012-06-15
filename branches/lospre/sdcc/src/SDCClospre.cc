@@ -174,10 +174,8 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
        const iCode *const ic = (*cfg)[i].ic;
        (*cfg)[i].uses = same_expression (eic, ic);
        (*cfg)[i].invalidates = false;
-       // Todo: Do not invalidate pointer when dereferencing? Invalidate global and addrtaken upon function call, pointer write.
-       if (IC_RESULT (ic) && eleft && !IS_OP_LITERAL (eleft) && isOperandEqual (eleft, IC_RESULT (ic)))
-         (*cfg)[i].invalidates = true;
-       if (IC_RESULT (ic) && eright && !IS_OP_LITERAL (eright) && isOperandEqual (eright, IC_RESULT (ic)))
+       if (IC_RESULT (ic) && !IS_OP_LITERAL (IC_RESULT (ic)) && !POINTER_SET(ic) &&
+         (eleft && isOperandEqual (eleft, IC_RESULT (ic)) || eright && isOperandEqual (eright, IC_RESULT (ic))))
          (*cfg)[i].invalidates = true;
        if (ic->op == FUNCTION)
          (*cfg)[i].invalidates = true;

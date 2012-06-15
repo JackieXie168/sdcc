@@ -2,6 +2,8 @@
 
 	* src/SDCClospre.hpp:
 	  Fix lospre nonforward-substitution of POINTER_SET.
+	* src/SDCClospre.cc:
+	  Improve handling of invalidation at POINTER_SET.
 
 2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

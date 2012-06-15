@@ -371,7 +371,7 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
   boost::add_edge(n, boost::target(e, G), 3.0, G);
 
 #ifdef DEBUG_LOSPRE
-  std::cout << "Calculating " << OP_SYMBOL(tmpop)->name << " at ic " << newic->key << "\n";
+  std::cout << "Calculating " << OP_SYMBOL_CONST(tmpop)->name << " at ic " << newic->key << "\n";
 #endif
 
   // Update tree-decomposition.
@@ -500,7 +500,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
   tmpop = newiTempOperand (operandType (IC_RESULT (ic)), TRUE);
   tmpop->isvolatile = false;
 #ifdef DEBUG_LOSPRE
-  std::cout << "New tmpop: " << OP_SYMBOL(tmpop)->name << " "; printTypeChain(operandType (IC_RESULT(ic)), stdout); std::cout << "\n";
+  std::cout << "New tmpop: " << OP_SYMBOL_CONST(tmpop)->name << " "; printTypeChain(operandType (IC_RESULT(ic)), stdout); std::cout << "\n";
 #endif
 
   for(typename std::set<edge_desc_t>::iterator i = calculation_edges.begin(); i != calculation_edges.end(); ++i)
@@ -542,10 +542,10 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
     }
 
   if(substituted <= 0)
-    std::cerr << "Introduced " << OP_SYMBOL(tmpop)->name << ", but did not substitute any calculations.\n";
+    std::cerr << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute any calculations.\n";
 
   if(substituted <= 1) // Todo: Remove this warning when optimization for speed instead of code size is implemented!
-    std::cout << "Introduced " << OP_SYMBOL(tmpop)->name << ", but did not substitute any calculations.\n"; std::cout.flush();
+    std::cout << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute any calculations.\n"; std::cout.flush();
 
   return(1);
 }
