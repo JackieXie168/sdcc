@@ -370,6 +370,10 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
   boost::add_edge(boost::source(e, G), n, G[e], G);
   boost::add_edge(n, boost::target(e, G), 3.0, G);
 
+#ifdef DEBUG_LOSPRE
+  std::cout << "Calculating " << OP_SYMBOL(tmpop)->name << " at ic " << newic->key << "\n";
+#endif
+
   // Update tree-decomposition.
   // TODO: More efficiently.
   for(typename boost::graph_traits<T_t>::vertex_descriptor n1 = 0; n1 < boost::num_vertices(T); ++n1)
@@ -413,21 +417,27 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
 
       if (isOperandEqual(IC_RESULT(ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF && (!POINTER_GET(nic) || !IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_LEFT(nic))->next) || compareType(operandType(IC_LEFT(nic)), operandType(tmpop)) == 1))
         {
-          //std::cout << "Forward substituted left operand at " << nic->key << "\n";
+#ifdef DEBUG_LOSPRE
+          std::cout << "Forward substituted left operand at " << nic->key << "\n";
+#endif
           //const operand *const oldop = IC_LEFT(nic);
           IC_LEFT(nic) = operandFromOperand (tmpop);
           //setOperandType (IC_LEFT(nic), operandType (oldop));
         }
       if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
         {
-          //std::cout << "Forward substituted right operand at " << nic->key << "\n";
+#ifdef DEBUG_LOSPRE
+          std::cout << "Forward substituted right operand at " << nic->key << "\n";
+#endif
           //const operand *const oldop = IC_RIGHT(nic);
           IC_RIGHT(nic) = operandFromOperand (tmpop);
           //setOperandType (IC_RIGHT(nic), operandType (oldop));
         }
       if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
         {
-          //std::cout << "Forward substituted result operand at " << nic->key << "\n";
+#ifdef DEBUG_LOSPRE
+          std::cout << "Forward substituted result operand at " << nic->key << "\n";
+#endif
           //const operand *const oldop = IC_RESULT(nic);
           IC_RESULT(nic) = operandFromOperand (tmpop);
           //setOperandType(IC_RESULT(nic), operandType (oldop));
@@ -511,11 +521,14 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       substituted++;
       // Todo: split unconnected iTemps.
       iCode *ic = G[*v].ic;
-      IC_LEFT(ic) = 0;
       IC_RIGHT(ic) = tmpop;
-      ic->op = '=';
-      IC_RESULT(ic) = operandFromOperand (IC_RESULT (ic));
-      IC_RESULT(ic)->isaddr = 0;
+      if (!POINTER_SET (ic))
+        {
+          IC_LEFT(ic) = 0;
+          ic->op = '=';
+          IC_RESULT(ic) = operandFromOperand (IC_RESULT (ic));
+          IC_RESULT(ic)->isaddr = 0;
+        }
       if(IS_OP_VOLATILE(IC_RESULT (ic)))
         continue;
 

@@ -1,4 +1,16 @@
-2012-06-12 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCClospre.hpp:
+	  Fix lospre nonforward-substitution of POINTER_SET.
+
+2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+ 	* support/regression/tests/and_survive.c:
+	  Test non-destructive and, regression test for #3534833.
+	* support/regression/tests/gcc-torture-execute-980707-1.c:
+	  Adapted and enabled test for mcs51.
+
+2012-06-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/hc08/gen.c:
 	  Fix cost calculation for branches.
