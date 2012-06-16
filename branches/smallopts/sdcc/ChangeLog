@@ -1,3 +1,8 @@
+2012-06-15 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* sim/ucsim/z80.src/z80cl.h, z80.cc, inst_ed.cc:
+	  Added in0, out0, and tst instructions for z180 support.
+
 2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
  	* support/regression/tests/and_survive.c:
