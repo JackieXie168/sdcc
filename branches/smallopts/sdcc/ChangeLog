@@ -1,3 +1,29 @@
+2012-06-16 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* sdas/asz80/z80mch.c: Change to report error for invalid operands
+	  to z180 tst instruction.
+
+2012-06-09 Borut Razem <borut.razem AT gmail.com>
+
+	* .version, sdcc.spec, doc/sdccman.lyx:
+	  changed sdcc version to 3.2.0
+
+2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Implement #3512989.
+
+2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* support/regression/ports/pic14/support.c:
+	  Fix for renamed __asm.
+	* support/regression/tests/gcc-torture-execute-pr31169.c,
+	  support/regression/tests/bitfields.c,
+	  support/regression/tests/gcc-torture-execute-20100316-1.c,
+	  support/regression/tests/gcc-torture-execute-pr38422.c,
+	  support/regression/tests/gcc-torture-execute-921016-1.c:
+	  Disable tests that use bitfields of size greater than 8 bits, which is not yet supported by the pic16 port.
+
 2012-06-15 Leland Morrison <enigmalee AT sourceforge.net>
 
 	* sim/ucsim/z80.src/z80cl.h, z80.cc, inst_ed.cc:
@@ -7,6 +33,8 @@
 
  	* support/regression/tests/and_survive.c:
 	  Test non-destructive and, regression test for #3534833.
+	* support/regression/tests/gcc-torture-execute-980707-1.c:
+	  Adapted and enabled test for mcs51.
 
 2012-06-14 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
