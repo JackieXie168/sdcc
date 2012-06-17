@@ -7095,7 +7095,7 @@ genAnd (const iCode * ic, iCode * ifx)
   operand *left, *right, *result;
   int size, offset = 0;
   unsigned long lit = 0L;
-  int bytelit = 0;
+  unsigned int bytelit = 0;
 
   aopOp ((left = IC_LEFT (ic)), ic, FALSE, FALSE);
   aopOp ((right = IC_RIGHT (ic)), ic, FALSE, FALSE);
@@ -7158,32 +7158,90 @@ genAnd (const iCode * ic, iCode * ifx)
           emit2 ("scf");
           regalloc_dry_run_cost += 1;
         }
-      /*else if(AOP_TYPE (left) == AOP_IY && !IS_GB && isLiteralBit (lit & 0xff) >= 0)
-        {
-          emit2 ("bit %d, %s", isLiteralBit (bytelit), aopGet (AOP (left), offset, FALSE));
-        }*/
       while (sizel--)
         {
           if ((bytelit = ((lit >> (offset * 8)) & 0x0FFL)) != 0x0L)
             {
-              if (isLiteralBit (bytelit) >= 0 && ifx
-                  && (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_ACC || AOP_TYPE (left) == AOP_IY || AOP_TYPE (left) == AOP_REG
-                      && AOP (left)->aopu.aop_reg[0]->rIdx != IYL_IDX))
+              char *jumpcond = "NZ";
+              /* Testing for the border bits of the accumulator destructively is cheap. */
+              if ((isLiteralBit (bytelit) == 0 || isLiteralBit (bytelit) == 7) && AOP_TYPE (left) == AOP_ACC && !bitVectBitValue (ic->rSurv, A_IDX))
+                {
+                  emit3 (isLiteralBit (bytelit) == 0 ? A_RRCA : A_RLCA, 0 , 0);
+                  jumpcond = "C";
+                }
+              /* Testing for the border bits of some 16-bit registers destructively is cheap. */
+              else if (AOP_TYPE (left) == AOP_REG && !sizel &&
+                (isLiteralBit (bytelit) == 7 && (
+                  AOP (left)->aopu.aop_reg[offset]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) ||
+                  IS_RAB && AOP (left)->aopu.aop_reg[offset]->rIdx == D_IDX && isPairDead (PAIR_DE, ic) ||
+                  AOP (left)->aopu.aop_reg[offset]->rIdx == IYH_IDX && isPairDead (PAIR_IY, ic)
+                ) ||
+                isLiteralBit (bytelit) == 0 && IS_RAB && (
+                  AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && isPairDead (PAIR_HL, ic) ||
+                  AOP (left)->aopu.aop_reg[offset]->rIdx == E_IDX && isPairDead (PAIR_DE, ic) ||
+                  AOP (left)->aopu.aop_reg[offset]->rIdx == IYL_IDX && isPairDead (PAIR_IY, ic)
+                  )))
+                {
+                  PAIR_ID pair;
+                  switch (AOP (left)->aopu.aop_reg[offset]->rIdx)
+                    {
+                    case L_IDX:
+                    case H_IDX:
+                      pair = PAIR_HL;
+                      break;
+                    case E_IDX:
+                    case D_IDX:
+                      pair = PAIR_DE;
+                      break;
+                    case IYL_IDX:
+                    case IYH_IDX:
+                      pair = PAIR_IY;
+                      break;
+                    default:
+                      pair = PAIR_INVALID;
+                      wassertl (0, "Invalid pair");
+                    }
+                  if ((pair == PAIR_HL || pair == PAIR_IY) && isLiteralBit (bytelit) == 7)
+                    emit2 ("add %s, %s", _pairs[pair].name);
+                  else if (isLiteralBit (bytelit) == 7)
+                    emit2 ("rl %s", _pairs[pair].name);
+                  else
+                    emit2 ("rr %s", _pairs[pair].name);
+                  regalloc_dry_run_cost += (pair == PAIR_IY ? 2 : 1);
+                  jumpcond = "C";
+                }
+              /* Non-destructive and when exactly one bit per byte is set. */
+              else if (isLiteralBit (bytelit) >= 0 &&
+                (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_ACC || AOP_TYPE (left) == AOP_IY || AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[0]->rIdx != IYL_IDX))
                 {
                   if (!regalloc_dry_run)
                     emit2 ("bit %d, %s", isLiteralBit (bytelit), aopGet (AOP (left), offset, FALSE));
-                  regalloc_dry_run_cost += AOP_TYPE (left) == AOP_STK ? 4 : 2;
+                  regalloc_dry_run_cost += (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_IY) ? 4 : 2;
                 }
+              /* Non-destructive and when exactly one bit per byte is not set. */
+              else if (isLiteralBit (~bytelit & 0xffu) >= 0 && AOP_TYPE (left) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[offset]->rIdx))
+                {
+                  if (!regalloc_dry_run)
+                    emit2 ("res %d, %s", isLiteralBit (~bytelit & 0xffu), aopGet (AOP (left), offset, FALSE));
+                  regalloc_dry_run_cost += (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_IY) ? 4 : 2;
+                }
+              /* Z180 has non-destructive and. */
               else if (IS_Z180 && AOP_TYPE (left) == AOP_ACC && bitVectBitValue (ic->rSurv, A_IDX) && bytelit != 0x0ff)
                 {
                   if (!regalloc_dry_run)
                     emit2 ("tst a, %s", aopGet (AOP (right), 0, FALSE));
                   regalloc_dry_run_cost += (AOP_TYPE (right) == AOP_LIT ? 3 : 2);
                 }
+              /* Generic case, loading into accumulator and testing there. */
               else
                 {
                   cheapMove (ASMOP_A, 0, AOP (left), offset);
-                  if (bytelit != 0x0FFL)
+                  if (isLiteralBit (bytelit) == 0 || isLiteralBit (bytelit) == 7)
+                    {
+                      emit3 (isLiteralBit (bytelit) == 0 ? A_RRCA : A_RLCA, 0 , 0);
+                      jumpcond = "C";
+                    }
+                  else if (bytelit != 0xffu)
                     emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
                   else
                     emit3 (A_OR, ASMOP_A, ASMOP_A);     /* For the flags */
@@ -7191,7 +7249,7 @@ genAnd (const iCode * ic, iCode * ifx)
               if (size || ifx)  /* emit jmp only, if it is actually used */
                 {
                   if (!regalloc_dry_run)
-                    emit2 ("jp NZ,!tlabel", labelKey2num (tlbl->key));
+                    emit2 ("jp %s,!tlabel", jumpcond, labelKey2num (tlbl->key));
                   regalloc_dry_run_cost += 3;
                 }
             }
@@ -7246,12 +7304,18 @@ genAnd (const iCode * ic, iCode * ifx)
                 continue;
               else if (bytelit == 0)
                 aopPut3 (AOP (result), offset, ASMOP_ZERO, 0);
+              else if (isLiteralBit (~bytelit & 0xffu) >= 0 && AOP_TYPE (result) == AOP_REG)
+                {
+                  if (!regalloc_dry_run)
+                    emit2 ("res %d, %s", isLiteralBit (~bytelit & 0xffu), aopGet (AOP (result), offset, FALSE));
+                  regalloc_dry_run_cost += 2;
+                }
               else
                 {
                   cheapMove (ASMOP_A, 0, AOP (left), offset);
-                  if (isLiteralBit (~bytelit & 0x0FFL) >= 0)
+                  if (isLiteralBit (~bytelit & 0xffu) >= 0)
                     {
-                      emit2 ("res %d, a", isLiteralBit (~bytelit & 0x0FFL));
+                      emit2 ("res %d, a", isLiteralBit (~bytelit & 0xffu));
                       regalloc_dry_run_cost += 2;
                     }
                   else
