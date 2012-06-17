@@ -7218,7 +7218,7 @@ genAnd (const iCode * ic, iCode * ifx)
                     emit2 ("bit %d, %s", isLiteralBit (bytelit), aopGet (AOP (left), offset, FALSE));
                   regalloc_dry_run_cost += (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_IY) ? 4 : 2;
                 }
-              /* Non-destructive and when exactly one bit per byte is not set. */
+              /* Destructive and when exactly one bit per byte is not set. */
               else if (isLiteralBit (~bytelit & 0xffu) >= 0 && AOP_TYPE (left) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[offset]->rIdx))
                 {
                   if (!regalloc_dry_run)
