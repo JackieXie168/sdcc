@@ -1,3 +1,21 @@
+2012-06-17 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/sdcc.nsi:
+	  added removal of include\asm\r3ka\*.h
+	* device/non-free/include/pic14/pic16fam.h,
+	  support/scripts/pic16fam-h-gen.pl:
+	  applied patch #3531531 - The pic16fam-h-gen correction,
+	  thanks to Molnar Karoly
+	* support/scripts/repack_release.sh:
+	  remove unneeded directories produced by sdbinutils
+
+2012-06-17 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCval.c:
+	  Warn when encountering long long literals.
+
 2012-06-17 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
@@ -13,7 +31,7 @@
 	* .version, sdcc.spec, doc/sdccman.lyx:
 	  changed sdcc version to 3.2.0
 
-2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2012-06-16 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
 	  Implement #3512989.
