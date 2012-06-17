@@ -1,15 +1,3 @@
-2012-06-17 Borut Razem <borut.razem AT gmail.com>
-
-	* support/scripts/sdcc.nsi:
-	  added removal of include\asm\r3ka\*.h
-
-2012-06-17 Philipp Klaus Krause <pkk AT spth.de>
-
-	* src/SDCCerr.h,
-	  src/SDCCerr.c,
-	  src/SDCCval.c:
-	  Warn when encountering long long literals.
-
 2012-06-16 Leland Morrison <enigmalee AT sourceforge.net>
 
 	* sdas/asz80/z80mch.c: Change to report error for invalid operands
@@ -20,7 +8,7 @@
 	* .version, sdcc.spec, doc/sdccman.lyx:
 	  changed sdcc version to 3.2.0
 
-2012-06-16 Philipp Klaus Krause <pkk AT spth.de>
+2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
 	  Implement #3512989.

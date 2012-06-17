@@ -1090,7 +1090,6 @@ constVal (const char *s)
     {
       SPEC_NOUN (val->type) = V_INT;
       SPEC_LONGLONG (val->type) = 1;
-      werror (W_LONGLONG_LITERAL, p); 
       p2 += 2;
       if (strchr (p2, 'l') || strchr (p2, 'L'))
         werror (E_INTEGERSUFFIX, p); 
@@ -1118,10 +1117,7 @@ constVal (const char *s)
           if (dval < -32768) /* check if we have to promote to long int */              
             SPEC_LONG (val->type) = 1;
           if (dval < -2147483648.0) /* check if we have to promote to long long int */
-            {
-              SPEC_LONGLONG (val->type) = 1;
-              werror (W_LONGLONG_LITERAL, p); 
-            }
+            SPEC_LONGLONG (val->type) = 1;
         }
       else
         {                       /* >=0 */
@@ -1156,7 +1152,6 @@ constVal (const char *s)
           if (dval > 0xffffffff && SPEC_USIGN (val->type) && !SPEC_LONGLONG (val->type))
             {
               SPEC_LONGLONG (val->type) = 1;
-              werror (W_LONGLONG_LITERAL, p); 
             }
           else if (dval > 0x7fffffff && !SPEC_USIGN (val->type))
             {
@@ -1165,10 +1160,7 @@ constVal (const char *s)
               if (is_integral || (!options.std_c99 && dval <= 0xffffffff))
                 SPEC_USIGN (val->type) = 1;
               else
-                {
-                  SPEC_LONGLONG (val->type) = 1;
-                  werror (W_LONGLONG_LITERAL, p); 
-                }
+                SPEC_LONGLONG (val->type) = 1;
             }
         }
     }
