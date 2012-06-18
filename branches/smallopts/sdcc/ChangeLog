@@ -1,5 +1,13 @@
 2012-06-18 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/peeph-z80.def,
+	  src/z80/peeph-r2k.def:
+	  Some more peepholes that help when framepointer is omitted.
+	* src/z80/peep.c:
+	  Handle cpl, ldir, di, ei, out, in, mul and bool in read analysis.
+
+2012-06-18 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/z80/gen.c,
 	  src/z80/ralloc2.cc:
 	  Improve shifts by non-literal.

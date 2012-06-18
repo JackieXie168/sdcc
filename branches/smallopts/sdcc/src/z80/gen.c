@@ -10599,7 +10599,7 @@ _swap (PAIR_ID one, PAIR_ID two)
 {
   if ((one == PAIR_DE && two == PAIR_HL) || (one == PAIR_HL && two == PAIR_DE))
     {
-      emit2 ("ex de,hl");
+      emit2 ("ex de, hl");
     }
   else
     {
