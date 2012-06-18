@@ -1,3 +1,9 @@
+2012-06-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Improve shifts by non-literal.
+
 2012-06-17 Borut Razem <borut.razem AT gmail.com>
 
 	* support/scripts/sdcc.nsi:

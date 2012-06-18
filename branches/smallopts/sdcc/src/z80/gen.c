@@ -8211,6 +8211,7 @@ genLeftShift (const iCode * ic)
   int size, offset;
   symbol *tlbl = 0, *tlbl1 = 0;
   operand *left, *right, *result;
+  int countreg;
 
   right = IC_RIGHT (ic);
   left = IC_LEFT (ic);
@@ -8227,16 +8228,23 @@ genLeftShift (const iCode * ic)
       return;
     }
 
-  /* shift count is unknown then we have to form a loop get the loop
-     count in B : Note: we take only the lower order byte since
-     shifting more that 32 bits make no sense anyway, ( the largest
-     size of an object can be only 32 bits ) */
-  cheapMove (ASMOP_A, 0, AOP (right), 0);
-  emit2 ("inc a");
+  aopOp (result, ic, FALSE, FALSE);
+
+  if (AOP_TYPE (right) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (right)->aopu.aop_reg[0]->rIdx) && AOP (right)->aopu.aop_reg[0]->rIdx != IYL_IDX &&
+    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx)))
+    countreg = AOP (right)->aopu.aop_reg[0]->rIdx;
+  else if (!IS_GB && !bitVectBitValue (ic->rSurv, B_IDX) &&
+    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != B_IDX && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != B_IDX)))
+    countreg = B_IDX;
+  else
+    countreg = A_IDX;
+
+  cheapMove (countreg == A_IDX ? ASMOP_A : asmopregs[countreg], 0, AOP (right), 0);
+  emit2 ("inc %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
   regalloc_dry_run_cost += 1;
   freeAsmop (right, NULL, ic);
+
   aopOp (left, ic, FALSE, FALSE);
-  aopOp (result, ic, FALSE, FALSE);
 
   if (AOP_TYPE (left) != AOP_REG || AOP_TYPE (result) != AOP_REG)
     _push (PAIR_AF);
@@ -8274,19 +8282,46 @@ genLeftShift (const iCode * ic)
     }
   regalloc_dry_run_cost += 3;
 
-  while (size--)
+  while (size)
     {
-      emit3_o (offset ? A_RL : A_SLA, AOP (result), offset, 0, 0);
-      offset++;
+      if (size >= 2 && AOP_TYPE (result) == AOP_REG &&
+        (AOP (result)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && AOP (result)->aopu.aop_reg[offset]->rIdx == L_IDX ||
+         IS_RAB && (offset || countreg != A_IDX) && AOP (result)->aopu.aop_reg[offset + 1]->rIdx == D_IDX && AOP (result)->aopu.aop_reg[offset]->rIdx == E_IDX))
+        {
+          if (!offset && AOP (result)->aopu.aop_reg[offset]->rIdx == E_IDX)
+            {
+              emit2 ("xor a, a");
+              regalloc_dry_run_cost++;
+            }
+          if (AOP (result)->aopu.aop_reg[offset]->rIdx == L_IDX)
+            emit2 (offset ? "adc hl, hl" : "add hl, hl");
+          else
+            emit2 ("rl de");
+          regalloc_dry_run_cost++;
+          size -= 2, offset += 2;
+        }
+      else
+        {
+          emit3_o (offset ? A_RL : A_SLA, AOP (result), offset, 0, 0);
+          size--, offset++;
+        }
     }
 
   if (!regalloc_dry_run)
+    IS_GB ? emitLabelSpill (tlbl1) : emitLabel (tlbl1);
+  if (!IS_GB && countreg == B_IDX)
     {
-      emitLabel (tlbl1);
-      emit2 ("dec a");
-      emit2 ("jp NZ,!tlabel", labelKey2num (tlbl->key));
+      if (!regalloc_dry_run)
+        emit2 ("djnz !tlabel", labelKey2num (tlbl->key));
+      regalloc_dry_run_cost += 2;
     }
-  regalloc_dry_run_cost += 4;
+  else
+    {
+      emit2 ("dec %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
+      if (!regalloc_dry_run)
+        emit2 ("jr NZ,!tlabel", labelKey2num (tlbl->key));
+      regalloc_dry_run_cost += 3;
+    }
 
   freeAsmop (left, NULL, ic);
   freeAsmop (result, NULL, ic);
@@ -8476,6 +8511,7 @@ genRightShift (const iCode * ic)
   sym_link *retype;
   int size, offset, first = 1;
   bool is_signed;
+  int countreg;
 
   symbol *tlbl = 0, *tlbl1 = 0;
 
@@ -8500,13 +8536,23 @@ genRightShift (const iCode * ic)
       return;
     }
 
-  cheapMove (ASMOP_A, 0, AOP (right), 0);
-  emit2 ("inc a");
+  aopOp (result, ic, FALSE, FALSE);
+
+  if (AOP_TYPE (right) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (right)->aopu.aop_reg[0]->rIdx) && AOP (right)->aopu.aop_reg[0]->rIdx != IYL_IDX &&
+    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx)))
+    countreg = AOP (right)->aopu.aop_reg[0]->rIdx;
+  else if (!IS_GB && !bitVectBitValue (ic->rSurv, B_IDX) &&
+    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != B_IDX && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != B_IDX)))
+    countreg = B_IDX;
+  else
+    countreg = A_IDX;
+
+  cheapMove (countreg == A_IDX ? ASMOP_A : asmopregs[countreg], 0, AOP (right), 0);
+  emit2 ("inc %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
   regalloc_dry_run_cost += 1;
   freeAsmop (right, NULL, ic);
 
   aopOp (left, ic, FALSE, FALSE);
-  aopOp (result, ic, FALSE, FALSE);
 
   if (AOP_TYPE (left) != AOP_REG || AOP_TYPE (result) != AOP_REG)
     _push (PAIR_AF);
@@ -8543,26 +8589,50 @@ genRightShift (const iCode * ic)
     }
   regalloc_dry_run_cost += 3;
 
-  while (size--)
+  while (size)
     {
-      if (first)
+      if (IS_RAB && !(is_signed && first) && size >= 2 && !(first && countreg == A_IDX) && AOP_TYPE (result) == AOP_REG &&
+        (AOP (result)->aopu.aop_reg[offset]->rIdx == H_IDX && AOP (result)->aopu.aop_reg[offset - 1]->rIdx == L_IDX ||
+         AOP (result)->aopu.aop_reg[offset]->rIdx == D_IDX && AOP (result)->aopu.aop_reg[offset - 1]->rIdx == E_IDX))
+        {
+          if (first)
+            {
+              emit2 ("xor a, a");
+              first = 0;
+              regalloc_dry_run_cost++;
+            }
+          emit2 (AOP (result)->aopu.aop_reg[offset - 1]->rIdx == L_IDX ? "rr hl" : "rr de");
+          regalloc_dry_run_cost++;
+          size -= 2, offset -= 2;
+        }
+      else if (first)
         {
           emit3_o (is_signed ? A_SRA : A_SRL, AOP (result), offset, 0, 0);
           first = 0;
+          size--, offset--;
         }
       else
         {
           emit3_o (A_RR, AOP (result), offset, 0, 0);
+          size--, offset--;
         }
-      offset--;
     }
+  
   if (!regalloc_dry_run)
+    IS_GB ? emitLabelSpill (tlbl1) : emitLabel (tlbl1);
+  if (!IS_GB && countreg == B_IDX)
     {
-      IS_GB ? emitLabelSpill (tlbl1) : emitLabel (tlbl1);
-      emit2 ("dec a");
-      emit2 ("jp NZ,!tlabel", labelKey2num (tlbl->key));
+      if (!regalloc_dry_run)
+        emit2 ("djnz !tlabel", labelKey2num (tlbl->key));
+      regalloc_dry_run_cost += 2;
     }
-  regalloc_dry_run_cost += 4;
+  else
+    {
+      emit2 ("dec %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
+      if (!regalloc_dry_run)
+        emit2 ("jr NZ,!tlabel", labelKey2num (tlbl->key));
+      regalloc_dry_run_cost += 3;
+    }
 
   freeAsmop (left, NULL, ic);
   freeAsmop (result, NULL, ic);

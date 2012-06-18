@@ -765,6 +765,8 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   if(ic->op == LEFT_OP && getSize(operandType(result)) <= 2 && IS_OP_LITERAL (right) && result_only_HL)
     return(true);
+  if((ic->op == LEFT_OP || ic->op == RIGHT_OP) && (!exstk || ((!operand_on_stack(left, a, i, G) || !input_in_HL && result_only_HL) && (!operand_on_stack(right, a, i, G) || !input_in_HL && result_only_HL) && !operand_on_stack(result, a, i, G))))
+    return(true);
 
   if(result && IS_SYMOP(result) && isOperandInDirSpace(IC_RESULT(ic)))
     return(false);
