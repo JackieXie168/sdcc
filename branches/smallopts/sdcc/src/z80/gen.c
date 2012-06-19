@@ -994,12 +994,6 @@ _moveA3 (asmop * from, int offset)
   _emitMove3 (ASMOP_A, 0, from, offset);
 }
 
-static void
-_clearCarry (void)
-{
-  emit3 (A_XOR, ASMOP_A, ASMOP_A);
-}
-
 static const char *
 getPairName (asmop * aop)
 {
@@ -3082,14 +3076,43 @@ regMove (const short *dst, const short *src, size_t n)
   bool assigned[8] = { FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE };
   int cached_byte = -1;
   size_t size = n;
+  int ex[4] = {-1, -1, -1, -1};
+  size_t i;
 
   wassert (n < 6);
+
+  // Try to use ex de, hl
+  if (size >= 4)
+    {
+      // Find E and check that it is exchanged with L.
+      for (i = 0; i < n; i++)
+        if (dst[i] == E_IDX && src[i] == L_IDX)
+          ex[0] = i;
+      for (i = 0; i < n; i++)
+        if (dst[i] == L_IDX && src[i] == E_IDX)
+          ex[1] = i;
+      // Find D and check that it is exchanged with H.
+      for (i = 0; i < n; i++)
+        if (dst[i] == D_IDX && src[i] == H_IDX)
+          ex[2] = i;
+      for (i = 0; i < n; i++)
+        if (dst[i] == H_IDX && src[i] == D_IDX)
+          ex[3] = i;
+      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0 && ex[3] >= 0)
+        {
+          emit2 ("ex de, hl");
+          regalloc_dry_run_cost += IS_RAB ? 2 : 1;
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          assigned[ex[2]] = TRUE;
+          assigned[ex[3]] = TRUE;
+          size -= 4;
+        }
+    }
 
   // We need to be able to handle any assignment here, ensuring not to overwrite any parts of the source that we still need.
   while (size)
     {
-      size_t i;
-
       // Find lowest byte that can be assigned and needs to be assigned.
       for (i = 0; i < n; i++)
         {
@@ -6417,7 +6440,7 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
               if (!sign)
                 {
                   /* No sign so it's always false */
-                  _clearCarry ();
+                  emit3 (A_CP, ASMOP_A, ASMOP_A);
                   result_in_carry = TRUE;
                 }
               else
@@ -7790,14 +7813,14 @@ shiftR2Left2Result (const iCode *ic, operand *left, int offl, operand *result, i
   int size = 2;
   symbol *tlbl;
 
-  if (IS_RAB && !is_signed && shCount < 4 && !bitVectBitValue (ic->rSurv, A_IDX) &&
+  if (IS_RAB && !is_signed && shCount < 4 &&
     (getPairId (AOP (result)) == PAIR_HL || getPairId (AOP (result)) == PAIR_DE))
     {
       bool op_de = (getPairId (AOP (result)) == PAIR_DE);
       fetchPairLong (getPairId (AOP (result)), AOP(left), ic, offl);
       while (shCount--)
         {
-          emit3 (A_XOR, ASMOP_A, ASMOP_A);
+          emit3 (A_CP, ASMOP_A, ASMOP_A);
           emit2 (op_de? "rr de" : "rr hl");
           regalloc_dry_run_cost++;
         }
@@ -7924,18 +7947,14 @@ shiftL2Left2Result (operand *left, int offl, operand *result, int offr, int shCo
           regalloc_dry_run_cost += 2;
         }
     }
-  else if (IS_RAB && getPairId (AOP (shiftoperand)) == PAIR_DE && (!bitVectBitValue (ic->rSurv, A_IDX) || shCount > 4 || optimize.codeSize && shCount > 1))
+  else if (IS_RAB && getPairId (AOP (shiftoperand)) == PAIR_DE)
     {
-      if (bitVectBitValue (ic->rSurv, A_IDX))
-        _push (PAIR_AF);
       while (shCount--)
         {
-          emit3 (A_XOR, ASMOP_A, ASMOP_A);
+          emit3 (A_CP, ASMOP_A, ASMOP_A);
           emit2 ("rl de");
           regalloc_dry_run_cost++;
         }
-      if (bitVectBitValue (ic->rSurv, A_IDX))
-        _pop (PAIR_AF);
     }
   else
     {
@@ -8286,13 +8305,10 @@ genLeftShift (const iCode * ic)
     {
       if (size >= 2 && AOP_TYPE (result) == AOP_REG &&
         (AOP (result)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && AOP (result)->aopu.aop_reg[offset]->rIdx == L_IDX ||
-         IS_RAB && (offset || countreg != A_IDX) && AOP (result)->aopu.aop_reg[offset + 1]->rIdx == D_IDX && AOP (result)->aopu.aop_reg[offset]->rIdx == E_IDX))
+         IS_RAB && AOP (result)->aopu.aop_reg[offset + 1]->rIdx == D_IDX && AOP (result)->aopu.aop_reg[offset]->rIdx == E_IDX))
         {
           if (!offset && AOP (result)->aopu.aop_reg[offset]->rIdx == E_IDX)
-            {
-              emit2 ("xor a, a");
-              regalloc_dry_run_cost++;
-            }
+            emit3 (A_CP, ASMOP_A, ASMOP_A);
           if (AOP (result)->aopu.aop_reg[offset]->rIdx == L_IDX)
             emit2 (offset ? "adc hl, hl" : "add hl, hl");
           else
@@ -8591,15 +8607,14 @@ genRightShift (const iCode * ic)
 
   while (size)
     {
-      if (IS_RAB && !(is_signed && first) && size >= 2 && !(first && countreg == A_IDX) && AOP_TYPE (result) == AOP_REG &&
+      if (IS_RAB && !(is_signed && first) && size >= 2 && AOP_TYPE (result) == AOP_REG &&
         (AOP (result)->aopu.aop_reg[offset]->rIdx == H_IDX && AOP (result)->aopu.aop_reg[offset - 1]->rIdx == L_IDX ||
          AOP (result)->aopu.aop_reg[offset]->rIdx == D_IDX && AOP (result)->aopu.aop_reg[offset - 1]->rIdx == E_IDX))
         {
           if (first)
             {
-              emit2 ("xor a, a");
+              emit3 (A_CP, ASMOP_A, ASMOP_A);
               first = 0;
-              regalloc_dry_run_cost++;
             }
           emit2 (AOP (result)->aopu.aop_reg[offset - 1]->rIdx == L_IDX ? "rr hl" : "rr de");
           regalloc_dry_run_cost++;
@@ -10616,32 +10631,16 @@ _swap (PAIR_ID one, PAIR_ID two)
 static int
 setupForMemcpy (const iCode * ic, int nparams, operand ** pparams)
 {
-  PAIR_ID ids[NUM_PAIRS][NUM_PAIRS];
-  PAIR_ID dest[3] =
-  {
-    PAIR_DE, PAIR_HL, PAIR_BC
-  };
-
   int i;
-#ifdef UNITY
-  int nunity = 0;
-#endif
-
-  bool skip[3] = { FALSE, FALSE, FALSE };
-  short dstregs[4];
-  short srcregs[4];
-  size_t regparamsize = 0;
-
-  memset (ids, PAIR_INVALID, sizeof (ids));
+  operand *count = pparams[2];
+  operand *from = pparams[1];
+  operand *to = pparams[0];
 
   /* Sanity checks */
   wassertl (nparams == 3, "Built-in memcpy() must have three parameters");
 
   for (i = 0; i < nparams; i++)
-    {
-      aopOp (pparams[i], ic, FALSE, FALSE);     // Todo: Free these.
-      ids[dest[i]][getPairId (AOP (pparams[i]))] = TRUE;
-    }
+    aopOp (pparams[i], ic, FALSE, FALSE);     // Freed in genBuiltInMemcpy().
 
   wassertl (AOP_TYPE (pparams[2]) == AOP_LIT, "Last parameter to builtin memcpy() must be literal.");
 
@@ -10649,137 +10648,52 @@ setupForMemcpy (const iCode * ic, int nparams, operand ** pparams)
   if (!((unsigned int) ulFromVal (AOP (pparams[2])->aopu.aop_lit)))
     return (0);
 
-#ifndef UNITY
-  if (AOP_TYPE (pparams[0]) == AOP_REG)
+  /* Both are in regs. Let regMove() do the shuffling. */
+  if (AOP_TYPE (to) == AOP_REG && AOP_TYPE (from) == AOP_REG)
     {
-      srcregs[regparamsize] = AOP (pparams[0])->aopu.aop_reg[0]->rIdx;
-      dstregs[regparamsize++] = E_IDX;
-      srcregs[regparamsize] = AOP (pparams[0])->aopu.aop_reg[1]->rIdx;
-      dstregs[regparamsize++] = D_IDX;
-      skip[0] = TRUE;
-    }
-  if (AOP_TYPE (pparams[1]) == AOP_REG)
-    {
-      srcregs[regparamsize] = AOP (pparams[1])->aopu.aop_reg[0]->rIdx;
-      dstregs[regparamsize++] = L_IDX;
-      srcregs[regparamsize] = AOP (pparams[1])->aopu.aop_reg[1]->rIdx;
-      dstregs[regparamsize++] = H_IDX;
-      skip[1] = TRUE;
-    }
+      const short larray[4] = {E_IDX, D_IDX, L_IDX, H_IDX};
+      short oparray[4];
+      oparray[0] = AOP (to)->aopu.aop_reg[0]->rIdx;
+      oparray[1] = AOP (to)->aopu.aop_reg[1]->rIdx;
+      oparray[2] = AOP (from)->aopu.aop_reg[0]->rIdx;
+      oparray[3] = AOP (from)->aopu.aop_reg[1]->rIdx;
 
-  if (regparamsize)
-    regMove (dstregs, srcregs, regparamsize);
-
-  for (i = 0; i < 3; i++)
-    {
-      if (!skip[i])
-        fetchPair (dest[i], AOP (pparams[i]));
+      regMove (larray, oparray, 4);
     }
-
-  return (1);
-#else
-  /* Count the number of unity or iTemp assigns. */
-  for (i = 0; i < 3; i++)
+  else
     {
-      if (ids[dest[i]][dest[i]] == TRUE || ids[dest[i]][PAIR_INVALID] == TRUE)
+      /* DE is free. Write it first. */
+      if (AOP_TYPE (from) != AOP_REG || AOP (from)->aopu.aop_reg[0]->rIdx != E_IDX && AOP (from)->aopu.aop_reg[0]->rIdx != D_IDX && AOP (from)->aopu.aop_reg[1]->rIdx != E_IDX && AOP (from)->aopu.aop_reg[1]->rIdx != D_IDX)
         {
-          nunity++;
+          fetchPair (PAIR_DE, AOP (to));
+          fetchPair (PAIR_HL, AOP (from));
         }
-    }
-
-  /* The last parameter is a literal. */
-  wassert (nunity);
-
-  if (nunity == 3)
-    {
-      /* Any order, fall through. */
-    }
-  else if (nunity == 2)
-    {
-      /* Two are OK.  Assign the other one. */
-      for (i = 0; i < 3; i++)
+      /* HL is free. Write it first. */
+      else if (AOP_TYPE (to) != AOP_REG || AOP (to)->aopu.aop_reg[0]->rIdx != L_IDX && AOP (to)->aopu.aop_reg[0]->rIdx != H_IDX && AOP (to)->aopu.aop_reg[1]->rIdx != L_IDX && AOP (to)->aopu.aop_reg[1]->rIdx != H_IDX)
         {
-          for (j = 0; j < NUM_PAIRS; j++)
-            {
-              if (ids[dest[i]][j] == TRUE)
-                {
-                  /* Found it.  See if it's the right one. */
-                  if (j == PAIR_INVALID || j == dest[i])
-                    {
-                      /* Keep looking. */
-                    }
-                  else
-                    {
-                      fetchPair (dest[i], AOP (pparams[i]));
-                      goto done;
-                    }
-                }
-            }
+          fetchPair (PAIR_HL, AOP (from));
+          fetchPair (PAIR_DE, AOP (to));
         }
-    }
-  else if (nunity == 1)
-    {
-      int k = 0;
-      PAIR_ID dest_pairs[2];
-      PAIR_ID src_pairs[2];
-      int i_pairs[2];
-      /* One is OK. Find the other two. */
-      for (i = 0; i < 3; i++)
+      /* L is free, but H is not. */
+      else if ((AOP_TYPE (to) != AOP_REG || AOP (to)->aopu.aop_reg[0]->rIdx != L_IDX && AOP (to)->aopu.aop_reg[1]->rIdx != L_IDX) &&
+        (AOP_TYPE (from) != AOP_REG || AOP (from)->aopu.aop_reg[0]->rIdx != L_IDX && AOP (from)->aopu.aop_reg[1]->rIdx != L_IDX))
         {
-          for (j = 0; j < NUM_PAIRS; j++)
-            {
-              if (ids[dest[i]][j] == TRUE)
-                {
-                  if (j == PAIR_INVALID || j == dest[i])
-                    {
-                      /* This one is OK. */
-                    }
-                  else
-                    {
-                      /* Found one. */
-                      if (ids[j][dest[i]] == TRUE)
-                        {
-                          /* Just swap. */
-                          _swap (j, dest[i]);
-                          goto done;
-                        }
-                      else
-                        {
-                          assert (k < 2);
-                          dest_pairs[k] = dest[i];
-                          src_pairs[k] = j;
-                          i_pairs[k] = i;
-                          k++;
-                          continue;
-                        }
-                    }
-                }
-            }
+          cheapMove (ASMOP_L, 0, AOP (from), 0);
+          fetchPair (PAIR_DE, AOP (to));
+          cheapMove (ASMOP_H, 0, AOP (from), 1);
         }
-      if (dest_pairs[0] != src_pairs[1])
-        {
-          fetchPair (dest_pairs[0], AOP (pparams[i_pairs[0]]));
-          fetchPair (dest_pairs[1], AOP (pparams[i_pairs[1]]));
-        }
+      /* H is free, but L is not. */
       else
         {
-          fetchPair (dest_pairs[1], AOP (pparams[i_pairs[1]]));
-          fetchPair (dest_pairs[0], AOP (pparams[i_pairs[0]]));
+          cheapMove (ASMOP_H, 0, AOP (from), 1);
+          fetchPair (PAIR_DE, AOP (to));
+          cheapMove (ASMOP_L, 0, AOP (from), 0);
         }
     }
 
-done:
-  /* Finally pull out all of the iTemps */
-  for (i = 0; i < 3; i++)
-    {
-      if (ids[dest[i]][PAIR_INVALID] == 1)
-        {
-          fetchPair (dest[i], AOP (pparams[i]));
-        }
-    }
+  fetchPair (PAIR_BC, AOP (count));
 
   return (1);
-#endif
 }
 
 static void

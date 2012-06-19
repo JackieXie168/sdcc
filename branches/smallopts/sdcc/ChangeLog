@@ -1,5 +1,12 @@
 2012-06-18 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/gen.c:
+	  Refactor code for setup for built-in memcpy(),
+	  use ex de, hl in register move,
+	  use cp instead of xor for clearing the carry flag.
+
+2012-06-18 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCCopt.c,
 	  src/hc08/ralloc.c:
 	  Document relation between offsetFold() and packPointerOp().
