@@ -7225,7 +7225,7 @@ genAnd (const iCode * ic, iCode * ifx)
                       wassertl (0, "Invalid pair");
                     }
                   if ((pair == PAIR_HL || pair == PAIR_IY) && isLiteralBit (bytelit) == 7)
-                    emit2 ("add %s, %s", _pairs[pair].name);
+                    emit2 ("add %s, %s", _pairs[pair].name, _pairs[pair].name);
                   else if (isLiteralBit (bytelit) == 7)
                     emit2 ("rl %s", _pairs[pair].name);
                   else
