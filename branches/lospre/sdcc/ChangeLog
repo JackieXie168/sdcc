@@ -1,3 +1,56 @@
+2012-06-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCopt.c,
+	  src/hc08/ralloc.c:
+	  Document relation between offsetFold() and packPointerOp().
+
+2012-06-18 Borut Razem <borut.razem AT gmail.com>
+
+	* doc/sdccman.lyx, device/include/pic14/pic14devices.txt,
+	  device/non-free/lib/pic14/libdev/devices.txt,
+	  device/non-free/lib/pic14/libdev/Makefile.in,
+	  device/non-free/include/pic14/pic16f883.h,
+	  device/non-free/include/pic14/pic16f884.h,
+	  device/non-free/include/pic14/pic16f882.h,
+	  device/non-free/lib/pic14/libdev/pic16f884.c,
+	  device/non-free/lib/pic14/libdev/pic16f882.c,
+	  device/non-free/lib/pic14/libdev/pic16f883.c:
+	  applied patch #3531530 - new CPU support (pic16f882, 883, 884),
+	  thanks to Molnar Karoly
+
+2012-06-17 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/sdcc.nsi:
+	  added removal of include\asm\r3ka\*.h
+	* device/non-free/include/pic14/pic16fam.h,
+	  support/scripts/pic16fam-h-gen.pl:
+	  applied patch #3531531 - The pic16fam-h-gen correction,
+	  thanks to Molnar Karoly
+	* support/scripts/repack_release.sh:
+	  remove unneeded directories produced by sdbinutils
+
+2012-06-17 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCval.c:
+	  Warn when encountering long long literals.
+
+2012-06-16 Leland Morrison <enigmalee AT sourceforge.net>
+
+	* sdas/asz80/z80mch.c: Change to report error for invalid operands
+	  to z180 tst instruction.
+
+2012-06-09 Borut Razem <borut.razem AT gmail.com>
+
+	* .version, sdcc.spec, doc/sdccman.lyx:
+	  changed sdcc version to 3.2.0
+
+2012-06-16 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Implement #3512989.
+
 2012-06-15 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* support/regression/ports/pic14/support.c:
