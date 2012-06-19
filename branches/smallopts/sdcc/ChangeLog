@@ -1,6 +1,11 @@
 2012-06-19 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
+	  More efficient assignment for global variables.
+
+2012-06-19 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
 	  Fix bug in & 0x8000 with ifx for unsigned int.
 
 2012-06-19 Philipp Klaus Krause <pkk AT spth.de>

@@ -9744,17 +9744,12 @@ genAssign (const iCode * ic)
     }
 
   if (isPair (AOP (result)))
-    {
-      fetchPairLong (getPairId (AOP (result)), AOP (right), ic, LSB);
-    }
+    fetchPairLong (getPairId (AOP (result)), AOP (right), ic, LSB);
   else if (isPair (AOP (right)) && AOP_TYPE (result) == AOP_IY && size == 2)
-    {
-      /* Assigning directly is cheaper than using IY. */
-      emit2 ("ld (%s), %s", AOP (result)->aopu.aop_dir, getPairName (AOP (right)));
-      regalloc_dry_run_cost += (getPairId (AOP (right)) == PAIR_HL) ? 3 : 4;
-    }
+    commitPair (AOP (result), getPairId (AOP (right)), ic, FALSE);
   else if (size == 2 && isPairDead (PAIR_HL, ic) &&
-    (!IS_GB && AOP_TYPE (right) == AOP_STK && AOP_TYPE (result) == AOP_IY ||
+    (!IS_GB && (AOP_TYPE (right) == AOP_STK && !_G.omitFramePtr || AOP_TYPE (right) == AOP_IY) && AOP_TYPE (result) == AOP_IY ||
+    !IS_GB && AOP_TYPE (right) == AOP_IY && (AOP_TYPE (result) == AOP_STK && !_G.omitFramePtr || AOP_TYPE (result) == AOP_IY) ||
     IS_RAB && (AOP_TYPE(result) == AOP_STK || AOP_TYPE(result) == AOP_EXSTK) && (AOP_TYPE(right) == AOP_LIT || AOP_TYPE (right) == AOP_IMMD)))
     {
       fetchPair (PAIR_HL, AOP (right));
