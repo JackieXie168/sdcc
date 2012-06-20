@@ -7181,95 +7181,154 @@ genAnd (const iCode * ic, iCode * ifx)
           emit2 ("scf");
           regalloc_dry_run_cost += 1;
         }
-      while (sizel--)
+      while (sizel)
         {
-          if ((bytelit = ((lit >> (offset * 8)) & 0x0FFL)) != 0x0L)
+          char *jumpcond = "NZ";
+
+          if ((bytelit = ((lit >> (offset * 8)) & 0x0fful)) == 0x00ul)
             {
-              char *jumpcond = "NZ";
-              /* Testing for the border bits of the accumulator destructively is cheap. */
-              if ((isLiteralBit (bytelit) == 0 || isLiteralBit (bytelit) == 7) && AOP_TYPE (left) == AOP_ACC && !bitVectBitValue (ic->rSurv, A_IDX))
+              sizel--;
+              offset++;
+              continue;
+            }
+          
+          /* Testing for the border bits of the accumulator destructively is cheap. */
+          if ((isLiteralBit (bytelit) == 0 || isLiteralBit (bytelit) == 7) && AOP_TYPE (left) == AOP_ACC && !bitVectBitValue (ic->rSurv, A_IDX))
+            {
+              emit3 (isLiteralBit (bytelit) == 0 ? A_RRCA : A_RLCA, 0 , 0);
+              jumpcond = "C";
+              sizel--;
+              offset++;
+            }
+          /* Testing for the inverse of the border bits of some 32-bit registers destructively is cheap. */
+          /* More combinations would be possible, but this one is the one that is common in the floating-point library. */
+          else if (AOP_TYPE (left) == AOP_REG && sizel >= 4 && ((lit >> (offset * 8)) & 0xfffffffful) == 0x7ffffffful &&
+            AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) &&
+            0 && IS_RAB && AOP (left)->aopu.aop_reg[offset + 2]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 3]->rIdx == D_IDX && isPairDead (PAIR_HL, ic))
+            {emit2(";HERE2");
+              emit3 (A_CP, ASMOP_A, ASMOP_A); // Clear carry.
+              emit2 ("adc hl, hl"); // Cannot use "add hl, hl instead, since it does not affect zero flag.
+              if (!regalloc_dry_run)
+                emit2 ("jp NZ,!tlabel", labelKey2num (tlbl->key));
+              emit2 ("rl de");
+              regalloc_dry_run_cost += 6;
+              sizel -= 4;
+              offset += 4;
+            }
+          /* Testing for the inverse of the border bits of some 16-bit registers destructively is cheap. */
+          /* More combinations would be possible, but these are the common ones. */
+          else if (AOP_TYPE (left) == AOP_REG && sizel >= 2 && ((lit >> (offset * 8)) & 0xfffful) == 0x7ffful &&
+            (AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) ||
+            0 && IS_RAB && AOP (left)->aopu.aop_reg[offset]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == D_IDX  && isPairDead (PAIR_DE, ic)))
+            {emit2(";HERE1");
+              PAIR_ID pair;
+              switch (AOP (left)->aopu.aop_reg[offset]->rIdx)
+                {
+                case L_IDX:
+                case H_IDX:
+                  pair = PAIR_HL;
+                  break;
+                case E_IDX:
+                case D_IDX:
+                  pair = PAIR_DE;
+                  break;
+                default:
+                  pair = PAIR_INVALID;
+                  wassertl (0, "Invalid pair");
+                }
+              emit3 (A_CP, ASMOP_A, ASMOP_A); // Clear carry.
+              if (pair == PAIR_HL)
+                emit2 ("adc %s, %s", _pairs[pair].name, _pairs[pair].name); // Cannot use "add hl, hl instead, since it does not affect zero flag.
+              else
+                emit2 ("rl %s", _pairs[pair].name);
+              regalloc_dry_run_cost += (pair == PAIR_DE ? 1 : 2);
+              sizel -= 2;
+              offset += 2;
+            }
+          /* Testing for the border bits of some 16-bit registers destructively is cheap. */
+          else if (AOP_TYPE (left) == AOP_REG && sizel == 1 &&
+            (isLiteralBit (bytelit) == 7 && (
+              AOP (left)->aopu.aop_reg[offset]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) ||
+              IS_RAB && AOP (left)->aopu.aop_reg[offset]->rIdx == D_IDX && isPairDead (PAIR_DE, ic) ||
+              AOP (left)->aopu.aop_reg[offset]->rIdx == IYH_IDX && isPairDead (PAIR_IY, ic)
+            ) ||
+            isLiteralBit (bytelit) == 0 && IS_RAB && (
+              AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && isPairDead (PAIR_HL, ic) ||
+              AOP (left)->aopu.aop_reg[offset]->rIdx == E_IDX && isPairDead (PAIR_DE, ic) ||
+              AOP (left)->aopu.aop_reg[offset]->rIdx == IYL_IDX && isPairDead (PAIR_IY, ic)
+              )))
+            {
+              PAIR_ID pair;
+              switch (AOP (left)->aopu.aop_reg[offset]->rIdx)
+                {
+                case L_IDX:
+                case H_IDX:
+                  pair = PAIR_HL;
+                  break;
+                case E_IDX:
+                case D_IDX:
+                  pair = PAIR_DE;
+                  break;
+                case IYL_IDX:
+                case IYH_IDX:
+                  pair = PAIR_IY;
+                  break;
+                default:
+                  pair = PAIR_INVALID;
+                  wassertl (0, "Invalid pair");
+                }
+              if ((pair == PAIR_HL || pair == PAIR_IY) && isLiteralBit (bytelit) == 7)
+                emit2 ("add %s, %s", _pairs[pair].name, _pairs[pair].name);
+              else if (isLiteralBit (bytelit) == 7)
+                emit2 ("rl %s", _pairs[pair].name);
+              else
+                emit2 ("rr %s", _pairs[pair].name);
+              regalloc_dry_run_cost += (pair == PAIR_IY ? 2 : 1);
+              jumpcond = "C";
+              sizel--;
+              offset++;
+            }
+          /* Non-destructive and when exactly one bit per byte is set. */
+          else if (isLiteralBit (bytelit) >= 0 &&
+            (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_ACC || AOP_TYPE (left) == AOP_IY || AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[0]->rIdx != IYL_IDX))
+            {
+              if (!regalloc_dry_run)
+                emit2 ("bit %d, %s", isLiteralBit (bytelit), aopGet (AOP (left), offset, FALSE));
+              regalloc_dry_run_cost += (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_IY) ? 4 : 2;
+              sizel--;
+              offset++;
+            }
+          /* Z180 has non-destructive and. */
+          else if (IS_Z180 && AOP_TYPE (left) == AOP_ACC && bitVectBitValue (ic->rSurv, A_IDX) && bytelit != 0x0ff)
+            {
+              if (!regalloc_dry_run)
+                emit2 ("tst a, %s", aopGet (AOP (right), 0, FALSE));
+              regalloc_dry_run_cost += (AOP_TYPE (right) == AOP_LIT ? 3 : 2);
+              sizel--;
+              offset++;
+            }
+          /* Generic case, loading into accumulator and testing there. */
+          else
+            {
+              cheapMove (ASMOP_A, 0, AOP (left), offset);
+              if (isLiteralBit (bytelit) == 0 || isLiteralBit (bytelit) == 7)
                 {
                   emit3 (isLiteralBit (bytelit) == 0 ? A_RRCA : A_RLCA, 0 , 0);
                   jumpcond = "C";
                 }
-              /* Testing for the border bits of some 16-bit registers destructively is cheap. */
-              else if (AOP_TYPE (left) == AOP_REG && !sizel &&
-                (isLiteralBit (bytelit) == 7 && (
-                  AOP (left)->aopu.aop_reg[offset]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) ||
-                  IS_RAB && AOP (left)->aopu.aop_reg[offset]->rIdx == D_IDX && isPairDead (PAIR_DE, ic) ||
-                  AOP (left)->aopu.aop_reg[offset]->rIdx == IYH_IDX && isPairDead (PAIR_IY, ic)
-                ) ||
-                isLiteralBit (bytelit) == 0 && IS_RAB && (
-                  AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && isPairDead (PAIR_HL, ic) ||
-                  AOP (left)->aopu.aop_reg[offset]->rIdx == E_IDX && isPairDead (PAIR_DE, ic) ||
-                  AOP (left)->aopu.aop_reg[offset]->rIdx == IYL_IDX && isPairDead (PAIR_IY, ic)
-                  )))
-                {
-                  PAIR_ID pair;
-                  switch (AOP (left)->aopu.aop_reg[offset]->rIdx)
-                    {
-                    case L_IDX:
-                    case H_IDX:
-                      pair = PAIR_HL;
-                      break;
-                    case E_IDX:
-                    case D_IDX:
-                      pair = PAIR_DE;
-                      break;
-                    case IYL_IDX:
-                    case IYH_IDX:
-                      pair = PAIR_IY;
-                      break;
-                    default:
-                      pair = PAIR_INVALID;
-                      wassertl (0, "Invalid pair");
-                    }
-                  if ((pair == PAIR_HL || pair == PAIR_IY) && isLiteralBit (bytelit) == 7)
-                    emit2 ("add %s, %s", _pairs[pair].name, _pairs[pair].name);
-                  else if (isLiteralBit (bytelit) == 7)
-                    emit2 ("rl %s", _pairs[pair].name);
-                  else
-                    emit2 ("rr %s", _pairs[pair].name);
-                  regalloc_dry_run_cost += (pair == PAIR_IY ? 2 : 1);
-                  jumpcond = "C";
-                }
-              /* Non-destructive and when exactly one bit per byte is set. */
-              else if (isLiteralBit (bytelit) >= 0 &&
-                (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_ACC || AOP_TYPE (left) == AOP_IY || AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[0]->rIdx != IYL_IDX))
-                {
-                  if (!regalloc_dry_run)
-                    emit2 ("bit %d, %s", isLiteralBit (bytelit), aopGet (AOP (left), offset, FALSE));
-                  regalloc_dry_run_cost += (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_IY) ? 4 : 2;
-                }
-              /* Z180 has non-destructive and. */
-              else if (IS_Z180 && AOP_TYPE (left) == AOP_ACC && bitVectBitValue (ic->rSurv, A_IDX) && bytelit != 0x0ff)
-                {
-                  if (!regalloc_dry_run)
-                    emit2 ("tst a, %s", aopGet (AOP (right), 0, FALSE));
-                  regalloc_dry_run_cost += (AOP_TYPE (right) == AOP_LIT ? 3 : 2);
-                }
-              /* Generic case, loading into accumulator and testing there. */
+              else if (bytelit != 0xffu)
+                emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
               else
-                {
-                  cheapMove (ASMOP_A, 0, AOP (left), offset);
-                  if (isLiteralBit (bytelit) == 0 || isLiteralBit (bytelit) == 7)
-                    {
-                      emit3 (isLiteralBit (bytelit) == 0 ? A_RRCA : A_RLCA, 0 , 0);
-                      jumpcond = "C";
-                    }
-                  else if (bytelit != 0xffu)
-                    emit3_o (A_AND, ASMOP_A, 0, AOP (right), offset);
-                  else
-                    emit3 (A_OR, ASMOP_A, ASMOP_A);     /* For the flags */
-                }
-              if (size || ifx)  /* emit jmp only, if it is actually used */
-                {
-                  if (!regalloc_dry_run)
-                    emit2 ("jp %s,!tlabel", jumpcond, labelKey2num (tlbl->key));
-                  regalloc_dry_run_cost += 3;
-                }
+                emit3 (A_OR, ASMOP_A, ASMOP_A);     /* For the flags */
+              sizel--;
+              offset++;
             }
-          offset++;
+          if (size || ifx)  /* emit jmp only, if it is actually used */
+            {
+              if (!regalloc_dry_run)
+                emit2 ("jp %s,!tlabel", jumpcond, labelKey2num (tlbl->key));
+              regalloc_dry_run_cost += 3;
+            }
         }
       // bit = left & literal
       if (size)

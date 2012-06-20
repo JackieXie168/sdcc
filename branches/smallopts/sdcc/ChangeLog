@@ -1,7 +1,7 @@
 2012-06-20 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
-	  Fix for destructive ifx-testing and.
+	  Improve destructive and.
 
 2012-06-19 Philipp Klaus Krause <pkk AT spth.de>
 
