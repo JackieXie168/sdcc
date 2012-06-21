@@ -2816,6 +2816,7 @@ commitPair (asmop *aop, PAIR_ID id, const iCode *ic, bool dont_destroy)
     {
       emit2 ("ex (sp), %s", _pairs[id].name);
       regalloc_dry_run_cost += ((id == PAIR_IY || IS_RAB) ? 2 : 1);
+      spillPair (id);
     }
   else if (IS_RAB && (aop->type == AOP_STK || aop->type == AOP_EXSTK) && (id == PAIR_HL || id == PAIR_IY) &&
            (id == PAIR_HL && abs (fp_offset) <= 127 && aop->type == AOP_STK || abs (sp_offset) <= 127))
@@ -6480,7 +6481,7 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
               offset++;
             }
 
-          if (sign)             /* Map signed operands to unsigned ones. This pre-subtraction workaroud to lack of signed comparison is cheaper than the post-subtraction one at fix. */
+          if (sign)             /* Map signed operands to unsigned ones. This pre-subtraction workaround to lack of signed comparison is cheaper than the post-subtraction one at fix. */
             {
               if (size == 2 && !(IS_GB || !ifx && requiresHL(AOP(result)) && AOP_TYPE (result) != AOP_REG) && isPairDead (PAIR_HL, ic) && (isPairDead (PAIR_DE, ic) || isPairDead (PAIR_BC, ic)) && (getPairId (AOP (left)) == PAIR_HL || IS_RAB && (AOP_TYPE (left) == AOP_STK || AOP_TYPE (left) == AOP_EXSTK)))
                 {
@@ -6721,7 +6722,7 @@ genCmpLt (iCode * ic, iCode * ifx)
 /* returns pair that still needs to be popped                      */
 /*-----------------------------------------------------------------*/
 static PAIR_ID
-gencjneshort (operand * left, operand * right, symbol * lbl)
+gencjneshort (operand * left, operand * right, symbol * lbl, const iCode *ic)
 {
   int size = max (AOP_SIZE (left), AOP_SIZE (right));
   int offset = 0;
@@ -6757,11 +6758,22 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
         {
           while (size--)
             {
-              cheapMove (ASMOP_A, 0, AOP (left), offset);
-              if (byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0)
-                emit3 (A_OR, ASMOP_A, ASMOP_A);
+              if ((AOP_TYPE (left) == AOP_ACC && !bitVectBitValue (ic->rSurv, A_IDX) ||
+                AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx != IYL_IDX && AOP (left)->aopu.aop_reg[offset]->rIdx != IYH_IDX && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[offset]->rIdx)) &&
+                byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0xff)
+                {
+                  if(!regalloc_dry_run)
+                    emit2 ("inc %s", aopGet (AOP (left), offset, FALSE));
+                  regalloc_dry_run_cost++;
+                }
               else
-                emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
+                {
+                  cheapMove (ASMOP_A, 0, AOP (left), offset);
+                  if (byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0)
+                    emit3 (A_OR, ASMOP_A, ASMOP_A);
+                  else
+                    emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
+                }
               if (!regalloc_dry_run)
                 emit2 ("jp NZ,!tlabel", labelKey2num (lbl->key));
               regalloc_dry_run_cost += 3;
@@ -6835,12 +6847,12 @@ gencjneshort (operand * left, operand * right, symbol * lbl)
 /* gencjne - compare and jump if not equal                         */
 /*-----------------------------------------------------------------*/
 static void
-gencjne (operand * left, operand * right, symbol * lbl)
+gencjne (operand * left, operand * right, symbol * lbl, const iCode *ic)
 {
   symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
   PAIR_ID pop;
 
-  pop = gencjneshort (left, right, lbl);
+  pop = gencjneshort (left, right, lbl, ic);
 
   /* PENDING: ?? */
   if (!regalloc_dry_run)
@@ -6896,7 +6908,7 @@ genCmpEq (iCode * ic, iCode * ifx)
         {
           PAIR_ID pop;
           symbol *tlbl = regalloc_dry_run ? 0 : newiTempLabel (0);
-          pop = gencjneshort (left, right, tlbl);
+          pop = gencjneshort (left, right, tlbl, ic);
           if (IC_TRUE (ifx))
             {
               if (pop != PAIR_INVALID)
@@ -6950,7 +6962,7 @@ genCmpEq (iCode * ic, iCode * ifx)
     }
   else
     {
-      gencjne (left, right, regalloc_dry_run ? 0 : newiTempLabel (NULL));
+      gencjne (left, right, regalloc_dry_run ? 0 : newiTempLabel (NULL), ic);
       if (AOP_TYPE (result) == AOP_CRY && AOP_SIZE (result))
         {
           wassert (0);
@@ -8933,6 +8945,13 @@ genPointerGet (const iCode *ic)
       regalloc_dry_run_cost += 3;
       goto release;
     }
+  else if (!IS_GB && AOP_TYPE (left) == AOP_IMMD && isPair (AOP (result)) && !IS_BITVAR (retype))
+    {
+      PAIR_ID pair = getPairId (AOP (result));
+      emit2 ("ld %s, (%s)", _pairs[pair].name, aopGetLitWordLong (AOP (left), rightval, TRUE));
+      regalloc_dry_run_cost += (pair == PAIR_HL ? 3 : 4);
+      goto release;
+    }
 
   if (isPair (AOP (left)) && size == 1 && !IS_BITVAR (retype) && !rightval)
     {
@@ -9800,9 +9819,10 @@ genAssign (const iCode * ic)
   else if (isPair (AOP (right)) && AOP_TYPE (result) == AOP_IY && size == 2)
     commitPair (AOP (result), getPairId (AOP (right)), ic, FALSE);
   else if (size == 2 && isPairDead (PAIR_HL, ic) &&
-    (!IS_GB && (AOP_TYPE (right) == AOP_STK && !_G.omitFramePtr || AOP_TYPE (right) == AOP_IY) && AOP_TYPE (result) == AOP_IY ||
-    !IS_GB && AOP_TYPE (right) == AOP_IY && (AOP_TYPE (result) == AOP_STK && !_G.omitFramePtr || AOP_TYPE (result) == AOP_IY) ||
-    IS_RAB && (AOP_TYPE(result) == AOP_STK || AOP_TYPE(result) == AOP_EXSTK) && (AOP_TYPE(right) == AOP_LIT || AOP_TYPE (right) == AOP_IMMD)))
+    (!IS_GB && (AOP_TYPE (right) == AOP_STK && !_G.omitFramePtr || AOP_TYPE (right) == AOP_IY) && AOP_TYPE (result) == AOP_IY || // Use ld (nn), hl
+    !IS_GB && AOP_TYPE (right) == AOP_IY && (AOP_TYPE (result) == AOP_STK && !_G.omitFramePtr || AOP_TYPE (result) == AOP_IY) || // Use ld hl, (nn)
+    !IS_GB && AOP_TYPE (right) == AOP_LIT && (AOP_TYPE(result) == AOP_STK || AOP_TYPE(result) == AOP_EXSTK) && (AOP(result)->aopu.aop_stk + offset + _G.stack.offset + (AOP(result)->aopu.aop_stk > 0 ? _G.stack.param_offset : 0) + _G.stack.pushed) == 0 || // Use ex (sp), hl
+    IS_RAB && (AOP_TYPE(result) == AOP_STK || AOP_TYPE(result) == AOP_EXSTK) && (AOP_TYPE(right) == AOP_LIT || AOP_TYPE (right) == AOP_IMMD))) // Use ld d(sp), hl
     {
       fetchPair (PAIR_HL, AOP (right));
       commitPair (AOP (result), PAIR_HL, ic, FALSE);

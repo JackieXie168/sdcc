@@ -1,6 +1,13 @@
 2012-06-21 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
+	  Use destructive increment in comparison for equality with #0xff,
+	  more efficient assignment of 16-byte values,
+	  fix spilling of comitted pair after ex (sp), dd.
+
+2012-06-21 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
 	  Enable use of rl de in destructive and.
 
 2012-06-20 Leland Morrison <enigmalee AT sourceforge.net>
