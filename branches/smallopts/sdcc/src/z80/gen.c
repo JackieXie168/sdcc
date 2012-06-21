@@ -7204,8 +7204,8 @@ genAnd (const iCode * ic, iCode * ifx)
           /* More combinations would be possible, but this one is the one that is common in the floating-point library. */
           else if (AOP_TYPE (left) == AOP_REG && sizel >= 4 && ((lit >> (offset * 8)) & 0xfffffffful) == 0x7ffffffful &&
             !IS_GB && AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) &&
-            0 && IS_RAB && AOP (left)->aopu.aop_reg[offset + 2]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 3]->rIdx == D_IDX && isPairDead (PAIR_HL, ic))
-            {emit2(";HERE2");
+            IS_RAB && AOP (left)->aopu.aop_reg[offset + 2]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 3]->rIdx == D_IDX && isPairDead (PAIR_HL, ic))
+            {
               emit3 (A_CP, ASMOP_A, ASMOP_A); // Clear carry.
               emit2 ("adc hl, hl"); // Cannot use "add hl, hl instead, since it does not affect zero flag.
               if (!regalloc_dry_run)
@@ -7219,8 +7219,8 @@ genAnd (const iCode * ic, iCode * ifx)
           /* More combinations would be possible, but these are the common ones. */
           else if (AOP_TYPE (left) == AOP_REG && sizel >= 2 && ((lit >> (offset * 8)) & 0xfffful) == 0x7ffful &&
             (!IS_GB && AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) ||
-            0 && IS_RAB && AOP (left)->aopu.aop_reg[offset]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == D_IDX  && isPairDead (PAIR_DE, ic)))
-            {emit2(";HERE1");
+            IS_RAB && AOP (left)->aopu.aop_reg[offset]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == D_IDX  && isPairDead (PAIR_DE, ic)))
+            {
               PAIR_ID pair;
               switch (AOP (left)->aopu.aop_reg[offset]->rIdx)
                 {
