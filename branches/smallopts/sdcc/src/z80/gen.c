@@ -10695,26 +10695,9 @@ _swap (PAIR_ID one, PAIR_ID two)
 }
 #endif
 
-static int
-setupForMemcpy (const iCode * ic, int nparams, operand ** pparams)
+static void
+setupForMemcpy (const iCode *ic, const operand *to, const operand *from)
 {
-  int i;
-  operand *count = pparams[2];
-  operand *from = pparams[1];
-  operand *to = pparams[0];
-
-  /* Sanity checks */
-  wassertl (nparams == 3, "Built-in memcpy() must have three parameters");
-
-  for (i = 0; i < nparams; i++)
-    aopOp (pparams[i], ic, FALSE, FALSE);     // Freed in genBuiltInMemcpy().
-
-  wassertl (AOP_TYPE (pparams[2]) == AOP_LIT, "Last parameter to builtin memcpy() must be literal.");
-
-  /* Check for zero length copy. */
-  if (!((unsigned int) ulFromVal (AOP (pparams[2])->aopu.aop_lit)))
-    return (0);
-
   /* Both are in regs. Let regMove() do the shuffling. */
   if (AOP_TYPE (to) == AOP_REG && AOP_TYPE (from) == AOP_REG)
     {
@@ -10757,37 +10740,87 @@ setupForMemcpy (const iCode * ic, int nparams, operand ** pparams)
           cheapMove (ASMOP_L, 0, AOP (from), 0);
         }
     }
-
-  fetchPair (PAIR_BC, AOP (count));
-
-  return (1);
 }
 
 static void
-genBuiltInMemcpy (const iCode * ic, int nParams, operand ** pparams)
+genBuiltInMemcpy (const iCode *ic, int nparams, operand **pparams)
 {
+  int i;
   operand *from, *to, *count;
+  bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
+  unsigned int n;
 
-  wassertl (nParams == 3, "Built-in memcpy() must have three parameters");
+  for (i = 0; i < nparams; i++)
+    aopOp (pparams[i], ic, FALSE, FALSE);
+
+  wassertl (!IS_GB, "Built-in memcpy() not available on gbz80.");
+  wassertl (nparams == 3, "Built-in memcpy() must have three parameters.");
+  /* Check for zero length copy. */
+  wassertl (AOP_TYPE (pparams[2]) == AOP_LIT, "Last parameter to builtin memcpy() must be literal.");
+
   count = pparams[2];
   from = pparams[1];
   to = pparams[0];
 
-  _saveRegsForCall (ic, 0, TRUE);
+  if (!(n = (unsigned int) ulFromVal (AOP (pparams[2])->aopu.aop_lit)))
+    goto done;
 
-  if (setupForMemcpy (ic, nParams, pparams))
+  if (!isPairDead (PAIR_HL, ic))
     {
+      _push (PAIR_HL);
+      saved_HL = TRUE;
+    }
+  if (!isPairDead (PAIR_DE, ic))
+    {
+      _push (PAIR_DE);
+      saved_DE = TRUE;
+    }
+  if (!isPairDead (PAIR_BC, ic) && n > 2)
+    {
+      _push (PAIR_BC);
+      saved_BC = TRUE;
+    }
+
+ setupForMemcpy (ic, to, from);
+
+  if (n == 1)
+    {
+      emit2 ("ld a, (hl)");
+      emit2 ("ld (de), a");
+      regalloc_dry_run_cost += 2;
+    }
+  else if (n == 2)
+    {
+      emit2 ("ldi");
+      emit2 ("ld a, (hl)");
+      emit2 ("ld (de), a");
+      regalloc_dry_run_cost += 4;
+      if (!isPairDead (PAIR_BC, ic)) /* Restore bc. */
+        {
+          emit2 ("dec bc");
+          regalloc_dry_run_cost++;
+        }
+    }
+  else
+    {
+      fetchPair (PAIR_BC, AOP (count));
       emit2 ("ldir");
       regalloc_dry_run_cost += 2;
     }
 
+  spillPair (PAIR_HL);
+
+  if (saved_BC)
+    _pop (PAIR_BC);
+  if (saved_DE)
+    _pop (PAIR_DE);
+  if (saved_HL)
+    _pop (PAIR_HL);
+
+done:
   freeAsmop (count, NULL, ic->next->next);
   freeAsmop (to, NULL, ic->next);
   freeAsmop (from, NULL, ic);
-
-  spillPair (PAIR_HL);
-
-  _restoreRegsAfterCall ();
 
   /* No need to assign result - would have used ordinary memcpy() call instead. */
 }

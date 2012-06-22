@@ -12,6 +12,8 @@
 	  src/hc08/main.c,
 	  src/hc08/ralloc2.cc:
 	  Nice fix for bug #3536902.
+	* src/z80/gen.c:
+	  More efficient built-in memcpy() for small copies.
 
 2012-06-21 Philipp Klaus Krause <pkk AT spth.de>
 
