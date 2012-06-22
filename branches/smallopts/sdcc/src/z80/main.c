@@ -610,6 +610,9 @@ _finaliseOptions (void)
   if (_G.asmType == ASM_TYPE_ASXXXX && IS_GB)
     asm_addTree (&_asxxxx_gb);
 
+  if (IY_RESERVED)
+    port->num_regs -= 2;
+
   _setValues ();
 }
 
@@ -897,7 +900,8 @@ PORT z80_port = {
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   1,                            /* reset labelKey to 1 */
-  1,                            /* globals & local static allowed */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
   PORT_MAGIC
 };
 
@@ -1021,7 +1025,8 @@ PORT z180_port = {
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   1,                            /* reset labelKey to 1 */
-  1,                            /* globals & local static allowed */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
   PORT_MAGIC
 };
 
@@ -1145,7 +1150,8 @@ PORT r2k_port = {
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   1,                            /* reset labelKey to 1 */
-  1,                            /* globals & local static allowed */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
   PORT_MAGIC
 };
 
@@ -1269,7 +1275,8 @@ PORT r3ka_port = {
   _z80_builtins,                /* builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   1,                            /* reset labelKey to 1 */
-  1,                            /* globals & local static allowed */
+  1,                            /* globals & local statics allowed */
+  9,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
   PORT_MAGIC
 };
 
@@ -1395,7 +1402,8 @@ PORT gbz80_port = {
   NULL,                         /* no builtin functions */
   GPOINTER,                     /* treat unqualified pointers as "generic" pointers */
   1,                            /* reset labelKey to 1 */
-  1,                            /* globals & local static allowed */
+  1,                            /* globals & local statics allowed */
+  5,                            /* Number of registers handled in the tree-decomposition-based register allocator in SDCCralloc.hpp */
   PORT_MAGIC
 };
 

@@ -351,7 +351,7 @@ static void set_surviving_regs(const assignment &a, unsigned short int i, const 
 {
   iCode *ic = G[i].ic;
   
-  ic->rSurv = newBitVect(NUM_REGS);
+  ic->rSurv = newBitVect(port->num_regs);
   
   std::set<var_t>::const_iterator v, v_end;
   for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)

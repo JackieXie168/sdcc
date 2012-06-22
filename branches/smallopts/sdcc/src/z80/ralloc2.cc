@@ -21,8 +21,6 @@
 //#define DEBUG_RALLOC_DEC // Uncomment to get debug messages while doing register allocation on the tree decomposition.
 //#define DEBUG_RALLOC_DEC_ASS // Uncomment to get debug messages about assignments while doing register allocation on the tree decomposition (much more verbose than the one above).
 
-#define THIS_IS_THE_Z80_PORT_OR_WHATEVER
-
 #include "SDCCralloc.hpp"
 
 extern "C"
@@ -33,12 +31,6 @@ extern "C"
   bool should_omit_frame_ptr;
 };
 
-bool
-iy_reserved(void)
-{
-  return(IY_RESERVED);
-}
-
 #define REG_C 0
 #define REG_B 1
 #define REG_E 2
@@ -47,7 +39,7 @@ iy_reserved(void)
 #define REG_H 5
 #define REG_IYL 6
 #define REG_IYH 7
-#define REG_A (NUM_REGS - 1)
+#define REG_A (port->num_regs - 1)
 
 template <class G_t, class I_t>
 float default_operand_cost(const operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
@@ -438,7 +430,7 @@ static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, 
   if(!o || !IS_SYMOP(o))
     return(false);
 
-  if(r >= NUM_REGS)
+  if(r >= port->num_regs)
     return(false);
 
   operand_map_t::const_iterator oi, oi_end;
@@ -458,7 +450,7 @@ static bool operand_in_reg(const operand *o, const i_assignment_t &ia, unsigned 
 
   operand_map_t::const_iterator oi, oi_end;
   for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
-    for(reg_t r = 0; r < NUM_REGS; r++)
+    for(reg_t r = 0; r < port->num_regs; r++)
       if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
         return(true);
 
@@ -1054,7 +1046,7 @@ static void set_surviving_regs(const assignment &a, unsigned short int i, const 
 {
   iCode *ic = G[i].ic;
   
-  ic->rSurv = newBitVect(NUM_REGS);
+  ic->rSurv = newBitVect(port->num_regs);
   
   std::set<var_t>::const_iterator v, v_end;
   for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
@@ -1520,7 +1512,7 @@ static bool omit_frame_ptr(const G_t &G)
   signed char omitcost = -16;
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
-      if(G[i].alive.size() > NUM_REGS - 4)
+      if(G[i].alive.size() > port->num_regs - 4)
         return(false);
 
       const iCode *const ic = G[i].ic;
