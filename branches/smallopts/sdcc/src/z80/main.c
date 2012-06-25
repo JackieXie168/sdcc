@@ -852,7 +852,7 @@ PORT z80_port = {
    -1, 0, 0, 4, 0, 2},
   /* Z80 has no native mul/div commands */
   {
-   0, 2},
+   0, -1},
   {
    z80_emitDebuggerSymbol},
   {
@@ -977,7 +977,7 @@ PORT z180_port = {
    -1, 0, 0, 4, 0, 2},
   /* Z80 has no native mul/div commands */
   {
-   0, 2},
+   0, -1},
   {
    z80_emitDebuggerSymbol},
   {
@@ -1102,7 +1102,7 @@ PORT r2k_port = {
    -1, 0, 0, 4, 0, 2},
   /* Z80 has no native mul/div commands */
   {
-   0, 2},
+   0, -1},
   {
    z80_emitDebuggerSymbol},
   {
@@ -1227,7 +1227,7 @@ PORT r3ka_port = {
    -1, 0, 0, 4, 0, 2},
   /* Z80 has no native mul/div commands */
   {
-   0, 2},
+   0, -1},
   {
    z80_emitDebuggerSymbol},
   {
@@ -1354,7 +1354,7 @@ PORT gbz80_port = {
    -1, 0, 0, 2, 0, 4},
   /* gbZ80 has no native mul/div commands */
   {
-   0, 2},
+   0, -1},
   {
    z80_emitDebuggerSymbol},
   {

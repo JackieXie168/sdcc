@@ -1,5 +1,27 @@
 2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* device/lib/z180/shift.s,
+	  device/lib/r3ka/shift.s,
+	  device/lib/z80/shift.s,
+	  device/lib/gbz80/shift.s,
+	  device/lib/r2k/shift.s,
+	  src/port.h,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  device/lib/z180/Makefile.in,
+	  device/lib/z180/stubs.s,
+	  device/lib/r3ka/Makefile.in,
+	  device/lib/r3ka/stubs.s,
+	  device/lib/z80/Makefile.in,
+	  device/lib/z80/stubs.s,
+	  device/lib/gbz80/stubs.s,
+	  device/lib/gbz80/Makefile.in,
+	  device/lib/r2k/Makefile.in,
+	  device/lib/r2k/stubs.s:
+	  Code generation instead of support calls for all shifts.
+
+2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/gen.c:
 	  Better cost estimation for loading parameters into pairs,
 	  more efficient loading from stack into iy for Rabbits.

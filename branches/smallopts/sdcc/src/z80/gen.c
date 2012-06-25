@@ -8371,7 +8371,7 @@ genLeftShiftLiteral (operand * left, operand * right, operand * result, const iC
           genlshTwo (result, left, shCount, ic);
           break;
         case 4:
-          wassertl (0, "Shifting of longs is currently unsupported");
+          wassertl (0, "Shifting of longs should be handled by generic function.");
           break;
         default:
           wassert (0);
@@ -8400,7 +8400,7 @@ genLeftShift (const iCode * ic)
 
   /* if the shift count is known then do it
      as efficiently as possible */
-  if (AOP_TYPE (right) == AOP_LIT)
+  if (AOP_TYPE (right) == AOP_LIT && getSize (operandType (result)) <= 2)
     {
       genLeftShiftLiteral (left, right, result, ic);
       freeAsmop (right, NULL, ic);
@@ -8408,12 +8408,21 @@ genLeftShift (const iCode * ic)
     }
 
   aopOp (result, ic, FALSE, FALSE);
+  aopOp (left, ic, FALSE, FALSE);
 
-  if (AOP_TYPE (right) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (right)->aopu.aop_reg[0]->rIdx) && AOP (right)->aopu.aop_reg[0]->rIdx != IYL_IDX &&
-    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx)))
+  if (AOP_TYPE (right) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (right)->aopu.aop_reg[0]->rIdx) && AOP (right)->aopu.aop_reg[0]->rIdx != IYL_IDX && (sameRegs (AOP (left), AOP (result)) || AOP_TYPE (left) != AOP_REG) &&
+    (AOP_TYPE (result) != AOP_REG ||
+    AOP (result)->aopu.aop_reg[0]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx &&
+    (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx &&
+    (AOP_SIZE (result) < 3 || AOP (result)->aopu.aop_reg[2]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx &&
+    (AOP_SIZE (result) < 4 || AOP (result)->aopu.aop_reg[3]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx)))))
     countreg = AOP (right)->aopu.aop_reg[0]->rIdx;
-  else if (!IS_GB && !bitVectBitValue (ic->rSurv, B_IDX) &&
-    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != B_IDX && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != B_IDX)))
+  else if (!IS_GB && !bitVectBitValue (ic->rSurv, B_IDX) && (sameRegs (AOP (left), AOP (result)) || AOP_TYPE (left) != AOP_REG) &&
+    (AOP_TYPE (result) != AOP_REG ||
+    AOP (result)->aopu.aop_reg[0]->rIdx != B_IDX &&
+    (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != B_IDX &&
+    (AOP_SIZE (result) < 3 || AOP (result)->aopu.aop_reg[2]->rIdx != B_IDX &&
+    (AOP_SIZE (result) < 4 || AOP (result)->aopu.aop_reg[3]->rIdx != B_IDX)))))
     countreg = B_IDX;
   else
     countreg = A_IDX;
@@ -8422,8 +8431,6 @@ genLeftShift (const iCode * ic)
   emit2 ("inc %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
   regalloc_dry_run_cost += 1;
   freeAsmop (right, NULL, ic);
-
-  aopOp (left, ic, FALSE, FALSE);
 
   if (AOP_TYPE (left) != AOP_REG || AOP_TYPE (result) != AOP_REG)
     _push (PAIR_AF);
@@ -8461,6 +8468,9 @@ genLeftShift (const iCode * ic)
     }
   regalloc_dry_run_cost += 3;
 
+  if (requiresHL (AOP (result)))
+    spillPair (PAIR_HL);
+
   while (size)
     {
       if (size >= 2 && AOP_TYPE (result) == AOP_REG &&
@@ -8484,7 +8494,7 @@ genLeftShift (const iCode * ic)
     }
 
   if (!regalloc_dry_run)
-    IS_GB ? emitLabelSpill (tlbl1) : emitLabel (tlbl1);
+    emitLabel (tlbl1);
   if (!IS_GB && countreg == B_IDX)
     {
       if (!regalloc_dry_run)
@@ -8667,7 +8677,7 @@ genRightShiftLiteral (operand * left, operand * right, operand * result, const i
           genrshTwo (ic, result, left, shCount, sign);
           break;
         case 4:
-          wassertl (0, "Asked to shift right a long which should be a function call");
+          wassertl (0, "Asked to shift right a long which should be handled in generic right shift function.");
           break;
         default:
           wassertl (0, "Entered default case in right shift delegate");
@@ -8705,7 +8715,7 @@ genRightShift (const iCode * ic)
 
   /* if the shift count is known then do it
      as efficiently as possible */
-  if (AOP_TYPE (right) == AOP_LIT)
+  if (AOP_TYPE (right) == AOP_LIT && getSize (operandType (result)) <= 2)
     {
       genRightShiftLiteral (left, right, result, ic, is_signed);
       freeAsmop (right, NULL, ic);
@@ -8713,12 +8723,21 @@ genRightShift (const iCode * ic)
     }
 
   aopOp (result, ic, FALSE, FALSE);
+  aopOp (left, ic, FALSE, FALSE);
 
-  if (AOP_TYPE (right) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (right)->aopu.aop_reg[0]->rIdx) && AOP (right)->aopu.aop_reg[0]->rIdx != IYL_IDX &&
-    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx)))
+  if (AOP_TYPE (right) == AOP_REG && !bitVectBitValue (ic->rSurv, AOP (right)->aopu.aop_reg[0]->rIdx) && AOP (right)->aopu.aop_reg[0]->rIdx != IYL_IDX && (sameRegs (AOP (left), AOP (result)) || AOP_TYPE (left) != AOP_REG) &&
+    (AOP_TYPE (result) != AOP_REG ||
+    AOP (result)->aopu.aop_reg[0]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx &&
+    (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx &&
+    (AOP_SIZE (result) < 3 || AOP (result)->aopu.aop_reg[2]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx &&
+    (AOP_SIZE (result) < 4 || AOP (result)->aopu.aop_reg[3]->rIdx != AOP (right)->aopu.aop_reg[0]->rIdx)))))
     countreg = AOP (right)->aopu.aop_reg[0]->rIdx;
-  else if (!IS_GB && !bitVectBitValue (ic->rSurv, B_IDX) &&
-    (AOP_TYPE (result) != AOP_REG || AOP (result)->aopu.aop_reg[0]->rIdx != B_IDX && (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != B_IDX)))
+  else if (!IS_GB && !bitVectBitValue (ic->rSurv, B_IDX) && (sameRegs (AOP (left), AOP (result)) || AOP_TYPE (left) != AOP_REG) &&
+    (AOP_TYPE (result) != AOP_REG ||
+    AOP (result)->aopu.aop_reg[0]->rIdx != B_IDX &&
+    (AOP_SIZE (result) < 2 || AOP (result)->aopu.aop_reg[1]->rIdx != B_IDX &&
+    (AOP_SIZE (result) < 3 || AOP (result)->aopu.aop_reg[2]->rIdx != B_IDX &&
+    (AOP_SIZE (result) < 4 || AOP (result)->aopu.aop_reg[3]->rIdx != B_IDX)))))
     countreg = B_IDX;
   else
     countreg = A_IDX;
@@ -8727,8 +8746,6 @@ genRightShift (const iCode * ic)
   emit2 ("inc %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
   regalloc_dry_run_cost += 1;
   freeAsmop (right, NULL, ic);
-
-  aopOp (left, ic, FALSE, FALSE);
 
   if (AOP_TYPE (left) != AOP_REG || AOP_TYPE (result) != AOP_REG)
     _push (PAIR_AF);
@@ -8765,6 +8782,9 @@ genRightShift (const iCode * ic)
     }
   regalloc_dry_run_cost += 3;
 
+  if (requiresHL (AOP (result)))
+    spillPair (PAIR_HL);
+
   while (size)
     {
       if (IS_RAB && !(is_signed && first) && size >= 2 && AOP_TYPE (result) == AOP_REG &&
@@ -8793,7 +8813,7 @@ genRightShift (const iCode * ic)
     }
   
   if (!regalloc_dry_run)
-    IS_GB ? emitLabelSpill (tlbl1) : emitLabel (tlbl1);
+    emitLabel (tlbl1);
   if (!IS_GB && countreg == B_IDX)
     {
       if (!regalloc_dry_run)
