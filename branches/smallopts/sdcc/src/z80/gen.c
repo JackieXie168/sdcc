@@ -1662,7 +1662,7 @@ dealloc:
 }
 
 static bool
-isLitWord (const asmop * aop)
+isLitWord (const asmop *aop)
 {
   /*    if (aop->size != 2)
      return FALSE; */
@@ -8983,6 +8983,17 @@ genPointerGet (const iCode *ic)
       regalloc_dry_run_cost += (pair == PAIR_HL ? 3 : 4);
       goto release;
     }
+  else if (!IS_GB && AOP_TYPE (left) == AOP_IMMD && getPartPairId (AOP (result), 0) != PAIR_INVALID && getPartPairId (AOP (result), 2) != PAIR_INVALID)
+   {
+      PAIR_ID pair;
+      pair = getPartPairId (AOP (result), 0);
+      emit2 ("ld %s, (%s)", _pairs[pair].name, aopGetLitWordLong (AOP (left), rightval, TRUE));
+      regalloc_dry_run_cost += (pair == PAIR_HL ? 3 : 4);
+      pair = getPartPairId (AOP (result), 2);
+      emit2 ("ld %s, (%s)", _pairs[pair].name, aopGetLitWordLong (AOP (left), rightval + 2, TRUE));
+      regalloc_dry_run_cost += (pair == PAIR_HL ? 3 : 4);
+      goto release;
+   }
 
   if (isPair (AOP (left)) && size == 1 && !IS_BITVAR (retype) && !rightval)
     {
@@ -9041,6 +9052,43 @@ genPointerGet (const iCode *ic)
       goto release;
     }
 
+  /* Using ldir is cheapest for large memory-to-memory transfers. */
+  if (!IS_GB && (AOP_TYPE (result) == AOP_STK || AOP_TYPE (result) == AOP_EXSTK) && size > 2 && (!rightval || AOP_TYPE (left) == AOP_IMMD))
+    {
+      int fp_offset, sp_offset;
+
+      if(!isPairDead (PAIR_DE, ic))
+        _push (PAIR_DE);
+      if(!isPairDead (PAIR_BC, ic))
+        _push (PAIR_BC);
+
+      if (!rightval)
+        fetchPair (PAIR_DE, AOP (left));
+      else
+        {emit2(";B");
+          emit2 ("ld de, %s", aopGetLitWordLong (AOP (left), rightval, TRUE));
+          regalloc_dry_run_cost += 3;
+        }
+
+      fp_offset = AOP (result)->aopu.aop_stk + _G.stack.offset + (AOP (result)->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
+      sp_offset = fp_offset + _G.stack.pushed;
+      emit2 ("ld hl, !immedword", sp_offset);
+      emit2 ("add hl, sp");
+      emit2 ("ex de, hl");
+      emit2 ("ld bc, !immedword", size);
+      emit2 ("ldir");
+      regalloc_dry_run_cost += 10;
+      spillPair (PAIR_HL);
+      spillPair (PAIR_DE);
+      spillPair (PAIR_BC);
+
+      if(!isPairDead (PAIR_BC, ic))
+        _pop (PAIR_BC);
+      if(!isPairDead (PAIR_DE, ic))
+        _pop (PAIR_DE);
+      goto release;
+    }
+
   extrapair = isPairDead (PAIR_DE, ic) ? PAIR_DE : PAIR_BC;
 
   /* For now we always load into temp pair */
@@ -9088,7 +9136,7 @@ genPointerGet (const iCode *ic)
           if (surviving_a && !pushed_a)
             _push (PAIR_AF), pushed_a = TRUE;
           offsetPair (pair, extrapair, !isPairDead (extrapair, ic), rightval);
-          emit2 ("ld a,!*hl");
+          emit2 ("ld a, !*hl");
           emit2 ("inc hl");
           if (!regalloc_dry_run)
             aopPut (AOP (result), "!*hl", 1);
@@ -9538,6 +9586,33 @@ genPointerSet (iCode * ic)
       goto release;
     }
 
+  /* Using ldir is cheapest for large memory-to-memory transfers. */
+  if (!IS_GB && (AOP_TYPE (right) == AOP_STK || AOP_TYPE (right) == AOP_EXSTK) && size > 2)
+    {
+      int fp_offset, sp_offset;
+
+      if(!isPairDead (PAIR_DE, ic))
+        _push (PAIR_DE);
+      if(!isPairDead (PAIR_BC, ic))
+        _push (PAIR_BC);
+
+      fetchPair (PAIR_DE, AOP (result));
+
+      fp_offset = AOP (right)->aopu.aop_stk + _G.stack.offset + (AOP (right)->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
+      sp_offset = fp_offset + _G.stack.pushed;
+      emit2 ("ld hl, !immedword", sp_offset);
+      emit2 ("add hl, sp");
+      emit2 ("ld bc, !immedword", size);
+      emit2 ("ldir");
+      regalloc_dry_run_cost += 9;
+
+      if(!isPairDead (PAIR_BC, ic))
+        _pop (PAIR_BC);
+      if(!isPairDead (PAIR_DE, ic))
+        _pop (PAIR_DE);
+      goto release;
+    }
+
   if (getPairId (AOP (result)) == PAIR_IY && !isBitvar)
     {
       /* Just do it */
@@ -9595,7 +9670,7 @@ genPointerSet (iCode * ic)
       goto release;
     }
 
-  if (!IS_GB && !isBitvar && isLitWord (AOP (result)) && size == 2 &&
+  if (!IS_GB && !isBitvar && isLitWord (AOP (result)) && size == 2 && offset == 0 &&
       (AOP_TYPE (right) == AOP_REG && getPairId (AOP (right)) != PAIR_INVALID || isLitWord (AOP (right))))
     {
       if (isLitWord (AOP (right)))
@@ -9605,9 +9680,30 @@ genPointerSet (iCode * ic)
         }
       else
         pairId = getPairId (AOP (right));
-
-      fetchPair (pairId, AOP (right));
       emit2 ("ld (%s), %s", aopGetLitWordLong (AOP (result), offset, FALSE), _pairs[pairId].name);
+      regalloc_dry_run_cost += (pairId == PAIR_HL) ? 3 : 4;
+      goto release;
+    }
+  if (!IS_GB && !isBitvar && isLitWord (AOP (result)) && size == 4 && offset == 0 &&
+    (getPartPairId (AOP (right), 0) != PAIR_INVALID && getPartPairId (AOP (right), 2) != PAIR_INVALID || isLitWord (AOP (right))))
+    {
+      if (isLitWord (AOP (right)))
+        {
+          pairId = PAIR_HL;
+          fetchPairLong (pairId, AOP (right), ic, 0);
+        }
+      else
+        pairId = getPartPairId (AOP (right), 0);
+      emit2 ("ld (%s), %s", aopGetLitWordLong (AOP (result), offset, FALSE), _pairs[pairId].name);
+      regalloc_dry_run_cost += (pairId == PAIR_HL) ? 3 : 4;
+      if (isLitWord (AOP (right)))
+        {
+          pairId = PAIR_HL;
+          fetchPairLong (pairId, AOP (right), ic, 2);
+        }
+      else
+        pairId = getPartPairId (AOP (right), 2);
+      emit2 ("ld (%s), %s", aopGetLitWordLong (AOP (result), offset + 2, FALSE), _pairs[pairId].name);
       regalloc_dry_run_cost += (pairId == PAIR_HL) ? 3 : 4;
       goto release;
     }
