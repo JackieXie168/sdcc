@@ -6830,6 +6830,14 @@ gencjneshort (operand * left, operand * right, symbol * lbl, const iCode *ic)
             {
               if ((AOP_TYPE (left) == AOP_ACC && !bitVectBitValue (ic->rSurv, A_IDX) ||
                 AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx != IYL_IDX && AOP (left)->aopu.aop_reg[offset]->rIdx != IYH_IDX && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[offset]->rIdx)) &&
+                byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0x01)
+                {
+                  if(!regalloc_dry_run)
+                    emit2 ("dec %s", aopGet (AOP (left), offset, FALSE));
+                  regalloc_dry_run_cost++;
+                }
+              else if ((AOP_TYPE (left) == AOP_ACC && !bitVectBitValue (ic->rSurv, A_IDX) ||
+                AOP_TYPE (left) == AOP_REG && AOP (left)->aopu.aop_reg[offset]->rIdx != IYL_IDX && AOP (left)->aopu.aop_reg[offset]->rIdx != IYH_IDX && !bitVectBitValue (ic->rSurv, AOP (left)->aopu.aop_reg[offset]->rIdx)) &&
                 byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0xff)
                 {
                   if(!regalloc_dry_run)
@@ -6839,8 +6847,18 @@ gencjneshort (operand * left, operand * right, symbol * lbl, const iCode *ic)
               else
                 {
                   cheapMove (ASMOP_A, 0, AOP (left), offset);
-                  if (byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0)
+                  if (byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0x00)
                     emit3 (A_OR, ASMOP_A, ASMOP_A);
+                  else if (byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0x01)
+                    {
+                      emit2 ("dec a");
+                      regalloc_dry_run_cost++;
+                    }
+                  else if (byteOfVal (AOP (right)->aopu.aop_lit, offset) == 0xff)
+                    {
+                      emit2 ("inc a");
+                      regalloc_dry_run_cost++;
+                    }
                   else
                     emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
                 }
@@ -9103,7 +9121,7 @@ genPointerGet (const iCode *ic)
       if (!rightval)
         fetchPair (PAIR_DE, AOP (left));
       else
-        {emit2(";B");
+        {
           emit2 ("ld de, %s", aopGetLitWordLong (AOP (left), rightval, TRUE));
           regalloc_dry_run_cost += 3;
         }
