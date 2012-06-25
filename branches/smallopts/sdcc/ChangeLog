@@ -1,5 +1,11 @@
 2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/z80/gen.c,
+	  src/z80/ralloc2.cc:
+	  Use 16-bit sbc in subtraction and comparison.
+
+2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/z80/gen.c:
 	  Improve handling of pointers to long and long long.
 

@@ -2036,7 +2036,7 @@ fetchPairLong (PAIR_ID pairId, asmop * aop, const iCode * ic, int offset)
           /* Instead of fetching relative to IY, just grab directly
              from the address IY refers to */
           emit2 ("ld %s,(%s)", _pairs[pairId].name, aopGetLitWordLong (aop, offset, FALSE));
-          regalloc_dry_run_cost += (pairId == PAIR_IY ? 4 : 3);
+          regalloc_dry_run_cost += (pairId == PAIR_HL ? 3 : 4);
 
           if (aop->size < 2)
             {
@@ -5777,8 +5777,19 @@ genMinus (const iCode * ic)
   setupToPreserveCarry (ic);
 
   /* if literal, add a,#-lit, else normal subb */
-  while (size--)
+  while (size)
     {
+      if (!IS_GB && getPartPairId (AOP (IC_LEFT (ic)), offset) == PAIR_HL && getPartPairId (AOP (IC_RESULT (ic)), offset) == PAIR_HL &&
+        (getPartPairId (AOP (IC_RIGHT (ic)), offset) == PAIR_BC || getPartPairId (AOP (IC_RIGHT (ic)), offset) == PAIR_DE))
+        {
+          if (!offset)
+            emit3 (A_CP, ASMOP_A, ASMOP_A);
+          emit2 ("sbc hl, %s", _pairs[getPartPairId (AOP (IC_RIGHT (ic)), offset)].name);
+          regalloc_dry_run_cost += 2;
+          offset += 2;
+          size -= 2;
+          continue;
+        }
       cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), offset);
       if (AOP_TYPE (IC_RIGHT (ic)) != AOP_LIT)
         {
@@ -5804,7 +5815,9 @@ genMinus (const iCode * ic)
           else
             emit2 ("adc a,!immedbyte", (unsigned int) ((lit >> (offset * 8)) & 0x0FFL));
         }
-      cheapMove (AOP (IC_RESULT (ic)), offset++, ASMOP_A, 0);
+      cheapMove (AOP (IC_RESULT (ic)), offset, ASMOP_A, 0);
+      offset++;
+      size--;
     }
 
   if (AOP_SIZE (IC_RESULT (ic)) == 3 && AOP_SIZE (IC_LEFT (ic)) == 3 && !sameRegs (AOP (IC_RESULT (ic)), AOP (IC_LEFT (ic))))
@@ -6571,16 +6584,41 @@ genCmp (operand * left, operand * right, operand * result, iCode * ifx, int sign
             }
         }
 
-      cheapMove (ASMOP_A, 0, AOP (left), offset);
-      emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
-      size--;
-      offset++;
-
-      while (size--)
+      if (!IS_GB && (!sign || size > 2) && getPartPairId(AOP (left), offset) == PAIR_HL && isPairDead (PAIR_HL, ic) &&
+        (getPartPairId (AOP (right), offset) == PAIR_DE || getPartPairId(AOP (right), offset) == PAIR_BC))
+        {
+          emit3 (A_CP, ASMOP_A, ASMOP_A); // Clear carry.
+          emit2 ("sbc hl, %s", _pairs[getPartPairId (AOP (right), offset)].name);
+          regalloc_dry_run_cost += 2;
+          size -= 2;
+          offset += 2;
+        }
+      else
         {
           cheapMove (ASMOP_A, 0, AOP (left), offset);
-          /* Subtract through, propagating the carry */
-          emit3_o (A_SBC, ASMOP_A, 0, AOP (right), offset++);
+          emit3_o (A_SUB, ASMOP_A, 0, AOP (right), offset);
+          size--;
+          offset++;
+        }
+
+      /* Subtract through, propagating the carry */
+      while (size)
+        {
+          if (!IS_GB && (!sign || size > 2) && getPartPairId (AOP (left), offset) == PAIR_HL && isPairDead (PAIR_HL, ic) &&
+            (getPartPairId (AOP (right), offset) == PAIR_DE || getPartPairId(AOP (right), offset) == PAIR_BC))
+            {
+              emit2 ("sbc hl, %s", _pairs[getPartPairId (AOP (right), offset)].name);
+              regalloc_dry_run_cost += 2;
+              size -= 2;
+              offset += 2;
+            }
+          else
+            {
+              cheapMove (ASMOP_A, 0, AOP (left), offset);
+              emit3_o (A_SBC, ASMOP_A, 0, AOP (right), offset);
+              size--;
+              offset++;
+            }
         }
 
 fix:
@@ -11443,7 +11481,7 @@ genZ80Code (iCode * lic)
         }
       regalloc_dry_run_cost = 0;
       genZ80iCode (ic);
-      /*emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost)); */
+      /*emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));*/
     }
 
 

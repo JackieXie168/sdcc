@@ -739,7 +739,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
 
   if(exstk && (operand_on_stack(result, a, i, G) + operand_on_stack(left, a, i, G) + operand_on_stack(right, a, i, G) >= 2) && (result && IS_SYMOP(result) && getSize(operandType(result)) >= 2 || !result_only_HL))	// Todo: Make this more accurate to get better code when using --fomit-frame-pointer
     return(false);
-  if(exstk && (operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)) && ic->op == '>' || ic->op == '<')
+  if(exstk && (operand_on_stack(left, a, i, G) || operand_on_stack(right, a, i, G)) && (ic->op == '>' || ic->op == '<'))
     return(false);
 
   if(ic->op == '+' && getSize(operandType(result)) == 2 && (IS_OP_LITERAL (right) && ulFromVal (OP_VALUE (IC_RIGHT(ic))) <= 3 || IS_OP_LITERAL (left) && ulFromVal (OP_VALUE (IC_LEFT(ic))) <= 3) && 
@@ -761,6 +761,12 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
        ic->op == '*' ||
        ic->op == '=' ||
        ic->op == CAST))
+    return(true);
+
+  if(!exstk && !isOperandInDirSpace(IC_LEFT(ic)) && !isOperandInDirSpace(IC_RIGHT(ic)) && !isOperandInDirSpace(IC_RESULT(ic)) &&
+    (ic->op == '-' ||
+    ic->op == '<' ||
+    ic->op == '>'))
     return(true);
 
   if(ic->op == LEFT_OP && getSize(operandType(result)) <= 2 && IS_OP_LITERAL (right) && result_only_HL)
