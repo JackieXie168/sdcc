@@ -1979,9 +1979,9 @@ fetchPairLong (PAIR_ID pairId, asmop * aop, const iCode * ic, int offset)
           /* Do nothing */
         }
       /* Getting the parameter by a pop / push sequence is cheaper when we have a free pair (except for the Rabbit, which has an even cheaper sp-relative load).
-         Stack allocation can change after register allocation, so assume this optimization is not possible for the allcoator's cost function. */
-      else if (!regalloc_dry_run && !IS_RAB && aop->size - offset >= 2 &&
-               (aop->type == AOP_STK || aop->type == AOP_EXSTK)
+         Stack allocation can change after register allocation, so assume this optimization is not possible for the allocator's cost function (unless the stack location is for a parameter). */
+      else if (!IS_RAB && aop->size - offset >= 2 &&
+               (aop->type == AOP_STK || aop->type == AOP_EXSTK) && (!regalloc_dry_run || aop->aopu.aop_stk > 0)
                && (aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0) +
                    _G.stack.pushed) == 2 && ic && (pairId != PAIR_BC && isPairDead (PAIR_BC, ic) || pairId != PAIR_DE
                        && isPairDead (PAIR_DE, ic)))
@@ -1993,8 +1993,8 @@ fetchPairLong (PAIR_ID pairId, asmop * aop, const iCode * ic, int offset)
           _push (extrapair);
         }
       /* Todo: Use even cheaper ex hl, (sp) and ex iy, (sp) when possible. */
-      else if (!regalloc_dry_run && (!IS_RAB || pairId == PAIR_BC || pairId == PAIR_DE) && aop->size - offset >= 2 &&
-               (aop->type == AOP_STK || aop->type == AOP_EXSTK)
+      else if ((!IS_RAB || pairId == PAIR_BC || pairId == PAIR_DE) && aop->size - offset >= 2 &&
+               (aop->type == AOP_STK || aop->type == AOP_EXSTK) && (!regalloc_dry_run || aop->aopu.aop_stk > 0)
                && (aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0) +
                    _G.stack.pushed) == 0)
         {
@@ -2046,7 +2046,15 @@ fetchPairLong (PAIR_ID pairId, asmop * aop, const iCode * ic, int offset)
         }
       else if (pairId == PAIR_IY)
         {
-          if (isPair (aop) && IS_RAB && getPairId (aop) == PAIR_HL)
+          /* The Rabbit has the ld iy, n (sp) instruction. */
+          int fp_offset = aop->aopu.aop_stk + offset + _G.stack.offset + (aop->aopu.aop_stk > 0 ? _G.stack.param_offset : 0);
+          int sp_offset = fp_offset + _G.stack.pushed;
+          if (IS_RAB && (aop->type == AOP_STK || aop->type == AOP_EXSTK) && abs (sp_offset) <= 127)
+            {
+              emit2 ("ld iy, %d (sp)", sp_offset);
+              regalloc_dry_run_cost += 3;
+            }
+          else if (isPair (aop) && IS_RAB && getPairId (aop) == PAIR_HL)
             {
               emit2 ("ld iy, hl");
               regalloc_dry_run_cost += 2;

@@ -1,6 +1,12 @@
 2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
+	  Better cost estimation for loading parameters into pairs,
+	  more efficient loading from stack into iy for Rabbits.
+
+2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
 	  Use dec r and inc a in comparison for equality.
 
 2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
