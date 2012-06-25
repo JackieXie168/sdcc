@@ -562,7 +562,30 @@ emit2 (const char *szFormat, ...)
 }
 
 static PAIR_ID
-getPairId (const asmop * aop)
+getPartPairId (const asmop *aop, int offset)
+{
+  if (aop->size <= offset + 1 || offset < 0)
+    return PAIR_INVALID;
+
+  if (aop->type != AOP_REG)
+    return PAIR_INVALID;
+
+  wassert (aop->aopu.aop_reg[offset] && aop->aopu.aop_reg[offset + 1]);
+
+  if ((aop->aopu.aop_reg[offset]->rIdx == C_IDX) && (aop->aopu.aop_reg[offset + 1]->rIdx == B_IDX))
+    return PAIR_BC;
+  if ((aop->aopu.aop_reg[offset]->rIdx == E_IDX) && (aop->aopu.aop_reg[offset + 1]->rIdx == D_IDX))
+    return PAIR_DE;
+  if ((aop->aopu.aop_reg[offset]->rIdx == L_IDX) && (aop->aopu.aop_reg[offset + 1]->rIdx == H_IDX))
+    return PAIR_HL;
+  if ((aop->aopu.aop_reg[offset]->rIdx == IYL_IDX) && (aop->aopu.aop_reg[offset + 1]->rIdx == IYH_IDX))
+    return PAIR_IY;
+
+  return PAIR_INVALID;
+}
+
+static PAIR_ID
+getPairId (const asmop *aop)
 {
   if (aop->size == 2)
     {
@@ -4880,6 +4903,15 @@ genPlusIncr (const iCode * ic)
   if (icount > 4)
     return FALSE;
 
+  if (size == 2 && getPairId (AOP (IC_LEFT (ic))) != PAIR_INVALID && icount <= 3 && isPairDead (getPairId (AOP (IC_LEFT (ic))), ic))
+    {
+      PAIR_ID pair = getPairId (AOP (IC_LEFT (ic)));
+      while (icount--)
+        emit2 ("inc %s", _pairs[pair].name);
+      commitPair (AOP (IC_RESULT (ic)), pair, ic, FALSE);
+      return TRUE;
+    }
+
   /* if increment 16 bits in register */
   if (sameRegs (AOP (IC_LEFT (ic)), AOP (IC_RESULT (ic))) && size > 1 && icount == 1)
     {
@@ -7215,8 +7247,8 @@ genAnd (const iCode * ic, iCode * ifx)
           /* Testing for the inverse of the border bits of some 32-bit registers destructively is cheap. */
           /* More combinations would be possible, but this one is the one that is common in the floating-point library. */
           else if (AOP_TYPE (left) == AOP_REG && sizel >= 4 && ((lit >> (offset * 8)) & 0xfffffffful) == 0x7ffffffful &&
-            !IS_GB && AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) &&
-            IS_RAB && AOP (left)->aopu.aop_reg[offset + 2]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 3]->rIdx == D_IDX && isPairDead (PAIR_HL, ic))
+            !IS_GB && getPartPairId (AOP (left), offset) == PAIR_HL && isPairDead (PAIR_HL, ic) &&
+            IS_RAB && getPartPairId (AOP (left), offset + 2) == PAIR_DE && isPairDead (PAIR_HL, ic))
             {
               emit3 (A_CP, ASMOP_A, ASMOP_A); // Clear carry.
               emit2 ("adc hl, hl"); // Cannot use "add hl, hl instead, since it does not affect zero flag.
@@ -7230,8 +7262,8 @@ genAnd (const iCode * ic, iCode * ifx)
           /* Testing for the inverse of the border bits of some 16-bit registers destructively is cheap. */
           /* More combinations would be possible, but these are the common ones. */
           else if (AOP_TYPE (left) == AOP_REG && sizel >= 2 && ((lit >> (offset * 8)) & 0xfffful) == 0x7ffful &&
-            (!IS_GB && AOP (left)->aopu.aop_reg[offset]->rIdx == L_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && isPairDead (PAIR_HL, ic) ||
-            IS_RAB && AOP (left)->aopu.aop_reg[offset]->rIdx == E_IDX && AOP (left)->aopu.aop_reg[offset + 1]->rIdx == D_IDX  && isPairDead (PAIR_DE, ic)))
+            (!IS_GB && getPartPairId (AOP (left), offset) == PAIR_HL && isPairDead (PAIR_HL, ic) ||
+            IS_RAB && getPartPairId (AOP (left), offset) == PAIR_DE  && isPairDead (PAIR_DE, ic)))
             {
               PAIR_ID pair;
               switch (AOP (left)->aopu.aop_reg[offset]->rIdx)
@@ -8368,8 +8400,8 @@ genLeftShift (const iCode * ic)
   while (size)
     {
       if (size >= 2 && AOP_TYPE (result) == AOP_REG &&
-        (AOP (result)->aopu.aop_reg[offset + 1]->rIdx == H_IDX && AOP (result)->aopu.aop_reg[offset]->rIdx == L_IDX ||
-         IS_RAB && AOP (result)->aopu.aop_reg[offset + 1]->rIdx == D_IDX && AOP (result)->aopu.aop_reg[offset]->rIdx == E_IDX))
+        (getPartPairId (AOP (result), offset) == PAIR_HL ||
+         IS_RAB && getPartPairId (AOP (result), offset) == PAIR_DE))
         {
           if (!offset && AOP (result)->aopu.aop_reg[offset]->rIdx == E_IDX)
             emit3 (A_CP, ASMOP_A, ASMOP_A);
@@ -8672,8 +8704,7 @@ genRightShift (const iCode * ic)
   while (size)
     {
       if (IS_RAB && !(is_signed && first) && size >= 2 && AOP_TYPE (result) == AOP_REG &&
-        (AOP (result)->aopu.aop_reg[offset]->rIdx == H_IDX && AOP (result)->aopu.aop_reg[offset - 1]->rIdx == L_IDX ||
-         AOP (result)->aopu.aop_reg[offset]->rIdx == D_IDX && AOP (result)->aopu.aop_reg[offset - 1]->rIdx == E_IDX))
+        (getPartPairId (AOP (result), offset - 1) == PAIR_HL || getPartPairId (AOP (result), offset - 1) == PAIR_DE))
         {
           if (first)
             {

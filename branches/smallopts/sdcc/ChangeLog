@@ -1,3 +1,9 @@
+2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
+	  Minor addition improvement,
+	  refactoring of pair test code.
+
 2012-06-25 Borut Razem <borut.razem AT gmail.com>
 
 	* src/regression/Makefile:
