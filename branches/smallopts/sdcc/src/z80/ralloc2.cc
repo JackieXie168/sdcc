@@ -681,7 +681,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     return(true);	// Register HL not in use.
 
 #if 0
-  //if (ic->key == 40)
+  if (ic->key == 5)
     std::cout << "HLinst_ok: at (" << i << ", " << ic->key << ")\nL = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
 #endif
 
@@ -719,10 +719,13 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
   bool result_only_HL = (result_in_L || unused_L || dying_L) && (result_in_H || unused_H || dying_H);
 
 #if 0
-  std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
-  std::cout << "Unsued L: " << unused_L << ", unused H: " << unused_H << "\n";
-  std::cout << "Dying L: " << dying_L << ", dying H: " << dying_H << "\n";
-  std::cout << "Result only HL: " << result_only_HL << "\n";
+  if (ic->key == 5)
+    {
+      std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+      std::cout << "Unsued L: " << unused_L << ", unused H: " << unused_H << "\n";
+      std::cout << "Dying L: " << dying_L << ", dying H: " << dying_H << "\n";
+      std::cout << "Result only HL: " << result_only_HL << "\n";
+    }
 #endif
 
   if(ic->op == RETURN)
@@ -747,10 +750,10 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     return(true); // Uses inc hl.
 
   if(ic->op == '+' && getSize(operandType(result)) >= 2 &&
-    (IS_TRUE_SYMOP (result) || IS_TRUE_SYMOP (left) || exstk && operand_on_stack(left, a, i, G) || IS_TRUE_SYMOP (right) || exstk && operand_on_stack(right, a, i, G))) // Might use (hl).
+    (IS_TRUE_SYMOP (result) && !operand_on_stack(result, a, i, G) || (operand_on_stack(left, a, i, G) ? exstk : IS_TRUE_SYMOP (left)) || (operand_on_stack(right, a, i, G) ? exstk : IS_TRUE_SYMOP (right)))) // Might use (hl).
     return(false);
 
-  if(ic->op == '+' && input_in_HL && (IS_TRUE_SYMOP (result) || operand_on_stack(result, a, i, G) && exstk)) // Might use (hl) for result.
+  if(ic->op == '+' && input_in_HL && (operand_on_stack(result, a, i, G) ? exstk : IS_TRUE_SYMOP (result))) // Might use (hl) for result.
     return(false);
 
   // HL overwritten by result.
@@ -857,9 +860,12 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     return(true);
 
 #if 0
-  std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
-  std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
-  std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
+  if(ic->key == 5)
+    {
+      std::cout << "HLinst_ok: L = (" << ia.registers[REG_L][0] << ", " << ia.registers[REG_L][1] << "), H = (" << ia.registers[REG_H][0] << ", " << ia.registers[REG_H][1] << ")inst " << i << ", " << ic->key << "\n";
+      std::cout << "Result in L: " << result_in_L << ", result in H: " << result_in_H << "\n";
+      std::cout << "HL default drop at " << ic->key << ", operation: " << ic->op << "\n";
+    }
 #endif
 
   return(false);

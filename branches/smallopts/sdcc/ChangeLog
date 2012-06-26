@@ -1,3 +1,8 @@
+2012-06-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/ralloc2.cc:
+	  Improve handling of hl in additions with on-stack param operands.
+
 2012-06-25 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* device/lib/z180/shift.s,
