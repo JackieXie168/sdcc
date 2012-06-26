@@ -1,6 +1,11 @@
 2012-06-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
+	  Use xor to zero the accumulator in a few more places.
+
+2012-06-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/z80/gen.c:
 	  Improve memset() for small sizes, RFE #3537534.
 
 2012-06-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
