@@ -3494,6 +3494,7 @@ assignResultValue (operand * oper)
     }
 }
 
+#if 0
 /** Simple restore that doesn't take into account what is used in the
     return.
 */
@@ -3523,6 +3524,7 @@ _restoreRegsAfterCall (void)
 
   _G.saves.saved = FALSE;
 }
+#endif
 
 static void
 _saveRegsForCall (const iCode * ic, int sendSetSize, bool dontsaveIY)
@@ -11040,9 +11042,14 @@ static void
 genBuiltInMemset (const iCode * ic, int nParams, operand ** pparams)
 {
   operand *dst, *c, *n;
-  bool direct_c;
+  bool direct_c, direct_cl;
   bool indirect_c;
   bool preinc = FALSE;
+  unsigned long sizecost_ldir, sizecost_direct, sizecost_loop;
+  bool double_loop;
+  unsigned size;
+  bool live_BC = !isPairDead (PAIR_BC, ic), live_DE = !isPairDead (PAIR_DE, ic), live_HL = !isPairDead (PAIR_HL, ic), live_B = bitVectBitValue (ic->rSurv, B_IDX);
+  bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
 
   wassertl (nParams == 3, "Built-in memset() must have three parameters");
 
@@ -11050,50 +11057,144 @@ genBuiltInMemset (const iCode * ic, int nParams, operand ** pparams)
   c = pparams[1];
   n = pparams[2];
 
-  _saveRegsForCall (ic, 0, TRUE);
-
   aopOp (c, ic, FALSE, FALSE);
   aopOp (dst, ic, FALSE, FALSE);
   aopOp (n, ic, FALSE, FALSE);
 
   wassertl (AOP_TYPE (n) == AOP_LIT, "Last parameter to builtin memset() must be literal.");
-  if (!(ulFromVal (AOP (n)->aopu.aop_lit)))
+  if(!(size = ulFromVal (AOP (n)->aopu.aop_lit)))
     goto done;
 
-  direct_c = (AOP_TYPE (c) == AOP_LIT || AOP_TYPE (c) == AOP_REG && AOP (c)->aopu.aop_reg[1]->rIdx != H_IDX
-              && AOP (c)->aopu.aop_reg[1]->rIdx != L_IDX);
+  direct_c = (AOP_TYPE (c) == AOP_LIT || AOP_TYPE (c) == AOP_REG && AOP (c)->aopu.aop_reg[0]->rIdx != H_IDX
+              && AOP (c)->aopu.aop_reg[0]->rIdx != L_IDX);
+  direct_cl = (AOP_TYPE (c) == AOP_LIT || AOP_TYPE (c) == AOP_REG && AOP (c)->aopu.aop_reg[0]->rIdx != H_IDX
+              && AOP (c)->aopu.aop_reg[0]->rIdx != L_IDX && AOP (c)->aopu.aop_reg[0]->rIdx != B_IDX);
   indirect_c = IS_R3KA && ulFromVal (AOP (n)->aopu.aop_lit) > 1 && AOP_TYPE (c) == AOP_IY;
 
-  if (indirect_c)
-    {
-      fetchPair (PAIR_DE, AOP (dst));
-      emit2 ("ld hl, #%s", AOP (c)->aopu.aop_dir);
-      regalloc_dry_run_cost += 3;
-    }
-  else
-    {
-      if (!direct_c)
-        cheapMove (ASMOP_A, 0, AOP (c), 0);
-      fetchPair (PAIR_HL, AOP (dst));
-      if (!regalloc_dry_run)
-        emit2 ("ld (hl), %s", aopGet (direct_c ? AOP (c) : ASMOP_A, 0, FALSE));
-      regalloc_dry_run_cost += (direct_c && AOP_TYPE (c) == AOP_LIT) ? 2 : 1;
-      if (ulFromVal (AOP (n)->aopu.aop_lit) <= 1)
-        goto done;
+  double_loop = (size > 255 || optimize.codeSpeed);
 
-      emit2 ("ld e, l");
-      emit2 ("ld d, h");
-      regalloc_dry_run_cost += 2;
-      if (!IS_R3KA || !optimize.codeSize)
+  sizecost_direct = 3 + 2 * size - 1 + !direct_c * ld_cost (ASMOP_A, AOP (c));
+  sizecost_direct += (live_HL) * 2;
+  sizecost_loop = 9 + double_loop * 2 + ((size % 2) && double_loop) * 2 + !direct_cl * ld_cost (ASMOP_A, AOP (c));
+  sizecost_loop += (live_HL + live_B) * 2;
+  sizecost_ldir = indirect_c ? 11 : (12 + !direct_c * ld_cost (ASMOP_A, AOP (c)) - (IS_R3KA && !optimize.codeSpeed));
+  sizecost_ldir += (live_HL + live_DE + live_BC) * 2;
+
+  if (sizecost_direct <= sizecost_loop && sizecost_direct < sizecost_ldir) // straight-line code.
+    {
+      if (live_HL)
         {
-          emit2 ("inc de");
-          regalloc_dry_run_cost++;
-          preinc = TRUE;
+          _push (PAIR_HL);
+          saved_HL = TRUE;
         }
+
+      if (!direct_c)
+		cheapMove (ASMOP_A, 0, AOP (c), 0);
+      fetchPair (PAIR_HL, AOP (dst));
+
+      regalloc_dry_run_cost += (size * 2 - 1);
+      if (!regalloc_dry_run)
+        while (size--)
+		  {
+            emit2 ("ld (hl), %s", aopGet (direct_c ? AOP (c) : ASMOP_A, 0, FALSE));
+            if (size)
+              emit2 ("inc hl");
+          }
     }
-  emit2 ("ld bc, !immedword", ulFromVal (AOP (n)->aopu.aop_lit) - preinc);
-  emit2 (IS_R3KA ? "lsidr" : "ldir");
-  regalloc_dry_run_cost += 5;
+  else if (size <= 510 && sizecost_loop < sizecost_ldir) // Loop
+    {
+      symbol *tlbl1 = regalloc_dry_run ? 0 : newiTempLabel (NULL);
+      symbol *tlbl2 = regalloc_dry_run ? 0 : newiTempLabel (NULL);
+
+      if (live_HL)
+        {
+          _push (PAIR_HL);
+          saved_HL = TRUE;
+        }
+      if (bitVectBitValue (ic->rSurv, B_IDX))
+        {
+          _push (PAIR_BC);
+          saved_BC = TRUE;
+        }
+
+      if (!direct_c)
+		cheapMove (ASMOP_A, 0, AOP (c), 0);
+      fetchPair (PAIR_HL, AOP (dst));
+
+      emit2 ("ld b, !immedbyte", double_loop ? (size / 2 + size % 2) : size);
+      regalloc_dry_run_cost += 2;
+
+      if (double_loop && size % 2)
+        {
+          if (!regalloc_dry_run)
+            emit2 ("jr !tlabel", labelKey2num (tlbl2->key));
+          regalloc_dry_run_cost += 2;
+        }
+
+      if (!regalloc_dry_run)
+        {
+          emitLabel (tlbl1);
+          emit2 ("ld (hl), %s", aopGet (direct_c ? AOP (c) : ASMOP_A, 0, FALSE));
+          emit2 ("inc hl");
+          if (double_loop)
+            {
+              if (size % 2)
+                emitLabel (tlbl2);
+              emit2 ("ld (hl), %s", aopGet (direct_c ? AOP (c) : ASMOP_A, 0, FALSE));
+              emit2 ("inc hl");
+            }
+          emit2 ("djnz !tlabel", labelKey2num (tlbl1->key));
+        }
+      regalloc_dry_run_cost += (double_loop ? 6 : 4);
+    }
+  else // Use ldir / lsidr
+    {
+      if (live_HL)
+        {
+          _push (PAIR_HL);
+          saved_HL = TRUE;
+        }
+      if (live_DE)
+        {
+          _push (PAIR_DE);
+          saved_DE = TRUE;
+        }
+      if (live_BC)
+        {
+          _push (PAIR_BC);
+          saved_BC = TRUE;
+        }
+	  if (indirect_c)
+		{
+		  fetchPair (PAIR_DE, AOP (dst));
+		  emit2 ("ld hl, #%s", AOP (c)->aopu.aop_dir);
+		  regalloc_dry_run_cost += 3;
+		}
+	  else
+		{
+		  if (!direct_c)
+		    cheapMove (ASMOP_A, 0, AOP (c), 0);
+		  fetchPair (PAIR_HL, AOP (dst));
+		  if (!regalloc_dry_run)
+		    emit2 ("ld (hl), %s", aopGet (direct_c ? AOP (c) : ASMOP_A, 0, FALSE));
+		  regalloc_dry_run_cost += (direct_c && AOP_TYPE (c) == AOP_LIT) ? 2 : 1;
+		  if (ulFromVal (AOP (n)->aopu.aop_lit) <= 1)
+		    goto done;
+
+		  emit2 ("ld e, l");
+		  emit2 ("ld d, h");
+		  regalloc_dry_run_cost += 2;
+		  if (!IS_R3KA || optimize.codeSpeed)
+		    {
+		      emit2 ("inc de");
+		      regalloc_dry_run_cost++;
+		      preinc = TRUE;
+		    }
+		}
+	  emit2 ("ld bc, !immedword", size - preinc);
+	  emit2 (IS_R3KA ? "lsidr" : "ldir");
+	  regalloc_dry_run_cost += 5;
+    }
 
 done:
   spillPair (PAIR_HL);
@@ -11102,7 +11203,13 @@ done:
   freeAsmop (c, NULL, ic->next);
   freeAsmop (dst, NULL, ic);
 
-  _restoreRegsAfterCall ();
+  
+  if (saved_BC)
+    _pop (PAIR_BC);
+  if (saved_DE)
+    _pop (PAIR_DE);
+  if (saved_HL)
+    _pop (PAIR_HL);
 
   /* No need to assign result - would have used ordinary memset() call instead. */
 }
