@@ -1,3 +1,18 @@
+2012-06-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* device/lib/z180/Makefile.in,
+	  device/lib/incl.mk,
+	  device/lib/r3ka/Makefile.in,
+	  device/lib/gbz80/Makefile.in,
+	  device/lib/s08/Makefile.in,
+	  device/lib/r2k/Makefile.in,
+	  device/lib/hc08/Makefile.in,
+	  device/lib/z180/strcpy.s
+	  device/lib/r3ka/strcpy.s
+	  device/lib/z80/strcpy.s
+	  device/lib/r2k/strcpy.s:
+	  Use ldi for strcpy().
+
 2012-06-27 Borut Razem <borut.razem AT gmail.com>
 
 	* src/SDCC.lex: unescape file names from preprocessor, 2nd try

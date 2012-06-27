@@ -33,6 +33,7 @@ Z80_SDCC = $(COMMON_SDCC) \
   _startup.c \
   sprintf.c \
   vprintf.c \
+  _strcpy.c \
   _strlen.c \
   _memmove.c
 
