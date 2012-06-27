@@ -2,7 +2,7 @@
 
 	* src/z80/main.c,
 	  src/z80/gen.c:
-	  Preparations for built-in strcpy().
+	  Built-in strcpy().
 
 2012-06-27 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

@@ -3494,37 +3494,114 @@ assignResultValue (operand * oper)
     }
 }
 
-#if 0
-/** Simple restore that doesn't take into account what is used in the
-    return.
-*/
+/* Pop saved regs from stack, taking care not to destroy result */
 static void
-_restoreRegsAfterCall (void)
+restoreRegs (bool iy, bool de, bool bc, bool hl, const operand *result)
 {
-  if (_G.stack.pushedIY)
+  bool bInRet, cInRet, dInRet, eInRet, hInRet, lInRet;
+  bool SomethingReturned;
+
+  SomethingReturned = (result && IS_ITEMP (result) &&
+                      (OP_SYMBOL_CONST (result)->nRegs ||
+                      OP_SYMBOL_CONST (result)->spildir ||
+                      OP_SYMBOL_CONST (result)->accuse == ACCUSE_A)) || IS_TRUE_SYMOP (result);
+
+  if (SomethingReturned)
     {
-      _pop (PAIR_IY);
-      _G.stack.pushedIY = FALSE;
+      bitVect *rv = z80_rUmaskForOp (result);
+      bInRet = bitVectBitValue (rv, B_IDX);
+      cInRet = bitVectBitValue (rv, C_IDX);
+      dInRet = bitVectBitValue (rv, D_IDX);
+      eInRet = bitVectBitValue (rv, E_IDX);
+      hInRet = bitVectBitValue (rv, H_IDX);
+      lInRet = bitVectBitValue (rv, L_IDX);
+      freeBitVect (rv);
     }
-  if (_G.stack.pushedDE)
+  else
     {
-      _pop (PAIR_DE);
-      _G.stack.pushedDE = FALSE;
-    }
-  if (_G.stack.pushedBC)
-    {
-      _pop (PAIR_BC);
-      _G.stack.pushedBC = FALSE;
-    }
-  if (_G.stack.pushedHL)
-    {
-      _pop (PAIR_HL);
-      _G.stack.pushedHL = FALSE;
+      bInRet = FALSE;
+      cInRet = FALSE;
+      dInRet = FALSE;
+      eInRet = FALSE;
+      hInRet = FALSE;
+      lInRet = FALSE;
     }
 
-  _G.saves.saved = FALSE;
+  if (iy)
+    _pop (PAIR_IY);
+
+  if (de)
+    {
+      if (dInRet && eInRet)
+        wassertl (0, "Shouldn't push DE if it's wiped out by the return");
+      else if (dInRet)
+        {
+          /* Only restore E */
+          emit2 ("ld a,d");
+          regalloc_dry_run_cost += 1;
+          _pop (PAIR_DE);
+          emit2 ("ld d,a");
+          regalloc_dry_run_cost += 1;
+        }
+      else if (eInRet)
+        {
+          /* Only restore D */
+          _pop (PAIR_AF);
+          emit2 ("ld d,a");
+          regalloc_dry_run_cost += 1;
+        }
+      else
+        _pop (PAIR_DE);
+    }
+
+  if (bc)
+    {
+      if (bInRet && cInRet)
+        wassertl (0, "Shouldn't push BC if it's wiped out by the return");
+      else if (bInRet)
+        {
+          /* Only restore C */
+          emit2 ("ld a,b");
+          regalloc_dry_run_cost += 1;
+          _pop (PAIR_BC);
+          emit2 ("ld b,a");
+          regalloc_dry_run_cost += 1;
+        }
+      else if (cInRet)
+        {
+          /* Only restore B */
+          _pop (PAIR_AF);
+          emit2 ("ld b,a");
+          regalloc_dry_run_cost += 1;
+        }
+      else
+        _pop (PAIR_BC);
+    }
+
+  if (_G.stack.pushedHL)
+    {
+      if (hInRet && lInRet)
+        wassertl (0, "Shouldn't push HL if it's wiped out by the return");
+      else if (hInRet)
+        {
+          /* Only restore E */
+          emit2 ("ld a,h");
+          regalloc_dry_run_cost += 1;
+          _pop (PAIR_HL);
+          emit2 ("ld h,a");
+          regalloc_dry_run_cost += 1;
+        }
+      else if (lInRet)
+        {
+          /* Only restore D */
+          _pop (PAIR_AF);
+          emit2 ("ld h,a");
+          regalloc_dry_run_cost += 1;
+        }
+      else
+        _pop (PAIR_HL);
+    }
 }
-#endif
 
 static void
 _saveRegsForCall (const iCode * ic, int sendSetSize, bool dontsaveIY)
@@ -3896,18 +3973,12 @@ _opUsesPair (operand * op, const iCode * ic, PAIR_ID pairId)
 /** Emit the code for a call statement
  */
 static void
-emitCall (const iCode * ic, bool ispcall)
+emitCall (const iCode *ic, bool ispcall)
 {
-  bool bInRet, cInRet, dInRet, eInRet, hInRet, lInRet, SomethingReturned, bigreturn;
+  bool SomethingReturned, bigreturn;
   sym_link *dtype = operandType (IC_LEFT (ic));
   sym_link *etype = getSpec (dtype);
   sym_link *ftype = IS_FUNCPTR (dtype) ? dtype->next : dtype;
-
-  /* if caller saves & we have not saved then */
-  if (!ic->regsSaved)
-    {
-      /* PENDING */
-    }
 
   _saveRegsForCall (ic, _G.sendSet ? elementsInSet (_G.sendSet) : 0, FALSE);
 
@@ -4073,27 +4144,6 @@ emitCall (const iCode * ic, bool ispcall)
                         OP_SYMBOL (IC_RESULT (ic))->spildir ||
                         OP_SYMBOL (IC_RESULT (ic))->accuse == ACCUSE_A)) || IS_TRUE_SYMOP (IC_RESULT (ic));
 
-  if (SomethingReturned)
-    {
-      bitVect *result = z80_rUmaskForOp (IC_RESULT (ic));
-      bInRet = bitVectBitValue (result, B_IDX);
-      cInRet = bitVectBitValue (result, C_IDX);
-      dInRet = bitVectBitValue (result, D_IDX);
-      eInRet = bitVectBitValue (result, E_IDX);
-      hInRet = bitVectBitValue (result, H_IDX);
-      lInRet = bitVectBitValue (result, L_IDX);
-      freeBitVect (result);
-    }
-  else
-    {
-      bInRet = FALSE;
-      cInRet = FALSE;
-      dInRet = FALSE;
-      eInRet = FALSE;
-      hInRet = FALSE;
-      lInRet = FALSE;
-    }
-
   /* adjust the stack for parameters if required */
   if ((ic->parmBytes || bigreturn) && IFFUNC_ISNORETURN (OP_SYMBOL (IC_LEFT (ic))->type))
     {
@@ -4172,98 +4222,11 @@ emitCall (const iCode * ic, bool ispcall)
 
   spillCached ();
 
-  if (_G.stack.pushedIY)
-    {
-      _pop (PAIR_IY);
-      _G.stack.pushedIY = FALSE;
-    }
-
-  if (_G.stack.pushedDE)
-    {
-      if (dInRet && eInRet)
-        {
-          wassertl (0, "Shouldn't push DE if it's wiped out by the return");
-        }
-      else if (dInRet)
-        {
-          /* Only restore E */
-          emit2 ("ld a,d");
-          regalloc_dry_run_cost += 1;
-          _pop (PAIR_DE);
-          emit2 ("ld d,a");
-          regalloc_dry_run_cost += 1;
-        }
-      else if (eInRet)
-        {
-          /* Only restore D */
-          _pop (PAIR_AF);
-          emit2 ("ld d,a");
-          regalloc_dry_run_cost += 1;
-        }
-      else
-        {
-          _pop (PAIR_DE);
-        }
-      _G.stack.pushedDE = FALSE;
-    }
-
-  if (_G.stack.pushedBC)
-    {
-      if (bInRet && cInRet)
-        {
-          wassertl (0, "Shouldn't push BC if it's wiped out by the return");
-        }
-      else if (bInRet)
-        {
-          /* Only restore C */
-          emit2 ("ld a,b");
-          regalloc_dry_run_cost += 1;
-          _pop (PAIR_BC);
-          emit2 ("ld b,a");
-          regalloc_dry_run_cost += 1;
-        }
-      else if (cInRet)
-        {
-          /* Only restore B */
-          _pop (PAIR_AF);
-          emit2 ("ld b,a");
-          regalloc_dry_run_cost += 1;
-        }
-      else
-        {
-          _pop (PAIR_BC);
-        }
-      _G.stack.pushedBC = FALSE;
-    }
-
-  if (_G.stack.pushedHL)
-    {
-      if (hInRet && lInRet)
-        {
-          wassertl (0, "Shouldn't push HL if it's wiped out by the return");
-        }
-      else if (hInRet)
-        {
-          /* Only restore E */
-          emit2 ("ld a,h");
-          regalloc_dry_run_cost += 1;
-          _pop (PAIR_HL);
-          emit2 ("ld h,a");
-          regalloc_dry_run_cost += 1;
-        }
-      else if (lInRet)
-        {
-          /* Only restore D */
-          _pop (PAIR_AF);
-          emit2 ("ld h,a");
-          regalloc_dry_run_cost += 1;
-        }
-      else
-        {
-          _pop (PAIR_HL);
-        }
-      _G.stack.pushedHL = FALSE;
-    }
+  restoreRegs (_G.stack.pushedIY, _G.stack.pushedDE, _G.stack.pushedBC, _G.stack.pushedHL, IC_RESULT (ic));
+  _G.stack.pushedIY = FALSE;
+  _G.stack.pushedDE = FALSE;
+  _G.stack.pushedBC = FALSE;
+  _G.stack.pushedHL = FALSE;
 }
 
 /*-----------------------------------------------------------------*/
@@ -11236,6 +11199,7 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
                       OP_SYMBOL (IC_RESULT (ic))->accuse == ACCUSE_A)) || IS_TRUE_SYMOP (IC_RESULT (ic));
 
   wassertl (nParams == 2, "Built-in strcpy() must have two parameters.");
+  wassertl (!IS_GB, "Built-in strcpy() not available for gbz80.");
 
   dst = pparams[0];
   src = pparams[1];
@@ -11248,15 +11212,15 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
       _push (PAIR_HL);
       saved_HL = TRUE;
     }
-  if (!isPairDead (PAIR_DE, ic))
-    {
-      _push (PAIR_DE);
-      saved_DE = TRUE;
-    }
   if (!isPairDead (PAIR_BC, ic))
     {
       _push (PAIR_BC);
       saved_BC = TRUE;
+    }
+  if (!isPairDead (PAIR_DE, ic))
+    {
+      _push (PAIR_DE);
+      saved_DE = TRUE;
     }
 
   setupForMemcpy (ic, dst, src);
@@ -11282,15 +11246,20 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
     {
       if (SomethingReturned)
         _pop (getPairId (AOP (IC_RESULT (ic))));
-      if (saved_BC)
-        _pop (PAIR_BC);
       if (saved_DE)
         _pop (PAIR_DE);
+      if (saved_BC)
+        _pop (PAIR_BC);
       if (saved_HL)
         _pop (PAIR_HL);
     }
   else
-    wassert (0);
+    {
+      _pop (PAIR_HL);
+      assignResultValue (IC_RESULT (ic));
+
+      restoreRegs (0, saved_DE, saved_BC, saved_HL, IC_RESULT (ic));
+    }
 
   if (SomethingReturned)
     freeAsmop (IC_RESULT (ic), NULL);

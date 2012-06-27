@@ -115,6 +115,7 @@ extern void __xdata * memcpyx(void __xdata *, void __xdata *, int) __naked;
 #if defined(__SDCC_z80) || defined(__SDCC_z180) || defined(__SDCC_r2k) || defined(__SDCC_r3ka)
 #define memcpy(dst, src, n) __builtin_memcpy(dst, src, n)
 #define memset(dst, c, n) __builtin_memset(dst, c, n)
+#define strcpy(dst, src) __builtin_strcpy(dst, src)
 #endif
 
 #endif
