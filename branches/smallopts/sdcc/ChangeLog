@@ -1,3 +1,8 @@
+2012-06-26 Borut Razem <borut.razem AT gmail.com>
+
+	* src/SDCC.lex, src/SDCCerr.c, src/SDCCerr.h:
+	  unescape file names from preprocessor
+
 2012-06-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/z80/gen.c:
