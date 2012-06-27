@@ -4,7 +4,7 @@
   Copyright (C) 1998, Sandeep Dutta . sandeep.dutta@usa.net
   Copyright (C) 1999, Jean-Louis VERN.jlvern@writeme.com
   Copyright (C) 2000, Michael Hope <michaelh@juju.net.nz>
-  Copyright (C) 2011, Philipp Klaus Krause pkk@spth.de, philipp@informatik.uni-frankfurt.de)
+  Copyright (C) 2011-2012, Philipp Klaus Krause pkk@spth.de, philipp@informatik.uni-frankfurt.de)
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -1618,7 +1618,7 @@ aopOp (operand * op, const iCode * ic, bool result, bool requires_a)
 /* freeAsmop - free up the asmop given to an operand               */
 /*----------------------------------------------------------------*/
 static void
-freeAsmop (operand * op, asmop * aaop, const iCode * ic)
+freeAsmop (operand * op, asmop *aaop)
 {
   asmop *aop;
 
@@ -2280,7 +2280,7 @@ setupPair (PAIR_ID pairId, asmop * aop, int offset)
 }
 
 static void
-emitLabelSpill (symbol * tlbl)
+emitLabelSpill (symbol *tlbl)
 {
   emitLabel (tlbl);
   spillCached ();
@@ -3237,8 +3237,8 @@ genNot (const iCode * ic)
 
 release:
   /* release the aops */
-  freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -3271,8 +3271,8 @@ genCpl (const iCode * ic)
     }
 
   /* release the aops */
-  freeAsmop (IC_LEFT (ic), NULL, ic);
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
+  freeAsmop (IC_RESULT (ic), NULL);
 }
 
 static void
@@ -3449,8 +3449,8 @@ remaining:
 
 release:
   /* release the aops */
-  freeAsmop (IC_LEFT (ic), NULL, ic);
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
+  freeAsmop (IC_RESULT (ic), NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -3784,7 +3784,7 @@ genIpush (const iCode * ic)
         }
     }
 release:
-  freeAsmop (IC_LEFT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -3819,7 +3819,7 @@ genIpop (const iCode * ic)
         }
     }
 
-  freeAsmop (IC_LEFT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
 }
 
 /* This is quite unfortunate */
@@ -3889,7 +3889,7 @@ _opUsesPair (operand * op, const iCode * ic, PAIR_ID pairId)
         }
     }
 
-  freeAsmop (IC_LEFT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
   return ret;
 }
 
@@ -3976,7 +3976,7 @@ emitCall (const iCode * ic, bool ispcall)
             }
 
           send++;
-          freeAsmop (IC_LEFT (sic), NULL, sic);
+          freeAsmop (IC_LEFT (sic), NULL);
         }
       _G.sendSet = NULL;
     }
@@ -4013,7 +4013,7 @@ emitCall (const iCode * ic, bool ispcall)
       regalloc_dry_run_cost += (pair == PAIR_IY ? 2 : 1);
       if (!regalloc_dry_run)
         _G.stack.pushed += 2;
-      freeAsmop (IC_RESULT (ic), NULL, ic);
+      freeAsmop (IC_RESULT (ic), NULL);
     }
 
   if (ispcall)
@@ -4035,7 +4035,7 @@ emitCall (const iCode * ic, bool ispcall)
           fetchPairLong (PAIR_HL, AOP (IC_LEFT (ic)), ic, 0);
           emit2 ("call __sdcc_call_hl");
         }
-      freeAsmop (IC_LEFT (ic), NULL, ic);
+      freeAsmop (IC_LEFT (ic), NULL);
     }
   else
     {
@@ -4167,7 +4167,7 @@ emitCall (const iCode * ic, bool ispcall)
 
       assignResultValue (IC_RESULT (ic));
 
-      freeAsmop (IC_RESULT (ic), NULL, ic);
+      freeAsmop (IC_RESULT (ic), NULL);
     }
 
   spillCached ();
@@ -4798,7 +4798,7 @@ genRet (const iCode * ic)
         }
       while (--size);
     }
-  freeAsmop (IC_LEFT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
 
 jumpret:
   /* generate a jump to the return label
@@ -5615,9 +5615,9 @@ genPlus (iCode * ic)
       }
 release:
   _G.preserveCarry = FALSE;
-  freeAsmop (IC_LEFT (ic), NULL, ic);
-  freeAsmop (IC_RIGHT (ic), NULL, ic);
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
+  freeAsmop (IC_RIGHT (ic), NULL);
+  freeAsmop (IC_RESULT (ic), NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -5850,9 +5850,9 @@ genMinus (const iCode * ic)
 
 release:
   _G.preserveCarry = FALSE;
-  freeAsmop (IC_LEFT (ic), NULL, ic);
-  freeAsmop (IC_RIGHT (ic), NULL, ic);
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
+  freeAsmop (IC_RIGHT (ic), NULL);
+  freeAsmop (IC_RESULT (ic), NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -6191,9 +6191,9 @@ genMult (iCode * ic)
     commitPair (AOP (IC_RESULT (ic)), PAIR_HL, ic, FALSE);
 
 release:
-  freeAsmop (IC_LEFT (ic), NULL, ic);
-  freeAsmop (IC_RIGHT (ic), NULL, ic);
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (IC_LEFT (ic), NULL);
+  freeAsmop (IC_RIGHT (ic), NULL);
+  freeAsmop (IC_RESULT (ic), NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -6780,9 +6780,9 @@ genCmpGt (iCode * ic, iCode * ifx)
   genCmp (right, left, result, ifx, sign, ic);
 
   _G.preserveCarry = FALSE;
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -6817,9 +6817,9 @@ genCmpLt (iCode * ic, iCode * ifx)
   genCmp (left, right, result, ifx, sign, ic);
 
   _G.preserveCarry = FALSE;
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7103,9 +7103,9 @@ genCmpEq (iCode * ic, iCode * ifx)
     }
 
 release:
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7141,9 +7141,9 @@ genAndOp (const iCode * ic)
       outBitAcc (result);
     }
 
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7179,9 +7179,9 @@ genOrOp (const iCode * ic)
       outBitAcc (result);
     }
 
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7582,9 +7582,9 @@ genAnd (const iCode * ic, iCode * ifx)
     }
 
 release:
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7751,9 +7751,9 @@ genOr (const iCode * ic, iCode * ifx)
     }
 
 release:
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7910,9 +7910,9 @@ genXor (const iCode * ic, iCode * ifx)
     }
 
 release:
-  freeAsmop (left, NULL, ic);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -7963,8 +7963,8 @@ genGetHbit (const iCode * ic)
     }
 
 
-  freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -8373,7 +8373,7 @@ genLeftShiftLiteral (operand * left, operand * right, operand * result, const iC
   int shCount = (int) ulFromVal (AOP (right)->aopu.aop_lit);
   int size;
 
-  freeAsmop (right, NULL, ic);
+  freeAsmop (right, NULL);
 
   aopOp (left, ic, FALSE, FALSE);
   aopOp (result, ic, FALSE, FALSE);
@@ -8404,8 +8404,8 @@ genLeftShiftLiteral (operand * left, operand * right, operand * result, const iC
           wassert (0);
         }
     }
-  freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -8430,7 +8430,7 @@ genLeftShift (const iCode * ic)
   if (AOP_TYPE (right) == AOP_LIT && getSize (operandType (result)) <= 2)
     {
       genLeftShiftLiteral (left, right, result, ic);
-      freeAsmop (right, NULL, ic);
+      freeAsmop (right, NULL);
       return;
     }
 
@@ -8457,7 +8457,7 @@ genLeftShift (const iCode * ic)
   cheapMove (countreg == A_IDX ? ASMOP_A : asmopregs[countreg], 0, AOP (right), 0);
   emit2 ("inc %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
   regalloc_dry_run_cost += 1;
-  freeAsmop (right, NULL, ic);
+  freeAsmop (right, NULL);
 
   if (AOP_TYPE (left) != AOP_REG || AOP_TYPE (result) != AOP_REG)
     _push (PAIR_AF);
@@ -8536,8 +8536,8 @@ genLeftShift (const iCode * ic)
       regalloc_dry_run_cost += 3;
     }
 
-  freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -8666,7 +8666,7 @@ genRightShiftLiteral (operand * left, operand * right, operand * result, const i
   unsigned int shCount = (unsigned int) ulFromVal (AOP (right)->aopu.aop_lit);
   unsigned int size;
 
-  freeAsmop (right, NULL, ic);
+  freeAsmop (right, NULL);
 
   aopOp (left, ic, FALSE, FALSE);
   aopOp (result, ic, FALSE, FALSE);
@@ -8710,8 +8710,8 @@ genRightShiftLiteral (operand * left, operand * right, operand * result, const i
           wassertl (0, "Entered default case in right shift delegate");
         }
     }
-  freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -8745,7 +8745,7 @@ genRightShift (const iCode * ic)
   if (AOP_TYPE (right) == AOP_LIT && getSize (operandType (result)) <= 2)
     {
       genRightShiftLiteral (left, right, result, ic, is_signed);
-      freeAsmop (right, NULL, ic);
+      freeAsmop (right, NULL);
       return;
     }
 
@@ -8772,7 +8772,7 @@ genRightShift (const iCode * ic)
   cheapMove (countreg == A_IDX ? ASMOP_A : asmopregs[countreg], 0, AOP (right), 0);
   emit2 ("inc %s", countreg == A_IDX ? "a" : regsZ80[countreg].name);
   regalloc_dry_run_cost += 1;
-  freeAsmop (right, NULL, ic);
+  freeAsmop (right, NULL);
 
   if (AOP_TYPE (left) != AOP_REG || AOP_TYPE (result) != AOP_REG)
     _push (PAIR_AF);
@@ -8855,8 +8855,8 @@ genRightShift (const iCode * ic)
       regalloc_dry_run_cost += 3;
     }
 
-  freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
 
@@ -9417,8 +9417,8 @@ release:
   if (pushed_pair)
     _pop (pair);
 
-  freeAsmop (left, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (left, NULL);
+  freeAsmop (result, NULL);
 }
 
 static bool
@@ -9884,8 +9884,8 @@ release:
   if (pushed_a)
     _pop (PAIR_AF);
 
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -9912,7 +9912,7 @@ genIfx (iCode * ic, iCode * popIc)
         }
       regalloc_dry_run_cost += (bit8_cost (AOP (cond)) + 3);
 
-      freeAsmop (cond, NULL, ic);
+      freeAsmop (cond, NULL);
       if (!regalloc_dry_run)
         ic->generated = 1;
       return;
@@ -9920,7 +9920,7 @@ genIfx (iCode * ic, iCode * popIc)
   else
     isbit = 1;
   /* the result is now in the accumulator */
-  freeAsmop (cond, NULL, ic);
+  freeAsmop (cond, NULL);
 
   /* if there was something to be popped then do it */
   if (popIc)
@@ -10010,7 +10010,7 @@ genAddrOf (const iCode * ic)
         }
       commitPair (AOP (IC_RESULT (ic)), pair, ic, FALSE);
     }
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (IC_RESULT (ic), NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -10356,8 +10356,8 @@ skip_byte:
     }
 
 release:
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -10388,7 +10388,7 @@ genJumpTab (const iCode * ic)
       emit2 ("add hl,de");
     }
   regalloc_dry_run_cost += 5;
-  freeAsmop (IC_JTCOND (ic), NULL, ic);
+  freeAsmop (IC_JTCOND (ic), NULL);
   if (!IS_GB && !isPairDead (PAIR_DE, ic))
     _pop (PAIR_DE);
   if (!regalloc_dry_run)
@@ -10479,8 +10479,8 @@ genCast (const iCode * ic)
 release:
   if (pushed_a)
     _pop (PAIR_AF);
-  freeAsmop (right, NULL, ic);
-  freeAsmop (result, NULL, ic);
+  freeAsmop (right, NULL);
+  freeAsmop (result, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -10510,7 +10510,7 @@ genReceive (const iCode * ic)
         }
     }
 
-  freeAsmop (IC_RESULT (ic), NULL, ic);
+  freeAsmop (IC_RESULT (ic), NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -10537,7 +10537,7 @@ genDummyRead (const iCode * ic)
           offset++;
         }
 
-      freeAsmop (op, NULL, ic);
+      freeAsmop (op, NULL);
     }
 
   op = IC_LEFT (ic);
@@ -10555,7 +10555,7 @@ genDummyRead (const iCode * ic)
           offset++;
         }
 
-      freeAsmop (op, NULL, ic);
+      freeAsmop (op, NULL);
     }
 }
 
@@ -10593,7 +10593,7 @@ genCritical (const iCode * ic)
           emit2 ("!tlabeldef", labelKey2num ((tlbl->key)));
           genLine.lineCurr->isLabel = 1;
         }
-      freeAsmop (IC_RESULT (ic), NULL, ic);
+      freeAsmop (IC_RESULT (ic), NULL);
     }
   else
     {
@@ -10642,7 +10642,7 @@ genEndCritical (const iCode * ic)
           emitLabelSpill (tlbl);
         }
       regalloc_dry_run_cost += 4;
-      freeAsmop (IC_RIGHT (ic), NULL, ic);
+      freeAsmop (IC_RIGHT (ic), NULL);
     }
   else
     {
@@ -10916,26 +10916,6 @@ genArrayInit (iCode * ic)
 }
 #endif
 
-#ifdef UNITY
-static void
-_swap (PAIR_ID one, PAIR_ID two)
-{
-  if ((one == PAIR_DE && two == PAIR_HL) || (one == PAIR_HL && two == PAIR_DE))
-    {
-      emit2 ("ex de, hl");
-    }
-  else
-    {
-      emit2 ("ld a,%s", _pairs[one].l);
-      emit2 ("ld %s,%s", _pairs[one].l, _pairs[two].l);
-      emit2 ("ld %s,a", _pairs[two].l);
-      emit2 ("ld a,%s", _pairs[one].h);
-      emit2 ("ld %s,%s", _pairs[one].h, _pairs[two].h);
-      emit2 ("ld %s,a", _pairs[two].h);
-    }
-}
-#endif
-
 static void
 setupForMemcpy (const iCode *ic, const operand *to, const operand *from)
 {
@@ -11059,15 +11039,15 @@ genBuiltInMemcpy (const iCode *ic, int nparams, operand **pparams)
     _pop (PAIR_HL);
 
 done:
-  freeAsmop (count, NULL, ic->next->next);
-  freeAsmop (to, NULL, ic->next);
-  freeAsmop (from, NULL, ic);
+  freeAsmop (count, NULL);
+  freeAsmop (to, NULL);
+  freeAsmop (from, NULL);
 
   /* No need to assign result - would have used ordinary memcpy() call instead. */
 }
 
 static void
-genBuiltInMemset (const iCode * ic, int nParams, operand ** pparams)
+genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
 {
   operand *dst, *c, *n;
   bool direct_c, direct_cl;
@@ -11227,9 +11207,9 @@ genBuiltInMemset (const iCode * ic, int nParams, operand ** pparams)
 done:
   spillPair (PAIR_HL);
 
-  freeAsmop (n, NULL, ic->next->next);
-  freeAsmop (c, NULL, ic->next);
-  freeAsmop (dst, NULL, ic);
+  freeAsmop (n, NULL);
+  freeAsmop (c, NULL);
+  freeAsmop (dst, NULL);
 
   
   if (saved_BC)
@@ -11240,6 +11220,83 @@ done:
     _pop (PAIR_HL);
 
   /* No need to assign result - would have used ordinary memset() call instead. */
+}
+
+static void
+genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
+{
+  operand *dst, *src;
+  bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
+  int i;
+  bool SomethingReturned;
+  
+  SomethingReturned = (IS_ITEMP (IC_RESULT (ic)) &&
+                      (OP_SYMBOL (IC_RESULT (ic))->nRegs ||
+                      OP_SYMBOL (IC_RESULT (ic))->spildir ||
+                      OP_SYMBOL (IC_RESULT (ic))->accuse == ACCUSE_A)) || IS_TRUE_SYMOP (IC_RESULT (ic));
+
+  wassertl (nParams == 2, "Built-in strcpy() must have two parameters.");
+
+  dst = pparams[0];
+  src = pparams[1];
+
+  for (i = 0; i < nParams; i++)
+    aopOp (pparams[i], ic, FALSE, FALSE);
+
+  if (!isPairDead (PAIR_HL, ic))
+    {
+      _push (PAIR_HL);
+      saved_HL = TRUE;
+    }
+  if (!isPairDead (PAIR_DE, ic))
+    {
+      _push (PAIR_DE);
+      saved_DE = TRUE;
+    }
+  if (!isPairDead (PAIR_BC, ic))
+    {
+      _push (PAIR_BC);
+      saved_BC = TRUE;
+    }
+
+  setupForMemcpy (ic, dst, src);
+
+  emit3 (A_XOR, ASMOP_A, ASMOP_A);
+  if (SomethingReturned)
+    _push (PAIR_DE);
+  if (!regalloc_dry_run)
+    {
+      symbol *tlbl = newiTempLabel (NULL);
+      emitLabel (tlbl);
+      emit2 ("cp a, (hl)");
+      emit2 ("ldi");
+      emit2 ("jr NZ, !tlabel", labelKey2num (tlbl->key));
+      spillPair (PAIR_HL);
+    }
+  regalloc_dry_run_cost += 5;
+
+  if (SomethingReturned)
+    aopOp (IC_RESULT (ic), ic, FALSE, FALSE);
+
+  if (!SomethingReturned || SomethingReturned && getPairId (AOP (IC_RESULT (ic))) != PAIR_INVALID)
+    {
+      if (SomethingReturned)
+        _pop (getPairId (AOP (IC_RESULT (ic))));
+      if (saved_BC)
+        _pop (PAIR_BC);
+      if (saved_DE)
+        _pop (PAIR_DE);
+      if (saved_HL)
+        _pop (PAIR_HL);
+    }
+  else
+    wassert (0);
+
+  if (SomethingReturned)
+    freeAsmop (IC_RESULT (ic), NULL);
+  freeAsmop (src, NULL);
+  freeAsmop (dst, NULL);
+
 }
 
 /*-----------------------------------------------------------------*/
@@ -11267,6 +11324,10 @@ genBuiltIn (iCode * ic)
   else if (!strcmp (bif->name, "__builtin_memset"))
     {
       genBuiltInMemset (bi_iCode, nbi_parms, bi_parms);
+    }
+  else if (!strcmp (bif->name, "__builtin_strcpy"))
+    {
+      genBuiltInStrcpy (bi_iCode, nbi_parms, bi_parms);
     }
   else
     {

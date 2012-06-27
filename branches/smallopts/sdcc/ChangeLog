@@ -1,4 +1,10 @@
-2012-06-26 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+2012-06-27 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/main.c,
+	  src/z80/gen.c:
+	  Preparations for built-in strcpy().
+
+2012-06-27 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* device/lib/z180/Makefile.in,
 	  device/lib/incl.mk,
