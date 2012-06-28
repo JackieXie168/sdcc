@@ -551,7 +551,7 @@ static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, co
     IS_OP_LITERAL(right) && (!(IS_GB && IS_TRUE_SYMOP (left) || !exstk && operand_on_stack(left, a, i, G)) || operand_in_reg(left, ia, i, G) && !operand_in_reg(left, REG_IYL, ia, i, G) && !operand_in_reg(left, REG_IYH, ia, i, G))))
     {
       operand *const litop = IS_OP_LITERAL(left) ? IC_LEFT(ic) : IC_RIGHT(ic);
-      for(int i = 0; i < getSize(operandType(result)); i++)
+      for(unsigned int i = 0; i < getSize(operandType(result)); i++)
         {
           unsigned char byte = (ulFromVal (OP_VALUE (litop)) >> (i * 8) & 0xff);
           if (byte != 0x00 && byte != 0x01 && byte != 0x02 && byte != 0x04 && byte != 0x08 && byte != 0x10 && byte != 0x20 && byte != 0x40 && byte != 0x80)
@@ -1502,7 +1502,7 @@ static bool omit_frame_ptr(const G_t &G)
   signed char omitcost = -16;
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
-      if(G[i].alive.size() > port->num_regs - 4)
+      if((int)G[i].alive.size() > NUM_REGS - 4)
         return(false);
 
       const iCode *const ic = G[i].ic;
