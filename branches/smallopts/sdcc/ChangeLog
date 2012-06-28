@@ -1,5 +1,13 @@
 2012-06-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCCopt.c,
+	  src/z80/gen.c,
+	  src/z80/main.c,
+	  device/include/string.h:
+	  Built-in strncpy().
+
+2012-06-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCCralloc.hpp,
 	  src/z80/ralloc2.cc,
 	  src/z80/gen.c,

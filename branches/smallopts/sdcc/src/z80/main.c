@@ -116,9 +116,10 @@ extern PORT r2k_port;
 
 static builtins _z80_builtins[] = {
   {"__builtin_memcpy", "vg*", 3, {"vg*", "vg*", "ui"}},
-  {"__builtin_memset", "vg*", 3, {"vg*", "i", "ui"}},
   {"__builtin_strcpy", "cg*", 2, {"cg*", "cg*"}},
+  {"__builtin_strncpy", "cg*", 3, {"cg*", "cg*", "ui"}},
   {"__builtin_strchr", "cg*", 2, {"cg*", "i"}},
+  {"__builtin_memset", "vg*", 3, {"vg*", "i", "ui"}},
   {NULL, NULL, 0, {NULL}}
 };
 

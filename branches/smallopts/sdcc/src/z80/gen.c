@@ -10966,7 +10966,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
   bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
 
   wassertl (nParams == 3, "Built-in memset() must have three parameters");
-if(nParams != 3) printf("params: %d\n", nParams);
+
   dst = pparams[0];
   c = pparams[1];
   n = pparams[2];
@@ -11178,9 +11178,10 @@ if(nParams != 2) printf("params: %d\n", nParams);
       emit2 ("cp a, (hl)");
       emit2 ("ldi");
       emit2 ("jr NZ, !tlabel", labelKey2num (tlbl->key));
-      spillPair (PAIR_HL);
     }
   regalloc_dry_run_cost += 5;
+
+  spillPair (PAIR_HL);
 
   if (SomethingReturned)
     aopOp (IC_RESULT (ic), ic, FALSE, FALSE);
@@ -11208,6 +11209,71 @@ if(nParams != 2) printf("params: %d\n", nParams);
     freeAsmop (IC_RESULT (ic), NULL);
   freeAsmop (src, NULL);
   freeAsmop (dst, NULL);
+}
+
+static void
+genBuiltInStrncpy (const iCode *ic, int nparams, operand **pparams)
+{
+  int i;
+  operand *s1, *s2, *n;
+  bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
+
+  for (i = 0; i < nparams; i++)
+    aopOp (pparams[i], ic, FALSE, FALSE);
+
+  wassertl (!IS_GB, "Built-in strncpy() not available on gbz80.");
+  wassertl (nparams == 3, "Built-in strncpy() must have three parameters.");
+  wassertl (AOP_TYPE (pparams[2]) == AOP_LIT, "Last parameter to builtin strncpy() must be literal.");
+
+  s1 = pparams[0];
+  s2 = pparams[1];
+  n = pparams[2];
+
+  if (!ulFromVal (AOP (n)->aopu.aop_lit))
+    goto done;
+
+  if (!isPairDead (PAIR_HL, ic))
+    {
+      _push (PAIR_HL);
+      saved_HL = TRUE;
+    }
+  if (!isPairDead (PAIR_BC, ic))
+    {
+      _push (PAIR_BC);
+      saved_BC = TRUE;
+    }
+  if (!isPairDead (PAIR_DE, ic))
+    {
+      _push (PAIR_DE);
+      saved_DE = TRUE;
+    }
+
+  setupForMemcpy (ic, s1, s2);
+
+  fetchPair (PAIR_BC, AOP (n));
+
+  emit3 (A_XOR, ASMOP_A, ASMOP_A);
+  if (!regalloc_dry_run)
+    {
+      symbol *tlbl1 = newiTempLabel (0);
+      symbol *tlbl2 = newiTempLabel (0);
+      emitLabel (tlbl2);
+      emit2 ("cp a, (hl)");
+      emit2 ("ldi");
+      emit2 ("jp PE, !tlabel", labelKey2num (tlbl1->key));
+      emit2 ("jr NZ, !tlabel", labelKey2num (tlbl2->key));
+      emitLabel (tlbl1);
+    }
+  regalloc_dry_run_cost += 8;
+
+  spillPair (PAIR_HL);
+
+  restoreRegs (0, saved_DE, saved_BC, saved_HL, 0);
+
+done:
+  freeAsmop (n, NULL);
+  freeAsmop (s2, NULL);
+  freeAsmop (s1, NULL);
 }
 
 static void
@@ -11329,17 +11395,21 @@ genBuiltIn (iCode *ic)
     {
       genBuiltInMemcpy (bi_iCode, nbi_parms, bi_parms);
     }
-  else if (!strcmp (bif->name, "__builtin_memset"))
-    {
-      genBuiltInMemset (bi_iCode, nbi_parms, bi_parms);
-    }
   else if (!strcmp (bif->name, "__builtin_strcpy"))
     {
       genBuiltInStrcpy (bi_iCode, nbi_parms, bi_parms);
     }
+  else if (!strcmp (bif->name, "__builtin_strncpy"))
+    {
+      genBuiltInStrncpy (bi_iCode, nbi_parms, bi_parms);
+    }
   else if (!strcmp (bif->name, "__builtin_strchr"))
     {
       genBuiltInStrchr (bi_iCode, nbi_parms, bi_parms);
+    }
+  else if (!strcmp (bif->name, "__builtin_memset"))
+    {
+      genBuiltInMemset (bi_iCode, nbi_parms, bi_parms);
     }
   else
     {
