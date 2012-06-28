@@ -1,3 +1,14 @@
+2012-06-28 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCCralloc.hpp,
+	  src/z80/ralloc2.cc,
+	  src/z80/gen.c,
+	  src/hc08/ralloc2.cc,
+	  device/include/string.h:
+	  Built-in strchr().
+	* src/z80/peep.c:
+	  Fix out-of-array read.
+
 2012-06-27 Borut Razem <borut.razem AT gmail.com>
 
 	* src/SDCC.lex:

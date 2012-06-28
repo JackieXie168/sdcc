@@ -21,61 +21,6 @@
   Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 -------------------------------------------------------------------------*/
 
-/*
-  Benchmarks on dhry.c 2.1 with 32766 loops and a 10ms clock:
-                                       ticks dhry  size
-  Base with asm strcpy / strcmp / memcpy: 23198 141 1A14
-  Improved WORD push                    22784 144 19AE
-  With label1 on                        22694 144 197E
-  With label2 on                        22743 144 198A
-  With label3 on                        22776 144 1999
-  With label4 on                        22776 144 1999
-  With all 'label' on                   22661 144 196F
-  With loopInvariant on                 20919 156 19AB
-  With loopInduction on                 Breaks    198B
-  With all working on                   20796 158 196C
-  Slightly better genCmp(signed)        20597 159 195B
-  Better reg packing, first peephole    20038 163 1873
-  With assign packing                   19281 165 1849
-  5/3/00                                17741 185 17B6
-  With reg params for mul and div       16234 202 162D
-
-  1. Starting again at 3 Aug 01         34965  93 219C
-   No asm strings
-   Includes long mul/div in code
-  2. Optimised memcpy for acc use       32102 102 226B
-  3. Optimised strcpy for acc use       27819 117 2237
-  3a Optimised memcpy fun
-  4. Optimised strcmp fun               21999 149 2294
-  5. Optimised strcmp further           21660 151 228C
-  6. Optimised memcpy by unroling       20885 157 2201
-  7. After turning loop induction on    19862 165 236D
-  8. Same as 7 but with more info
-  9. With asm optimised strings         17030 192 2223
-
-  10 and below are with asm strings off.
-
-  10 Mucho optimisations                13562 201 1FCC
-
-  Apparent advantage of turning on regparams:
-  1.  Cost of push
-        Decent case is push of a constant
-          - ld hl,#n; push hl: (10+11)*nargs
-  2.  Cost of pull from stack
-        Using asm with ld hl, etc
-          - ld hl,#2; add hl,sp; (ld bc,(hl); hl+=2)*nargs
-            10+11+(7+6+7+6)*nargs
-  3.  Cost of fixing stack
-          - pop hl*nargs
-            10*nargs
-
-  So cost is (10+11+7+6+7+10)*nargs+10+11
-      = 51*nargs+21
-      = 123 for mul, div, strcmp, strcpy
-  Saving of (98298+32766+32766+32766)*123 = 24181308
-  At 192 d/s for 682411768t, speed up to 199.  Hmm.
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,9 +37,7 @@
 /* Z80 calling convention description.
    Parameters are passed right to left.  As the stack grows downwards,
    the parameters are arranged in left to right in memory.
-   Parameters may be passed in the HL and DE registers with one
-   parameter per pair.
-   PENDING: What if the parameter is a long?
+
    Everything is caller saves. i.e. the caller must save any registers
    that it wants to preserve over the call, except for ix, which is callee saves.
    GB: The return value is returned in DEHL.  DE is normally used as a
@@ -11023,7 +10966,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
   bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
 
   wassertl (nParams == 3, "Built-in memset() must have three parameters");
-
+if(nParams != 3) printf("params: %d\n", nParams);
   dst = pparams[0];
   c = pparams[1];
   n = pparams[2];
@@ -11200,7 +11143,7 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
 
   wassertl (nParams == 2, "Built-in strcpy() must have two parameters.");
   wassertl (!IS_GB, "Built-in strcpy() not available for gbz80.");
-
+if(nParams != 2) printf("params: %d\n", nParams);
   dst = pparams[0];
   src = pparams[1];
 
@@ -11265,7 +11208,101 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
     freeAsmop (IC_RESULT (ic), NULL);
   freeAsmop (src, NULL);
   freeAsmop (dst, NULL);
+}
 
+static void
+genBuiltInStrchr (const iCode *ic, int nParams, operand **pparams)
+{
+  operand *s, *c;
+  bool saved_BC = FALSE, saved_DE = FALSE, saved_HL = FALSE;
+  int i;
+  bool SomethingReturned;
+  PAIR_ID pair;
+  bool direct_c;
+  asmop *aop_c;
+  symbol *tlbl1 = regalloc_dry_run ? 0 : newiTempLabel(0);
+  symbol *tlbl2 = regalloc_dry_run ? 0 : newiTempLabel(0);
+  
+  SomethingReturned = (IS_ITEMP (IC_RESULT (ic)) &&
+                      (OP_SYMBOL (IC_RESULT (ic))->nRegs ||
+                      OP_SYMBOL (IC_RESULT (ic))->spildir ||
+                      OP_SYMBOL (IC_RESULT (ic))->accuse == ACCUSE_A)) || IS_TRUE_SYMOP (IC_RESULT (ic));
+
+  wassertl (nParams == 2, "Built-in strchr() must have two parameters.");
+
+  s = pparams[0];
+  c = pparams[1];
+
+  for (i = 0; i < nParams; i++)
+    aopOp (pparams[i], ic, FALSE, FALSE);
+
+  if (SomethingReturned)
+    aopOp (IC_RESULT (ic), ic, FALSE, FALSE);
+
+  if (getPairId (AOP (s)) != PAIR_INVALID && getPairId (AOP (s)) != PAIR_IY)
+    pair = getPairId (AOP (s));
+  else if (SomethingReturned && getPairId (AOP (IC_RESULT (ic))) != PAIR_INVALID && getPairId (AOP (IC_RESULT (ic))) != PAIR_IY)
+    pair = getPairId (AOP (IC_RESULT (ic)));
+  else
+    pair = PAIR_HL;
+
+  if (AOP_TYPE (c) == AOP_REG && AOP (c)->aopu.aop_reg[0]->rIdx != IYL_IDX && AOP (c)->aopu.aop_reg[0]->rIdx != IYH_IDX &&
+    !(pair == PAIR_HL && (AOP (c)->aopu.aop_reg[0]->rIdx == L_IDX || AOP (c)->aopu.aop_reg[0]->rIdx == H_IDX)) &&
+    !(pair == PAIR_DE && (AOP (c)->aopu.aop_reg[0]->rIdx == E_IDX || AOP (c)->aopu.aop_reg[0]->rIdx == D_IDX)) &&
+    !(pair == PAIR_BC && (AOP (c)->aopu.aop_reg[0]->rIdx == B_IDX || AOP (c)->aopu.aop_reg[0]->rIdx == C_IDX)))
+    direct_c = TRUE;
+  else if (AOP_TYPE (c) == AOP_LIT && optimize.codeSize)
+    direct_c = TRUE;
+  else
+    direct_c = FALSE;
+
+  aop_c = direct_c ? AOP (c) : (pair == PAIR_DE ? ASMOP_H : ASMOP_D);
+
+  if ((pair == PAIR_HL || pair == PAIR_DE && !direct_c) && !isPairDead (PAIR_HL, ic))
+    {
+      _push (PAIR_HL);
+      saved_HL = TRUE;
+    }
+  if (pair == PAIR_BC && !isPairDead (PAIR_BC, ic))
+    {
+      _push (PAIR_BC);
+      saved_BC = TRUE;
+    }
+  if ((pair == PAIR_DE || !direct_c) && !isPairDead (PAIR_DE, ic))
+    {
+      _push (PAIR_DE);
+      saved_DE = TRUE;
+    }
+
+  if (!direct_c)
+    cheapMove (aop_c, 0, AOP (c), 0);
+  fetchPair (pair, AOP (s));
+
+  if (!regalloc_dry_run)
+    emitLabel (tlbl2);
+  emit2 ("ld a, (%s)", _pairs[pair].name);
+  regalloc_dry_run_cost++;
+  emit3 (A_CP, ASMOP_A, aop_c);
+  if (!regalloc_dry_run)
+    emit2 ("jp Z, !tlabel", labelKey2num (tlbl1->key));
+  emit2 ("or a, a");
+  emit2 ("inc hl");
+  if (!regalloc_dry_run)
+    emit2 ("jr NZ, !tlabel", labelKey2num (tlbl2->key));
+  emit2 ("ld %s, a", _pairs[pair].l);
+  emit2 ("ld %s, a", _pairs[pair].h);
+  regalloc_dry_run_cost += 8; // jp will mnost likely be optimized into jr.
+  if (!regalloc_dry_run)
+    emitLabel (tlbl1);
+  if (SomethingReturned)
+    commitPair (AOP (IC_RESULT (ic)), PAIR_HL, ic, FALSE);
+
+  restoreRegs (0, saved_DE, saved_BC, saved_HL, SomethingReturned ? IC_RESULT (ic) : 0);
+
+  if (SomethingReturned)
+    freeAsmop (IC_RESULT (ic), NULL);
+  freeAsmop (c, NULL);
+  freeAsmop (s, NULL);
 }
 
 /*-----------------------------------------------------------------*/
@@ -11273,7 +11310,7 @@ genBuiltInStrcpy (const iCode *ic, int nParams, operand **pparams)
 /* for a built in function                                         */
 /*-----------------------------------------------------------------*/
 static void
-genBuiltIn (iCode * ic)
+genBuiltIn (iCode *ic)
 {
   operand *bi_parms[MAX_BUILTIN_ARGS];
   int nbi_parms;
@@ -11286,6 +11323,8 @@ genBuiltIn (iCode * ic)
   /* which function is it */
   bif = OP_SYMBOL (IC_LEFT (bi_iCode));
 
+  wassertl (!ic->prev || ic->prev->op != SEND || !ic->prev->builtinSEND, "genBuiltIn() must be called on first SEND icode only.");
+
   if (!strcmp (bif->name, "__builtin_memcpy"))
     {
       genBuiltInMemcpy (bi_iCode, nbi_parms, bi_parms);
@@ -11297,6 +11336,10 @@ genBuiltIn (iCode * ic)
   else if (!strcmp (bif->name, "__builtin_strcpy"))
     {
       genBuiltInStrcpy (bi_iCode, nbi_parms, bi_parms);
+    }
+  else if (!strcmp (bif->name, "__builtin_strchr"))
+    {
+      genBuiltInStrchr (bi_iCode, nbi_parms, bi_parms);
     }
   else
     {
@@ -11692,7 +11735,7 @@ genZ80Code (iCode * lic)
         }
       regalloc_dry_run_cost = 0;
       genZ80iCode (ic);
-      /*emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));*/
+      emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));
     }
 
 

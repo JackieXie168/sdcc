@@ -236,7 +236,7 @@ template <class T_t>
 static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T);
 
 // Code for anotehr ic is generated when generating this one. Mark the other as generated. Port-specific.
-static void extra_ic_generated(const iCode *ic);
+static void extra_ic_generated(iCode *ic);
 
 inline void
 add_operand_to_cfg_node(cfg_node &n, operand *o, std::map<std::pair<int, reg_t>, var_t> &sym_to_index)
@@ -383,6 +383,8 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
           add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_LEFT(ic), sym_to_index);
           add_operand_to_cfg_node(cfg[key_to_index[ic->key]], IC_RIGHT(ic), sym_to_index);
         }
+
+      // TODO: Extend live-ranges of returns of built-in function calls back to first SEND.
 
       add_operand_conflicts_in_node(cfg[key_to_index[ic->key]], con);
     }

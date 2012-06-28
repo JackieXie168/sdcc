@@ -728,7 +728,7 @@ static bool HLinst_ok(const assignment &a, unsigned short int i, const G_t &G, c
     }
 #endif
 
-  if(ic->op == RETURN)
+  if(ic->op == RETURN || ic->op == SEND)
     return(true);
 
   if((IS_GB || IY_RESERVED) && (IS_TRUE_SYMOP(left) || IS_TRUE_SYMOP(right)))
@@ -1136,9 +1136,7 @@ static void assign_operands_for_cost(const assignment &a, unsigned short int i, 
     }
     
   if(ic->op == SEND && ic->builtinSEND)
-    {
-      assign_operands_for_cost(a, *(adjacent_vertices(i, G).first), G, I);
-    }
+    assign_operands_for_cost(a, *(adjacent_vertices(i, G).first), G, I);
 }
 
 // Cost function.
@@ -1168,87 +1166,58 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   if(OPTRALLOC_IY && !IYinst_ok(a, i, G, I))
     return(std::numeric_limits<float>::infinity());
 
-  if(OPTRALLOC_EXACT_COST)
+  switch(ic->op)
     {
-      switch(ic->op)
-        {
-        // Register assignment doesn't matter for these:
-        case FUNCTION:
-        case ENDFUNCTION:
-        case LABEL:
-        case GOTO:
-        case INLINEASM:
-          return(0.0f);
-        // Exact cost:
-        case '!':
-        case '~':
-        case UNARYMINUS:
-        case '+':
-        case '-':
-        case '^':
-        case '|':
-        case BITWISEAND:
-        case IPUSH:
-        //case IPOP:
-        case CALL:
-        case PCALL:
-        case RETURN:
-        case '*':
-        case '>':
-        case '<':
-        case EQ_OP:
-        case AND_OP:
-        case OR_OP:
-        case GETHBIT:
-        case LEFT_OP:
-        case RIGHT_OP:
-        case GET_VALUE_AT_ADDRESS:
-        case '=':
-        case IFX:
-        case ADDRESS_OF:
-        case JUMPTABLE:
-        case CAST:
-        //case RECEIVE:
-        case SEND:
-        case DUMMY_READ_VOLATILE:
-        case CRITICAL:
-        case ENDCRITICAL:
-          assign_operands_for_cost(a, i, G, I);
-          set_surviving_regs(a, i, G, I);
-          c = dryZ80iCode(ic);
-          unset_surviving_regs(i, G);
-          return(c);
-        // Inexact cost:
-        default:
-          return(default_instruction_cost(a, i, G, I));
-        }
-    }
-  else
-    {
-      // Inexact cost function
-      switch(ic->op)
-        {
-        // Register assignment doesn't matter for these
-        case FUNCTION:
-        case ENDFUNCTION:
-        case LABEL:
-        case GOTO:
-        case INLINEASM:
-          return(0.0f);
-        case '=':
-        case CAST:
-          return(assign_cost(a, i, G, I));
-        case RETURN:
-          return(return_cost(a, i, G, I));
-        case CALL:
-          return(call_cost(a, i, G, I));
-        case IFX:
-          return(ifx_cost(a, i, G, I));
-        case JUMPTABLE:
-          return(jumptab_cost(a, i, G, I));
-        default:
-          return(default_instruction_cost(a, i, G, I));
-        }
+    // Register assignment doesn't matter for these:
+    case FUNCTION:
+    case ENDFUNCTION:
+    case LABEL:
+    case GOTO:
+    case INLINEASM:
+      return(0.0f);
+    // Exact cost:
+    case '!':
+    case '~':
+    case UNARYMINUS:
+    case '+':
+    case '-':
+    case '^':
+    case '|':
+    case BITWISEAND:
+    case IPUSH:
+    //case IPOP:
+    case CALL:
+    case PCALL:
+    case RETURN:
+    case '*':
+    case '>':
+    case '<':
+    case EQ_OP:
+    case AND_OP:
+    case OR_OP:
+    case GETHBIT:
+    case LEFT_OP:
+    case RIGHT_OP:
+    case GET_VALUE_AT_ADDRESS:
+    case '=':
+    case IFX:
+    case ADDRESS_OF:
+    case JUMPTABLE:
+    case CAST:
+    //case RECEIVE:
+    case SEND:
+    case DUMMY_READ_VOLATILE:
+    case CRITICAL:
+    case ENDCRITICAL:
+      assign_operands_for_cost(a, i, G, I);
+      set_surviving_regs(a, i, G, I);
+      c = dryZ80iCode(ic);
+      unset_surviving_regs(i, G);
+      ic->generated = false;
+      return(c);
+    // Inexact cost:
+    default:
+      return(default_instruction_cost(a, i, G, I));
     }
 }
 
@@ -1416,13 +1385,22 @@ static float rough_cost_estimate(const assignment &a, unsigned short int i, cons
 }
 
 // Code for another ic is generated when generating this one. Mark the other as generated.
-static void extra_ic_generated(const iCode *ic)
+static void extra_ic_generated(iCode *ic)
 {
   if(ic->op == '>' || ic->op == '<' || ic->op == LE_OP || ic->op == GE_OP || ic->op == EQ_OP || ic->op == NE_OP || ic->op == '^' || ic->op == '|' || ic->op == BITWISEAND)
     {
       iCode *ifx;
       if (ifx = ifxForOp (IC_RESULT (ic), ic))
-      ifx->generated = 1;
+        ifx->generated = true;
+    }
+
+  if(ic->op == SEND && ic->builtinSEND && (!ic->prev || ic->prev->op != SEND || !ic->prev->builtinSEND))
+    {
+      iCode *icn;
+      for(icn = ic->next; icn->op != CALL; icn = icn->next)
+        icn->generated = true;
+      icn->generated = true;
+      ic->generated = false;
     }
 }
 
