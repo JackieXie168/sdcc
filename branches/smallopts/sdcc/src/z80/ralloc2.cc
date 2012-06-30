@@ -1493,7 +1493,7 @@ static bool tree_dec_ralloc(T_t &T, const G_t &G, const I_t &I)
 template <class G_t>
 static bool omit_frame_ptr(const G_t &G)
 {
-  if(IS_GB)
+  if(IS_GB || IY_RESERVED)
     return(false);
 
   if(options.omitFramePtr)
@@ -1502,7 +1502,7 @@ static bool omit_frame_ptr(const G_t &G)
   signed char omitcost = -16;
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
     {
-      if((int)G[i].alive.size() > NUM_REGS - 4)
+      if((int)G[i].alive.size() > port->num_regs - 4)
         return(false);
 
       const iCode *const ic = G[i].ic;

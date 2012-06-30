@@ -4120,10 +4120,24 @@ emitCall (const iCode *ic, bool ispcall)
             }
           else if (IS_RAB ? i > 127 * 4 - 1 : i > 8)
             {
-              emit2 ("ld iy,!immedword", i);
-              emit2 ("add iy,sp");
-              emit2 ("ld sp,iy");
-              regalloc_dry_run_cost += 8;
+              if (!IY_RESERVED)
+                {
+                  emit2 ("ld iy,!immedword", i);
+                  emit2 ("add iy,sp");
+                  emit2 ("ld sp,iy");
+                  regalloc_dry_run_cost += 8;
+                }
+              else
+                {
+                  emit2 ("ld c, l");
+                  emit2 ("ld b, h");
+                  emit2 ("ld hl,!immedword", i);
+                  emit2 ("add hl,sp");
+                  emit2 ("ld sp,hl");
+                  emit2 ("ld l, c");
+                  emit2 ("ld h, b");
+                  regalloc_dry_run_cost += 9;
+                }
             }
           else
             {
