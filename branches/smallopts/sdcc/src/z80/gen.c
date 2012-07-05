@@ -1765,6 +1765,7 @@ requiresHL (const asmop * aop)
   switch (aop->type)
     {
     case AOP_IY:
+      return FALSE;
     case AOP_HL:
     case AOP_EXSTK:
     case AOP_HLREG:
@@ -10967,6 +10968,34 @@ done:
 }
 
 static void
+setupForMemset (const iCode *ic, const operand *dst, const operand *c, bool direct_c)
+{
+  /* Both are in regs. Let regMove() do the shuffling. */
+  if (AOP_TYPE (dst) == AOP_REG && !direct_c && AOP_TYPE (c) == AOP_REG)
+    {
+      const short larray[3] = {C_IDX, L_IDX, H_IDX};
+      short oparray[3];
+      oparray[0] = AOP (c)->aopu.aop_reg[0]->rIdx;
+      oparray[1] = AOP (dst)->aopu.aop_reg[0]->rIdx;
+      oparray[2] = AOP (dst)->aopu.aop_reg[1]->rIdx;
+
+      regMove (larray, oparray, 3);
+    }
+  else
+    {
+      fetchPair (PAIR_HL, AOP (dst));
+      if (!direct_c)
+        {
+          if (requiresHL (AOP (c)))
+            _push (PAIR_HL);
+	      cheapMove (ASMOP_A, 0, AOP (c), 0);
+          if (requiresHL (AOP (c)))
+            _pop (PAIR_HL);
+        }
+    }
+}
+
+static void
 genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
 {
   operand *dst, *c, *n;
@@ -11016,9 +11045,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
           saved_HL = TRUE;
         }
 
-      if (!direct_c)
-		cheapMove (ASMOP_A, 0, AOP (c), 0);
-      fetchPair (PAIR_HL, AOP (dst));
+      setupForMemset (ic, dst, c, direct_c);
 
       regalloc_dry_run_cost += (size * 2 - 1);
       if (!regalloc_dry_run)
@@ -11045,9 +11072,7 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
           saved_BC = TRUE;
         }
 
-      if (!direct_c)
-		cheapMove (ASMOP_A, 0, AOP (c), 0);
-      fetchPair (PAIR_HL, AOP (dst));
+      setupForMemset (ic, dst, c, direct_c);
 
       emit2 ("ld b, !immedbyte", double_loop ? (size / 2 + size % 2) : size);
       regalloc_dry_run_cost += 2;
@@ -11100,9 +11125,8 @@ genBuiltInMemset (const iCode *ic, int nParams, operand **pparams)
 		}
 	  else
 		{
-		  if (!direct_c)
-		    cheapMove (ASMOP_A, 0, AOP (c), 0);
-		  fetchPair (PAIR_HL, AOP (dst));
+		  setupForMemset (ic, dst, c, direct_c);
+
 		  if (!regalloc_dry_run)
 		    emit2 ("ld (hl), %s", aopGet (direct_c ? AOP (c) : ASMOP_A, 0, FALSE));
 		  regalloc_dry_run_cost += (direct_c && AOP_TYPE (c) == AOP_LIT) ? 2 : 1;

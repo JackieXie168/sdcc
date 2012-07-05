@@ -1,3 +1,11 @@
+2012-07-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fix for operand handling in built-in memset().
+	* src/SDCCopt.c:
+	  Convert zero-length built-in memcpy(), strncpy(), memset()
+	  back to ensure any volatiles are read. Fixes #3538725.
+
 2012-06-30 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/ralloc2.cc,

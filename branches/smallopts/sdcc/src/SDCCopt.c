@@ -934,6 +934,17 @@ convbuiltin (iCode *const ic, eBBlock *ebp)
 
   /* Now we can be sure to have found a builtin function. */
 
+  if ((!strcmp (bif->name, "__builtin_memcpy") || !strcmp (bif->name, "__builtin_strncpy") || !strcmp (bif->name, "__builtin_memset")) &&
+    IS_OP_LITERAL (IC_LEFT (lastparam)) && !operandLitValue (IC_LEFT (lastparam)))
+    {
+      /* We have a builtin that does nothing. */
+      /* TODO: Eliminate it, convert any SEND of volatile into DUMMY_READ_VOLATILE. */
+      /* For now just convert back to call to make sure any volatiles are read. */
+
+      strcpy(OP_SYMBOL (IC_LEFT (icc))->rname, !strcmp (bif->name, "__builtin_memcpy") ? "_memcpy" : (!strcmp (bif->name, "__builtin_strncpy") ? "_strncpy" : "_memset"));
+      goto convert;
+    }
+
   if ((TARGET_IS_Z80 || TARGET_IS_Z180 || TARGET_IS_RABBIT) && (!strcmp (bif->name, "__builtin_memcpy") || !strcmp (bif->name, "__builtin_strncpy") || !strcmp (bif->name, "__builtin_memset")))
     {
       /* Replace iff return value is used or last parameter is not an integer constant. */
@@ -941,10 +952,12 @@ convbuiltin (iCode *const ic, eBBlock *ebp)
         return;
       
       strcpy(OP_SYMBOL (IC_LEFT (icc))->rname, !strcmp (bif->name, "__builtin_memcpy") ? "_memcpy" : (!strcmp (bif->name, "__builtin_strncpy") ? "_strncpy" : "_memset"));
+      goto convert;
     }
-  else
-    return;
+  
+  return;
 
+convert:
   /* Convert parameter passings from SEND to PUSH. */
   stack = 0;
   for (icc = ic; icc->op != CALL; icc = icc->next)
