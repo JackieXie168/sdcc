@@ -161,13 +161,24 @@ get_candidate_set(std::set<int> *c, const iCode *const sic, int lkey)
     }
 }
 
-static void
+static bool
 setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
 {
   typedef boost::graph_traits<cfg_lospre_t>::vertex_descriptor vertex_t;
   const operand *const eleft = IC_LEFT (eic);
   const operand *const eright = IC_RIGHT (eic);
   const bool uses_global = (eic->op == GET_VALUE_AT_ADDRESS || isOperandGlobal (eleft) || isOperandGlobal (eright) || IS_SYMOP (eleft) && OP_SYMBOL_CONST (eleft)->addrtaken || IS_SYMOP (eright) && OP_SYMBOL_CONST (eright)->addrtaken);
+  bool safety_required = false;
+
+  // In redundancy elimination, safety means not doing a computation on any path were it was not done before.
+  // This is important, if the compuation can have side-effects, which depends on the target architecure.
+  // E.g. On some systems division requires safety, since division by zero might result in an interrupt.
+  // When there are memory-mapped devices or there is memory management, reading from a pointer requires
+  // safety, since reading from an unknown location could result in making the device do something or in a SIGSEGV. 
+  // On the other hand, addition is something that typically does not require safety, since adding two undefined
+  // operands gives just another undefined (the C standard allows trap representations, which, could result
+  // in addition requiring safety though; AFAIK no of the targets currently supported by sdcc have trap representations).
+  // Philipp, 2012-7-6.
 
   for (vertex_t i = 0; i < boost::num_vertices (*cfg); i++)
     {
@@ -186,6 +197,8 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
 
        (*cfg)[i].forward = std::pair<int, int>(-1, -1);
     }
+
+  return (safety_required);
 }
 
 // Dump cfg, with numbered nodes.
@@ -209,6 +222,7 @@ void dump_cfg_lospre(const cfg_lospre_t &cfg)
   delete[] name;
 }
 
+#if 0
 // Dump tree decomposition.
 static void dump_tree_decomposition(const tree_dec_lospre_t &tree_dec)
 {
@@ -231,6 +245,7 @@ static void dump_tree_decomposition(const tree_dec_lospre_t &tree_dec)
   boost::write_graphviz(dump_file, tree_dec, boost::make_label_writer(name));
   delete[] name;
 }
+#endif
 
 void
 lospre (iCode *sic, ebbIndex *ebbi)
@@ -269,8 +284,12 @@ lospre (iCode *sic, ebbIndex *ebbi)
           if (!candidate_expression (ic, lkey))
             continue;
 
-          setup_cfg_for_expression (&control_flow_graph, ic);
-          change += (tree_dec_lospre(tree_decomposition, control_flow_graph, ic) > 0);
+          bool safety = setup_cfg_for_expression (&control_flow_graph, ic);
+
+          if (safety && tree_dec_safety (tree_decomposition, control_flow_graph, ic) < 0)
+            continue;
+
+          change += (tree_dec_lospre (tree_decomposition, control_flow_graph, ic) > 0);
         }
     }
 }

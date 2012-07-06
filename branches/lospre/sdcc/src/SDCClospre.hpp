@@ -194,13 +194,9 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   unsigned short int i = *(old_inst.begin());
 
   assignment_list_lospre_t::iterator ai, aif;
-//if(i >= 19 && i <= 21) std::cout << "Forgetting " << i << "\n";
-  // Restrict assignments (locally) to current variables.
-  for (ai = alist.begin(); ai != alist.end(); ++ai)
-    { 
-//if(i >= 19 && i <= 21) std::cout << "Assignment: ";
-//if(i >= 19 && i <= 21) print_assignment(*ai, G);
 
+  for (ai = alist.begin(); ai != alist.end(); ++ai)
+    {
       ai->local.erase(i);
       ai->s.get<1>() += ai->global[i]; // Add lifetime cost.
       {
@@ -340,6 +336,138 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
       if(tree_dec_lospre_nodes(T, c0, G) < 0)
         return(-1);
       if(tree_dec_lospre_nodes(T, c1, G) < 0)
+        {
+          T[c0].assignments.clear();
+          return(-1);
+        }
+      tree_dec_lospre_join(T, t, G);
+      break;
+    default:
+      std::cerr << "Not nice.\n";
+      break;
+    }
+  return(0);
+}
+
+template <class T_t, class G_t>
+void tree_dec_safety_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
+{
+  typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
+  adjacency_iter_t c, c_end;
+  boost::tie(c, c_end) = adjacent_vertices(t, T);
+
+  assignment_list_lospre_t &alist = T[t].assignments;
+
+  std::swap(alist, T[*c].assignments);
+
+  std::set<unsigned short int> old_inst;
+  std::set_difference(T[*c].bag.begin(), T[*c].bag.end(), T[t].bag.begin(), T[t].bag.end(), std::inserter(old_inst, old_inst.end()));
+  unsigned short int i = *(old_inst.begin());
+
+  assignment_list_lospre_t::iterator ai, aif;
+
+  for (ai = alist.begin(); ai != alist.end();)
+    {//TODO
+      ai->local.erase(i);
+      ai->s.get<1>() -= 1; // Maximize the subsets: Find all paths
+
+      // At least one successor needs to be in the path or invalid.
+      {
+        typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
+        n_iter_t n, n_end;
+        bool ok;
+
+        for (ok = false, boost::tie(n, n_end) = boost::out_edges(i, G);  !ok && n != n_end; ++n)
+          if (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].invalidates)
+            ok = true;
+
+        if(!ok)
+          {
+            ai = alist.erase(ai);
+            continue;
+          }
+      }
+      // At least one predecessor needs to be in the path or invalid.
+      {
+        typedef typename boost::graph_traits<cfg_lospre_t>::in_edge_iterator n_iter_t;
+        n_iter_t n, n_end;
+        bool ok;
+
+        for (ok = false, boost::tie(n, n_end) = boost::in_edges(i, G);  !ok && n != n_end; ++n)
+          if (ai->global[boost::source(*n, G)] || G[boost::source(*n, G)].invalidates)
+            ok = true;
+
+        if(!ok)
+          {
+            ai = alist.erase(ai);
+            continue;
+          }
+      }
+
+      ++ai;
+    }
+
+  alist.sort();
+
+  // Collapse (locally) identical assignments.
+  for (ai = alist.begin(); ai != alist.end();)
+    {
+      aif = ai;
+
+      for (++ai; ai != alist.end() && assignments_lospre_locally_same(*aif, *ai);)
+        {
+          if (aif->s > ai->s)
+            {
+              alist.erase(aif);
+              aif = ai;
+              ++ai;
+            }
+          else
+            {
+              alist.erase(ai);
+              ai = aif;
+              ++ai;
+            }
+        }
+    }
+
+  if(!alist.size())
+    std::cerr << "No surviving assignments at forget node.\n";
+}
+
+template <class T_t, class G_t>
+int tree_dec_safety_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
+{
+  typedef typename boost::graph_traits<T_t>::adjacency_iterator adjacency_iter_t;
+
+  adjacency_iter_t c, c_end;
+  typename boost::graph_traits<T_t>::vertex_descriptor c0, c1;
+
+  boost::tie(c, c_end) = adjacent_vertices(t, T);
+
+  switch (out_degree(t, T))
+    {
+    case 0:
+      tree_dec_lospre_leaf(T, t, G);
+      break;
+    case 1:
+      c0 = *c;
+      if(tree_dec_safety_nodes(T, c0, G) < 0)
+        return(-1);
+      if (T[c0].bag.size() < T[t].bag.size())
+        {
+        if (tree_dec_lospre_introduce(T, t, G))
+          return(-1);
+        }
+      else
+        tree_dec_safety_forget(T, t, G);
+      break;
+    case 2:
+      c0 = *c++;
+      c1 = *c;
+      if(tree_dec_safety_nodes(T, c0, G) < 0)
+        return(-1);
+      if(tree_dec_safety_nodes(T, c1, G) < 0)
         {
           T[c0].assignments.clear();
           return(-1);
@@ -551,6 +679,16 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
     std::cout << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute any calculations.\n"; std::cout.flush();
 
   return(1);
+}
+
+/* Using a template here confuses debugging tool ssuch as valgrind. */
+/*template <class T_t, class G_t>*/
+static int tree_dec_safety (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
+{
+  if(tree_dec_safety_nodes(T, find_root(T), G))
+    return(-1);
+
+  return (0);
 }
 
 /* Using a template here confuses debugging tool ssuch as valgrind. */
