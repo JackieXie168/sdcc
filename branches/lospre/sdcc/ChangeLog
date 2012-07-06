@@ -1,3 +1,8 @@
+2012-07-06 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/SDCClospre.hpp:
+	  Fix for out-of-memory handling in lospre.
+
 2012-07-06 Borut Razem <borut.razem AT gmail.com>
 
 	* src/pic16/main.c: bug patched with sdcc-3.2.0-config_fix.diff

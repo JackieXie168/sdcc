@@ -113,7 +113,7 @@ struct tree_dec_lospre_node
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_lospre_node, float> cfg_lospre_t; // The edge property is the cost of subdividing the edge and inserting an instruction (for now we always use 1, optimizing for code size, but relative execution frequency could be used when optimizing for speed or total energy consumption; aggregates thereof can be a good idea as well).
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, tree_dec_lospre_node> tree_dec_lospre_t;
 
-#if 1
+#if 0
 void print_assignment(const assignment_lospre &a, cfg_lospre_t G)
 {
   wassert(a.global.size() == boost::num_vertices (G));
@@ -340,7 +340,10 @@ int tree_dec_lospre_nodes(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
       if(tree_dec_lospre_nodes(T, c0, G) < 0)
         return(-1);
       if(tree_dec_lospre_nodes(T, c1, G) < 0)
-        return(-1);
+        {
+          T[c0].assignments.clear();
+          return(-1);
+        }
       tree_dec_lospre_join(T, t, G);
       break;
     default:
