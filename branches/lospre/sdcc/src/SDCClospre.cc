@@ -179,6 +179,24 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
   // operands gives just another undefined (the C standard allows trap representations, which, could result
   // in addition requiring safety though; AFAIK no of the targets currently supported by sdcc have trap representations).
   // Philipp, 2012-7-6.
+  //
+  // For now we just always require safety for "dangerous" operations.
+  //
+  // TODO: Replace the current one  by a more exact mechanism, that takes into account information from
+  // (not yet implemented) generalized constant propagation, pointer analysis, etc.
+
+  // Function calls can have any side effects.
+  if (eic->op == CALL || eic->op == PCALL)
+    safety_required = true;
+
+  // Reading from an invalid address might be dangerous, since there could be memory-mapped I/O.
+  if (eic->op == GET_VALUE_AT_ADDRESS)
+    safety_required = true;
+
+  // The division rutines for z80-like ports and the hc08's hardware division just give an undefined result
+  // for division by zero, but there are no harmful side effects. I don't know about the other ports.
+  if ((eic->op == '/' || eic->op == '%') && !TARGET_Z80_LIKE && !TARGET_HC08_LIKE)
+    safety_required = true;
 
   for (vertex_t i = 0; i < boost::num_vertices (*cfg); i++)
     {

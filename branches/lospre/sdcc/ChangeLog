@@ -1,3 +1,9 @@
+2012-07-06 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Preparations for safety in lospre.
+
 2012-07-06 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/SDCClospre.hpp,

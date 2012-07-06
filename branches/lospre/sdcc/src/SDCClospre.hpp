@@ -34,6 +34,7 @@ extern "C"
 #include "SDCCopt.h"
 #include "SDCCy.h"
 #include "SDCCasm.h"
+#include "port.h"
 }
 
 #ifdef HAVE_STX_BTREE_SET_H
@@ -48,7 +49,7 @@ typedef std::set<unsigned short int> lospreset_t;
 
 struct assignment_lospre
 {
-  boost::tuple<float, float> s; // First entry: Calculation costs, second entry: Lietime costs.
+  boost::tuple<float, float> s; // First entry: Calculation costs, second entry: Lifetime costs.
   lospreset_t local;
   std::vector<bool> global;
 
@@ -250,7 +251,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
     }
 
   if(!alist.size())
-    std::cerr << "No surviving assignments at forget node.\n";
+    std::cerr << "No surviving assignments at forget node (lospre).\n";
 }
 
 // Handle join nodes in the nice tree decomposition
@@ -366,9 +367,16 @@ void tree_dec_safety_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
   assignment_list_lospre_t::iterator ai, aif;
 
-  for (ai = alist.begin(); ai != alist.end();)
+  for(ai = alist.begin(); ai != alist.end();)
     {//TODO
       ai->local.erase(i);
+
+      if (!ai->global[i])
+        {
+          ++ai;
+          continue;
+        }
+
       ai->s.get<1>() -= 1; // Maximize the subsets: Find all paths
 
       // At least one successor needs to be in the path or invalid.
@@ -410,13 +418,13 @@ void tree_dec_safety_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   alist.sort();
 
   // Collapse (locally) identical assignments.
-  for (ai = alist.begin(); ai != alist.end();)
+  for(ai = alist.begin(); ai != alist.end();)
     {
       aif = ai;
 
-      for (++ai; ai != alist.end() && assignments_lospre_locally_same(*aif, *ai);)
+      for(++ai; ai != alist.end() && assignments_lospre_locally_same(*aif, *ai);)
         {
-          if (aif->s > ai->s)
+          if(aif->s > ai->s)
             {
               alist.erase(aif);
               aif = ai;
@@ -681,7 +689,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
   return(1);
 }
 
-/* Using a template here confuses debugging tool ssuch as valgrind. */
+/* Using a template here confuses debugging tools such as valgrind. */
 /*template <class T_t, class G_t>*/
 static int tree_dec_safety (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
 {
@@ -691,7 +699,7 @@ static int tree_dec_safety (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G,
   return (0);
 }
 
-/* Using a template here confuses debugging tool ssuch as valgrind. */
+/* Using a template here confuses debugging tools such as valgrind. */
 /*template <class T_t, class G_t>*/
 static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
 {
