@@ -11390,7 +11390,7 @@ genBuiltInStrchr (const iCode *ic, int nParams, operand **pparams)
   if (!regalloc_dry_run)
     emit2 ("jp Z, !tlabel", labelKey2num (tlbl1->key));
   emit2 ("or a, a");
-  emit2 ("inc hl");
+  emit2 ("inc %s", _pairs[pair].name);
   if (!regalloc_dry_run)
     emit2 ("jr NZ, !tlabel", labelKey2num (tlbl2->key));
   emit2 ("ld %s, a", _pairs[pair].l);
@@ -11399,7 +11399,7 @@ genBuiltInStrchr (const iCode *ic, int nParams, operand **pparams)
   if (!regalloc_dry_run)
     emitLabel (tlbl1);
   if (SomethingReturned)
-    commitPair (AOP (IC_RESULT (ic)), PAIR_HL, ic, FALSE);
+    commitPair (AOP (IC_RESULT (ic)), pair, ic, FALSE);
 
   restoreRegs (0, saved_DE, saved_BC, saved_HL, SomethingReturned ? IC_RESULT (ic) : 0);
 

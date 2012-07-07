@@ -1,6 +1,13 @@
 2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
+	  Fix bug in built-in strchr().
+	* device/lib/Makefile.in:
+	  Fix building of strcpy() for mcs51.
+
+2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
 	  Fix bug in stack restoration for built-in functions.
 	* device/lib/_strchr.c,
 	  device/lib/_strncpy.c:
