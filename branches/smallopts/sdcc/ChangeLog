@@ -1,3 +1,11 @@
+2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fix bug in stack restoration for built-in functions.
+	* device/lib/_strchr.c,
+	  device/lib/_strncpy.c:
+	  Fix conflict between built-in and non built-in functions.
+
 2012-07-06 Borut Razem <borut.razem AT gmail.com>
 
 	* src/pic16/main.c: bug patched with sdcc-3.2.0-config_fix.diff

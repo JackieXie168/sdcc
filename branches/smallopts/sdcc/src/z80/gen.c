@@ -3522,7 +3522,7 @@ restoreRegs (bool iy, bool de, bool bc, bool hl, const operand *result)
         _pop (PAIR_BC);
     }
 
-  if (_G.stack.pushedHL)
+  if (hl)
     {
       if (hInRet && lInRet)
         wassertl (0, "Shouldn't push HL if it's wiped out by the return");
@@ -11326,7 +11326,7 @@ genBuiltInStrchr (const iCode *ic, int nParams, operand **pparams)
   asmop *aop_c;
   symbol *tlbl1 = regalloc_dry_run ? 0 : newiTempLabel(0);
   symbol *tlbl2 = regalloc_dry_run ? 0 : newiTempLabel(0);
-  
+
   SomethingReturned = (IS_ITEMP (IC_RESULT (ic)) &&
                       (OP_SYMBOL (IC_RESULT (ic))->nRegs ||
                       OP_SYMBOL (IC_RESULT (ic))->spildir ||
@@ -11395,7 +11395,7 @@ genBuiltInStrchr (const iCode *ic, int nParams, operand **pparams)
     emit2 ("jr NZ, !tlabel", labelKey2num (tlbl2->key));
   emit2 ("ld %s, a", _pairs[pair].l);
   emit2 ("ld %s, a", _pairs[pair].h);
-  regalloc_dry_run_cost += 8; // jp will mnost likely be optimized into jr.
+  regalloc_dry_run_cost += 8; // jp will most likely be optimized into jr.
   if (!regalloc_dry_run)
     emitLabel (tlbl1);
   if (SomethingReturned)
