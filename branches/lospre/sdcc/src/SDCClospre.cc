@@ -73,7 +73,7 @@ candidate_expression (const iCode *const ic, int lkey)
     ic->op != '+' &&
     ic->op != '-' &&
     ic->op != '*' &&
-    //ic->op != '/' && // Would this be OK for all architectures?
+    ic->op != '/' &&
     ic->op != '%' &&
     ic->op != '>' &&
     ic->op != '<' &&
@@ -107,8 +107,6 @@ candidate_expression (const iCode *const ic, int lkey)
 
   if(IS_OP_VOLATILE (left) || IS_OP_VOLATILE (right))
     return (false);
-
-// TODO: Check for and handle safety requirement to avoid division by zero where not allowed and GET_VALUE_AT_ADDRESS at invalid address!
 
   // Todo: Allow more operands!
   if (ic->op != CAST && left && !(IS_SYMOP (left) || IS_OP_LITERAL (left)) ||
