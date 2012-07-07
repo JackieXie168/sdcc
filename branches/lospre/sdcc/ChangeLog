@@ -1,5 +1,12 @@
 2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCCmain.c,
+	  src/SDCClospre.cc,
+	  src/SDCCglobl.h:
+	  Provide option to allow unsafe reads in lospre.
+
+2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCClospre.hpp,
 	  src/SDCClospre.cc:
 	  Safety in lospre.
