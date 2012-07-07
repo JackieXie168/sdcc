@@ -271,6 +271,8 @@ lospre (iCode *sic, ebbIndex *ebbi)
   cfg_lospre_t control_flow_graph;
   tree_dec_lospre_t tree_decomposition;
 
+  wassert (sic);
+
 #ifdef DEBUG_LOSPRE
   if (currFunc)
     std::cout << "lospre for " << currFunc->rname << "()\n";
@@ -299,7 +301,7 @@ lospre (iCode *sic, ebbIndex *ebbi)
           const iCode *ic;
           for (ic = sic; ic && ic->key != *ci; ic = ic->next);
 
-          if (!candidate_expression (ic, lkey))
+          if (!ic || !candidate_expression (ic, lkey))
             continue;
 
           bool safety = setup_cfg_for_expression (&control_flow_graph, ic);

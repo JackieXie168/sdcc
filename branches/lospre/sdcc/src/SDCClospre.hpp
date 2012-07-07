@@ -114,7 +114,7 @@ struct tree_dec_lospre_node
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, cfg_lospre_node, float> cfg_lospre_t; // The edge property is the cost of subdividing the edge and inserting an instruction (for now we always use 1, optimizing for code size, but relative execution frequency could be used when optimizing for speed or total energy consumption; aggregates thereof can be a good idea as well).
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, tree_dec_lospre_node> tree_dec_lospre_t;
 
-#if 0
+#if 1
 void print_assignment(const assignment_lospre &a, cfg_lospre_t G)
 {
   wassert(a.global.size() == boost::num_vertices (G));
@@ -368,12 +368,20 @@ void tree_dec_safety_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   assignment_list_lospre_t::iterator ai, aif;
 
   for(ai = alist.begin(); ai != alist.end();)
-    {//TODO
+    {
       ai->local.erase(i);
 
       if (!ai->global[i])
         {
           ++ai;
+          continue;
+        }
+
+      // Since we want the union of all paths between invalidating nodes without uses,
+      // by definition there may not be a use in it.
+      if (G[i].uses)
+        {
+          ai = alist.erase(ai);
           continue;
         }
 
@@ -681,22 +689,15 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
     }
 
   if(substituted <= 0)
-    std::cerr << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute any calculations.\n";
+    {
+      std::cerr << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute any calculations.\n";
+      return (-1);
+    }
 
   if(substituted <= 1) // Todo: Remove this warning when optimization for speed instead of code size is implemented!
-    std::cout << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute any calculations.\n"; std::cout.flush();
+    std::cout << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute multiple calculations.\n"; std::cout.flush();
 
   return(1);
-}
-
-/* Using a template here confuses debugging tools such as valgrind. */
-/*template <class T_t, class G_t>*/
-static int tree_dec_safety (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
-{
-  if(tree_dec_safety_nodes(T, find_root(T), G))
-    return(-1);
-
-  return (0);
 }
 
 /* Using a template here confuses debugging tools such as valgrind. */
@@ -709,7 +710,7 @@ static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G,
   wassert(T[find_root(T)].assignments.begin() != T[find_root(T)].assignments.end());
   const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
 
-  //std::cout << "Winner: ";
+  //std::cout << "Winner (lospre): ";
   //print_assignment(winner, G);
 
   int change;
@@ -717,5 +718,34 @@ static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G,
     nicify (T);
   T[find_root(T)].assignments.clear();
   return(change);
+}
+
+template <class G_t>
+static void implement_safety(const assignment_lospre &a, G_t &G)
+{
+  typedef typename boost::graph_traits<G_t>::vertex_iterator vertex_iter_t;
+  vertex_iter_t v, v_end;
+
+  for(boost::tie(v, v_end) = boost::vertices(G); v != v_end; ++v)
+    G[*v].invalidates |= a.global[*v];
+}
+
+/* Using a template here confuses debugging tools such as valgrind. */
+/*template <class T_t, class G_t>*/
+static int tree_dec_safety (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
+{
+  if(tree_dec_safety_nodes(T, find_root(T), G))
+    return(-1);
+
+  wassert(T[find_root(T)].assignments.begin() != T[find_root(T)].assignments.end());
+  const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
+
+  implement_safety(winner, G);
+
+  //std::cout << "Winner (safety): ";
+  //print_assignment(winner, G);
+
+  T[find_root(T)].assignments.clear();
+  return (0);
 }
 
