@@ -1,3 +1,8 @@
+2012-07-07 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/repack_release.sh:
+	  updated, added -dl, -r and -ul command line options
+
 2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCCmain.c,
