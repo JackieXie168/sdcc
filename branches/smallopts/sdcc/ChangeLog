@@ -1,6 +1,11 @@
 2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
+	  Improve code generation for multiplication by literal.
+
+2012-07-07 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
 	  Fix bug in built-in strchr().
 	* device/lib/Makefile.in:
 	  Fix building of strcpy() for mcs51.

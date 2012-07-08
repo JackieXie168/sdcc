@@ -5902,13 +5902,13 @@ genMultOneChar (const iCode * ic)
       AOP_TYPE (IC_RIGHT (ic)) == AOP_REG && AOP (IC_RIGHT (ic))->aopu.aop_reg[0]->rIdx == H_IDX
       && !requiresHL (AOP (IC_LEFT (ic))))
     {
-      cheapMove (ASMOP_E, 0, AOP (IC_LEFT (ic)), LSB);
-      cheapMove (ASMOP_H, 0, AOP (IC_RIGHT (ic)), LSB);
+      cheapMove (ASMOP_E, 0, AOP (IC_LEFT (ic)), 0);
+      cheapMove (ASMOP_H, 0, AOP (IC_RIGHT (ic)), 0);
     }
   else
     {
-      cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), LSB);
-      cheapMove (ASMOP_H, 0, AOP (IC_LEFT (ic)), LSB);
+      cheapMove (ASMOP_E, 0, AOP (IC_RIGHT (ic)), 0);
+      cheapMove (ASMOP_H, 0, AOP (IC_LEFT (ic)), 0);
     }
 
   if (IS_Z180)
@@ -6004,6 +6004,9 @@ genMult (iCode * ic)
   /* If true then the final operation should be a subtract */
   bool active = FALSE;
   bool byteResult;
+  bool add_in_hl = FALSE;
+  int a_cost = 0, l_cost = 0;
+  PAIR_ID pair;
 
   /* Shouldn't occur - all done through function calls */
   aopOp (IC_LEFT (ic), ic, FALSE, FALSE);
@@ -6037,28 +6040,61 @@ genMult (iCode * ic)
   //  wassertl (val > 0, "Multiply must be positive");
   wassertl (val != 1, "Can't multiply by 1");
 
-  if (!IS_GB && (byteResult ? bitVectBitValue (ic->rSurv, E_IDX) : !isPairDead (PAIR_DE, ic)))
+  pair = PAIR_DE;
+  if (getPairId (AOP (IC_LEFT (ic))) == PAIR_BC ||
+    (byteResult || !bitVectBitValue (ic->rSurv, B_IDX)) && AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == C_IDX)
+    pair = PAIR_BC;
+  if (isPairDead (PAIR_BC, ic) && !(AOP_TYPE (IC_LEFT (ic)) == AOP_REG && AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx == E_IDX))
+    pair = PAIR_BC;
+
+  if (pair == PAIR_DE && (byteResult ? bitVectBitValue (ic->rSurv, E_IDX) : !isPairDead (PAIR_DE, ic)))
     {
       _push (PAIR_DE);
       _G.stack.pushedDE = TRUE;
     }
 
+  /* Use 16-bit additions even for 8-bit result when the operands are in the right places. */
   if (byteResult)
-    cheapMove (ASMOP_A, 0, AOP (IC_LEFT (ic)), LSB);
+    {
+      if (AOP_TYPE (IC_LEFT (ic)) != AOP_ACC)
+        a_cost += ld_cost (ASMOP_A, AOP (IC_LEFT (ic)));
+      if (AOP_TYPE (IC_RESULT (ic)) != AOP_ACC)
+        a_cost += ld_cost (AOP (IC_RESULT (ic)), ASMOP_A);
+      if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG || AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != L_IDX)
+        l_cost += ld_cost (ASMOP_L, AOP (IC_LEFT (ic)));
+      if (AOP_TYPE (IC_RESULT (ic)) != AOP_REG || AOP (IC_RESULT (ic))->aopu.aop_reg[0]->rIdx != L_IDX)
+        l_cost += ld_cost (AOP (IC_RESULT (ic)), ASMOP_L);
+    }
+  add_in_hl = (!byteResult || isPairDead (PAIR_HL, ic) && !bitVectBitValue (ic->rSurv, D_IDX) && l_cost < a_cost);
+
+  if (byteResult)
+    {
+      cheapMove (add_in_hl ? ASMOP_L : ASMOP_A, 0, AOP (IC_LEFT (ic)), 0);
+      if (AOP_TYPE (IC_LEFT (ic)) != AOP_REG || AOP (IC_LEFT (ic))->aopu.aop_reg[0]->rIdx != (pair == PAIR_BC ? C_IDX : E_IDX))
+        cheapMove (pair == PAIR_BC ? ASMOP_C : ASMOP_E, 0, add_in_hl ? ASMOP_L : ASMOP_A, 0);
+    }
   else if (AOP_SIZE (IC_LEFT (ic)) == 1 && !SPEC_USIGN (getSpec (operandType (IC_LEFT (ic)))))
     {
-      cheapMove (ASMOP_E, 0, AOP (IC_LEFT (ic)), LSB);
-      if (!byteResult)
-        {
-          emit2 ("ld a,e");
-          emit2 ("rlc a");
-          emit2 ("sbc a,a");
-          emit2 ("ld d,a");
-          regalloc_dry_run_cost += 5;
-        }
+      cheapMove (pair == PAIR_BC ? ASMOP_C : ASMOP_E, 0, AOP (IC_LEFT (ic)), 0);
+      emit2 ("ld a, %s", _pairs[pair].l);
+      emit2 ("rlc a");
+      emit2 ("sbc a, a");
+      emit2 ("ld %s, a", _pairs[pair].h);
+      regalloc_dry_run_cost += 5;
+      emit2 ("ld l, %s", _pairs[pair].l);
+      emit2 ("ld h, %s", _pairs[pair].h);
+      regalloc_dry_run_cost += 2;
     }
   else
-    fetchPair (PAIR_DE, AOP (IC_LEFT (ic)));
+    {
+      fetchPair (pair, AOP (IC_LEFT (ic)));
+      if (getPairId (AOP (IC_LEFT (ic))) != PAIR_HL)
+        {
+          emit2 ("ld l, %s", _pairs[pair].l);
+          emit2 ("ld h, %s", _pairs[pair].h);
+          regalloc_dry_run_cost += 2;
+        }
+    }
 
   i = val;
 
@@ -6066,31 +6102,20 @@ genMult (iCode * ic)
     {
       if (count != 0 && active)
         {
-          if (byteResult)
-            emit2 ("add a,a");
+          if (!add_in_hl)
+            emit2 ("add a, a");
           else
-            emit2 ("add hl,hl");
+            emit2 ("add hl, hl");
           regalloc_dry_run_cost += 1;
         }
       if (i & 0x8000U)
         {
-          if (active == FALSE)
+          if (active)
             {
-              if (byteResult)
-                emit3 (A_LD, ASMOP_E, ASMOP_A);
+              if (!add_in_hl)
+                emit2 ("add a, %s", _pairs[pair].l);
               else
-                {
-                  emit2 ("ld l,e");
-                  emit2 ("ld h,d");
-                  regalloc_dry_run_cost += 2;
-                }
-            }
-          else
-            {
-              if (byteResult)
-                emit2 ("add a,e");
-              else
-                emit2 ("add hl,de");
+                emit2 ("add hl, %s", _pairs[pair].name);
               regalloc_dry_run_cost += 1;
             }
           active = TRUE;
@@ -6100,14 +6125,14 @@ genMult (iCode * ic)
 
   spillPair (PAIR_HL);
 
-  if (!IS_GB && _G.stack.pushedDE)
+  if (_G.stack.pushedDE)
     {
       _pop (PAIR_DE);
       _G.stack.pushedDE = FALSE;
     }
 
   if (byteResult)
-    cheapMove (AOP (IC_RESULT (ic)), 0, ASMOP_A, 0);
+    cheapMove (AOP (IC_RESULT (ic)), 0, add_in_hl ? ASMOP_L : ASMOP_A, 0);
   else
     commitPair (AOP (IC_RESULT (ic)), PAIR_HL, ic, FALSE);
 
