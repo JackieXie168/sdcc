@@ -11872,7 +11872,7 @@ genZ80Code (iCode * lic)
         }
       regalloc_dry_run_cost = 0;
       genZ80iCode (ic);
-      emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));
+      /*emitDebug("; iCode %d total cost: %d", ic->key, (int)(regalloc_dry_run_cost));*/
     }
 
 
