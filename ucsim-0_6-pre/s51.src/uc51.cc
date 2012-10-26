@@ -30,9 +30,11 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <termios.h>
+		  //#include <termios.h>
 #include <fcntl.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -427,7 +429,7 @@ cl_51core::disass(t_addr addr, const char *sep)
 
 
 void
-cl_51core::print_regs(class cl_console *con)
+cl_51core::print_regs(class cl_console_base *con)
 {
   t_addr start;
   uchar data;

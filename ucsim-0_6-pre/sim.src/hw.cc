@@ -204,7 +204,7 @@ cl_hw::write(class cl_m *mem, t_addr addr, t_mem *val)
 }*/
 
 void
-cl_hw::set_cmd(class cl_cmdline *cmdline, class cl_console *con)
+cl_hw::set_cmd(class cl_cmdline *cmdline, class cl_console_base *con)
 {
   con->dd_printf("Nothing to do\n");
 }
@@ -323,7 +323,7 @@ cl_hw::inform_partners(enum hw_event he, void *params)
 
 
 void
-cl_hw::print_info(class cl_console *con)
+cl_hw::print_info(class cl_console_base *con)
 {
   con->dd_printf("%s[%d]\n", id_string, id);
 }

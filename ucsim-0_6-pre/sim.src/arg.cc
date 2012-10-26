@@ -94,7 +94,7 @@ cl_arg::get_ivalue(long *value)
   return(DD_TRUE);
 }
 
-const char *
+char *
 cl_arg::get_svalue(void)
 {
   return(s_value);
@@ -151,7 +151,7 @@ cl_cmd_arg::as_data(void)
 bool
 cl_cmd_arg::as_memory(class cl_uc *uc)
 {
-  value.memory.memory= uc->memory(s_value);
+  value.memory.memory= uc->memory(get_svalue());
   value.memory.address_space= 0;
   value.memory.memchip= 0;
   if (value.memory.memory)

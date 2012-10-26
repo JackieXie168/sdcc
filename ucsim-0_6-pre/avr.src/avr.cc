@@ -308,7 +308,7 @@ cl_avr::disass(t_addr addr, const char *sep)
 
 
 void
-cl_avr::print_regs(class cl_console *con)
+cl_avr::print_regs(class cl_console_base *con)
 {
   uchar data, sreg= ram->get(SREG);
   uint x, y, z;

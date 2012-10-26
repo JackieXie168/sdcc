@@ -6,7 +6,7 @@
 
 class chars
 {
-private:
+protected:
   char *chars_string;	// stores the value
   int chars_length;	// track of string length
 public:

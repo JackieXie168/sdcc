@@ -34,6 +34,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "stypes.h"
 
 
+//#define TRACE printf
+#define TRACE   1 ? (void)0 : (*(void (*)(const char *, ...))0)
+
+
 extern int get_sub_opt(char **option,
 		       const char * const *tokens,
 		       char **valuep);

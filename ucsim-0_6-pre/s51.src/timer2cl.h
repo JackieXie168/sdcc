@@ -82,7 +82,7 @@ public:
   virtual void do_t2_clock_out(int cycles);
   virtual void happen(class cl_hw *where, enum hw_event he, void *params);
   
-  virtual void print_info(class cl_console *con);
+  virtual void print_info(class cl_console_base *con);
 };
 
 

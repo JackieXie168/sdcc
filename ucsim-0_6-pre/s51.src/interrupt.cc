@@ -128,7 +128,7 @@ cl_interrupt::happen(class cl_hw *where, enum hw_event he, void *params)
 
 
 void
-cl_interrupt::print_info(class cl_console *con)
+cl_interrupt::print_info(class cl_console_base *con)
 {
   int ie= sfr->get(IE);
   int i;

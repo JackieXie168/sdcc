@@ -48,7 +48,7 @@ infodir         = @infodir@
 srcdir          = @srcdir@
 VPATH           = @srcdir@
 
-OBJECTS         = pobj.o globals.o utils.o error.o app.o option.o
+OBJECTS         = pobj.o globals.o utils.o error.o app.o option.o chars.o
 SOURCES		= $(patsubst %.o,%.cc,$(OBJECTS))
 UCSIM_OBJECTS	= ucsim.o
 UCSIM_SOURCES	= $(patsubst %.o,%.cc,$(UCSIM_OBJECTS))

@@ -389,7 +389,7 @@ cl_timer2::happen(class cl_hw *where, enum hw_event he, void *params)
 }
 
 void
-cl_timer2::print_info(class cl_console *con)
+cl_timer2::print_info(class cl_console_base *con)
 {
   int t2con= cell_tcon->get();
 

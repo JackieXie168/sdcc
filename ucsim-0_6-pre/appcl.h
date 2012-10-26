@@ -48,7 +48,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #define OPT_51		0x0010
 #define OPT_AVR		0x0020
 #define OPT_Z80		0x0040
-#define OPT_TARGET	(OPT_51|OPT_AVR|OPT_Z80)
+#define OPT_HC08	0x0080
+#define OPT_XA		0x0100
+#define OPT_TARGET	(OPT_51|OPT_AVR|OPT_Z80|OPT_HC08|OPT_XA)
 
 /*class cl_option: public cl_base
 {

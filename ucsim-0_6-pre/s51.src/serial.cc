@@ -30,15 +30,21 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#ifdef HAVE_TERMIOS_H
 #include <termios.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/time.h>
 #include <strings.h>
+#include <assert.h>
 
 // prj
 #include "globals.h"
+
+// cmd
+#include "cmdutil.h"
 
 // local
 #include "serialcl.h"
@@ -56,14 +62,18 @@ cl_serial::~cl_serial(void)
 {
   if (serial_out)
     {
+#ifdef HAVE_TERMIOS_H
       if (isatty(fileno(serial_out)))
 	tcsetattr(fileno(serial_out), TCSANOW, &saved_attributes_out);
+#endif
       fclose(serial_out);
     }
   if (serial_in)
     {
+#ifdef HAVE_TERMIOS_H
       if (isatty(fileno(serial_in)))
 	tcsetattr(fileno(serial_in), TCSANOW, &saved_attributes_in);
+#endif
       fclose(serial_in);
     }
   delete serial_in_file_option;
@@ -73,8 +83,10 @@ cl_serial::~cl_serial(void)
 int
 cl_serial::init(void)
 {
+#ifdef HAVE_TERMIOS_H
   int i;
   struct termios tattr;
+#endif
 
   set_name("mcs51_uart");
   sfr= uc->address_space(MEM_SFR_ID);
@@ -110,6 +122,9 @@ cl_serial::init(void)
       // making `serial' unbuffered
       if (setvbuf(serial_in, NULL, _IONBF, 0))
 	perror("Unbuffer serial input channel");
+#ifdef _WIN32
+      if (CH_SERIAL != get_handle_type((HANDLE)_get_osfhandle(fileno(serial_in))))
+#elif defined HAVE_TERMIOS_H
       // setting O_NONBLOCK
       if ((i= fcntl(fileno(serial_in), F_GETFL, 0)) < 0)
 	perror("Get flags of serial input");
@@ -127,6 +142,7 @@ cl_serial::init(void)
 	  tcsetattr(fileno(serial_in), TCSAFLUSH, &tattr);
 	}
       else
+#endif
 	fprintf(stderr, "Warning: serial input interface connected to a "
 		"non-terminal file.\n");
     }
@@ -135,6 +151,9 @@ cl_serial::init(void)
       // making `serial' unbuffered
       if (setvbuf(serial_out, NULL, _IONBF, 0))
 	perror("Unbuffer serial output channel");
+#ifdef _WIN32
+      if (CH_SERIAL != get_handle_type((HANDLE)_get_osfhandle(fileno(serial_out))))
+#elif defined HAVE_TERMIOS_H
       // setting O_NONBLOCK
       if ((i= fcntl(fileno(serial_out), F_GETFL, 0)) < 0)
 	perror("Get flags of serial output");
@@ -152,6 +171,7 @@ cl_serial::init(void)
 	  tcsetattr(fileno(serial_out), TCSAFLUSH, &tattr);
 	}
       else
+#endif
 	fprintf(stderr, "Warning: serial output interface connected to a "
 		"non-terminal file.\n");
     }
@@ -337,12 +357,22 @@ cl_serial::tick(int cycles)
       serial_in &&
       !s_receiving)
     {
+      /*
       fd_set set; static struct timeval timeout= {0,0};
       FD_ZERO(&set);
       FD_SET(fileno(serial_in), &set);
       int i= select(fileno(serial_in)+1, &set, NULL, NULL, &timeout);
       if (i > 0 &&
       	  FD_ISSET(fileno(serial_in), &set))
+      */
+#ifdef _WIN32
+      HANDLE handle = (HANDLE)_get_osfhandle(fileno(serial_in));
+      assert(INVALID_HANDLE_VALUE != handle);
+
+      if (input_avail(handle))
+#else
+      if (input_avail(fileno(serial_in)))
+#endif
 	{
 	  s_receiving= DD_TRUE;
 	  s_rec_bit= 0;
@@ -424,7 +454,7 @@ cl_serial::happen(class cl_hw *where, enum hw_event he, void *params)
 }
 
 void
-cl_serial::print_info(class cl_console *con)
+cl_serial::print_info(class cl_console_base *con)
 {
   char *modes[]= { "Shift, fixed clock",
 		   "8 bit UART timer clocked",

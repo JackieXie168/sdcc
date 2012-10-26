@@ -194,15 +194,26 @@ operator!=(const char *s, const chars &cs)
 }
 
 
-void
-cchars::allocate_string(char *s)
+cchars::cchars(const char *s):
+chars(s)
+{
+}
+
+cchars::~cchars(void)
 {
   deallocate_string();
-  if (s)
+}
+
+void
+cchars::allocate_string(const char *s)
+{
+  deallocate_string();
+  /*if (s)
     {
       chars_length= strlen(s);
       chars_string= s
-    }
+      }*/
+  allocate_string((char*)s);
 }
 
 void
