@@ -160,13 +160,13 @@ public:
   virtual ~cl_simulator_interface(void);
   virtual int init(void);
 
-  virtual void set_cmd(class cl_cmdline *cmdline, class cl_console *con);
+  virtual void set_cmd(class cl_cmdline *cmdline, class cl_console_base *con);
   virtual t_mem read(class cl_memory_cell *cell);
   virtual void write(class cl_memory_cell *cell, t_mem *val);
   
   virtual void finish_command(void);
 
-  virtual void print_info(class cl_console *con);
+  virtual void print_info(class cl_console_base *con);
 };
 
 

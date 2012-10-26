@@ -109,7 +109,7 @@ cl_port::write(class cl_memory_cell *cell, t_mem *val)
 }
 
 void
-cl_port::set_cmd(class cl_cmdline *cmdline, class cl_console *con)
+cl_port::set_cmd(class cl_cmdline *cmdline, class cl_console_base *con)
 {
   struct ev_port_changed ep;
   class cl_cmd_arg *params[1]= { cmdline->param(0) };
@@ -146,7 +146,7 @@ cl_port::mem_cell_changed(class cl_m *mem, t_addr addr)
 }*/
 
 void
-cl_port::print_info(class cl_console *con)
+cl_port::print_info(class cl_console_base *con)
 {
   uchar data;
 

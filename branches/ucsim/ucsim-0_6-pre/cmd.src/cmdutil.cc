@@ -45,6 +45,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "stypes.h"
 #include "globals.h"
 #include "uccl.h"
+#include "cmdutil.h"
 
 
 /*

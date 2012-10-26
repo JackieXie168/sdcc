@@ -273,7 +273,7 @@ cl_uc390_hw::reset(void)
 }
 
 void
-cl_uc390_hw::print_info(class cl_console *con)
+cl_uc390_hw::print_info(class cl_console_base *con)
 {
   int i;
   long l;

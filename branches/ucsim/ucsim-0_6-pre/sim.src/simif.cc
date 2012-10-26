@@ -326,7 +326,7 @@ cl_simulator_interface::init(void)
 
 void
 cl_simulator_interface::set_cmd(class cl_cmdline *cmdline,
-				class cl_console *con)
+				class cl_console_base *con)
 {
   class cl_cmd_arg *params[2]= {
     cmdline->param(0),
@@ -349,7 +349,7 @@ cl_simulator_interface::set_cmd(class cl_cmdline *cmdline,
 			 mem->highest_valid_address());
 	  return;
 	}
-      as_name= mem->get_name();
+      as_name= (char*)mem->get_name();
       addr= a;
       if ((as= dynamic_cast<class cl_address_space *>(mem)) != 0)
 	{
@@ -437,7 +437,7 @@ cl_simulator_interface::finish_command(void)
 
 
 void
-cl_simulator_interface::print_info(class cl_console *con)
+cl_simulator_interface::print_info(class cl_console_base *con)
 {
   con->dd_printf("uCsim simulator interface, version %d, ", version);
   con->dd_printf("at %s[", as_name);

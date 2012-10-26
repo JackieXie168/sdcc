@@ -45,7 +45,7 @@ public:
     double f_value;
     void *p_value;
   };
-  const char *s_value;
+  char *s_value;
 
 public:  
   cl_arg(long lv);
@@ -55,7 +55,7 @@ public:
   virtual ~cl_arg(void);
 
   virtual bool get_ivalue(long *value);
-  virtual const char *get_svalue(void);
+  virtual char *get_svalue(void);
   virtual double get_fvalue(void);
   virtual void *get_pvalue(void);
   virtual bool get_bit_address(class cl_uc *uc, // input

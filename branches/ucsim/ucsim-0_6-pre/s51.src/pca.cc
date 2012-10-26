@@ -321,7 +321,7 @@ cl_pca::happen(class cl_hw *where, enum hw_event he, void *params)
 
 
 void
-cl_pca::print_info(class cl_console *con)
+cl_pca::print_info(class cl_console_base *con)
 {
   con->dd_printf("%s[%d] FIXME\n", id_string, id);
 }

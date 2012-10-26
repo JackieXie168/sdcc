@@ -61,7 +61,7 @@ cl_timer1::overflow(void)
 }*/
 
 void
-cl_timer1::print_info(class cl_console *con)
+cl_timer1::print_info(class cl_console_base *con)
 {
   char *modes[]= { "13 bit", "16 bit", "8 bit autoreload", "stop" };
   //int tmod= cell_tmod->get();

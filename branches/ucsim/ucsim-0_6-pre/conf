@@ -27,6 +27,8 @@ case $TARGET in
     mingw)
 	export CC=/usr/local/cross-tools/mingw32/bin/gcc
 	export CXX=/usr/local/cross-tools/mingw32/bin/g++
+	export CC=i686-w64-mingw32-gcc
+	export CXX=i686-w64-mingw32-g++
 	./configure --prefix=${HOME}/local \
 	--disable-ucsim \
 	--disable-dlso \

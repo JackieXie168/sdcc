@@ -370,7 +370,7 @@ cl_timer0::happen(class cl_hw *where, enum hw_event he, void *params)
 }
 
 void
-cl_timer0::print_info(class cl_console *con)
+cl_timer0::print_info(class cl_console_base *con)
 {
   char *modes[]= { "13 bit", "16 bit", "8 bit autoreload", "2x8 bit" };
   //t_mem tmod= cell_tmod->get();

@@ -1195,7 +1195,7 @@ cl_uc390::disass (t_addr addr, const char *sep)
 }
 
 void
-cl_uc390::print_regs (class cl_console *con)
+cl_uc390::print_regs (class cl_console_base *con)
 {
   t_addr start;
   t_mem data;

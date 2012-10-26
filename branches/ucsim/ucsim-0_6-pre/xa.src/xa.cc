@@ -774,7 +774,7 @@ cl_xa::disass(t_addr addr, const char *sep)
    Used to print a status line while stepping through the code.
 |--------------------------------------------------------------------*/
 void
-cl_xa::print_regs(class cl_console *con)
+cl_xa::print_regs(class cl_console_base *con)
 {
   unsigned char flags;
 
