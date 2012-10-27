@@ -226,7 +226,7 @@ cl_uc::init(void)
 char *
 cl_uc::id_string(void)
 {
-  return("unknown microcontroller");
+  return((char*)"unknown microcontroller");
 }
 
 void
@@ -288,7 +288,7 @@ cl_uc::mk_hw_elements(void)
 {
   class cl_hw *h;
 
-  hws->add(h= new cl_simulator_interface(this, "rom", -1));
+  hws->add(h= new cl_simulator_interface(this, chars("rom"), -1));
   h->init();
 }
 

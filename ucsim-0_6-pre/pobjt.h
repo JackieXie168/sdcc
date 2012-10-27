@@ -30,11 +30,11 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #include "ddconfig.h"
 
-#ifndef MyTypesHeader
-#define DD_TRUE	 1
-#define DD_FALSE 0
-#define bool	 int
-#endif
+
+enum dd_bool_values {
+   DD_FALSE= 0,
+   DD_TRUE= 1
+ };
 
 typedef int	t_index;
 typedef int	(*match_func)(void *, void *);
@@ -42,6 +42,7 @@ typedef void	(*iterator_func)(void *, void *);
 
 #define max_list_size (0x10000/sizeof(void *))
 #define ccNotFound -1
+
 
 #endif
 

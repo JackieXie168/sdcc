@@ -73,8 +73,8 @@ public:
   cl_error_registry(void);
   class cl_error_class *find(const char *type_name)
   {
-    if (NIL == registered_errors)
-      return NIL;
+    if (0 == registered_errors)
+      return 0;
     return static_cast<class cl_error_class *>(registered_errors->first_that(compare, static_cast<void *>((void*)type_name)));
   }
   static class cl_list *get_list(void)

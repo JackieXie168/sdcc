@@ -47,7 +47,7 @@ struct id_element error_on_off_names[]= {
 
 static class cl_error_registry error_registry;
 
-class cl_list *cl_error_registry::registered_errors= NIL;
+class cl_list *cl_error_registry::registered_errors= 0;
 
 /*
  */

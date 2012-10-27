@@ -116,7 +116,7 @@ public:
   virtual int cmd_do_print(const char *format, va_list ap) = 0;
   virtual bool is_tty(void) const = 0;
   virtual bool is_eof(void) const = 0;
-  virtual int input_avail(void) = 0;
+  virtual bool input_avail(void) = 0;
   virtual char *read_line(void) = 0;
 
   virtual int init(void);

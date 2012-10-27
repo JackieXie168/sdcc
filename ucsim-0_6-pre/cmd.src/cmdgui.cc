@@ -47,6 +47,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 //			  class cl_cmdline *cmdline, class cl_console *con)
 COMMAND_DO_WORK_UC(cl_gui_start_cmd)
 {
+  /*
   class cl_hw *hw;
   class cl_memory *mem;
   t_addr start, end;
@@ -68,7 +69,7 @@ COMMAND_DO_WORK_UC(cl_gui_start_cmd)
       con->dd_printf("Error: wrong syntax\n"
 		     "%s\n", short_help?short_help:"no help");
     }
-
+  */
   return(DD_FALSE);;
 }
 

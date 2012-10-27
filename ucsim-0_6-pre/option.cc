@@ -592,11 +592,11 @@ cl_optref::get_value(void *)
     {
       fprintf(stderr, "Warning: \"%s\" is sdereferencing a non-existent "
 	      "pointer option: %s\n", object_name(owner), get_name());
-      return(NIL);
+      return(0);
     }
   else
     {
-      void *p= NIL;
+      void *p= 0;
       option->get_value(&p);
       return(p);
     }
@@ -816,7 +816,7 @@ void
 cl_number_option::set_value(char *s)
 {
   if (s)
-    value.ival= strtol(s, NIL, 0);
+    value.ival= strtol(s, 0, 0);
   inform_users();
 }
 
@@ -842,7 +842,7 @@ void
 cl_float_option::set_value(char *s)
 {
   if (s)
-    value.fval= strtod(s, NIL);
+    value.fval= strtod(s, 0);
   inform_users();
 }
 

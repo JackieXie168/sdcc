@@ -107,7 +107,7 @@ cl_stack_op::data_size(void)
   return(r<0?-r:r);
 }
 
-int
+bool
 cl_stack_op::match(class cl_stack_op *op)
 {
   return(DD_FALSE);
@@ -232,7 +232,7 @@ cl_stack_intr::get_matching_op(void)
   return(stack_iret);
 }
 
-int
+bool
 cl_stack_intr::match(class cl_stack_op *op)
 {
   return(op->get_op() == stack_iret);
@@ -282,7 +282,7 @@ cl_stack_push::print_info(class cl_console_base *con)
   con->dd_printf("0x%06"_A_"x", d);
 }
 
-int
+bool
 cl_stack_push::match(class cl_stack_op *op)
 {
   return(op->get_op() == stack_pop);
@@ -325,7 +325,7 @@ cl_stack_ret::get_matching_op(void)
   return(stack_call);
 }
 
-int
+bool
 cl_stack_ret::match(class cl_stack_op *op)
 {
   return(op->get_op() == stack_call);
@@ -368,7 +368,7 @@ cl_stack_iret::get_matching_op(void)
   return(stack_intr);
 }
 
-int
+bool
 cl_stack_iret::match(class cl_stack_op *op)
 {
   return(op->get_op() == stack_intr);
@@ -411,7 +411,7 @@ cl_stack_pop::get_matching_op(void)
   return(stack_push);
 }
 
-int
+bool
 cl_stack_pop::match(class cl_stack_op *op)
 {
   return(op->get_op() == stack_push);

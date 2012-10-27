@@ -237,7 +237,7 @@ cl_console_base::print_char_octal(char c)
     dd_printf("\\%03hho", c);
 }
 
-int
+bool
 cl_console_base::interpret(char *cmd)
 {
   dd_printf("Unknown command\n");
