@@ -83,10 +83,10 @@ cl_r2k::init(void)
   return(0);
 }
 
-const char *
+char *
 cl_r2k::id_string(void)
 {
-  return("rabbit 2000");
+  return((char*)"rabbit 2000");
 }
 
 
@@ -186,13 +186,13 @@ cl_r2k::longest_inst(void)
 }
 
 
-const char *
+char *
 cl_r2k::get_disasm_info(t_addr addr,
                         int *ret_len,
                         int *ret_branch,
                         int *immed_offset)
 {
-  const char *b = NULL;
+  char *b = NULL;
   uint code;
   int len = 0;
   int immed_n = 0;

@@ -391,7 +391,7 @@ cl_z80::disass(t_addr addr, const char *sep)
 
 
 void
-cl_z80::print_regs(class cl_console *con)
+cl_z80::print_regs(class cl_console_base *con)
 {
   con->dd_printf("SZ-A-PNC  Flags= 0x%02x %3d %c  ",
 		 regs.F, regs.F, isprint(regs.F)?regs.F:'.');

@@ -80,6 +80,21 @@
    regs_IX_OR_IY += oper;                                           \
 }
  
+#define adc_HL_wordreg(reg) {                                       \
+   unsigned int accu = (unsigned int)regs.HL;                       \
+   unsigned int oper = (unsigned int)(reg);                         \
+   signed int res = (signed short)regs.HL + (signed short)(reg);    \
+   if (regs.F & BIT_C) { ++oper; ++res; }                           \
+   regs.F &= ~(BIT_ALL);        /* clear these */                   \
+   regs.F &= ~BIT_N;            /* addition */                      \
+   if ((accu & 0x0FFF) + (oper & 0x0FFF) > 0x0FFF) regs.F |= BIT_A; \
+   if ((res < -32768) || (res > 32767))            regs.F |= BIT_P; \
+   if (accu + oper > 0xFFFF)                       regs.F |= BIT_C; \
+   regs.HL += oper;                                                 \
+   if (regs.HL == 0)                               regs.F |= BIT_Z; \
+   if (regs.HL & 0x8000)                           regs.F |= BIT_S; \
+}
+
 #define sub_A_bytereg(br) {                                     \
    unsigned int accu = (unsigned int)regs.A;                    \
    unsigned int oper = (unsigned int)(br);                      \

@@ -87,7 +87,7 @@ public:
 public:
   cl_r2k(int Itype, int Itech, class cl_sim *asim);
   virtual int init(void);
-  virtual const char *id_string(void);
+  virtual char *id_string(void);
   
   //virtual t_addr get_mem_size(enum mem_class type);
   virtual void mk_hw_elements(void);
@@ -102,10 +102,10 @@ public:
 
   virtual int exec_inst(void);
 
-  virtual const char *get_disasm_info(t_addr addr,
-                        int *ret_len,
-                        int *ret_branch,
-                        int *immed_offset);
+  virtual char *get_disasm_info(t_addr addr,
+				int *ret_len,
+				int *ret_branch,
+				int *immed_offset);
   
   
   virtual void store1( TYPE_UWORD addr, t_mem val );
