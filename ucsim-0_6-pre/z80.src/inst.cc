@@ -969,7 +969,8 @@ cl_z80::inst_rst(t_mem code)
       //PC = 0x08;
       switch (regs.A) {
         case 0:
-          ::exit(0);
+          return(resBREAKPOINT);
+//          ::exit(0);
         break;
 
         case 1:
@@ -1067,15 +1068,13 @@ cl_z80::inst_ret(t_mem code)
 int
 cl_z80::inst_call(t_mem code)
 {
-  int jnk;
-
   switch(code) {
     case 0xC4: // CALL NZ,nnnn
       if (!(regs.F & BIT_Z)) {
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     case 0xCC: // CALL Z,nnnn
@@ -1083,7 +1082,7 @@ cl_z80::inst_call(t_mem code)
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     case 0xCD: // CALL nnnn
@@ -1095,7 +1094,7 @@ cl_z80::inst_call(t_mem code)
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     case 0xDC: // CALL C,nnnn
@@ -1103,7 +1102,7 @@ cl_z80::inst_call(t_mem code)
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     case 0xE4: // CALL PO,nnnn
@@ -1111,7 +1110,7 @@ cl_z80::inst_call(t_mem code)
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     case 0xEC: // CALL PE,nnnn
@@ -1119,7 +1118,7 @@ cl_z80::inst_call(t_mem code)
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     case 0xF4: // CALL P,nnnn
@@ -1127,7 +1126,7 @@ cl_z80::inst_call(t_mem code)
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     case 0xFC: // CALL M,nnnn
@@ -1135,7 +1134,7 @@ cl_z80::inst_call(t_mem code)
         push2(PC+2);
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     default:
@@ -1279,14 +1278,12 @@ cl_z80::inst_pop(t_mem code)
 int
 cl_z80::inst_jp(t_mem code)
 {
-  int jnk;
-
   switch (code) {
     case 0xC2: // JP NZ,nnnn
       if (!(regs.F & BIT_Z)) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
 
@@ -1298,7 +1295,7 @@ cl_z80::inst_jp(t_mem code)
       if (regs.F & BIT_Z) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
 
@@ -1306,7 +1303,7 @@ cl_z80::inst_jp(t_mem code)
       if (!(regs.F & BIT_C)) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
 
@@ -1314,7 +1311,7 @@ cl_z80::inst_jp(t_mem code)
       if (regs.F & BIT_C) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
 
@@ -1322,7 +1319,7 @@ cl_z80::inst_jp(t_mem code)
       if (!(regs.F & BIT_P)) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
 
@@ -1334,7 +1331,7 @@ cl_z80::inst_jp(t_mem code)
       if (regs.F & BIT_P) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
 
@@ -1342,7 +1339,7 @@ cl_z80::inst_jp(t_mem code)
       if (!(regs.F & BIT_S)) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
 
@@ -1350,7 +1347,7 @@ cl_z80::inst_jp(t_mem code)
       if (regs.F & BIT_S) {
         PC = fetch2();
       } else {
-        jnk = fetch2();
+        fetch2();
       }
     break;
     default:

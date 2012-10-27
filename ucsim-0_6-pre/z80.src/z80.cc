@@ -48,7 +48,6 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #define uint32 t_addr
 #define uint8 unsigned char
-#define int8 char
 
 /*******************************************************************/
 
@@ -80,7 +79,7 @@ cl_z80::init(void)
   return(0);
 }
 
-char *
+const char *
 cl_z80::id_string(void)
 {
   return("unspecified Z80");
@@ -160,9 +159,8 @@ int
 cl_z80::inst_length(t_addr addr)
 {
   int len = 0;
-  char *s;
 
-  s = get_disasm_info(addr, &len, NULL, NULL);
+  get_disasm_info(addr, &len, NULL, NULL);
 
   return len;
 }
@@ -171,9 +169,8 @@ int
 cl_z80::inst_branch(t_addr addr)
 {
   int b;
-  char *s;
 
-  s = get_disasm_info(addr, NULL, &b, NULL);
+  get_disasm_info(addr, NULL, &b, NULL);
 
   return b;
 }
@@ -185,13 +182,13 @@ cl_z80::longest_inst(void)
 }
 
 
-char *
+const char *
 cl_z80::get_disasm_info(t_addr addr,
                         int *ret_len,
                         int *ret_branch,
                         int *immed_offset)
 {
-  char *b = NULL;
+  const char *b = NULL;
   uint code;
   int len = 0;
   int immed_n = 0;
@@ -315,7 +312,8 @@ const char *
 cl_z80::disass(t_addr addr, const char *sep)
 {
   char work[256], temp[20];
-  char *buf, *p, *b, *t;
+  const char *b;
+  char *buf, *p, *t;
   int len = 0;
   int immed_offset = 0;
 
@@ -332,35 +330,35 @@ cl_z80::disass(t_addr addr, const char *sep)
   while (*b)
     {
       if (*b == '%')
-	{
-	  b++;
-	  switch (*(b++))
-	    {
-	    case 'd': // d    jump relative target, signed? byte immediate operand
-	      sprintf(temp, "#%d", (char)get_mem(MEM_ROM_ID, addr+immed_offset));
-	      ++immed_offset;
-	      break;
-	    case 'w': // w    word immediate operand
-	      sprintf(temp, "#0x%04x",
-	         (uint)((get_mem(MEM_ROM_ID, addr+immed_offset)) |
-	                (get_mem(MEM_ROM_ID, addr+immed_offset+1)<<8)) );
-	      ++immed_offset;
-	      ++immed_offset;
-	      break;
-	    case 'b': // b    byte immediate operand
-	      sprintf(temp, "#0x%02x", (uint)get_mem(MEM_ROM_ID, addr+immed_offset));
-	      ++immed_offset;
-	      break;
-	    default:
-	      strcpy(temp, "?");
-	      break;
-	    }
-	  t= temp;
-	  while (*t)
-	    *(p++)= *(t++);
-	}
+        {
+          b++;
+          switch (*(b++))
+            {
+            case 'd': // d    jump relative target, signed? byte immediate operand
+              sprintf(temp, "#%d", (char)get_mem(MEM_ROM_ID, addr+immed_offset));
+              ++immed_offset;
+              break;
+            case 'w': // w    word immediate operand
+              sprintf(temp, "#0x%04x",
+                 (uint)((get_mem(MEM_ROM_ID, addr+immed_offset)) |
+                        (get_mem(MEM_ROM_ID, addr+immed_offset+1)<<8)) );
+              ++immed_offset;
+              ++immed_offset;
+              break;
+            case 'b': // b    byte immediate operand
+              sprintf(temp, "#0x%02x", (uint)get_mem(MEM_ROM_ID, addr+immed_offset));
+              ++immed_offset;
+              break;
+            default:
+              strcpy(temp, "?");
+              break;
+            }
+          t= temp;
+          while (*t)
+            *(p++)= *(t++);
+        }
       else
-	*(p++)= *(b++);
+        *(p++)= *(b++);
     }
   *p= '\0';
 
@@ -374,14 +372,14 @@ cl_z80::disass(t_addr addr, const char *sep)
     buf= (char *)malloc(6+strlen(p)+1);
   else
     buf= (char *)malloc((p-work)+strlen(sep)+strlen(p)+1);
-  for (p= work, b= buf; *p != ' '; p++, b++)
-    *b= *p;
+  for (p= work, t= buf; *p != ' '; p++, t++)
+    *t= *p;
   p++;
-  *b= '\0';
+  *t= '\0';
   if (sep == NULL)
     {
       while (strlen(buf) < 6)
-	strcat(buf, " ");
+        strcat(buf, " ");
     }
   else
     strcat(buf, sep);
@@ -394,31 +392,31 @@ void
 cl_z80::print_regs(class cl_console_base *con)
 {
   con->dd_printf("SZ-A-PNC  Flags= 0x%02x %3d %c  ",
-		 regs.F, regs.F, isprint(regs.F)?regs.F:'.');
+                 regs.F, regs.F, isprint(regs.F)?regs.F:'.');
   con->dd_printf("A= 0x%02x %3d %c\n",
-		 regs.A, regs.A, isprint(regs.A)?regs.A:'.');
+                 regs.A, regs.A, isprint(regs.A)?regs.A:'.');
   con->dd_printf("%c%c-%c-%c%c%c\n",
-		 (regs.F&BIT_S)?'1':'0',
-		 (regs.F&BIT_Z)?'1':'0',
-		 (regs.F&BIT_A)?'1':'0',
-		 (regs.F&BIT_P)?'1':'0',
-		 (regs.F&BIT_N)?'1':'0',
-		 (regs.F&BIT_C)?'1':'0');
+                 (regs.F&BIT_S)?'1':'0',
+                 (regs.F&BIT_Z)?'1':'0',
+                 (regs.F&BIT_A)?'1':'0',
+                 (regs.F&BIT_P)?'1':'0',
+                 (regs.F&BIT_N)?'1':'0',
+                 (regs.F&BIT_C)?'1':'0');
   con->dd_printf("BC= 0x%04x [BC]= %02x %3d %c  ",
-		 regs.BC, ram->get(regs.BC), ram->get(regs.BC),
-		 isprint(ram->get(regs.BC))?ram->get(regs.BC):'.');
+                 regs.BC, ram->get(regs.BC), ram->get(regs.BC),
+                 isprint(ram->get(regs.BC))?ram->get(regs.BC):'.');
   con->dd_printf("DE= 0x%04x [DE]= %02x %3d %c  ",
-		 regs.DE, ram->get(regs.DE), ram->get(regs.DE),
-		 isprint(ram->get(regs.DE))?ram->get(regs.DE):'.');
+                 regs.DE, ram->get(regs.DE), ram->get(regs.DE),
+                 isprint(ram->get(regs.DE))?ram->get(regs.DE):'.');
   con->dd_printf("HL= 0x%04x [HL]= %02x %3d %c\n",
-		 regs.HL, ram->get(regs.HL), ram->get(regs.HL),
-		 isprint(ram->get(regs.HL))?ram->get(regs.HL):'.');
+                 regs.HL, ram->get(regs.HL), ram->get(regs.HL),
+                 isprint(ram->get(regs.HL))?ram->get(regs.HL):'.');
   con->dd_printf("IX= 0x%04x [IX]= %02x %3d %c  ",
-		 regs.IX, ram->get(regs.IX), ram->get(regs.IX),
-		 isprint(ram->get(regs.IX))?ram->get(regs.IX):'.');
+                 regs.IX, ram->get(regs.IX), ram->get(regs.IX),
+                 isprint(ram->get(regs.IX))?ram->get(regs.IX):'.');
   con->dd_printf("IY= 0x%04x [IY]= %02x %3d %c  ",
-		 regs.IY, ram->get(regs.IY), ram->get(regs.IY),
-		 isprint(ram->get(regs.IY))?ram->get(regs.IY):'.');
+                 regs.IY, ram->get(regs.IY), ram->get(regs.IY),
+                 isprint(ram->get(regs.IY))?ram->get(regs.IY):'.');
   con->dd_printf("SP= 0x%04x [SP]= %02x %3d %c\n",
                  regs.SP, ram->get(regs.SP), ram->get(regs.SP),
                  isprint(ram->get(regs.SP))?ram->get(regs.SP):'.');
@@ -658,6 +656,55 @@ TYPE_UWORD  cl_z80::fetch2( void ) {
   c1 = fetch( );
   c2 = fetch( );
   return (c2 << 8) | c1;
+}
+
+t_mem       cl_z80::peek1 ( void ) {
+  return rom->read(PC);
+}
+
+TYPE_UBYTE  cl_z80:: in_byte( TYPE_UWORD ioaddr )
+{
+  return 0;
+}
+
+void        cl_z80::out_byte( TYPE_UWORD ioaddr, TYPE_UBYTE io_val )
+{
+  return;
+}
+
+TYPE_UBYTE  cl_z80::reg_g_read ( t_mem g )
+{
+  switch( g )
+    {
+    case 0:  return regs.bc.h;
+    case 1:  return regs.bc.l;
+    case 2:  return regs.de.h;
+    case 3:  return regs.de.l;
+    case 4:  return regs.hl.h;
+    case 5:  return regs.hl.l;
+    case 6:  return get1( regs.HL );
+    case 7:  return regs.A;
+    default:
+      return 0xffU;
+    }
+}
+
+void        cl_z80::reg_g_store( t_mem g, TYPE_UBYTE new_val )
+{
+  switch( g )
+    {
+    case 0:  regs.bc.h = new_val;  break;  /* write to b */
+    case 1:  regs.bc.l = new_val;  break;  /* write to c */
+    case 2:  regs.de.h = new_val;  break;  /* write to d */
+    case 3:  regs.de.l = new_val;  break;  /* write to e */
+    case 4:  regs.hl.h = new_val;  break;  /* write to h */
+    case 5:  regs.hl.l = new_val;  break;  /* write to l */
+    case 6:  /* write to (hl) */
+      store1( regs.HL, new_val );
+      break;
+
+    case 7:  regs.A    = new_val;  break;  /* write to a */
+    }
 }
 
 /* End of z80.src/z80.cc */
