@@ -74,10 +74,10 @@ cl_lr35902::init(void)
   return(0);
 }
 
-const char *
+char *
 cl_lr35902::id_string(void)
 {
-  return("LR35902");
+  return((char*)"LR35902");
 }
 
 

@@ -79,10 +79,10 @@ cl_z80::init(void)
   return(0);
 }
 
-const char *
+char *
 cl_z80::id_string(void)
 {
-  return("unspecified Z80");
+  return((char*)"unspecified Z80");
 }
 
 
