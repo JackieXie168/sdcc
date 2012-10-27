@@ -89,16 +89,16 @@ cl_r2k::init(void)
   return(0);
 }
 
-const char *
+char *
 cl_r2k::id_string(void)
 {
-  return("rabbit 2000");
+  return((char*)"rabbit 2000");
 }
 
-const char *
+char *
 cl_r3ka::id_string(void)
 {
-  return("rabbit 3000A");
+  return((char*)"rabbit 3000A");
 }
 
 /*
