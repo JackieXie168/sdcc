@@ -250,7 +250,7 @@ COMMAND_DO_WORK_APP(cl_set_error_cmd)
 				 cmdline->param(1),
 				 cmdline->param(2),
 				 cmdline->param(3) };
-  char *error_name= NIL, *value= NIL;
+  char *error_name= 0, *value= 0;
 
   if (cmdline->syntax_match(0/*app->get_uc()*/, STRING STRING)) {
     error_name= params[0]->value.string.string;

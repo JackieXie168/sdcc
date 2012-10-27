@@ -42,8 +42,8 @@ protected:
   bool answering;
 public:
   cl_sif_command(enum sif_command cmd,
-		 char *the_name,
-		 char *the_description,
+		 const char *the_name,
+		 const char *the_description,
 		 enum sif_answer_type the_answer_type,
 		 int the_params_needed,
 		 class cl_simulator_interface *the_sif);
@@ -75,7 +75,7 @@ private:
 public:
   virtual void set_answer(t_mem ans);
   virtual void set_answer(int nr, t_mem ans[]);
-  virtual void set_answer(char *ans);
+  virtual void set_answer(const char *ans);
   virtual void start_answer(void);
 };
 

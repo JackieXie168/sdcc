@@ -10,8 +10,8 @@
 /* Interface command */
 
 cl_sif_command::cl_sif_command(enum sif_command cmd,
-			       char *the_name,
-			       char *the_description,
+			       const char *the_name,
+			       const char *the_description,
 			       enum sif_answer_type the_answer_type,
 			       int the_params_needed,
 			       class cl_simulator_interface *the_sif):
@@ -184,7 +184,7 @@ cl_sif_command::set_answer(int nr, t_mem ans[])
 }
 
 void
-cl_sif_command::set_answer(char *ans)
+cl_sif_command::set_answer(const char *ans)
 {
   clear_answer();
   if (ans &&

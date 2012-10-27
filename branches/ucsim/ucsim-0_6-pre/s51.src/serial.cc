@@ -55,7 +55,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 cl_serial::cl_serial(class cl_uc *auc):
   cl_hw(auc, HW_UART, 0, "uart")
 {
-  serial_in= serial_out= NIL;
+  serial_in= serial_out= 0;
 }
 
 cl_serial::~cl_serial(void)
