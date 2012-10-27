@@ -4,7 +4,7 @@
  * some z80 code base from Karl Bongers karl@turbobit.com
  *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
- * 
+ *
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
  *
  */
@@ -28,7 +28,7 @@
 #define push1(val) {regs.SP-=1; store1(regs.SP,(val));}
 #define pop2(var) {var=get2(regs.SP),regs.SP+=2;}
 //#define pop1(var) {var=get1(regs.SP),regs.SP+=1;}
-#define add_u16_disp(_w, _d) (( (unsigned short)(_w) + (char)(_d) ) & 0xffff)
+#define add_u16_disp(_w, _d) (( (unsigned short)(_w) + (signed char)(_d) ) & 0xffff)
 #define parity(val) ( ((val>>7)&1) ^ ((val>>6)&1) ^ ((val>>5)&1) ^ ((val>>4)&1) ^ ((val>>3)&1) ^ ((val>>2)&1) ^ ((val>>1)&1) ^ ((val>>0)&1) ^ 1 )
 
 #define add_A_bytereg(br) {                                         \
@@ -44,7 +44,7 @@
    if (regs.A == 0)                           regs.F |= BIT_Z;      \
    if (regs.A & 0x80)                         regs.F |= BIT_S;      \
 }
- 
+
 #define adc_A_bytereg(br) {                                         \
    unsigned int accu = (unsigned int)regs.A;                        \
    unsigned int oper = (unsigned int)(br);                          \
@@ -79,7 +79,7 @@
    if (accu + oper > 0xFFFF)                       regs.F |= BIT_C; \
    regs_IX_OR_IY += oper;                                           \
 }
- 
+
 #define adc_HL_wordreg(reg) {                                       \
    unsigned int accu = (unsigned int)regs.HL;                       \
    unsigned int oper = (unsigned int)(reg);                         \
@@ -151,7 +151,7 @@
    if (accu == 0)   regs.F |= BIT_Z;                        \
    if (accu & 0x80) regs.F |= BIT_S;                        \
 }
- 
+
 #define rr_byte(reg) {                              \
    if (regs.F & BIT_C) {                            \
      regs.F &= ~(BIT_ALL);  /* clear these */       \

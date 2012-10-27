@@ -46,7 +46,7 @@ public:
 public:
   cl_z80(int Itype, int Itech, class cl_sim *asim);
   virtual int init(void);
-  virtual char *id_string(void);
+  virtual const char *id_string(void);
 
   //virtual t_addr get_mem_size(enum mem_class type);
   virtual void mk_hw_elements(void);
@@ -61,7 +61,7 @@ public:
 
   virtual int exec_inst(void);
 
-  virtual char * get_disasm_info(t_addr addr,
+  virtual const char *get_disasm_info(t_addr addr,
                         int *ret_len,
                         int *ret_branch,
                         int *immed_offset);
@@ -75,8 +75,14 @@ public:
   
   virtual t_mem       fetch1( void );
   virtual TYPE_UWORD  fetch2( void );
+  virtual t_mem       peek1 ( void );
+  
+  virtual TYPE_UBYTE   in_byte( TYPE_UWORD ioaddr );
+  virtual void        out_byte( TYPE_UWORD ioaddr, TYPE_UBYTE io_val );
   
   //virtual t_mem fetch(void);
+  virtual TYPE_UBYTE  reg_g_read ( t_mem g );
+  virtual void        reg_g_store( t_mem g, TYPE_UBYTE new_val );
 
 #include "instcl.h"
 };

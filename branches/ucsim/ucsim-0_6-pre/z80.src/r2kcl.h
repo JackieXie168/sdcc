@@ -73,7 +73,7 @@ public:
   
   rabbit_mmu   mmu;
 
-  
+  TYPE_UWORD ins_start;  /* PC value for start of the current instruction */
   TYPE_UBYTE ip;  /* interrupt priority register */
   
   /* iir, eir registers are not full supported */
@@ -87,7 +87,7 @@ public:
 public:
   cl_r2k(int Itype, int Itech, class cl_sim *asim);
   virtual int init(void);
-  virtual char *id_string(void);
+  virtual const char *id_string(void);
   
   //virtual t_addr get_mem_size(enum mem_class type);
   virtual void mk_hw_elements(void);
@@ -101,11 +101,12 @@ public:
   virtual void print_regs(class cl_console_base *con);
 
   virtual int exec_inst(void);
-
-  virtual char *get_disasm_info(t_addr addr,
-				int *ret_len,
-				int *ret_branch,
-				int *immed_offset);
+  virtual int exec_code(t_mem code);
+  
+  virtual const char *get_disasm_info(t_addr addr,
+                        int *ret_len,
+                        int *ret_branch,
+                        int *immed_offset);
   
   
   virtual void store1( TYPE_UWORD addr, t_mem val );
@@ -144,9 +145,23 @@ public:
   virtual int inst_rr_hl(t_mem code);
 
   virtual int inst_xd(t_mem prefix);
-  virtual int inst_ed(void);
+  
+  //virtual int inst_ed(void);
   virtual int inst_ed_(t_mem code);
   
+};
+
+class cl_r3ka: public cl_r2k {
+ public:
+  
+  TYPE_UBYTE  SU;
+  
+  cl_r3ka(int Itype, int Itech, class cl_sim *asim);
+  virtual const char *id_string(void);
+  
+  virtual int exec_code(t_mem code);
+  
+  virtual int inst_ed_(t_mem code);
 };
 
 #endif /* R2KCL_HEADER */
