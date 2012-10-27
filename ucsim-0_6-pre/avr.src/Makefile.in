@@ -126,14 +126,14 @@ shared_lib:
 endif
 
 $(top_builddir)/savr.so: $(OBJECTS_SHARED)
-	$(CXX) -shared $(LDFLAGS) $(OBJECTS_SHARED) -o $(top_builddir)/savr.so
+	$(CXX) -shared $(LDFLAGS) $(OBJECTS_SHARED) -o $@
 
 otherlibs:
 	$(MAKE) -C $(top_builddir)/cmd.src all
 	$(MAKE) -C $(top_builddir)/sim.src all
 
 .cc.o:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(PICOPT) $(CPPFLAGS) $(TARGET_ARCH) -c $< -o $@
 
 .asm.hex:
 	$(AVRASM) -l $< -o $@ -e $<.lst
