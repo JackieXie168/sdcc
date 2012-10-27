@@ -53,7 +53,7 @@ public:
 	    uchar Isrc_mask,
 	    uint  Iaddr,
 	    bool  Iclr_bit,
-	    char  *Iname,
+	    const char *Iname,
 	    int   apoll_priority);
   virtual ~cl_it_src(void);
 

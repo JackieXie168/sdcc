@@ -54,7 +54,7 @@ static class cl_mem_error_registry mem_error_registry;
  *                                                3rd version of memory system
  */
 
-cl_memory::cl_memory(char *id, t_addr asize, int awidth):
+cl_memory::cl_memory(const char *id, t_addr asize, int awidth):
   cl_base()
 {
   size= asize;
@@ -1126,7 +1126,7 @@ cl_address_space_list::add(class cl_address_space *mem)
  *                                                                  Memory chip
  */
 
-cl_memory_chip::cl_memory_chip(char *id, int asize, int awidth, int initial):
+cl_memory_chip::cl_memory_chip(const char *id, int asize, int awidth, int initial):
   cl_memory(id, asize, awidth)
 {
   array= (t_mem *)malloc(size * sizeof(t_mem));

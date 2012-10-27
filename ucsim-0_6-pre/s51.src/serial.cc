@@ -456,10 +456,10 @@ cl_serial::happen(class cl_hw *where, enum hw_event he, void *params)
 void
 cl_serial::print_info(class cl_console_base *con)
 {
-  char *modes[]= { "Shift, fixed clock",
-		   "8 bit UART timer clocked",
-		   "9 bit UART fixed clock",
-		   "9 bit UART timer clocked" };
+  const char *modes[]= { "Shift, fixed clock",
+			 "8 bit UART timer clocked",
+			 "9 bit UART fixed clock",
+			 "9 bit UART timer clocked" };
   int sc= scon->get();
 
   con->dd_printf("%s[%d]", id_string, id);

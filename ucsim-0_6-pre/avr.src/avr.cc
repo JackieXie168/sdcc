@@ -69,7 +69,7 @@ cl_avr::init(void)
 char *
 cl_avr::id_string(void)
 {
-  return("unspecified AVR");
+  return((char*)"unspecified AVR");
 }
 
 
@@ -189,7 +189,7 @@ cl_avr::disass(t_addr addr, const char *sep)
       strcpy(buf, "UNKNOWN/INVALID");
       return(buf);
     }
-  b= dis_tbl()[i].mnemonic;
+  b= strdup(dis_tbl()[i].mnemonic);
 
   while (*b)
     {
@@ -303,6 +303,7 @@ cl_avr::disass(t_addr addr, const char *sep)
   else
     strcat(buf, sep);
   strcat(buf, p);
+  free(b);
   return(buf);
 }
 

@@ -46,7 +46,7 @@ cl_it_src::cl_it_src(uchar Iie_mask,
 		     uchar Isrc_mask,
 		     uint  Iaddr,
 		     bool  Iclr_bit,
-		     char  *Iname,
+		     const char *Iname,
 		     int   apoll_priority):
   cl_base()
 {

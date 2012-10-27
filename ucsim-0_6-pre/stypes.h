@@ -56,7 +56,7 @@ struct dis_entry
   uint  code, mask;
   char  branch;
   uchar length;
-  char  *mnemonic;
+  const char  *mnemonic;
 };
 
 // table entry of SFR and BIT names
@@ -64,7 +64,7 @@ struct name_entry
 {
   int		cpu_type;
   t_addr	addr;
-  char		*name;
+  const char	*name;
 };
 
 

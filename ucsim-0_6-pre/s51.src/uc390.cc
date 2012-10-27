@@ -1092,7 +1092,7 @@ cl_uc390::disass (t_addr addr, const char *sep)
   code = rom->get(addr);
 
   p = work;
-  b = dis_tbl()[code].mnemonic;
+  b = strdup(dis_tbl()[code].mnemonic);
   while (*b)
     {
       if (*b == '%')
@@ -1191,6 +1191,7 @@ cl_uc390::disass (t_addr addr, const char *sep)
   else
     strcat (buf, sep);
   strcat (buf, p);
+  free(b);
   return buf;
 }
 

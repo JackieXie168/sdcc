@@ -105,7 +105,7 @@ cl_hc08::reset(void)
 char *
 cl_hc08::id_string(void)
 {
-  return("unspecified HC08");
+  return((char*)"unspecified HC08");
 }
 
 
@@ -181,9 +181,9 @@ int
 cl_hc08::inst_length(t_addr addr)
 {
   int len = 0;
-  char *s;
+  /*char *s;
 
-  s = get_disasm_info(addr, &len, NULL, NULL);
+    s =*/ get_disasm_info(addr, &len, NULL, NULL);
 
   return len;
 }
@@ -192,9 +192,9 @@ int
 cl_hc08::inst_branch(t_addr addr)
 {
   int b;
-  char *s;
+  /*char *s;
 
-  s = get_disasm_info(addr, NULL, &b, NULL);
+    s =*/ get_disasm_info(addr, NULL, &b, NULL);
 
   return b;
 }
@@ -231,7 +231,7 @@ cl_hc08::get_disasm_info(t_addr addr,
         disass_hc08_9e[i].mnemonic)
         i++;
       dis_e = &disass_hc08_9e[i];
-      b= disass_hc08_9e[i].mnemonic;
+      b= strdup(disass_hc08_9e[i].mnemonic);
       if (b != NULL)
         len += (disass_hc08_9e[i].length + 1);
     break;
@@ -242,7 +242,7 @@ cl_hc08::get_disasm_info(t_addr addr,
              disass_hc08[i].mnemonic)
         i++;
       dis_e = &disass_hc08[i];
-      b= disass_hc08[i].mnemonic;
+      b= strdup(disass_hc08[i].mnemonic);
       if (b != NULL)
         len += (disass_hc08[i].length);
     break;
@@ -370,6 +370,7 @@ cl_hc08::disass(t_addr addr, const char *sep)
   else
     strcat(buf, sep);
   strcat(buf, p);
+  free(b);
   return(buf);
 }
 
