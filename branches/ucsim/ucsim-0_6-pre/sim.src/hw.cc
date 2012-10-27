@@ -127,7 +127,7 @@ cl_used_cell::address_space_added(class cl_address_space *amem,
  *____________________________________________________________________________
  */
 
-cl_hw::cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, char *aid_string):
+cl_hw::cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, const char *aid_string):
   cl_guiobj()
 {
   flags= HWF_INSIDE;
@@ -149,7 +149,7 @@ cl_hw::cl_hw(class cl_uc *auc, enum hw_cath cath, int aid, char *aid_string):
 
 cl_hw::~cl_hw(void)
 {
-  free(id_string);
+  free((void*)id_string);
   //hws_to_inform->disconn_all();
   delete partners;
   delete watched_cells;

@@ -147,7 +147,7 @@ class cl_simulator_interface: public cl_hw
 {
 private:
   int version;
-  char *as_name;
+  const char *as_name;
   t_addr addr;
   class cl_address_space *as;
   t_addr address;
@@ -156,7 +156,7 @@ private:
 public:
   class cl_list *commands;
 public:
-  cl_simulator_interface(class cl_uc *auc, char *the_as_name, t_addr the_addr);
+  cl_simulator_interface(class cl_uc *auc, const char *the_as_name, t_addr the_addr);
   virtual ~cl_simulator_interface(void);
   virtual int init(void);
 
