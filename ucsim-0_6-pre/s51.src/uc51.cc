@@ -322,12 +322,12 @@ const char *
 cl_51core::disass(t_addr addr, const char *sep)
 {
   char work[256], temp[20], c[2];
-  char *buf, *p, *t;
-  char *b;
+  char *buf, *p, *t, *s;
+  const char *b;
   t_mem code= rom->get(addr);
 
   p= work;
-  b= strdup(dis_tbl()[code].mnemonic);
+  b= dis_tbl()[code].mnemonic;
   while (*b)
     {
       if (*b == '%')
@@ -413,10 +413,10 @@ cl_51core::disass(t_addr addr, const char *sep)
     buf= (char *)malloc(6+strlen(p)+1);
   else
     buf= (char *)malloc((p-work)+strlen(sep)+strlen(p)+1);
-  for (p= work, b= buf; *p != ' '; p++, b++)
-    *b= *p;
+  for (p= work, s= buf; *p != ' '; p++, s++)
+    *s= *p;
   p++;
-  *b= '\0';
+  *s= '\0';
   if (sep == NULL)
     {
       while (strlen(buf) < 6)
@@ -425,7 +425,6 @@ cl_51core::disass(t_addr addr, const char *sep)
   else
     strcat(buf, sep);
   strcat(buf, p);
-  free(b);
   return(buf);
 }
 

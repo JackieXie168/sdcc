@@ -672,7 +672,7 @@ cl_uc::address_space(const char *id)
 }
 
 class cl_memory *
-cl_uc::memory(char *id)
+cl_uc::memory(const char *id)
 {
   int i;
 

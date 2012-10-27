@@ -92,7 +92,7 @@ cl_xa::mk_mem(enum mem_class type, char *class_name)
 char *
 cl_xa::id_string(void)
 {
-  return("unspecified XA");
+  return((char*)"unspecified XA");
 }
 
 
@@ -272,7 +272,7 @@ cl_xa::get_disasm_info(t_addr addr,
                        int *mnemonic)
 {
   uint code;
-  int len = 0;
+  //int len = 0;
   int immed_n = 0;
   int i;
   int start_addr = addr;
@@ -283,7 +283,7 @@ cl_xa::get_disasm_info(t_addr addr,
     while (disass_xa[i].mnemonic != NOP)
       i++;
   } else {
-    len = 2;
+    //len = 2;
     code = (code << 8) | get_mem(MEM_ROM_ID, addr++);
     i= 0;
     while ((code & disass_xa[i].mask) != disass_xa[i].code &&
@@ -310,7 +310,7 @@ cl_xa::get_disasm_info(t_addr addr,
   return code;
 }
 
-static char *w_reg_strs[] = {
+static const char *w_reg_strs[] = {
  "R0", "R1",
  "R2", "R3",
  "R4", "R5",
@@ -320,7 +320,7 @@ static char *w_reg_strs[] = {
  "R12", "R13",
  "R14", "R15"};
 
-static char *b_reg_strs[] = {
+static const char *b_reg_strs[] = {
  "R0l", "R0h",
  "R1l", "R1h",
  "R2l", "R2h",
@@ -345,7 +345,7 @@ cl_xa::disass(t_addr addr, const char *sep)
   int immed_offset = 0;
   int operands;
   int mnemonic;
-  char **reg_strs;
+  const char **reg_strs;
 
   p= work;
 
