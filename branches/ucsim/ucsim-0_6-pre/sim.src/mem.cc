@@ -726,7 +726,7 @@ cl_dummy_cell::set(t_mem val)
  *                                                                Address space
  */
 
-cl_address_space::cl_address_space(char *id,
+cl_address_space::cl_address_space(const char *id,
 				   t_addr astart, t_addr asize, int awidth):
   cl_memory(id, asize, awidth)
 {

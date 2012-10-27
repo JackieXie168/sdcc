@@ -280,7 +280,7 @@ protected:
 public:
   class cl_decoder_list *decoders;
 public:
-  cl_address_space(char *id, t_addr astart, t_addr asize, int awidth);
+  cl_address_space(const char *id, t_addr astart, t_addr asize, int awidth);
   virtual ~cl_address_space(void);
 
   virtual bool is_address_space(void) { return(DD_TRUE); }

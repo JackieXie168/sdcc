@@ -172,7 +172,8 @@ const char *
 cl_avr::disass(t_addr addr, const char *sep)
 {
   char work[256], temp[20];
-  char *buf, *p, *b, *t;
+  char *buf, *p, *t, *s;
+  const char *b;
   uint code, data= 0;
   int i;
 
@@ -189,7 +190,7 @@ cl_avr::disass(t_addr addr, const char *sep)
       strcpy(buf, "UNKNOWN/INVALID");
       return(buf);
     }
-  b= strdup(dis_tbl()[i].mnemonic);
+  b= dis_tbl()[i].mnemonic;
 
   while (*b)
     {
@@ -291,10 +292,10 @@ cl_avr::disass(t_addr addr, const char *sep)
     buf= (char *)malloc(6+strlen(p)+1);
   else
     buf= (char *)malloc((p-work)+strlen(sep)+strlen(p)+1);
-  for (p= work, b= buf; *p != ' '; p++, b++)
-    *b= *p;
+  for (p= work, s= buf; *p != ' '; p++, s++)
+    *s= *p;
   p++;
-  *b= '\0';
+  *s= '\0';
   if (sep == NULL)
     {
       while (strlen(buf) < 6)
@@ -303,7 +304,6 @@ cl_avr::disass(t_addr addr, const char *sep)
   else
     strcat(buf, sep);
   strcat(buf, p);
-  free(b);
   return(buf);
 }
 

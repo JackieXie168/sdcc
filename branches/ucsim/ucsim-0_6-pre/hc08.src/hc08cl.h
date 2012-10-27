@@ -61,10 +61,10 @@ public:
 
   virtual int exec_inst(void);
 
-  virtual char * get_disasm_info(t_addr addr,
-                        int *ret_len,
-                        int *ret_branch,
-                        int *immed_offset);
+  virtual const char * get_disasm_info(t_addr addr,
+				       int *ret_len,
+				       int *ret_branch,
+				       int *immed_offset);
 
   virtual void reset(void);
 #include "instcl.h"

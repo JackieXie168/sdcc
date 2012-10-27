@@ -135,7 +135,7 @@ public:
   virtual void write_mem(char *id, t_addr addr, t_mem val);
   virtual void set_mem(char *id, t_addr addr, t_mem val);
   virtual class cl_address_space *address_space(const char *id);
-  virtual class cl_memory *memory(char *id);
+  virtual class cl_memory *memory(const char *id);
 
   // file handling
   virtual long read_hex_file(const char *nam);
