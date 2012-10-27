@@ -652,7 +652,7 @@ cl_uc::mem(enum mem_class type)
 */
 
 class cl_address_space *
-cl_uc::address_space(char *id)
+cl_uc::address_space(const char *id)
 {
   int i;
 

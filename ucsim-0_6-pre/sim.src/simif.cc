@@ -280,7 +280,7 @@ cl_sif_cmdinfo::produce_answer(void)
  */
 
 cl_simulator_interface::cl_simulator_interface(class cl_uc *auc,
-					       char *the_as_name,
+					       const char *the_as_name,
 					       t_addr the_addr):
   cl_hw(auc, HW_SIMIF, 0, "simif")
 {
@@ -294,7 +294,7 @@ cl_simulator_interface::cl_simulator_interface(class cl_uc *auc,
 cl_simulator_interface::~cl_simulator_interface(void)
 {
   if (as_name)
-    free(as_name);
+    free((void*)as_name);
   delete commands;
 }
 

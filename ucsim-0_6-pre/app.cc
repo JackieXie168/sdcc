@@ -751,7 +751,7 @@ cl_app::dd_printf(const char *format, ...)
 }
 
 int
-cl_app::debug(char *format, ...)
+cl_app::debug(const char *format, ...)
 {
   va_list ap;
 
