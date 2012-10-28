@@ -48,7 +48,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 //		       class cl_cmdline *cmdline, class cl_console *con)
 COMMAND_DO_WORK_UC(cl_statistic_cmd)
 {
-  class cl_hw *hw;
+  //class cl_hw *hw;
   class cl_address_space *mem;
   t_addr start= 0, end= 0;
   bool addresses= DD_FALSE;
@@ -57,10 +57,10 @@ COMMAND_DO_WORK_UC(cl_statistic_cmd)
 				 cmdline->param(2),
 				 cmdline->param(3) };
 
-  if (cmdline->syntax_match(uc, HW)) {
+  /*if (cmdline->syntax_match(uc, HW)) {
     hw= params[0]->value.hw;
   }
-  else {
+  else*/ {
     mem= 0;
     if (cmdline->syntax_match(uc, MEMORY ADDRESS ADDRESS)) {
       mem= params[0]->value.memory.address_space;
