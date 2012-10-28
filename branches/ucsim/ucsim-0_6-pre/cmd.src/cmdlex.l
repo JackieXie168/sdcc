@@ -25,6 +25,7 @@ static int uc_yy_input(char *buf, int max_size);
 "&"			return(PTOK_AMPERSAND);
 
 ([0-9]+)|(0x[0-9a-fA-F]+) {
+  //printf("\nlexer found a nr: %s\n",yytext);
   yylval.number = strtol(yytext, 0, 0);
   return PTOK_NUMBER;
 }
@@ -50,18 +51,28 @@ uc_yy_set_string_to_parse(const char *str)
   string_to_parse = strdup(str);
 }
 
+static const char *string_ptr = NULL;
+
 void
 uc_yy_free_string_to_parse()
 {
   free(string_to_parse);
+  string_ptr=NULL;
 }
 
 static int
 uc_yy_input(char *buf, int max_size)
 {
-  static const char *string_ptr = NULL;
+  //printf("\nuc_yy_input called for max=%d\n",max_size);
   if (NULL == string_ptr)
-    string_ptr = string_to_parse;
+    {
+      string_ptr = string_to_parse;
+      //printf("\nstring_ptr is NULL, start over with %s\n",string_to_parse);
+    }
+  else
+  {
+    //printf("\ncontinue with %s\n",string_ptr);
+  }
 
   if (NULL != string_ptr)
     {
@@ -71,6 +82,7 @@ uc_yy_input(char *buf, int max_size)
         n = lrem;
       strncpy(buf, string_ptr, n);
       string_ptr += n;
+      //printf("\n%d chars copied, left=%s\n",n,string_ptr);
       return n;
     }
   else
