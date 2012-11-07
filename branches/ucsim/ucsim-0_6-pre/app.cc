@@ -156,21 +156,31 @@ int
 cl_app::run(void)
 {
   int done= 0;
-
+  unsigned  input_check_skip = 0;
+  
   while (!done &&
-	 going)
+         going)
     {
       if (sim)
-	{
-	  if (sim->state & SIM_GO)
-	    {
-	      if (commander->input_avail())
-		done= commander->proc_input();
-	      else
-		sim->step();
-	    }
-	  else
-	    {
+        {
+          if (sim->state & SIM_GO)
+            {
+              if ((!input_check_skip) && (commander->input_avail()))
+                {
+                  done= commander->proc_input();
+                  
+                  // run a few steps before checking for more input
+                  ++input_check_skip;
+                }
+              else
+                {
+                  sim->step();
+                  
+                  input_check_skip = (input_check_skip + 1) % 50;
+                }
+            }
+          else
+            {
 	      commander->wait_input();
 	      done= commander->proc_input();
 	    }

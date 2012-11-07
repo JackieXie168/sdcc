@@ -494,19 +494,21 @@ cl_hc08::exec_inst(void)
         case 0x0:
         case 0x1:
         case 0x2:
-        case 0x3: return(inst_condbranch(code, FALSE));
+        case 0x3: return(inst_condbranch(code, false));
         case 0x4:
-        case 0x5:
+        case 0x5: return(inst_transfer(code, false));
+        case 0x6: return(inst_sthx(code, false));
         case 0x7:
-        case 0xf: return(inst_transfer(code, FALSE));
+        case 0xf: return(inst_transfer(code, false));
         case 0x8:
         case 0x9:
         case 0xa:
         case 0xb: return(inst_setclearflags(code, FALSE));
         case 0xc: return(inst_rsp(code, FALSE));
-        case 0xd: return(inst_nop(code, FALSE));
+        case 0xd: return(inst_nop(code, false));
         case 0xe:
           code = fetch();
+          tick(1);
           switch ((code >> 4) & 0xf) {
             case 0x6:
               switch (code & 0xf) {
@@ -526,18 +528,18 @@ cl_hc08::exec_inst(void)
                 default: return(resHALT);
               }
             case 0xa:
-              switch (code & 0x5) {
-                case 0xe: return(inst_ldhx(code,true));
+              switch (code) {
+                case 0xae: return(inst_ldhx(code,true));
                 default: return(resHALT);
               }
             case 0xb:
-              switch (code & 0x5) {
-                case 0xe: return(inst_ldhx(code,true));
+              switch (code) {
+                case 0xbe: return(inst_ldhx(code,true));
                 default: return(resHALT);
               }
             case 0xc:
-              switch (code & 0x5) {
-                case 0xe: return(inst_ldhx(code,true));
+              switch (code) {
+                case 0xce: return(inst_ldhx(code,true));
                 default: return(resHALT);
               }
             case 0xd:

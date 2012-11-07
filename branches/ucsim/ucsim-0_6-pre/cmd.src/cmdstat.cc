@@ -48,7 +48,6 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 //		       class cl_cmdline *cmdline, class cl_console *con)
 COMMAND_DO_WORK_UC(cl_statistic_cmd)
 {
-  //class cl_hw *hw;
   class cl_address_space *mem;
   t_addr start= 0, end= 0;
   bool addresses= DD_FALSE;
@@ -57,65 +56,60 @@ COMMAND_DO_WORK_UC(cl_statistic_cmd)
 				 cmdline->param(2),
 				 cmdline->param(3) };
 
-  /*if (cmdline->syntax_match(uc, HW)) {
-    hw= params[0]->value.hw;
+  mem= 0;
+  if (cmdline->syntax_match(uc, MEMORY ADDRESS ADDRESS)) {
+    mem= params[0]->value.memory.address_space;
+    start= params[1]->value.address;
+    end= params[2]->value.address;
+    addresses= DD_TRUE;
   }
-  else*/ {
-    mem= 0;
-    if (cmdline->syntax_match(uc, MEMORY ADDRESS ADDRESS)) {
-      mem= params[0]->value.memory.address_space;
-      start= params[1]->value.address;
-      end= params[2]->value.address;
-      addresses= DD_TRUE;
-    }
-    else if (cmdline->syntax_match(uc, MEMORY ADDRESS)) {
-      mem= params[0]->value.memory.address_space;
-      start= end= params[1]->value.address;
-      addresses= DD_TRUE;
-    }
-    else if (cmdline->syntax_match(uc, MEMORY)) {
-      mem= params[0]->value.memory.address_space;
-      addresses= DD_FALSE;
-    }
-    else
-      {
-	/*con->dd_printf("Error: wrong syntax\n"
-	  "%s\n", short_help?short_help:"no help");*/
-	int i;
-	unsigned long wr, ww;
-	for (i= 0; i < uc->address_spaces->count; i++)
-	  {
-	    mem= (class cl_address_space *)(uc->address_spaces->at(i));
-	    wr= mem->get_nuof_reads();
-	    ww= mem->get_nuof_writes();
-	    con->dd_printf("%s writes= %10lu "
-			   "reads= %10lu "
-			   "(%10lu operations)\n",
-			   mem->get_name("mem"), ww, wr, ww+wr);
-	  }
-      }
-    if (mem)
-      {
-	t_addr i;
-	unsigned long wr, ww;
-	wr= mem->get_nuof_reads();
-	ww= mem->get_nuof_writes();
-	if (!addresses)
+  else if (cmdline->syntax_match(uc, MEMORY ADDRESS)) {
+    mem= params[0]->value.memory.address_space;
+    start= end= params[1]->value.address;
+    addresses= DD_TRUE;
+  }
+  else if (cmdline->syntax_match(uc, MEMORY)) {
+    mem= params[0]->value.memory.address_space;
+    addresses= DD_FALSE;
+  }
+  else
+    {
+      /*con->dd_printf("Error: wrong syntax\n"
+	"%s\n", short_help?short_help:"no help");*/
+      int i;
+      unsigned long wr, ww;
+      for (i= 0; i < uc->address_spaces->count; i++)
+	{
+	  mem= (class cl_address_space *)(uc->address_spaces->at(i));
+	  wr= mem->get_nuof_reads();
+	  ww= mem->get_nuof_writes();
 	  con->dd_printf("%s writes= %10lu "
-			 "reads= %10lu\n", mem->get_name("mem"), ww, wr);
-	else
-	  for (i= start; i <= end; i++)
-	    {
-	      class cl_memory_cell *c= mem->get_cell(i);
-	      unsigned long w= c->nuof_writes, r= c->nuof_reads;
-	      double dr= wr?((double(r)*100.0)/double(wr)):0.0;
-	      double dw= ww?((double(w)*100.0)/double(ww)):0.0;
-	      con->dd_printf("%s[0x%06x] writes= %10lu (%6.2lf%%) "
-			     "reads= %10lu (%6.2lf%%)\n",
-			     mem->get_name("mem"), i, w, dw, r, dr);
-	    }
-      }
-  }
+			 "reads= %10lu "
+			 "(%10lu operations)\n",
+			 mem->get_name("mem"), ww, wr, ww+wr);
+	}
+    }
+  if (mem)
+    {
+      t_addr i;
+      unsigned long wr, ww;
+      wr= mem->get_nuof_reads();
+      ww= mem->get_nuof_writes();
+      if (!addresses)
+	con->dd_printf("%s writes= %10lu "
+		       "reads= %10lu\n", mem->get_name("mem"), ww, wr);
+      else
+	for (i= start; i <= end; i++)
+	  {
+	    class cl_memory_cell *c= mem->get_cell(i);
+	    unsigned long w= c->nuof_writes, r= c->nuof_reads;
+	    double dr= wr?((double(r)*100.0)/double(wr)):0.0;
+	    double dw= ww?((double(w)*100.0)/double(ww)):0.0;
+	    con->dd_printf("%s[0x%06x] writes= %10lu (%6.2lf%%) "
+			   "reads= %10lu (%6.2lf%%)\n",
+			   mem->get_name("mem"), i, w, dw, r, dr);
+	  }
+    }
 
   return(DD_FALSE);;
 }
