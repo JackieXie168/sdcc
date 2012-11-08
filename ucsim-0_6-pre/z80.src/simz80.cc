@@ -41,13 +41,13 @@ class cl_uc *
 cl_simz80::mk_controller(void)
 {
   int i;
-  const char *typ= 0;
+  const char *typ= NIL;
   class cl_optref type_option(this);
 
   type_option.init();
   type_option.use("cpu_type");
   i= 0;
-  if ((typ= type_option.get_value(typ)) == 0)
+  if ((typ= type_option.get_value(typ)) == NIL)
     typ= "Z80";
 
   while ((cpus_z80[i].type_str != NULL) &&
