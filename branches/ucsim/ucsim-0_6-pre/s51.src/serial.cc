@@ -369,7 +369,8 @@ cl_serial::tick(int cycles)
       HANDLE handle = (HANDLE)_get_osfhandle(fileno(serial_in));
       assert(INVALID_HANDLE_VALUE != handle);
 
-      if (input_avail(handle))
+      //if (input_avail(handle))
+      if (input_avail(fileno(serial_in)))
 #else
       if (input_avail(fileno(serial_in)))
 #endif

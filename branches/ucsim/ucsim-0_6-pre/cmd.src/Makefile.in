@@ -43,13 +43,13 @@ VPATH           = @srcdir@
 
 OBJECTS         = cmdset.o command.o cmdutil.o syntax.o \
 		  get.o set.o timer.o bp.o info.o show.o cmdgui.o cmdconf.o \
-		  cmduc.o cmdstat.o cmdmem.o newcmd.o
+		  cmduc.o cmdstat.o cmdmem.o newcmd.o newcmdposix.o
 
-ifeq ($(WINSOCK_AVAIL), 1)
-OBJECTS += newcmdwin32.o
-else
-OBJECTS += newcmdposix.o
-endif
+#ifeq ($(WINSOCK_AVAIL), 1)
+#OBJECTS += newcmdwin32.o
+#else
+#OBJECTS += newcmdposix.o
+#endif
 
 LOCAL_OBJECTS   = cmdpars.o cmdlex.o
 

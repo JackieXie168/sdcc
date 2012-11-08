@@ -187,11 +187,10 @@ cl_console::cmd_do_print(const char *format, va_list ap)
    {
       ret= vfprintf(f, format, ap);
       fflush(f);
+      return ret;
     }
   else
-    ret = 0;
-
-  return ret;
+    return 0;
 }
 
 /*
@@ -201,6 +200,8 @@ cl_console::cmd_do_print(const char *format, va_list ap)
 char *
 cl_console::read_line(void)
 {
+#define BUF_LEN 1024
+
   char *s= NULL;
 
 #ifdef HAVE_GETLINE
@@ -215,8 +216,8 @@ cl_console::read_line(void)
       return(0);
     }
 #elif defined HAVE_FGETS
-  s= (char *)malloc(300);
-  if (fgets(s, 300, in) == NULL)
+  s= (char *)malloc(BUF_LEN);
+  if (fgets(s, BUF_LEN, in) == NULL)
     {
       free(s);
       return(0);

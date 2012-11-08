@@ -31,7 +31,7 @@ case $TARGET in
     mingw)
 	export CC=/usr/local/cross-tools/mingw32/bin/gcc
 	export CXX=/usr/local/cross-tools/mingw32/bin/g++
-	if [ $(hostname) = "anb" ]; then
+	if [ $(hostname) = "anb" -o $(hostname) = "render" ]; then
 	    export CC=i686-w64-mingw32-gcc
 	    export CXX=i686-w64-mingw32-g++
 	    export HOST_OPT='--host=i686-w64-mingw32'

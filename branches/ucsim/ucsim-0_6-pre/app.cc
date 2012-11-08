@@ -63,7 +63,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "getcl.h"
 #include "setcl.h"
 #ifdef _WIN32
-#include "newcmdwin32cl.h"
+		  //#include "newcmdwin32cl.h"
+#include "newcmdposixcl.h"
 #else
 #include "newcmdposixcl.h"
 #endif
@@ -222,7 +223,7 @@ print_help(char *name)
      "  -X freq[k|M] XTAL frequency\n"
      "  -c file      Open command console on `file'\n"
 #ifdef SOCKET_AVAIL
-     "  -Z portnum   Use localhost:portnumber for command console\n"
+     "  -Z portnum   Use localhost:portnum for command console\n"
      "  -k portnum   Use localhost:portnum for serial I/O\n"
 #endif
      "  -s file      Connect serial interface to `file'\n"
@@ -259,9 +260,9 @@ cl_app::proc_arguments(int argc, char *argv[])
   bool s_done= DD_FALSE, k_done= DD_FALSE;
   bool S_i_done= DD_FALSE, S_o_done= DD_FALSE;
 
-  strcpy(opts, "c:C:p:PX:vVt:s:S:hHk:");
+  strcpy(opts, "c:C:p:PX:vVt:s:S:hH");
 #ifdef SOCKET_AVAIL
-  strcat(opts, "Z:r:");
+  strcat(opts, "Z:r:k:");
 #endif
 
   while((c= getopt(argc, argv, opts)) != -1)
