@@ -183,8 +183,9 @@ get_handle_type(HANDLE handle)
 }
 
 bool
-input_avail(HANDLE handle, e_handle_type type)
+input_avail(HANDLE handle/*, e_handle_type type*/)
 {
+  e_handle_type type= CH_UNDEF;
   if (CH_UNDEF == type)
       type = get_handle_type(handle);
 
