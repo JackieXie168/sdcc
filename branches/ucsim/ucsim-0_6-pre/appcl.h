@@ -1,7 +1,7 @@
 /*
  * Simulator of microcontrollers (appcl.h)
  *
- * Copyright (C) 2001,01 Drotos Daniel, Talker Bt.
+ * Copyright (C) 1997,12 Drotos Daniel, Talker Bt.
  * 
  * To contact author send email to drdani@mazsola.iit.uni-miskolc.hu
  *
