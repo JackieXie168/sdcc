@@ -35,6 +35,7 @@
 #include "newalloc.h"
 #include "SDCCerr.h"
 #include "SDCCutil.h"
+#include "SDCCbtree.h"
 
 extern int yyerror (char *);
 extern FILE     *yyin;
@@ -154,6 +155,7 @@ external_definition
    : function_definition
         {
           // blockNo = 0;
+          btree_init(currBlockno);
         }
    | declaration
         {
@@ -1639,7 +1641,8 @@ start_block
         {
           NestLevel++;
           STACK_PUSH(blockNum, currBlockno);
-          currBlockno = ++blockNo;
+          btree_add_child(currBlockno, ++blockNo);
+          currBlockno = blockNo;
           ignoreTypedefType = 0;
         }
    ;
