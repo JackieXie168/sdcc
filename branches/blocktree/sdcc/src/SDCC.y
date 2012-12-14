@@ -155,7 +155,6 @@ external_definition
    : function_definition
         {
           // blockNo = 0;
-          btree_init(currBlockno);
         }
    | declaration
         {
@@ -1278,7 +1277,8 @@ function_declarator2
         {
           NestLevel++;
           STACK_PUSH(blockNum, currBlockno);
-          currBlockno = ++blockNo;
+          btree_add_child(currBlockno, ++blockNo);
+          currBlockno = blockNo;
         }
      parameter_type_list ')'
         {
@@ -1531,7 +1531,8 @@ abstract_declarator2
         {
           NestLevel++;
           STACK_PUSH(blockNum, currBlockno);
-          currBlockno = ++blockNo;
+          btree_add_child(currBlockno, ++blockNo);
+          currBlockno = blockNo;
         }
      parameter_type_list ')'
         {

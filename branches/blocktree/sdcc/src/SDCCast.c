@@ -6204,7 +6204,10 @@ fixupInline (ast * tree, int level)
     {
       symbol *decls;
 
-      int thisBlockBlockno = ++blockNo;
+      int thisBlockBlockno;
+
+      btree_add_child(currBlockno, ++blockNo);
+      thisBlockBlockno = blockNo;
 
       level++;
 

@@ -43,18 +43,34 @@ static btree_t btree;
 static bmap_t bmap;
 static bmaprev_t bmaprev;
 
-void btree_init(int r)
+/*void btree_init(int root)
 {
   btree.clear();
   boost::add_vertex(btree);
-  bmap[0] = r;
-  bmaprev[r] = 0;
+  bmap[0] = root;
+  bmaprev[root] = 0;
 std::cout << "Created btree with root " << r << "\n"; std::cout.flush();
+}*/
+
+void btree_clear(void)
+{
+  std::cout << "Clearing.\n"; std::cout.flush();
+  btree.clear();
+  bmap.clear();
+  bmaprev.clear();
 }
 
 void btree_add_child(short parent, short child)
 {
-std::cout << "Adding child " << child << " at parent " << parent << "\n"; std::cout.flush();
+  std::cout << "Adding child " << child << " at parent " << parent << "\n"; std::cout.flush();
+
+  if(!boost::num_vertices(btree))
+    {
+      boost::add_vertex(btree);
+      bmap[0] = 0;
+      bmaprev[0] = 0;
+    }
+  
   wassert(parent != child);
   wassert(bmap.find(parent) != bmap.end());
 
@@ -86,13 +102,15 @@ short btree_lowest_common_ancestor(short a, short b)
 
 void btree_add_symbol(struct symbol *s)
 {
+  std::cout << "Adding symbol " << s->name << " at " << s->block << "\n";
   wassert(s);
+  wassert(bmap.find(s->block) != bmap.end());
   wassert(bmap[s->block] < boost::num_vertices(btree));
   btree[bmap[s->block]].first.insert(s);
 }
 
 static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssize, int *ssize)
-{std::cout << "Here2 at " << v << "\n"; std::cout.flush();
+{std::cout << "Here2 at " << v << " / " << bmaprev[v] << "\n"; std::cout.flush();
   std::set<symbol *>::iterator s, s_end;
   wassert(v < boost::num_vertices(btree));
   for(s = btree[v].first.begin(), s_end = btree[v].first.end(); s != s_end; ++s)
@@ -100,7 +118,7 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
       struct symbol *const sym = *s;
       const int size = getSize (sym->type);
       
-      //std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
+      std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
       
       if(port->stack.direction > 0)
         {
@@ -127,6 +145,10 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
 void btree_alloc(void)
 {
   int ssize = 0;
+
+  if(!boost::num_vertices(btree))
+    return;
+
   btree_alloc_subtree(0, 0, 0, &ssize);
   
   if(currFunc)

@@ -19,8 +19,9 @@
 #ifndef SDCCBTREE_H
 #define SDCCBTREE_H
 
-// Init block tree. To be called for each new function.
-void btree_init(int r);
+
+// Clear block tree. To be called after each function.
+void btree_clear(void);
 
 // Add child as a sub-block of parent.
 void btree_add_child(short parent, short child);
