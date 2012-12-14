@@ -52,17 +52,24 @@ static bmaprev_t bmaprev;
 std::cout << "Created btree with root " << r << "\n"; std::cout.flush();
 }*/
 
+void btree_clear_subtree(btree_t::vertex_descriptor v)
+{
+  btree[v].first.clear();
+
+  boost::graph_traits<btree_t>::out_edge_iterator e, e_end;
+  for(boost::tie(e, e_end) = boost::out_edges(v, btree); e != e_end; ++e)
+    btree_clear_subtree(boost::target(*e, btree));
+}
+
 void btree_clear(void)
 {
-  std::cout << "Clearing.\n"; std::cout.flush();
-  btree.clear();
-  bmap.clear();
-  bmaprev.clear();
+  //std::cout << "Clearing.\n"; std::cout.flush();
+  btree_clear_subtree(0);
 }
 
 void btree_add_child(short parent, short child)
 {
-  std::cout << "Adding child " << child << " at parent " << parent << "\n"; std::cout.flush();
+  //std::cout << "Adding child " << child << " at parent " << parent << "\n"; std::cout.flush();
 
   if(!boost::num_vertices(btree))
     {
@@ -102,7 +109,7 @@ short btree_lowest_common_ancestor(short a, short b)
 
 void btree_add_symbol(struct symbol *s)
 {
-  std::cout << "Adding symbol " << s->name << " at " << s->block << "\n";
+  //std::cout << "Adding symbol " << s->name << " at " << s->block << "\n";
   wassert(s);
   wassert(bmap.find(s->block) != bmap.end());
   wassert(bmap[s->block] < boost::num_vertices(btree));
@@ -110,7 +117,7 @@ void btree_add_symbol(struct symbol *s)
 }
 
 static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssize, int *ssize)
-{std::cout << "Here2 at " << v << " / " << bmaprev[v] << "\n"; std::cout.flush();
+{//std::cout << "Here2 at " << v << " / " << bmaprev[v] << "\n"; std::cout.flush();
   std::set<symbol *>::iterator s, s_end;
   wassert(v < boost::num_vertices(btree));
   for(s = btree[v].first.begin(), s_end = btree[v].first.end(); s != s_end; ++s)
@@ -118,7 +125,7 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
       struct symbol *const sym = *s;
       const int size = getSize (sym->type);
       
-      std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
+      //std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
       
       if(port->stack.direction > 0)
         {
@@ -157,5 +164,4 @@ void btree_alloc(void)
       SPEC_STAK (currFunc->etype) += ssize;
     }
 }
-
 

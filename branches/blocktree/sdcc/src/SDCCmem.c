@@ -1018,7 +1018,7 @@ redoStackOffsets (void)
   symbol *sym;
   int sPtr = 0;
   int xsPtr = -1;
-if(currFunc->name) printf("At %s\n", currFunc->name);
+
   /* after register allocation is complete we know
      which variables will need to be assigned space
      on the stack. We will eliminate those variables
