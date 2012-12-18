@@ -104,6 +104,9 @@ struct cpu_entry
 #define CPU_HCS08      0x0002
 #define CPU_ALL_HC08   (CPU_HC08|CPU_HCS08)
 
+#define CPU_STM8	0x0001
+#define CPU_ALL_STM8	(CPU_STM8)
+
 #define CPU_CMOS	0x0001
 #define CPU_HMOS	0x0002
 
