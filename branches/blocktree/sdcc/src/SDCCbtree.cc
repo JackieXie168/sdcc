@@ -100,11 +100,15 @@ short btree_lowest_common_ancestor(short a, short b)
 
 void btree_add_symbol(struct symbol *s)
 {
-  // std::cout << "Adding symbol " << s->name << " at " << s->block << "\n";
+  int block;
   wassert(s);
-  wassert(bmap.find(s->block) != bmap.end());
-  wassert(bmap[s->block] < boost::num_vertices(btree));
-  btree[bmap[s->block]].first.insert(s);
+  block = s->_isparm ? 0 : s->block; // This is essentially a workaround. TODO: Ensure that the parameter block is placed correctly in the btree instead!
+
+  //std::cout << "Adding symbol " << s->name << " at " << block << "\n";
+  
+  wassert(bmap.find(block) != bmap.end());
+  wassert(bmap[block] < boost::num_vertices(btree));
+  btree[bmap[block]].first.insert(s);
 }
 
 static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssize, int *ssize)
