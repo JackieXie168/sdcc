@@ -56,6 +56,11 @@
 #include <stx/btree_map.h>
 #endif
 
+extern "C"
+{
+#include "SDCCbtree.h"
+}
+
 typedef short int var_t;
 typedef signed char reg_t;
 
@@ -370,6 +375,12 @@ create_cfg(cfg_t &cfg, con_t &con, ebbIndex *ebbi)
                   wassertl (key_to_index[ic->key] < boost::num_vertices(cfg), "Node not in CFG.");
                   cfg[key_to_index[ic->key]].alive.insert(sym_to_index[std::pair<int, int>(i, k)]);
                 }
+
+              // TODO: Move this to a place where it also works when using the old allocator!
+              if(isym->block)
+                isym->block = btree_lowest_common_ancestor(isym->block, ic->block);
+              else
+                isym->block = ic->block;
             }
         }
 
@@ -1037,7 +1048,7 @@ static void good_re_root(T_t &T)
 
   if (T[t].alive.size())
     {
-      std::cout << "Error: Invalid root.\n";
+      std::cerr << "Error: Invalid root.\n";
       return;
     }
 
