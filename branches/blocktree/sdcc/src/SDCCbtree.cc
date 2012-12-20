@@ -30,6 +30,8 @@ extern "C"
 #include "common.h"
 }
 
+#undef BTREE_DEBUG
+
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, std::pair<std::set<symbol *>, int> > btree_t;
 #ifdef HAVE_STX_BTREE_MAP_H
 typedef std::map<int, btree_t::vertex_descriptor> bmap_t;
@@ -54,13 +56,17 @@ void btree_clear_subtree(btree_t::vertex_descriptor v)
 
 void btree_clear(void)
 {
-  // std::cout << "Clearing.\n"; std::cout.flush();
+#ifdef BTREE_DEBUG
+  std::cout << "Clearing.\n"; std::cout.flush();
+#endif
   btree_clear_subtree(0);
 }
 
 void btree_add_child(short parent, short child)
 {
-  // std::cout << "Adding child " << child << " at parent " << parent << "\n"; std::cout.flush();
+#ifdef BTREE_DEBUG
+  std::cout << "Adding child " << child << " at parent " << parent << "\n"; std::cout.flush();
+#endif
 
   if(!boost::num_vertices(btree))
     {
@@ -104,8 +110,10 @@ void btree_add_symbol(struct symbol *s)
   wassert(s);
   block = s->_isparm ? 0 : s->block; // This is essentially a workaround. TODO: Ensure that the parameter block is placed correctly in the btree instead!
 
-  //std::cout << "Adding symbol " << s->name << " at " << block << "\n";
-  
+#ifdef BTREE_DEBUG
+  std::cout << "Adding symbol " << s->name << " at " << block << "\n";
+#endif
+
   wassert(bmap.find(block) != bmap.end());
   wassert(bmap[block] < boost::num_vertices(btree));
   btree[bmap[block]].first.insert(s);
@@ -119,9 +127,11 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
     {
       struct symbol *const sym = *s;
       const int size = getSize (sym->type);
-      
-      // std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
-      
+
+#ifdef BTREE_DEBUG
+      std::cout << "Allocating symbol " << sym->name << " (" << v << ") to " << sPtr << "\n";
+#endif
+
       if(port->stack.direction > 0)
         {
           SPEC_STAK (sym->etype) = sym->stack = (sPtr + 1);
@@ -132,7 +142,7 @@ static void btree_alloc_subtree(btree_t::vertex_descriptor v, int sPtr, int cssi
           sPtr -= size;
           SPEC_STAK (sym->etype) = sym->stack = sPtr;
         }
-        
+      
       cssize += size;
     }
   btree[v].second = cssize;
