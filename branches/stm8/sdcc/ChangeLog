@@ -1,3 +1,22 @@
+2012-12-21 Philipp Klaus Krause <pkk AT spth.de>
+
+	* Makefile.common.in,
+	  Makefile.in,
+	  configure.in,
+	  sim/ucsim/aclocal.m4,
+	  sim/ucsim/configure,
+	  configure,
+	  debugger/mcs51/aclocal.m4,
+	  src/port.h,
+	  src/stm8,
+	  src/stm8/Makefile.in,
+	  src/stm8/main.c,
+	  src/stm8/peeph.def,
+	  device/lib/stm8,
+	  device/lib/stm8/Makefile.in,
+	  src/stm8/ralloc.h:
+	  Basic build infrastructure for STM8 port.
+
 2012-12-20 Philipp Klaus Krause <pkk AT spth.de>
 
 	* support/regression/tests/frexpf.c:
