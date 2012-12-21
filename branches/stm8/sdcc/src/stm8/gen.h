@@ -1,8 +1,7 @@
 /*-------------------------------------------------------------------------
+  gen.h - header file for code generation for 8051
 
-  SDCCralloc.h - header file register allocation
-
-                Written By -  Philipp Krause . pkk@spth.de (2012)
+             Written By -  Philipp Krause . pkk@spth.de (2012)
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -17,27 +16,33 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-   
-   In other words, you are welcome to use, share and improve this program.
-   You are forbidden to forbid anyone else to use, share and improve
-   what you give them.   Help stamp out software-hoarding!  
 -------------------------------------------------------------------------*/
 
-#ifndef SDCCRALLOC_H
-#define SDCCRALLOC_H 1
+#ifndef STM8GEN_H
+#define STM8GEN_H 1
 
-/* definition for the registers */
-typedef struct reg_info
+typedef enum
 {
-  short type;                   /* can have value 
-                                   REG_GPR, REG_PTR or REG_CND */
-  short rIdx;                   /* index into register table */
-  char *name;                   /* name */
-} reg_info;
+  AOP_INVALID,
+  /* Is a literal */
+  AOP_LIT = 1,
+  /* Is in a register */
+  AOP_REG,
+  /* Is partially in registers, partially on the stack */
+  AOP_MIXED,
+  /* Is on the stack */
+  AOP_STK,
+  /* Is in the extended stack pointer (IY on the Z80) */
+  AOP_EXSTK,
+  /* Read undefined, discard writes */
+  AOP_DUMMY
+}
+AOP_TYPE;
 
-void stm8_assignRegisters (ebbIndex *);
+extern bool stm8_assignment_optimal;
 
-iCode *stm8_ralloc2_cc(ebbIndex *ebbi);
+void genSTM8Code (iCode *);
+void stm8_emitDebuggerSymbol (const char *);
 
 #endif
 

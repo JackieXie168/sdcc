@@ -25,6 +25,7 @@
 #include "common.h"
 
 #include "ralloc.h"
+#include "gen.h"
 
 static char stm8_defaultRules[] = {
 #include "peeph.rul"
@@ -150,7 +151,7 @@ PORT stm8_port = {
   {
    -1, -1},
   {
-   NULL},
+   stm8_emitDebuggerSymbol},
   {
    255,                         /* maxCount */
    3,                           /* sizeofElement */
