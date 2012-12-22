@@ -3,7 +3,10 @@
 	* src/stm8/main.c,
 	  src/stm8/gen.c,
 	  src/stm8/gen.h,
-	  src/stm8/ralloc.h:
+	  src/stm8/ralloc.h,
+	  src/port.h,
+	  src/SDCCmain.c,
+	  src/stm8/ralloc.c:
 	  Basic infrastructure for STM8 port.
 
 2012-12-21 Philipp Klaus Krause <pkk AT spth.de>

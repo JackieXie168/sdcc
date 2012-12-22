@@ -443,5 +443,8 @@ extern PORT hc08_port;
 #if !OPT_DISABLE_S08
 extern PORT s08_port;
 #endif
+#if !OPT_DISABLE_STM8
+extern PORT stm8_port;
+#endif
 
 #endif /* PORT_INCLUDE */
