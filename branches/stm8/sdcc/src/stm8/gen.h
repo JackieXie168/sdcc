@@ -39,10 +39,19 @@ typedef enum
 }
 AOP_TYPE;
 
-extern bool stm8_assignment_optimal;
+/* type asmop : a homogenised type for 
+   all the different spaces an operand can be
+   in */
+typedef struct asmop
+{
+  AOP_TYPE type;
+}
+asmop;
 
 void genSTM8Code (iCode *);
 void stm8_emitDebuggerSymbol (const char *);
+
+extern bool stm8_assignment_optimal;
 
 #endif
 

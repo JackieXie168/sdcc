@@ -21,12 +21,18 @@
 #include "ralloc.h"
 #include "gen.h"
 
+static struct
+{
+  short debugLine;
+}
+_G;
+
 /*-----------------------------------------------------------------*/
 /* stm8_emitDebuggerSymbol - associate the current code location   */
 /*   with a debugger symbol                                        */
 /*-----------------------------------------------------------------*/
 void
-stm8_emitDebuggerSymbol (char * debugSym)
+stm8_emitDebuggerSymbol (const char *debugSym)
 {
   _G.debugLine = 1;
   emitcode ("", "%s ==.", debugSym);

@@ -26,6 +26,8 @@
 #ifndef SDCCRALLOC_H
 #define SDCCRALLOC_H 1
 
+#include "common.h"
+
 /* definition for the registers */
 typedef struct reg_info
 {
