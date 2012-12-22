@@ -29,7 +29,7 @@ typedef enum
   /* Is in a register */
   AOP_REG,
   /* Is partially in registers, partially on the stack */
-  AOP_MIXED,
+  AOP_REGSTK,
   /* Is on the stack */
   AOP_STK,
   /* Is in the extended stack pointer (IY on the Z80) */
