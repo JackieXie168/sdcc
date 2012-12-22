@@ -48,6 +48,11 @@ stm8_emitDebuggerSymbol (const char *debugSym)
 static void
 genSTM8iCode (iCode *ic)
 {
+  switch (ic->op)
+    {
+    default:
+      wassertl (0, "Unknown iCode");
+    }
 }
 
 unsigned char

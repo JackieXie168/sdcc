@@ -28,6 +28,16 @@
 
 #include "common.h"
 
+enum
+{
+  A_IDX = 0, // The accumulator
+  XL_IDX,    // Lower byte of X
+  XH_IDX,    // Upper byte of X
+  YL_IDX,    // Lower byte of Y
+  YH_IDX,    // Upper byte of Y
+  C_IDX      // Carry bit - for bool only.
+};
+
 /* definition for the registers */
 typedef struct reg_info
 {
