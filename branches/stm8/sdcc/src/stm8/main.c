@@ -57,6 +57,8 @@ stm8_parseOptions (int *pargc, char **argv, int *i)
 static void
 stm8_finaliseOptions (void)
 {
+  port->mem.default_local_map = data;
+  port->mem.default_globl_map = data;
 }
 
 static void
@@ -80,13 +82,13 @@ stm8_getRegName (struct reg_info *reg)
 */
 static const char *_linkCmd[] =
 {
-  "aslink", "-nf", "\"$1\"", NULL
+  "sdld", "-nf", "\"$1\"", NULL
 };
 
 /* $3 is replaced by assembler.debug_opts resp. port->assembler.plain_opts */
 static const char *stm8AsmCmd[] =
 {
-  "asstm8", "$l", "$3", "\"$1.asm\"", NULL
+  "sdasstm8", "$l", "$3", "\"$1.asm\"", NULL
 };
 
 static const char *const _crt[] = { "crt0.rel", NULL, };
