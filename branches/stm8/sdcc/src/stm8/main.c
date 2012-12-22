@@ -48,6 +48,22 @@ stm8_reg_parm (sym_link * l, bool reentrant)
   return FALSE;
 }
 
+static bool
+stm8_parseOptions (int *pargc, char **argv, int *i)
+{
+  return FALSE;
+}
+
+static void
+stm8_finaliseOptions (void)
+{
+}
+
+static void
+stm8_setDefaultOptions (void)
+{
+}
+
 static const char *
 stm8_getRegName (struct reg_info *reg)
 {
@@ -164,11 +180,11 @@ PORT stm8_port = {
    },
   "_",
   NULL,
+  stm8_parseOptions,
   NULL,
   NULL,
-  NULL,
-  NULL,
-  NULL,
+  stm8_finaliseOptions,
+  stm8_setDefaultOptions,
   stm8_assignRegisters,
   stm8_getRegName,
   stm8_keywords,
