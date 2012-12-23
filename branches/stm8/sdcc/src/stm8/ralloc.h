@@ -38,6 +38,12 @@ enum
   C_IDX      // Carry bit - for bool only.
 };
 
+enum
+{
+  REG_GPR = 2,
+  REG_CND = 4,
+};
+
 /* definition for the registers */
 typedef struct reg_info
 {
