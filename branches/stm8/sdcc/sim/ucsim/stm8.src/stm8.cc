@@ -75,9 +75,11 @@ cl_stm8::init(void)
   ram = rom;
 
   // zero out ram(this is assumed in regression tests)
-  for (int i=0x0; i<0x8000; i++) {
+  /*
+    for (int i=0x0; i<0x8000; i++) {
     ram->set((t_addr) i, 0);
   }
+  */
 
   return(0);
 }
@@ -140,7 +142,7 @@ cl_stm8::make_memories(void)
   class cl_address_decoder *ad;
   class cl_memory_chip *chip;
 
-  chip= new cl_memory_chip("rom_chip", 0x10000, 8);
+  chip= new cl_memory_chip("rom_chip", 0x10000, 8, 0);
   chip->init();
   memchips->add(chip);
   ad= new cl_address_decoder(as= address_space("rom"), chip, 0, 0xffff, 0);
