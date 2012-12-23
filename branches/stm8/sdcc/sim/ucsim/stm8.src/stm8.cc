@@ -74,12 +74,11 @@ cl_stm8::init(void)
 //  ram = mem(MEM_XRAM);
   ram = rom;
 
+  printf("******************** leave the RAM dirty now \n");
   // zero out ram(this is assumed in regression tests)
-  /*
-    for (int i=0x0; i<0x8000; i++) {
-    ram->set((t_addr) i, 0);
-  }
-  */
+  //for (int i=0x0; i<0x8000; i++) {
+  //  ram->set((t_addr) i, 0);
+  //}
 
   return(0);
 }
@@ -142,7 +141,7 @@ cl_stm8::make_memories(void)
   class cl_address_decoder *ad;
   class cl_memory_chip *chip;
 
-  chip= new cl_memory_chip("rom_chip", 0x10000, 8, 0);
+  chip= new cl_memory_chip("rom_chip", 0x10000, 8);
   chip->init();
   memchips->add(chip);
   ad= new cl_address_decoder(as= address_space("rom"), chip, 0, 0xffff, 0);
@@ -359,7 +358,7 @@ cl_stm8::disass(t_addr addr, const char *sep)
               ++immed_offset;
               break;
             case 'd': // d    direct addressing
-              sprintf(temp, "*0x%02x", (uint)get_mem(MEM_ROM_ID, addr+immed_offset));
+              sprintf(temp, "0x%02x", (uint)get_mem(MEM_ROM_ID, addr+immed_offset));
               ++immed_offset;
               break;
             case '3': // 3    24bit index offset
@@ -494,498 +493,775 @@ cl_stm8::exec_inst(void)
 		break;
   }
 	
-  //printf("********************  switch; pc=0x%x, prefix = 0x%x, code = 0x%x\n",PC, cprefix, code);
-  switch ((code >> 4) & 0xf) {
-    case 0x0: 
-		if ( 0x72 == cprefix) {
-		  return(inst_btjfbtjt(code, cprefix));
-		} 
-		if ( 0x0f == code) { // clr ($xx,SP)
-			unsigned char addr = get1( fetch1() + regs.SP);
-			store1( addr, 0);
-			return( resGO);
-		}
-		if ((code == 0x01) && ((cprefix == 0)||(cprefix ==0x90))) { //rrwa
-			return(inst_rotw(code, cprefix));
-		}
-		if ((code == 0x02) && ((cprefix == 0)||(cprefix ==0x90))) { //rlwa
-			return(inst_rotw(code, cprefix));
-		}
-		
-		if ( 0x00 == code) { // neg ($xx,SP)
-		}
-		if ( 0x04 == code) { // srl ($xx,SP)
-		}
-		if ( 0x05 == code) { // rrc ($xx,SP)
-		}
-		if ( 0x07 == code) { // sra ($xx,SP)
-		}
-		if ( 0x08 == code) { // sll ($xx,SP)
-		}
-		if ( 0x09 == code) { // rlc ($xx,SP)
-		}
-		if ( 0x0d == code) { // tnz ($xx,SP)
-		}
-		if ( 0x0e == code) { // swap ($xx,SP)
-		}
-    case 0x1:
-		if ((code == 0x1d) && (cprefix == 0x00)) {
-			return( inst_subw(code, cprefix));
-		}
-		if ( 0x13 == code) {
-			regs.X = get2( fetch1() + regs.SP);
-			return( resGO);
-		}
-		if ( 0x90 == cprefix) {
-		  return(inst_bccmbcpl(code, cprefix)); // copy C flag to memory
-		} else if ( 0x72 == cprefix) {
-		  return(inst_bresbset(code, cprefix));
-		} 
-		switch (code & 0xf) {
-			case 0x0: return(inst_sub(code, cprefix)); // sub A,(shortoff,SP)
-			case 0x1: return(inst_cp(code, cprefix)); // cp A,(shortoff,SP)
-			case 0x2: return(inst_sbc(code, cprefix)); // sbc A,(shortoff,SP)
-			case 0x3: return(inst_cpw(code, cprefix)); // cpw X,(shortoff,SP)
-			case 0x8: return(inst_xor(code, cprefix));
-			case 0x9: return(inst_adc(code, cprefix));
-			case 0xa: return(inst_or(code, cprefix));
-			case 0xb: return(inst_add(code, cprefix));
-			case 0xc: regs.X = fetch2(); return( resGO); //addw X,#word
-
-			default: return(resHALT);
-		}
-    case 0x2: 
-		return(inst_jr(code, cprefix));
-    case 0x3:
-		if ((code == 0x31) && (cprefix == 0)) { // exg A,$xxxx
-			unsigned int tmpi, addr;
-			addr = fetch2();
-			tmpi = get1(addr);
-			store1(addr, regs.A);
-			regs.A = tmpi;
-			return( resGO);
-		}
-
-		if ((code == 0x3b) && (cprefix == 0x00)) {
-			push1( get1(fetch2())); // push $xxxx
-			return( resGO);
-		}
-		if ((code == 0x32) && (cprefix == 0x00)) {
-			unsigned char tmpv;
-			pop1(tmpv);
-			store1(fetch2(),tmpv); // pop $xxxx
-			return( resGO);
-		}
-		if ((code == 0x35) && (cprefix == 0x00)) { // mov
-			unsigned int tmpaddr, tmpdat;
-			tmpdat = fetch1();
-			tmpaddr = fetch2();
-			store1(tmpaddr, tmpdat);
-			return( resGO);
-		}
-    case 0x4:
-		if ((code == 0x4b) && (cprefix == 0x00)) {
-			push1( fetch1()); // push #$xx
-			return( resGO);
-		}
-		if ((code == 0x42) && (cprefix == 0x00)) {  // mul X,A
-			regs.X = (regs.X & 0xff) * regs.A;
-			FLAG_ASSIGN (BIT_C, 0); FLAG_ASSIGN (BIT_H, 0);
-			return( resGO);
-		}
-		if ((code == 0x42) && (cprefix == 0x90)) {  // mul Y,A
-			regs.Y = (regs.Y & 0xff) * regs.A;
-			FLAG_ASSIGN (BIT_C, 0); FLAG_ASSIGN (BIT_H, 0);
-			return( resGO);
-		}
-		if ((code == 0x45) && (cprefix == 0x00)) { // mov
-			unsigned int tmpaddr, tmpdat;
-			tmpaddr = fetch1();
-			tmpdat = get1(fetch1());
-			store1(tmpaddr, tmpdat);
-			return( resGO);
-		}
-		if ((code == 0x41) && (cprefix == 0)) { // exg A,XL
-			unsigned int tmpi;
-			tmpi = regs.X;
-			regs.X &= 0xff00;
-			regs.X |= regs.A;
-			regs.A = tmpi & 0xff;
-			return( resGO);
-		}
-
-    case 0x5:
-		if ((code == 0x55) && (cprefix == 0x00)) { // mov
-			unsigned int tmpaddr, tmpdat;
-			tmpaddr = fetch2();
-			tmpdat = get1(fetch2());
-			store1(tmpaddr, tmpdat);
-			return( resGO);
-		}
-		if ((code == 0x5d) && ((cprefix == 0x00) || (cprefix == 0x90))) {
-			return( inst_tnzw(code, cprefix));
-		}
-		if ((code == 0x5e) && ((cprefix == 0x00) || (cprefix == 0x90))) {
-			return( inst_swapw(code, cprefix));
-		}
-		if (code == 0x5b) {
-			regs.SP += fetch(); return( resGO);
-		}
-		if ((code == 0x5f) && (cprefix == 0)) {
-			regs.X = 0; return( resGO);
-		}
-		if ((code == 0x52) && (cprefix == 0)) { // sub SP,#$cislo
-			regs.SP -= fetch1(); return( resGO);
-		}
-		if ((code == 0x5f) && (cprefix ==0x90)) {
-			regs.Y = 0; return( resGO);
-		}
-		if ((code == 0x53) && (cprefix == 0)) {
-			regs.X ^= 0xffff;   FLAG_NZ (regs.X); FLAG_ASSIGN (BIT_C, 1);  FLAG_ASSIGN (BIT_N, 0x8000 &  regs.X); return( resGO);
-		}
-		if ((code == 0x53) && (cprefix ==0x90)) {
-			regs.Y ^= 0xffff;   FLAG_NZ (regs.Y); FLAG_ASSIGN (BIT_C, 1);  FLAG_ASSIGN (BIT_N, 0x8000 &  regs.Y); return( resGO);
-		}
-		if ((code == 0x50) && ((cprefix == 0)||(cprefix ==0x90))) { //srlw
-			return(inst_negw(code, cprefix));
-		}
-		if ((code == 0x54) && ((cprefix == 0)||(cprefix ==0x90))) { //srlw
-			return(inst_shiftw(code, cprefix));
-		}
-		if ((code == 0x56) && ((cprefix == 0)||(cprefix ==0x90))) { //rrcw
-			return(inst_rotw(code, cprefix));
-		}
-		if ((code == 0x59) && ((cprefix == 0)||(cprefix ==0x90))) { //rlcw
-			return(inst_rotw(code, cprefix));
-		}
-		if ((code == 0x57) && ((cprefix == 0)||(cprefix ==0x90))) { //sraw
-			return(inst_shiftw(code, cprefix));
-		}
-		if ((code == 0x58) && ((cprefix == 0)||(cprefix ==0x90))) { //sllw
-			return(inst_shiftw(code, cprefix));
-		}
-		if ((code == 0x5a) && (cprefix == 0)) {
-			regs.X -= 1;   FLAG_NZ (regs.X); FLAG_ASSIGN (BIT_N, 0x8000 &  regs.X);
-			//ToDo FLAG_ASSIGN (BIT_V, 0x8000 & (operaxxnd1 ^ operand2 ^ result ^ (result >>1)));
-			return( resGO);
-		}
-		if ((code == 0x5a) && (cprefix ==0x90)) {
-			regs.Y -= 1;   FLAG_NZ (regs.Y); FLAG_ASSIGN (BIT_N, 0x8000 &  regs.Y);
-			//ToDo FLAG_ASSIGN (BIT_V, 0x8000 & (operaxxnd1 ^ operand2 ^ result ^ (result >>1)));
-			return( resGO);
-		}
-		if ((code == 0x5c) && (cprefix == 0)) {
-			regs.X++;   FLAG_NZ (regs.X); FLAG_ASSIGN (BIT_N, 0x8000 &  regs.X);
-			//ToDo FLAG_ASSIGN (BIT_V, 0x8000 & (operaxxnd1 ^ operand2 ^ result ^ (result >>1)));
-			return( resGO);
-		}
-		if ((code == 0x5c) && (cprefix ==0x90)) {
-			regs.Y++;   FLAG_NZ (regs.Y); FLAG_ASSIGN (BIT_N, 0x8000 &  regs.Y);
-			//ToDo FLAG_ASSIGN (BIT_V, 0x8000 & (operaxxnd1 ^ operand2 ^ result ^ (result >>1)));
-			return( resGO);
-		}
-		if ((code == 0x51) && (cprefix == 0)) { // exgw X,Y
-			unsigned int tmpi;
-			tmpi = regs.X;
-			regs.X = regs.Y;
-			regs.Y = tmpi;
-			return( resGO);
-		}
-		switch (code & 0xf) {
-			case 0xb: regs.SP += fetch(); return( resGO);
-	  
+   printf("********************  switch; pc=0x%x, prefix = 0x%x, code = 0x%x\n",PC, cprefix, code);
+   // exceptions
+   if((cprefix==0x90)&&((code&0xf0)==0x10)) {
+      return ( inst_bccmbcpl( code, cprefix));
+   }
+   if((cprefix==0x72)&&((code&0xf0)==0x10)) {
+      return ( inst_bresbset( code, cprefix));
+   }
+   if((cprefix==0x72)&&((code&0xf0)==0x00)) {
+      return ( inst_btjfbtjt( code, cprefix));
+   }
+   if ((code &0xf0) == 0x20) {
+      return ( inst_jr( code, cprefix));
+   }
+   if (cprefix == 0x72) {
+      int opaddr;
+      switch (code) { //addw, subw
+         case 0xa9 : regs.Y += fetch2();
+			case 0xb9 : opaddr = fetch2(); regs.Y += get2(opaddr);
+			case 0xbb : opaddr = fetch2(); regs.X += get2(opaddr);
+			case 0xf9 : opaddr = fetch(); regs.Y += get2(opaddr + regs.SP);
+			case 0xfb : opaddr = fetch(); regs.X += get2(opaddr + regs.SP);
+         case 0xa2 : regs.Y -= fetch2();
+			case 0xb2 : opaddr = fetch2(); regs.Y -= get2(opaddr);
+			case 0xb0 : opaddr = fetch2(); regs.X -= get2(opaddr);
+			case 0xf2 : opaddr = fetch(); regs.Y -= get2(opaddr + regs.SP);
+			case 0xf0 : opaddr = fetch(); regs.X -= get2(opaddr + regs.SP);
+            printf("************* ToDo set correct flags !!!!\n");
+            return(resGO);
+            break;
 			//default is processing in the next switch statement
+         default:
+            break;
+      }
+   }
 
-		}
-    case 0x6:
-		if ((code == 0x61) && (cprefix == 0)) { // exg A,XL
-			unsigned int tmpi;
-			tmpi = regs.Y;
-			regs.Y &= 0xff00;
-			regs.Y |= regs.A;
-			regs.A = tmpi & 0xff;
-			return( resGO);
-		}
-		if ((code == 0x62) && (cprefix == 0)) { // div X,A
-			unsigned int tmpi;
-			
-			FLAG_CLEAR(BIT_V);
-			FLAG_CLEAR(BIT_H);
-			FLAG_CLEAR(BIT_N);
-			if (regs.A == 0) {
-				//nastav C
-				FLAG_SET(BIT_C);
-			} else {
-				FLAG_CLEAR(BIT_C);
-				tmpi = regs.X%regs.A;
-				regs.X = regs.X/regs.A; 
-				regs.A = tmpi;
-			}
-			return( resGO);
-		}
-		if ((code == 0x62) && (cprefix ==0x90)) { // div Y,A
-			unsigned int tmpi;
-			
-			FLAG_CLEAR(BIT_V);
-			FLAG_CLEAR(BIT_H);
-			FLAG_CLEAR(BIT_N);
-			if (regs.A == 0) {
-				//nastav C
-				FLAG_SET(BIT_C);
-			} else {
-				FLAG_CLEAR(BIT_C);
-				tmpi = regs.Y%regs.A;
-				regs.Y = regs.Y/regs.A; 
-				regs.A = tmpi;
-			}
-			return( resGO);
-		}
-		if ((code == 0x65) && (cprefix == 0)) { // divw X,Y
-			unsigned int tmpi;
+   // main switch
+   switch (code & 0xf) {
+   unsigned int tempi;
+   int opaddr;
+      case 0x0:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // neg
+               return( inst_neg( code, cprefix));
+               break;
+            case 0x80: // IRET
+               pop1( regs.CC);
+               pop1( regs.A);
+               pop2( regs.X);
+               pop2( regs.Y);
+               pop1( tempi);
+               pop2( PC);
+               PC += (tempi <<16); //Add PCE to PC
+               return(resGO);
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // SUB
+               return( inst_sub( code, cprefix));
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x1:
+         switch ( code & 0xf0) {
+            case 0x00: // RRWA
+               if (cprefix == 0x00) { // rrwa X,A
+                  tempi = regs.X;
+                  regs.X >>= 8;
+                  regs.X |= (regs.A << 8);
+                  regs.A = tempi & 0xff;
+                  FLAG_ASSIGN (BIT_N, 0x8000 & regs.X);
+                  FLAG_ASSIGN (BIT_Z, regs.X ^ 0xffff);
+               } else if (cprefix == 0x90) { // rrwa Y,A
+                  tempi = regs.Y;
+                  regs.Y >>= 8;
+                  regs.Y |= (regs.A << 8);
+                  regs.A = tempi & 0xff;
+                  FLAG_ASSIGN (BIT_N, 0x8000 & regs.Y);
+                  FLAG_ASSIGN (BIT_Z, regs.Y ^ 0xffff);
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x30: // exg A,longmem
+               opaddr = fetch2();
+               tempi = get1(opaddr);
+               store1( opaddr, regs.A);
+               regs.A = tempi;
+               return(resGO);
+            case 0x40: // exg A,XL
+               tempi = regs.X;
+               regs.X = (regs.X &0xff00) | regs.A;
+               regs.A = tempi & 0xff;
+               return(resGO);
+            case 0x50: // exgw X,Y
+               tempi = regs.Y;
+               regs.Y = regs.X;
+               regs.X = tempi;
+               return(resGO);
+            case 0x60: // exg A,YL
+               tempi = regs.Y;
+               regs.Y = (regs.Y &0xff00) | regs.A;
+               regs.A = tempi & 0xff;
+               return(resGO);
+            case 0x80: // ret
+               pop2( PC);
+               return(resGO);
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // CP
+               return( inst_cp( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x2:
+         switch ( code & 0xf0) {
+            case 0x00: // RLWA
+               if (cprefix == 0x00) { // rlwa X,A
+                  tempi = regs.X;
+                  regs.X <<= 8;
+                  regs.X |= regs.A ;
+                  regs.A = tempi >> 8;
+                  FLAG_ASSIGN (BIT_N, 0x8000 & regs.X);
+                  FLAG_ASSIGN (BIT_Z, regs.X ^ 0xffff);
+               } else if (cprefix == 0x90) { // rlwa Y,A
+                  tempi = regs.Y;
+                  regs.Y <<= 8;
+                  regs.Y |= regs.A ;
+                  regs.A = tempi >> 8;
+                  FLAG_ASSIGN (BIT_N, 0x8000 & regs.Y);
+                  FLAG_ASSIGN (BIT_Z, regs.Y ^ 0xffff);
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x30: // POP longmem
+               opaddr = fetch2();
+               pop1( opaddr);
+               return(resGO);
+            case 0x40: //mul
+               if(cprefix==0x90) {
+                  regs.Y = (regs.Y&0xff) * regs.A;
+               } else if(cprefix==0x00) {
+                  regs.X = (regs.X&0xff) * regs.A;
+               } else {
+                  return(resHALT);
+               }
+               FLAG_CLEAR(BIT_H);
+               FLAG_CLEAR(BIT_C);
+               return(resGO);
+               break;
+            case 0x50: // sub sp,#val
+               regs.SP -= fetch();
+               return(resGO);
+               break;            
+            case 0x60: //div
+               return( inst_div( code, cprefix));
+               break;
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // SBC
+               return( inst_sbc( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x3:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // CPL
+               return( inst_cpl( code, cprefix));
+               break;
+            case 0x80: 
+               // store to stack
+               push2( PC & 0xffff);
+               push1( PC >> 16); //extended PC
+               push2( regs.Y);
+               push2( regs.X);
+               push1( regs.A);
+               push1( regs.CC);
+               // set I1 and I0 status bits
+               FLAG_SET(BIT_I1);
+               FLAG_SET(BIT_I0);
+               // get TRAP address
+               PC = get1(0x8004);
+               if (PC == 0x82) { // this is reserved opcode for vector table
+                  regs.VECTOR = 0;
+                  PC = get1(0x8005)*(1<<16);
+                  PC += get2(0x8006);
+                  return(resGO);
+               }
+               return(resHALT);
+            case 0x90:
+               if(cprefix==0x90) {
+                  regs.Y = regs.X;
+               } else if(cprefix==0x00) {
+                  regs.X = regs.Y;
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // CPW
+               return( inst_cpw( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x4:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // SRl
+               return( inst_srl( code, cprefix));
+               break;
+            case 0x80: 
+               pop1( regs.A);
+               return(resGO);
+            case 0x90:
+               if(cprefix==0x90) {
+                  regs.SP = regs.Y;
+               } else if(cprefix==0x00) {
+                  regs.SP = regs.X;
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // AND
+               return( inst_and( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x5:
+         switch ( code & 0xf0) {
+            case 0x30: // MOV
+               tempi = fetch1();
+               opaddr = fetch2();
+               store1(opaddr, tempi);
+               return( resGO);
+               break;
+            case 0x40:
+               opaddr = fetch1();
+               tempi = get1(fetch1());
+               store1(opaddr, tempi);
+               return( resGO);
+               break;
+            case 0x50:
+               opaddr = fetch2();
+               tempi = get1(fetch2());
+               store1(opaddr, tempi);
+               return( resGO);
+               break;
+            case 0x60: // divw
+               return( inst_div( code, cprefix));
+               break;
+            case 0x80: 
+               if(cprefix==0x90) {
+                  pop2(regs.Y);
+               } else if(cprefix==0x00) {
+                  pop2(regs.X);
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x90:
+               if(cprefix==0x90) {
+                  regs.Y = (regs.Y & 0xff) | (regs.A<<8);
+               } else if(cprefix==0x00) {
+                  regs.X = (regs.X & 0xff) | (regs.A<<8);
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // BCP
+               return( inst_bcp( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x6:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // RRC
+               return( inst_rrc( code, cprefix));
+               break;
+            case 0x10:       
+               regs.Y = OPERANDW(code, cprefix);
+               return(resGO);
+               break;
+            case 0x80: 
+               pop1( regs.CC);
+               return(resGO);
+            case 0x90:
+               if(cprefix==0x90) {
+                  regs.Y = regs.SP;
+               } else if(cprefix==0x00) {
+                  regs.X = regs.SP;
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // LD A,...
+               return( inst_lda( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x7:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // SRA
+               return( inst_sra( code, cprefix));
+               break;
+            case 0x10:
+               opaddr = fetch1()+regs.SP;
+               store2(opaddr, regs.Y);
+               return(resGO);
+               break;
+            case 0x80: // RETF
+               pop1( tempi);
+               pop2( PC);
+               PC += (tempi <<16); //Add PCE to PC
+               return(resGO);
+            case 0x90:
+               if(cprefix==0x90) {
+                  regs.Y = (regs.Y & 0xff00) | regs.A;
+               } else if(cprefix==0x00) {
+                  regs.X = (regs.X & 0xff00) | regs.A;
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0xA0:
+               opaddr = fetch2();
+               if (cprefix == 0x92) {
+                  store1(get3(opaddr)+regs.X,regs.A);
+               } else if(cprefix==0x91) {
+                  store1(get3(opaddr)+regs.Y,regs.A);
+               } else if(cprefix==0x90) {
+                  store1((opaddr << 8) + fetch() + regs.Y, regs.A);
+               } else {
+                  store1((opaddr << 8) + fetch() + regs.X, regs.A);
+               }
+               FLAG_NZ (regs.A);
+               return(resGO);
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // LD dst,A
+               return( inst_lddst( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x8:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // SLL
+               return( inst_sll( code, cprefix));
+               break;
+            case 0x80: 
+               push1( regs.A);
+               return(resGO);
+            case 0x90: // RCF
+               FLAG_CLEAR(BIT_C);
+               return(resGO);
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // XOR
+               return( inst_xor( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0x9:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // RLC
+               return( inst_rlc( code, cprefix));
+               break;
+            case 0x80: // PUSHW
+               if(cprefix==0x90) {
+                  push2(regs.Y);
+               } else if(cprefix==0x00) {
+                  push2(regs.X);
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x90: // SCF
+               FLAG_SET(BIT_C);
+               return(resGO);
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // ADC
+               return( inst_adc( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+      
+         break;
+      case 0xa:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // DEC
+               return( inst_dec( code, cprefix));
+               break;
+            case 0x80: 
+               push1( regs.CC);
+               return(resGO);
+            case 0x90: // RIM
+               FLAG_CLEAR(BIT_I0);
+               FLAG_SET(BIT_I1);
+               return(resGO);
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // OR
+               return( inst_or( code, cprefix));
+               break;
+             default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0xb:
+         switch ( code & 0xf0) {
+            case 0x30: 
+               push1( get1(fetch2()));
+               return(resGO);
+            case 0x40: 
+               push1( fetch1());
+               return(resGO);
+            case 0x50: // add sp,#val
+               regs.SP += fetch();
+               return(resGO);
+               break;            
+            case 0x60: // ld (shortoff,SP),A
+               store1(fetch1()+regs.SP, regs.A);
+               return(resGO);
+               break;            
+            case 0x70: // ld A,(shortoff,SP)
+               regs.A = get1(fetch1()+regs.SP);
+               return(resGO);
+               break;            
+            case 0x90: // SIM - disable INT
+               FLAG_SET(BIT_I0);
+               FLAG_SET(BIT_I1);
+               return(resGO);
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // ADD
+               return( inst_add( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0xc:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // INC
+               return( inst_inc( code, cprefix));
+               break;
+            case 0x10: // ADDW X,#word
+               regs.X += fetch2();
+               printf("************* ToDo set correct flags !!!!\n");
+               return( resGO);
+               break;
+            case 0x80: // CCF
+               regs.CC ^= BIT_C;
+               return(resGO);
+               break;            
+            case 0x90: // RVF
+               FLAG_CLEAR(BIT_V);
+               return(resGO);
+            case 0xA0: // JPF
+               opaddr = fetch2();
+               if (cprefix == 0x92) {
+                  PC = get3(opaddr);
+               } else {
+                  PC = (opaddr << 8) + fetch();
+               }
+               return(resGO);
+               break;
+            case 0xb0: // LDF
+               opaddr = fetch2();
+               if (cprefix == 0x92) {
+                  regs.A = get1(get3(opaddr));
+               } else {
+                  regs.A = get1((opaddr << 8) + fetch());
+               }
+               FLAG_NZ (regs.A);
+               return(resGO);
+               break;
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // JP
+               return( inst_jp( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0xd:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // tnz
+               return( inst_tnz( code, cprefix));
+               break;
+            case 0x10: // SUBW X,#word
+               regs.X -= fetch2();
+               printf("************* ToDo set correct flags !!!!\n");
+               return( resGO);
+               break;
+            case 0x80: // CALLF
+               opaddr = fetch2();
+               push2(PC & 0xffff);
+               push1(PC>>16);
+               if (cprefix == 0x92) {
+                  PC = get3(opaddr);
+               } else {
+                  PC = (opaddr << 8) + fetch();
+               }
+               return(resGO);
+               break;
+            case 0x90: // NOP
+               return(resGO);
+               break;
+            case 0xA0: // CALLR
+               push2(PC);
+               PC += (char) fetch1();
+               return(resGO);
+               break;            
+            case 0xb0: // LDF
+               opaddr = fetch2();
+               if (cprefix == 0x92) {
+                  store1(get3(opaddr),regs.A);
+               } else {
+                  store1((opaddr << 8) + fetch(), regs.A);
+               }
+               FLAG_NZ (regs.A);
+               return(resGO);
+               break;
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // CALL
+               return( inst_call( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0xe:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // swap
+               return( inst_swap( code, cprefix));
+               break;
+            case 0x80: 
+               printf("************* HALT instruction reached !!!!\n");
+               return(resHALT);
+            case 0x90:
+               if(cprefix==0x90) {
+                  regs.A = (regs.Y >> 8);
+               } else if(cprefix==0x00) {
+                  regs.A = (regs.X >> 8);
+               } else {
+                  return(resHALT);
+               }
+               return(resGO);
+               break;
+            case 0x10: 
+            case 0xA0:
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // LDXY
+               return( inst_ldxy( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      case 0xf:
+         switch ( code & 0xf0) {
+            case 0x00: 
+            case 0x30:
+            case 0x40:
+            case 0x50:
+            case 0x60:
+            case 0x70: // CLR
+               return( inst_clr( code, cprefix));
+               break;
+            case 0x80: 
+               printf("************* WFI/WFE instruction not implemented !!!!\n");
+               return(resHALT);
+            case 0x90:
+               if(cprefix==0x90) {
+                  regs.A = (regs.Y & 0xff);
+               } else if(cprefix==0x00) {
+                  regs.A = (regs.X & 0xff);
+               } else {
+                  return(resHALT);
+               }
+            case 0xA0: // LDF
+               opaddr = fetch2();
+               if (cprefix == 0x92) {
+                  regs.A = get1(get3(opaddr)+regs.X);
+               } else if(cprefix==0x91) {
+                  regs.A = get1(get3(opaddr)+regs.Y);
+               } else if(cprefix==0x90) {
+                  regs.A = get1((opaddr << 8) + fetch() + regs.Y);
+               } else {
+                  regs.A = get1((opaddr << 8) + fetch() + regs.X);
+               }
+               FLAG_NZ (regs.A);
+               return(resGO);
+               break;
+            case 0xB0:
+            case 0xC0:
+            case 0xD0:
+            case 0xE0:
+            case 0xF0: // LDXYDST
+               return( inst_ldxydst( code, cprefix));
+               break;
+            default: 
+               printf("************* bad code !!!!\n");
+               return(resHALT);
+         }
+         break;
+      default:
+         printf("************* bad code !!!!\n");
+         return(resHALT);
+      
+   }
 
-			FLAG_CLEAR(BIT_V);
-			FLAG_CLEAR(BIT_H);
-			FLAG_CLEAR(BIT_N);
-			if (regs.Y == 0) {
-				//nastav C
-				FLAG_SET(BIT_C);
-			} else {
-				FLAG_CLEAR(BIT_C);
-				
-				tmpi = regs.X%regs.Y; 
-				regs.X = regs.X/regs.Y;
-				regs.Y = tmpi;
-			}
-			return( resGO);
-		}
-	
-    case 0x7:
-		switch (code & 0xf) {
-			case 0x00: return(inst_neg(code, cprefix));
-			case 0x03: return(inst_cpl(code, cprefix));
-			case 0x04: return(inst_srl(code, cprefix));
-			case 0x05: return(inst_rrc(code, cprefix));
-			case 0x07: return(inst_sra(code, cprefix));
-			case 0x08: return(inst_sll(code, cprefix));
-			case 0x09: return(inst_rlc(code, cprefix));
-			case 0x0b: regs.SP += fetch(); return( resGO);
-			case 0x0c: return(inst_inc(code, cprefix));
-			case 0x0d: return( inst_tnz(code, cprefix));
-			case 0x0e: return( inst_swap(code, cprefix));
-			case 0x0f: return(inst_clr(code, cprefix));
-		}
-		
-    case 0x8:
-		if (code == 0x8d) {
-			int ptr = fetch2();
-			push2(PC);
-			push1(PC>>16);
-
-			if (cprefix == 0x92) {
-				PC = get3(ptr);
-			} else {
-				PC = (ptr << 8) + fetch();
-			}
-			return( resGO);
-		}
-		if (code == 0x8c) { // CCF
-			regs.CC ^= BIT_C;
-			return( resGO);
-		}
-
-		if (code == 0x81) { // RET
-			pop2( PC);
-			return( resGO);
-		}
-		if (code == 0x80) { // IRET
-			pop1( regs.CC);
-			pop1( regs.A);
-			pop2( regs.X);
-			pop2( regs.Y);
-			pop1( PC); // extended PC is skipped
-			pop2( PC);
-			return( resGO);
-		}
-		if (code == 0x87) { // RETF
-			pop1( PC); // extended PC is skipped
-			pop2( PC);
-			return( resGO);
-		}
-		if (((code == 0x8f)||(code == 0x8e)) && (cprefix == 0x00)) {
-			PC -= 1; // WFI = Wait For Interrupt, HALT
-			FLAG_SET(BIT_I1);
-			FLAG_CLEAR(BIT_I0);
-			return( resGO);
-		}
-		if ((code == 0x8f) && (cprefix == 0x72)) {
-			PC -= 2; // WFE = Wait For Event
-			return( resGO);
-		}
-		if ((code == 0x83) && (cprefix == 0x00)) { // TRAP
-			return(inst_trap(code, cprefix));
-		}
-		if ((code == 0x88) && (cprefix == 0x00)) {
-			push1( regs.A); // push A
-			return( resGO);
-		}
-		if ((code == 0x8A) && (cprefix == 0x00)) {
-			push1( regs.CC); // push CC
-			return( resGO);
-		}
-		if ((code == 0x89) && (cprefix == 0x00)) {
-			push2( regs.X); // pushw X
-			return( resGO);
-		}
-		if ((code == 0x89) && (cprefix == 0x90)) {
-			push2( regs.Y); // pushw Y
-			return( resGO);
-		}
-		if ((code == 0x85) && (cprefix == 0x00)) {
-			pop2( regs.X); // popw X
-			return( resGO);
-		}
-		if ((code == 0x85) && (cprefix == 0x90)) {
-			pop2( regs.Y); // popw Y
-			return( resGO);
-		}
- 		if ((code == 0x84) && (cprefix == 0x00)) {
-			pop1( regs.A); // pop A
-			return( resGO);
-		}
-		if ((code == 0x86) && (cprefix == 0x00)) {
-			pop1( regs.CC); // pop CC
-			return( resGO);
-		}
-   case 0x9:
-		if ((code == 0x99) && (cprefix == 0x00)) { // SCF
-			FLAG_SET(BIT_C);
-			return( resGO);
-		}
-		if ((code == 0x98) && (cprefix == 0x00)) { // RCF
-			FLAG_CLEAR(BIT_C);
-			return( resGO);
-		}
-		if ((code == 0x9a) && (cprefix == 0x00)) { // RIM - enable IRQ
-			FLAG_SET(BIT_I1);
-			FLAG_CLEAR(BIT_I0);
-			return( resGO);
-		}
-		if ((code == 0x9b) && (cprefix == 0x00)) { // SIM - disable IRQ
-			FLAG_SET(BIT_I1);
-			FLAG_SET(BIT_I0);
-			return( resGO);
-		}
-		if ((code == 0x9c) && (cprefix == 0x00)) { // RVF
-			FLAG_CLEAR(BIT_V);
-			return( resGO);
-		}
-		if ((code == 0x9d) && (cprefix == 0x00)) { // nop
-			return( resGO);
-		}
-		if ((code == 0x97) && (cprefix == 0x00)) { // ld XL,A
-			regs.X &= 0xff00;
-			regs.X |= regs.A;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		if ((code == 0x97) && (cprefix == 0x90)) { // ld YL,A
-			regs.Y &= 0xff00;
-			regs.Y |= regs.A;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		if ((code == 0x9f) && (cprefix == 0x00)) { // ld A,XL
-			regs.A = regs.X & 0xff;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		if ((code == 0x9f) && (cprefix == 0x90)) { // ld A,YL
-			regs.A = regs.Y & 0xff;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		if ((code == 0x95) && (cprefix == 0x00)) { // ld XH,A
-			regs.X &= 0x00ff;
-			regs.X |= regs.A<<8;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		if ((code == 0x95) && (cprefix == 0x90)) { // ld YH,A
-			regs.Y &= 0xff;
-			regs.Y |= regs.A<<8;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		if ((code == 0x9E) && (cprefix == 0x00)) { // ld A,XH
-			regs.A = regs.X >> 8;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		if ((code == 0x9E) && (cprefix == 0x90)) { // ld A,YH
-			regs.A = regs.Y >> 8;
-			FLAG_NZ (regs.A);
-			return( resGO);
-		}
-		
-
-    case 0xa:
-		if ((code == 0xa7) || (code == 0xaf)) { // ldf
-			return( resHALT); // LDF unsupported now !!!! ToDo
-		}
-		if (code == 0xac)  { // jpf
-			return( resHALT); // JPF unsupported now !!!! ToDo
-		}
-	
-    case 0xb:
-		if ((code == 0xbc) || (code == 0xbd)) { // ldf
-			return( resHALT); // LDF unsupported now !!!! ToDo
-		}
-    case 0xc:
-    case 0xd:
-    case 0xe:
-    case 0xf:
-	  if (code == 0xad) {
-		return(inst_callr(code, cprefix));
-	  }
-	  if (cprefix == 0x72) {
-		if ((code == 0xf0) || (code == 0xf2) || (code == 0xa2)
-			|| (code == 0xb0) || (code == 0xb2)) {
-			return(inst_subw(code, cprefix));
-		}
-	    switch (code) { //addw
-			case 0xa9 : regs.Y = fetch2(); return( resGO);
-			case 0xb9 : regs.Y = get2(fetch2()); return( resGO);
-			case 0xbb : regs.X = get2(fetch2()); return( resGO);
-			case 0xf9 : regs.Y = get2(fetch() + regs.SP); return( resGO);
-			case 0xfb : regs.X = get2(fetch() + regs.SP); return( resGO);
-			//default is processing in the next switch statement
-		}
-	  }
-      switch (code & 0xf) {
-		case 0x0: return(inst_sub(code, cprefix));
-		case 0x1: return(inst_cp(code, cprefix));
-		case 0x2: return(inst_sbc(code, cprefix));
-		case 0x3: return(inst_cpw(code, cprefix));
-		case 0x4: return(inst_and(code, cprefix));
-		case 0x5: return(inst_bcp(code, cprefix));
- 		case 0x6: return(inst_lda(code, cprefix));
- 		case 0x7: return(inst_lddst(code, cprefix));
-        case 0x8: return(inst_xor(code, cprefix));
-        case 0x9: return(inst_adc(code, cprefix));
-		case 0xa: return(inst_or(code, cprefix));
-        case 0xb: return(inst_add(code, cprefix));
-        case 0xc: return(inst_jp(code, cprefix));
-		case 0xd: return(inst_call(code, cprefix));
-		case 0xe: return(inst_ldw(code, cprefix));
-	  
-        default: return(resHALT);
-	  }
-	  
-    default:
-		printf("************* bad code !!!!\n");
-		return(resHALT);
-  }
-
+   printf("************* bad code !!!!\n");
   /*if (PC)
     PC--;
   else

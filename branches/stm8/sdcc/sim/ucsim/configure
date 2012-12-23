@@ -694,6 +694,7 @@ LDFLAGS
 CXXFLAGS
 CXX
 enable_serio
+enable_st7
 enable_stm8
 enable_xa
 enable_hc08
@@ -756,6 +757,7 @@ enable_z80
 enable_hc08
 enable_xa
 enable_stm8
+enable_st7
 enable_serio
 enable_statistic
 enable_shared
@@ -1401,6 +1403,7 @@ Optional Features:
   --disable-hc08          do not compile simulator for hc08
   --enable-xa             compile simulator for XA
   --disable-stm8          do not compile simulator for stm8
+  --disable-st7           do not compile simulator for st7
   --enable-serio          compile serio GUI tool (needs curses)
   --enable-statistic      compile statistical features (slower simulation)
   --enable-shared[=PKGS]  build shared libraries [default=yes]
@@ -2797,7 +2800,14 @@ fi
 else
   enable_stm8="yes"
 fi
-
+# Check whether --enable-st7 was given.
+if test "${enable_st7+set}" = set; then :
+  enableval=$enable_st7; if test $enable_st7 != "no"; then
+    enable_st7="yes"
+fi
+else
+  enable_st7="yes"
+fi
 # Check whether --enable-serio was given.
 if test "${enable_serio+set}" = set; then :
   enableval=$enable_serio; if test $enable_serio != "no"; then
@@ -17105,7 +17115,7 @@ _ACEOF
 # Generating output files
 # ===========================================================================
 
-ac_config_files="$ac_config_files Makefile main.mk:main_in.mk packages.mk:packages_in.mk sim.src/Makefile cmd.src/Makefile s51.src/Makefile avr.src/Makefile z80.src/Makefile hc08.src/Makefile xa.src/Makefile stm8.src/Makefile gui.src/Makefile gui.src/serio.src/Makefile doc/Makefile"
+ac_config_files="$ac_config_files Makefile main.mk:main_in.mk packages.mk:packages_in.mk sim.src/Makefile cmd.src/Makefile s51.src/Makefile avr.src/Makefile z80.src/Makefile hc08.src/Makefile xa.src/Makefile stm8.src/Makefile st7.src/Makefile gui.src/Makefile gui.src/serio.src/Makefile doc/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -18195,6 +18205,7 @@ do
     "hc08.src/Makefile") CONFIG_FILES="$CONFIG_FILES hc08.src/Makefile" ;;
     "xa.src/Makefile") CONFIG_FILES="$CONFIG_FILES xa.src/Makefile" ;;
     "stm8.src/Makefile") CONFIG_FILES="$CONFIG_FILES stm8.src/Makefile" ;;
+    "st7.src/Makefile") CONFIG_FILES="$CONFIG_FILES st7.src/Makefile" ;;
     "gui.src/Makefile") CONFIG_FILES="$CONFIG_FILES gui.src/Makefile" ;;
     "gui.src/serio.src/Makefile") CONFIG_FILES="$CONFIG_FILES gui.src/serio.src/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;

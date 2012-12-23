@@ -42,6 +42,7 @@
       ; }
 #define EA_IMM(c) ((((c) >> 4) & 0xf)==0xa)
 #define OPERAND(code,prefix) (EA_IMM(code) ? fetch() : get1(fetchea(code,prefix)))
+#define OPERANDW(code,prefix) (EA_IMM(code) ? fetch2() : get1(fetchea(code,prefix)))
 
 
 

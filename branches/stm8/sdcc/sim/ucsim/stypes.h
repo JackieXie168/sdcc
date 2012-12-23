@@ -107,6 +107,9 @@ struct cpu_entry
 #define CPU_STM8	0x0001
 #define CPU_ALL_STM8	(CPU_STM8)
 
+#define CPU_ST7       0x0001
+#define CPU_ALL_ST7   (CPU_ST7)
+
 #define CPU_CMOS	0x0001
 #define CPU_HMOS	0x0002
 
