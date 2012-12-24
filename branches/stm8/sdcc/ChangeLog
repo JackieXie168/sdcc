@@ -1,3 +1,30 @@
+2012-12-23 Vaclav Peroutka <vaclavpe AT seznam.cz>
+
+   * sim/ucsim/configure
+     sim/ucsim/configure.in
+     sim/ucsim/main_in.mk
+     sim/ucsim/packages_in.mk
+     sim/ucsim/stypes.h
+     sim/ucsim/st7.src/(c).1
+     sim/ucsim/st7.src/Makefile.in
+     sim/ucsim/st7.src/clean.mk
+     sim/ucsim/st7.src/conf.mk
+     sim/ucsim/st7.src/glob.cc
+     sim/ucsim/st7.src/glob.h
+     sim/ucsim/st7.src/inst.cc
+     sim/ucsim/st7.src/instcl.h
+     sim/ucsim/st7.src/regsst7.h
+     sim/ucsim/st7.src/simst7.cc
+     sim/ucsim/st7.src/simst7cl.h
+     sim/ucsim/st7.src/sst7.cc
+     sim/ucsim/st7.src/st7.cc
+     sim/ucsim/st7.src/st7cl.h
+     sim/ucsim/st7.src/st7mac.h
+     sim/ucsim/stm8.src/inst.cc
+     sim/ucsim/stm8.src/instcl.h
+     sim/ucsim/stm8.src/stm8.cc
+     sim/ucsim/stm8.src/stm8mac.h
+
 2012-12-23 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c,
