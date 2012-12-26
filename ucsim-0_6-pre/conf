@@ -2,6 +2,7 @@
 
 TARGET=linux
 PREFIX="${HOME}/local"
+DD_HOSTS="p4 anb anb1 render mms box mazsola"
 
 if [ "$#" -ge 1 ]; then
     case "$1" in
@@ -12,26 +13,29 @@ if [ "$#" -ge 1 ]; then
 fi
 
 if [ -f devel ]; then
-	export CXXFLAGS=""
+    export CXXFLAGS="-O0"
+    export CFLAGS="-g -O0"
 fi
 
 case $TARGET in
     linux)
-	if [ $(hostname) = "anb" ]; then
+	if echo $DD_HOSTS|grep $(hostname) >/dev/null 2>&1 ; then
 	    export PREFIX='/usr/local'
 	fi
 	./configure --prefix=${PREFIX} \
-	--enable-ucsim \
-	--enable-dlso \
-	--enable-serio \
-	--enable-z80 \
-	--enable-xa \
-	"$@"
+	    --enable-ucsim \
+	    --enable-dlso \
+	    --enable-serio \
+	    --enable-z80 \
+	    --enable-xa \
+	    --enable-stm8 \
+	    --enable-st7 \
+	    "$@"
 	;;
-    mingw)
+    mingw|win)
 	export CC=/usr/local/cross-tools/mingw32/bin/gcc
 	export CXX=/usr/local/cross-tools/mingw32/bin/g++
-	if [ $(hostname) = "anb" -o $(hostname) = "render" ]; then
+	if echo $DD_HOSTS|grep $(hostname) >/dev/null 2>&1 ; then
 	    export CC=i686-w64-mingw32-gcc
 	    export CXX=i686-w64-mingw32-g++
 	    export HOST_OPT='--host=i686-w64-mingw32'
@@ -40,12 +44,14 @@ case $TARGET in
 	fi
 #	echo CC=$CC CXX=$CXX HOST=$HOST_OPT
 	./configure --prefix=${PREFIX} \
-	--disable-ucsim \
-	--disable-dlso \
-	--disable-serio \
-	--enable-z80 \
-	--enable-xa \
-	$HOST_OPT "$@"
+	    --disable-ucsim \
+	    --disable-dlso \
+	    --disable-serio \
+	    --enable-z80 \
+	    --enable-xa \
+	    --enable-stm8 \
+	    --enable-st7 \
+	    $HOST_OPT "$@"
 	;;
     *)
 	echo >&2 "Do not know how to configure!"
