@@ -181,16 +181,24 @@ external_definition
    ;
 
 function_definition
-   : function_declarator function_body  {   /* function type not specified */
-                                   /* assume it to be 'int'       */
-                                   addDecl($1,0,newIntLink());
-                                   $$ = createFunction($1,$2);
+   : function_declarator 
+         {   /* function type not specified */
+             /* assume it to be 'int'       */
+             addDecl($1,0,newIntLink());
+             $1 = createFunctionDecl($1);
+         }
+      function_body  {
+                                   $$ = createFunction($1,$3);
                                }
-   | declaration_specifiers function_declarator function_body
+   | declaration_specifiers function_declarator
+         {
+              pointerTypes($2->type,copyLinkChain($1));
+              addDecl($2,0,$1);
+              $2 = createFunctionDecl($2);
+         }
+     function_body
                                 {
-                                    pointerTypes($2->type,copyLinkChain($1));
-                                    addDecl($2,0,$1);
-                                    $$ = createFunction($2,$3);
+                                    $$ = createFunction($2,$4);
                                 }
    ;
 
@@ -552,7 +560,7 @@ init_declarator_list
 
 init_declarator
    : declarator                  { $1->ival = NULL; }
-   | declarator '=' initializer  { $1->ival = $3; }
+   | declarator '=' initializer  { $1->ival = $3; seqPointNo++; }
    ;
 
 designation_opt
@@ -1279,6 +1287,7 @@ function_declarator2
           STACK_PUSH(blockNum, currBlockno);
           btree_add_child(currBlockno, ++blockNo);
           currBlockno = blockNo;
+          seqPointNo++; /* not a true sequence point, but helps resolve scope */
         }
      parameter_type_list ')'
         {
@@ -1298,6 +1307,7 @@ function_declarator2
           /* nest level was incremented to take care of the parms  */
           NestLevel--;
           currBlockno = STACK_POP(blockNum);
+          seqPointNo++; /* not a true sequence point, but helps resolve scope */
 
           // if this was a pointer (to a function)
           if (!IS_FUNC($1->type))
@@ -1430,7 +1440,6 @@ parameter_declaration
           addDecl ($2, 0, $1);
           for (loop = $2; loop; loop->_isparm = 1, loop = loop->next)
             ;
-          addSymChain (&$2);
           $$ = symbolVal ($2);
           ignoreTypedefType = 0;
         }
@@ -1553,11 +1562,7 @@ abstract_declarator2
               $$ = $1;
             }
           $1->next = p;
-
-          // disabled to fix bug 3190029
-//        // remove the symbol args (if any)
-//        cleanUpLevel(SymbolTab, NestLevel + 1);
-   }
+        }
    ;
 
 initializer
