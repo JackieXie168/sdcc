@@ -192,7 +192,7 @@ $(top_builddir)/libguitool.a: $(OBJECTS) $(TOOL_OBJECTS)
 # ----------------------
 checkconf:
 	@if [ -f $(top_builddir)/devel ]; then\
-	  $(MAKE) -f conf.mk srcdir="$(srcdir)" top_builddir="$(top_builddir)" freshconf;\
+	  $(MAKE) -C $(top_builddir) -f conf.mk srcdir="$(srcdir)" top_builddir="$(top_builddir)" freshconf;\
 	fi
 
 # End of gui.src/Makefile
