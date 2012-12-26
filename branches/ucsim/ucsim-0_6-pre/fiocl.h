@@ -28,6 +28,32 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #ifndef FIOCL_HEADER
 #define FIOCL_HEADER
 
+#include "pobjcl.h"
+
+
+/* Regular file */
+
+class cl_f: public cl_base
+{
+ private:
+  char *file_name, *file_mode;
+  FILE *file_f;
+  int file_id;
+ public:
+  cl_f(char *fn, char *mode);
+  virtual ~cl_f(void);
+  virtual int init(void);
+
+  virtual int read(char *buf, int max);
+  virtual int write(char *buf, int count);
+  virtual int write_str(char *s);
+
+  virtual int raw(void);
+  virtual int cooked(void);
+  virtual int input_avail(void);
+};
+
+
 #endif
 
 /* End of fiocl.h */

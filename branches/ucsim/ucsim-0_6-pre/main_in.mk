@@ -27,6 +27,7 @@ CPPFLAGS        = @CPPFLAGS@ -I$(top_builddir) -I$(srcdir) \
 		  -I$(top_srcdir)/$(CMDDIR) -I$(top_srcdir)/$(GUIDIR)
 CFLAGS          = @CFLAGS@ -I$(top_builddir) @WALL_FLAG@
 CXXFLAGS        = @CXXFLAGS@ -I$(top_builddir) @WALL_FLAG@
+LDFLAGS		= @LDFLAGS@
 
 EXEEXT		= @EXEEXT@
 
@@ -63,7 +64,7 @@ all: checkconf libs
 
 libs: libucsimutil.a
 
-main_app: checkconf ucsim_app
+main_app: checkconf ucsim_app ftest_app
 
 # Compiling and installing everything and runing test
 # ---------------------------------------------------
@@ -122,9 +123,14 @@ else
 ucsim_app:
 endif
 
+ftest_app: libs ftest$(EXEEXT)
+
 ucsim: $(UCSIM_OBJECTS) $(UCSIM_LIB_FILES)
 	echo $(UCSIM_LIB_FILES)
 	$(CXX) $(CXXFLAGS) -o $@ $< -L$(top_builddir) $(UCSIM_LIBS)
+
+ftest$(EXEEXT): ftest.o libucsimutil.a
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< -L$(top_builddir) -lucsimutil
 
 ptt: ptt.o
 	$(CXX) $(CXXFLAGS) -o $@ $< -lpthread

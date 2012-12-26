@@ -26,8 +26,83 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 /*@1@*/
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "fiocl.h"
+
+
+cl_f::cl_f(char *fn, char *mode):
+  cl_base()
+{
+  file_f= NULL;
+  file_id= -1;
+  file_name= fn;
+  file_mode= mode;
+}
+
+
+int
+cl_f::init(void)
+{
+  if ((file_f= fopen(file_name, file_mode)) != NULL)
+    file_id= fileno(file_f);
+  return file_id;
+}
+
+
+cl_f::~cl_f(void)
+{
+  if (file_f)
+    fclose(file_f);
+  file_f= NULL;
+  file_id= -1;
+}
+
+
+/* IO primitives */
+
+int
+cl_f::read(char *buf, int max)
+{
+  return ::read(file_id, buf, max);
+}
+
+
+int
+cl_f::write(char *buf, int count)
+{
+  return ::write(file_id, buf, count);
+}
+
+
+int
+cl_f::write_str(char *s)
+{
+  return fprintf(file_f, "%s", s);
+}
+
+
+/* Device handling */
+
+int
+cl_f::raw(void)
+{
+  return 0;
+}
+
+
+int
+cl_f::cooked(void)
+{
+  return 0;
+}
+
+
+int
+cl_f::input_avail(void)
+{
+  return 0;
+}
 
 
 /* End of fio.cc */
