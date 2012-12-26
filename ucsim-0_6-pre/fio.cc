@@ -25,8 +25,13 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 02111-1307, USA. */
 /*@1@*/
 
+#include "ddconfig.h"
+
 #include <stdio.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
+#include HEADER_FD
 
 #include "fiocl.h"
 
@@ -82,6 +87,13 @@ cl_f::write_str(char *s)
 }
 
 
+int
+cl_f::write_str(const char *s)
+{
+  return fprintf(file_f, "%s", s);
+}
+
+
 /* Device handling */
 
 int
@@ -101,6 +113,18 @@ cl_f::cooked(void)
 int
 cl_f::input_avail(void)
 {
+  struct timeval tv= { 0, 0 };
+  fd_set s;
+
+  if (file_id<0)
+    return 0;
+
+  FD_ZERO(&s);
+  FD_SET(file_id, &s);
+  if (select(file_id+1, &s, NULL, NULL, &tv) >= 0)
+    {
+      return FD_ISSET(file_id, &s);
+    }
   return 0;
 }
 

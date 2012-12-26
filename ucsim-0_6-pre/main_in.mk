@@ -130,7 +130,7 @@ ucsim: $(UCSIM_OBJECTS) $(UCSIM_LIB_FILES)
 	$(CXX) $(CXXFLAGS) -o $@ $< -L$(top_builddir) $(UCSIM_LIBS)
 
 ftest$(EXEEXT): ftest.o libucsimutil.a
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< -L$(top_builddir) -lucsimutil
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< -L$(top_builddir) -lucsimutil @LIBS@
 
 ptt: ptt.o
 	$(CXX) $(CXXFLAGS) -o $@ $< -lpthread

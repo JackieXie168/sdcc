@@ -47,6 +47,7 @@ class cl_f: public cl_base
   virtual int read(char *buf, int max);
   virtual int write(char *buf, int count);
   virtual int write_str(char *s);
+  virtual int write_str(const char *s);
 
   virtual int raw(void);
   virtual int cooked(void);
