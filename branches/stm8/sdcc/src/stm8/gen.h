@@ -36,6 +36,8 @@ typedef enum
   AOP_EXSTK,
   /* Is an immediate value */
   AOP_IMMD,
+  /* Is in direct space */
+  AOP_DIR,
   /* Read undefined, discard writes */
   AOP_DUMMY
 }
@@ -45,11 +47,12 @@ AOP_TYPE;
    of an operand can be in */
 typedef struct asmop_byte
 {
+  bool in_reg;
   union
   {
     reg_info *reg;    /* Register this byte is in. */
     unsigned int stk; /* Stack offset for this byte. */
-  } bu;
+  } byteu;
 } asmop_byte;
 
 /* asmop: A homogenised type for all the different
@@ -62,6 +65,7 @@ typedef struct asmop
   {
     value *aop_lit;
     char *aop_immd;
+    char *aop_dir;
     asmop_byte bytes[8];
   } aopu;
 }

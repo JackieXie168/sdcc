@@ -122,17 +122,20 @@ aopForSym (const iCode *ic, symbol *sym)
   if (IS_FUNC (sym->type))
     {
       sym->aop = aop = newAsmop (AOP_IMMD);
-      aop->aopu.aop_immd = Safe_calloc (1, strlen (sym->rname) + 1);
-      strcpy (aop->aopu.aop_immd, sym->rname);
+      aop->aopu.aop_immd = sym->rname;
       aop->size = 2;
-      return aop;
     }
   /* Assign depending on the storage class */
   else if (sym->onStack || sym->iaccess)
     {
+      aop = 0;
+      wassertl (0, "Unimplemented on stack asmop.");
     }
   else
     {
+      aop = newAsmop (AOP_DIR);
+      aop->aopu.aop_dir = sym->rname;
+      aop->size = getSize (sym->type);
     }
 
   sym->aop = aop;
@@ -146,6 +149,9 @@ aopForSym (const iCode *ic, symbol *sym)
 static void
 aopOp (operand *op, const iCode *ic)
 {
+  symbol *sym;
+  int i;
+
   wassert (op);
 
   /* if already has an asmop */
@@ -169,7 +175,45 @@ aopOp (operand *op, const iCode *ic)
       return;
     }
 
+  sym = OP_SYMBOL (op);
+
+  if (sym->remat)
+    {
+      wassertl (0, "Unimplemented remat asmop.");
+    }
+
   /* None of the above, which only leaves temporaries. */
+  { 
+    bool completly_in_regs = TRUE;
+    bool completly_on_stack = TRUE;
+    asmop *aop = newAsmop (AOP_REGSTK);
+
+    for (i = 0; i < getSize (operandType (op)); i++)
+      {
+        aop->aopu.bytes[i].in_reg = !!sym->regs[i];
+        if (sym->regs[i])
+          {
+            completly_on_stack = FALSE;
+            aop->aopu.bytes[i].byteu.reg = sym->regs[i];
+          }
+        else if (sym->usl.spillLoc)
+          {
+            completly_in_regs = FALSE;
+            aop->aopu.bytes[i].byteu.stk = sym->stack + i;
+            wassertl (sym->stack + i < 200, "Unimplemented EXSTK.");
+          }
+        else
+          wassertl (0, "Unimplemented dummy.");
+      }
+
+    if (completly_in_regs)
+      aop->type = AOP_REG;
+    else if (completly_on_stack)
+      aop->type = AOP_STK;
+
+    op->aop = aop;
+    return;
+  }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -464,6 +508,13 @@ genSTM8Code (iCode *lic)
 
       regalloc_dry_run_cost_bytes = 0;
       regalloc_dry_run_cost_cycles = 0;
+
+      if (options.iCodeInAsm)
+        {
+          const char *iLine = printILine (ic);
+          emitcode ("; ic:", "%d: %s", ic->key, iLine);
+          dbuf_free (iLine);
+        }
 
       genSTM8iCode(ic);
     }
