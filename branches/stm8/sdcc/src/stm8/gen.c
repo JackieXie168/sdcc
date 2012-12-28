@@ -61,6 +61,14 @@ static bool regDead (int idx, const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* aopRS - asmop in register or on stack                           */
+/*-----------------------------------------------------------------*/
+bool aopRS (const asmop *aop)
+{
+  return (aop->type == AOP_REG || aop->type == AOP_REGSTK || aop->type == AOP_STK);
+}
+
+/*-----------------------------------------------------------------*/
 /* newAsmop - creates a new asmOp                                  */
 /*-----------------------------------------------------------------*/
 static asmop *
@@ -256,6 +264,78 @@ adjustStack (int n)
     }
 }
 
+/*-----------------------------------------------------------------*/
+/* cheapMove - Copy a byte from one asmop to another               */
+/*-----------------------------------------------------------------*/
+static void
+cheapMove (asmop *result, int roffset, asmop *source, int soffset)
+{
+  if (aopRS (result) && aopRS (source) &&
+    result->aopu.bytes[roffset].in_reg && source->aopu.bytes[soffset].in_reg &&
+    result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
+    return;
+
+  wassertl (0, "Unimplemented.");
+}
+
+/*-----------------------------------------------------------------*/
+/* genCopy - Copy the value from one reg/stk asmop to another      */
+/*-----------------------------------------------------------------*/
+static void
+genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
+{
+  int i, regsize, size = result->size;
+  bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
+  int ex[4] = {-1, -1, -1, -1};
+
+  wassertl (aopRS (source), "Invalid source type.");
+  wassertl (aopRS (result), "Invalid result type.");
+
+  // TODO: Use exg/exgw for optimization.
+
+  // Now do the register shuffling.
+  for (i = 0, regsize = 0; i < size; i++)
+    regsize += source->aopu.bytes[i].in_reg;
+  while (regsize)
+    {
+      // Find lowest byte that can be assigned and needs to be assigned.
+      for (i = 0; i < size; i++)
+        {
+          size_t j;
+
+          if (assigned[i] || !source->aopu.bytes[i].in_reg)
+            continue;
+
+          for (j = 0; j < size; j++)
+            {
+              if (!source->aopu.bytes[j].in_reg || !result->aopu.bytes[i].in_reg)
+                continue;
+              if (!assigned[j] && i != j && result->aopu.bytes[i].byteu.reg == source->aopu.bytes[j].byteu.reg)
+                goto skip_byte; // We can't write this one without overwriting the source.
+            }
+
+          break;                // Found byte that can be written safely.
+
+skip_byte:
+          ;
+        }
+
+      if (i < size)
+        {
+          cheapMove (result, i, source, i);       // We can safely assign a byte.
+          regsize--;
+          assigned[i] = TRUE;
+          continue;
+        }
+
+      // No byte can be assigned safely (i.e. the assignment is a permutation). Cache one in the accumulator.
+      wassertl (0, "Unimplemented.");
+    }
+
+  // In the end, move from the stack to destination.
+  wassertl (regsize == size, "Unimplemented.");
+}
+
 /*---------------------------------------------------------------------*/
 /* stm8_emitDebuggerSymbol - associate the current code location       */
 /*   with a debugger symbol                                            */
@@ -357,13 +437,21 @@ static void
 genAssign (const iCode *ic)
 {
   operand *result, *right;
-  int size, offset;
+  int i;
 
   result = IC_RESULT (ic);
   right = IC_RIGHT (ic);
 
   aopOp (right, ic);
   aopOp (result, ic);
+
+  if (aopRS (result->aop) && aopRS (right->aop))
+    genCopy (result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  // TODO: Efficient handling of some special cases.
+
+  for (i = 0; i < result->aop->size; i++)
+    cheapMove (result->aop, 0, right->aop, 0);
 
   freeAsmop (right);
   freeAsmop (result);
