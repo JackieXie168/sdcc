@@ -67,7 +67,7 @@ stm8_setDefaultOptions (void)
 }
 
 static const char *
-stm8_getRegName (struct reg_info *reg)
+stm8_getRegName (const struct reg_info *reg)
 {
   if (reg)
     return reg->name;

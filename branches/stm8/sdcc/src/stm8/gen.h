@@ -39,12 +39,24 @@ typedef enum
 }
 AOP_TYPE;
 
-/* type asmop : a homogenised type for 
-   all the different spaces an operand can be
-   in */
+/* asmop_byte: A y type for the space a single byte
+   of an operand can be in */
+typedef struct asmop_byte
+{
+  union
+  {
+    reg_info *reg;    /* Register this byte is in. */
+    unsigned int stk; /* Stack offset for this byte. */
+  } aopu;
+} asmop_byte;
+
+/* asmop: A homogenised type for all the different
+   spaces an operand can be in */
 typedef struct asmop
 {
   AOP_TYPE type;
+  short size;
+  asmop_byte bytes[8];
 }
 asmop;
 
