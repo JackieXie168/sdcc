@@ -106,7 +106,7 @@ genSTM8Code (iCode *lic)
     }
 
   /* now we are ready to call the
-     peep hole optimizer */
+     peephole optimizer */
   if (!options.nopeep)
     peepHole (&genLine.lineHead);
 

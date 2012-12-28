@@ -31,6 +31,117 @@ extern "C"
   bool stm8_assignment_optimal;
 };
 
+// Cost function.
+template <class G_t, class I_t>
+static float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  iCode *ic = G[i].ic;
+  float c;
+
+  wassert (TARGET_IS_STM8);
+
+  /*if(!inst_sane(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());*/
+
+#if 0
+  std::cout << "Calculating at cost at ic " << ic->key << " for: ";
+  for(unsigned int i = 0; i < boost::num_vertices(I); i++)
+  {
+  	std::cout << "(" << i << ", " << int(a.global[i]) << ") ";
+  }
+  std::cout << "\n";
+  std::cout.flush();
+#endif
+
+  if(ic->generated)
+    return(0.0f);
+
+  switch(ic->op)
+    {
+    // Register assignment doesn't matter for these:
+    case FUNCTION:
+    case ENDFUNCTION:
+    case LABEL:
+    case GOTO:
+    case INLINEASM:
+      return(0.0f);
+    /*case '!':
+    case '~':
+    case UNARYMINUS:
+    case '+':
+    case '-':
+    case '^':
+    case '|':
+    case BITWISEAND:
+    case IPUSH:
+    //case IPOP:
+    case CALL:
+    case PCALL:
+    case RETURN:
+    case '*':
+    case '/':
+    case '%':
+    case '>':
+    case '<':
+    case LE_OP:
+    case GE_OP:
+    case EQ_OP:
+    case NE_OP:
+    case AND_OP:
+    case OR_OP:
+    case GETHBIT:
+    case GETABIT:
+    case GETBYTE:
+    case GETWORD:
+    case LEFT_OP:
+    case RIGHT_OP:
+    case GET_VALUE_AT_ADDRESS:
+    case '=':
+    case IFX:
+    case ADDRESS_OF:
+    case JUMPTABLE:
+    case CAST:
+    case RECEIVE:
+    case SEND:
+    case DUMMY_READ_VOLATILE:
+    case CRITICAL:
+    case ENDCRITICAL:
+    case SWAP:
+      assign_operands_for_cost(a, i, G, I);
+      set_surviving_regs(a, i, G, I);
+      c = dryhc08iCode(ic);
+      unset_surviving_regs(i, G);
+      return(c);*/
+    default:
+      return(0.0f);
+    }
+}
+
+// For early removal of assignments that cannot be extended to valid assignments. This is just a dummy for now.
+template <class G_t, class I_t>
+static bool assignment_hopeless(const assignment &a, unsigned short int i, const G_t &G, const I_t &I, const var_t lastvar)
+{
+  return(false);
+}
+
+// Increase chance of finding good compatible assignments at join nodes. This is just a dummy for now.
+template <class T_t>
+static void get_best_local_assignment_biased(assignment &a, typename boost::graph_traits<T_t>::vertex_descriptor t, const T_t &T)
+{
+  a = *T[t].assignments.begin();
+
+  std::set<var_t>::const_iterator vi, vi_end;
+  for(vi = T[t].alive.begin(), vi_end = T[t].alive.end(); vi != vi_end; ++vi)
+    a.local.insert(*vi);
+}
+
+// This is just a dummy for now.
+template <class G_t, class I_t>
+static float rough_cost_estimate(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  return(0.0f);
+}
+
 // Code for another ic is generated when generating this one. Mark the other as generated.
 static void extra_ic_generated(iCode *ic)
 {
@@ -41,7 +152,41 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
 {
   bool assignment_optimal;
 
+  con2_t I2(boost::num_vertices(I));
+  for(unsigned int i = 0; i < boost::num_vertices(I); i++)
+    {
+      I2[i].v = I[i].v;
+      I2[i].byte = I[i].byte;
+      I2[i].size = I[i].size;
+      I2[i].name = I[i].name;
+    }
+  typename boost::graph_traits<I_t>::edge_iterator e, e_end;
+  for(boost::tie(e, e_end) = boost::edges(I); e != e_end; ++e)
+    add_edge(boost::source(*e, I), boost::target(*e, I), I2);
+
+  assignment ac;
   assignment_optimal = true;
+  tree_dec_ralloc_nodes(T, find_root(T), G, I2, ac, &assignment_optimal);
+
+  const assignment &winner = *(T[find_root(T)].assignments.begin());
+
+#ifdef DEBUG_RALLOC_DEC
+  std::cout << "Winner: ";
+  for(unsigned int i = 0; i < boost::num_vertices(I); i++)
+  {
+  	std::cout << "(" << i << ", " << int(winner.global[i]) << ") ";
+  }
+  std::cout << "\n";
+  std::cout << "Cost: " << winner.s << "\n";
+  std::cout.flush();
+#endif
+
+  // Todo: Make this an assertion
+  if(winner.global.size() != boost::num_vertices(I))
+    {
+      std::cerr << "ERROR: No Assignments at root\n";
+      exit(-1);
+    }
 
   return(!assignment_optimal);
 }

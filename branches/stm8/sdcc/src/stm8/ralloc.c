@@ -114,7 +114,7 @@ stm8_assignRegisters (ebbIndex * ebbi)
       dumpLiveRanges (DUMP_LRANGE, liveRanges);
     }
 
-  /* redo that offsets for stacked automatic variables */
+  /* redo the offsets for stacked automatic variables */
   if (currFunc)
     {
       redoStackOffsets ();
