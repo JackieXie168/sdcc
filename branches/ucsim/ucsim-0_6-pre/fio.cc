@@ -32,6 +32,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include <sys/types.h>
 #include <unistd.h>
 #include HEADER_FD
+#include <errno.h>
+#include <string.h>
 
 #include "fiocl.h"
 
@@ -52,6 +54,43 @@ cl_f::init(void)
   if ((file_f= fopen(file_name, file_mode)) != NULL)
     file_id= fileno(file_f);
   return file_id;
+}
+
+
+int
+cl_f::open(char *fn)
+{
+  close();
+  if (fn)
+    file_name= fn;
+  return init();
+}
+
+
+int
+cl_f::open(char *fn, char *mode)
+{
+  close();
+  if (mode)
+    file_mode= mode;
+  if (fn)
+    file_name= fn;
+  return init();
+}
+
+
+int
+cl_f::close(void)
+{
+  int i;
+
+  if (file_f)
+    {
+      i= fclose(file_f);
+      file_f= NULL;
+      file_id= -1;
+    }
+  return i;
 }
 
 
@@ -115,13 +154,16 @@ cl_f::input_avail(void)
 {
   struct timeval tv= { 0, 0 };
   fd_set s;
+  int i;
 
   if (file_id<0)
     return 0;
 
   FD_ZERO(&s);
   FD_SET(file_id, &s);
-  if (select(file_id+1, &s, NULL, NULL, &tv) >= 0)
+  i= select(FD_SETSIZE, &s, NULL, NULL, &tv);
+  printf("select(%d)=%d: (%d) %s\n",file_id,i,errno,strerror(errno));
+  if (i >= 0)
     {
       return FD_ISSET(file_id, &s);
     }

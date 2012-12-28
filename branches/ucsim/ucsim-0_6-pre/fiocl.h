@@ -43,6 +43,13 @@ class cl_f: public cl_base
   cl_f(char *fn, char *mode);
   virtual ~cl_f(void);
   virtual int init(void);
+  virtual int open(void) { return init(); }
+  virtual int open(char *fn);
+  virtual int open(char *fn, char *mode);
+  virtual int close(void);
+  
+  FILE *f(void) { return file_f; };
+  int id(void) { return file_id; };
 
   virtual int read(char *buf, int max);
   virtual int write(char *buf, int count);
