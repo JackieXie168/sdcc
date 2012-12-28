@@ -75,15 +75,6 @@ newAsmop (short type)
 }
 
 /*-----------------------------------------------------------------*/
-/* aopOp - allocates an asmop for an operand  :                    */
-/*-----------------------------------------------------------------*/
-static void
-aopOp (operand *op, const iCode *ic)
-{
-  wassert (op);
-}
-
-/*-----------------------------------------------------------------*/
 /* freeAsmop - free up the asmop given to an operand               */
 /*----------------------------------------------------------------*/
 static void
@@ -108,6 +99,77 @@ freeAsmop (operand *op)
       if (SPIL_LOC (op))
         SPIL_LOC (op)->aop = NULL;
     }
+}
+
+/*-----------------------------------------------------------------*/
+/* aopForSym - for a true symbol                                   */
+/*-----------------------------------------------------------------*/
+static asmop *
+aopForSym (const iCode *ic, symbol *sym)
+{
+  asmop *aop;
+
+  wassert (ic);
+  wassert (sym);
+  wassert (sym->etype);
+
+  /* if already has one */
+  if (sym->aop)
+    {
+      return sym->aop;
+    }
+
+  if (IS_FUNC (sym->type))
+    {
+      sym->aop = aop = newAsmop (AOP_IMMD);
+      aop->aopu.aop_immd = Safe_calloc (1, strlen (sym->rname) + 1);
+      strcpy (aop->aopu.aop_immd, sym->rname);
+      aop->size = 2;
+      return aop;
+    }
+  /* Assign depending on the storage class */
+  else if (sym->onStack || sym->iaccess)
+    {
+    }
+  else
+    {
+    }
+
+  sym->aop = aop;
+
+  return aop;
+}
+
+/*-----------------------------------------------------------------*/
+/* aopOp - allocates an asmop for an operand  :                    */
+/*-----------------------------------------------------------------*/
+static void
+aopOp (operand *op, const iCode *ic)
+{
+  wassert (op);
+
+  /* if already has an asmop */
+  if (op->aop)
+    return;
+
+  /* if this a literal */
+  if (IS_OP_LITERAL (op))
+    {
+      asmop *aop = newAsmop (AOP_LIT);
+      aop->aopu.aop_lit = OP_VALUE (op);
+      aop->size = getSize (operandType (op));
+      op->aop = aop;
+      return;
+    }
+
+  /* if this is a true symbol */
+  if (IS_TRUE_SYMOP (op))
+    {
+      op->aop = aopForSym (ic, OP_SYMBOL (op));
+      return;
+    }
+
+  /* None of the above, which only leaves temporaries. */
 }
 
 /*--------------------------------------------------------------------------*/
@@ -336,6 +398,7 @@ genSTM8iCode (iCode *ic)
 
     case '=':
       genAssign (ic);
+      break;
 
     case IFX:
     case ADDRESS_OF:

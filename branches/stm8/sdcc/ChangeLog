@@ -1,7 +1,8 @@
 2012-12-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/ralloc2.cc,
-	  src/stm8/gen.c:
+	  src/stm8/gen.c,
+	  src/stm8/gen.h:
 	  Infrastructure for STM8 port.
 
 2012-12-28 Philipp Klaus Krause <pkk AT spth.de>

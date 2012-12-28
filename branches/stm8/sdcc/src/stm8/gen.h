@@ -34,6 +34,8 @@ typedef enum
   AOP_STK,
   /* Is in the extended stack pointer (IY on the Z80) */
   AOP_EXSTK,
+  /* Is an immediate value */
+  AOP_IMMD,
   /* Read undefined, discard writes */
   AOP_DUMMY
 }
@@ -47,7 +49,7 @@ typedef struct asmop_byte
   {
     reg_info *reg;    /* Register this byte is in. */
     unsigned int stk; /* Stack offset for this byte. */
-  } aopu;
+  } bu;
 } asmop_byte;
 
 /* asmop: A homogenised type for all the different
@@ -56,7 +58,12 @@ typedef struct asmop
 {
   AOP_TYPE type;
   short size;
-  asmop_byte bytes[8];
+  union
+  {
+    value *aop_lit;
+    char *aop_immd;
+    asmop_byte bytes[8];
+  } aopu;
 }
 asmop;
 
