@@ -29,6 +29,10 @@ static unsigned char regalloc_dry_run_cost_cycles;
 static struct
 {
   short debugLine;
+  struct
+    {
+      int pushed;
+    } stack;
 }
 _G;
 
@@ -38,12 +42,62 @@ static void cost(unsigned int bytes, unsigned int cycles)
   regalloc_dry_run_cost_cycles += cycles;
 }
 
+static bool regFree (const iCode *ic, int idx)
+{
+  if (idx == X_IDX)
+    return (regFree (ic, XL_IDX) && regFree (ic, XH_IDX));
+  if (idx == Y_IDX)
+    return (regFree (ic, YL_IDX) && regFree (ic, YH_IDX));
+  return (!bitVectBitValue (ic->rMask, idx));
+}
+
+static bool regDead (const iCode *ic, int idx)
+{
+  if (idx == X_IDX)
+    return (regDead (ic, XL_IDX) && regDead (ic, XH_IDX));
+  if (idx == Y_IDX)
+    return (regDead (ic, YL_IDX) && regDead (ic, YH_IDX));
+  return (!bitVectBitValue (ic->rSurv, idx));
+}
+
 /*--------------------------------------------------------------------------*/
 /* adjustStack - Adjust the stack pointer by n bytes.                       */
 /*--------------------------------------------------------------------------*/
 static void
 adjustStack (int n)
 {
+  while (n)
+    {
+      // TODO: For big n, use addition in X or Y when free. Need to fix calling convention before that though.
+      if (n > 255)
+        {
+          emitcode ("addw","sp, #255");
+          cost (2, 1);
+          n -= 255;
+          _G.stack.pushed -= 127;
+        }
+      else if (n < -255)
+        {
+          emitcode ("subw","sp, #255");
+          cost (2, 1);
+          n += 255;
+          _G.stack.pushed += 128;
+        }
+      else if (n > 0)
+        {
+          emitcode ("addw", "sp, #%d", n);
+          cost (2, 1);
+          _G.stack.pushed -= n;
+          return;
+        }
+	  else 
+	    {
+		  emitcode ("subw", "sp, #%d", -n);
+          cost (2, 1);
+          _G.stack.pushed += n;
+          return;
+        }
+    }
 }
 
 /*---------------------------------------------------------------------*/

@@ -35,7 +35,10 @@ enum
   XH_IDX,    // Upper byte of X
   YL_IDX,    // Lower byte of Y
   YH_IDX,    // Upper byte of Y
-  C_IDX      // Carry bit - for bool only.
+  C_IDX,     // Carry bit - for bool only.
+
+  X_IDX,     // X - for use with code generation support functions only.
+  Y_IDX      // Y - for use with code generation support functions only.
 };
 
 enum
