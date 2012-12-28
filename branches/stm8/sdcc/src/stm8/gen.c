@@ -42,22 +42,72 @@ static void cost(unsigned int bytes, unsigned int cycles)
   regalloc_dry_run_cost_cycles += cycles;
 }
 
-static bool regFree (const iCode *ic, int idx)
+static bool regFree (int idx, const iCode *ic)
 {
   if (idx == X_IDX)
-    return (regFree (ic, XL_IDX) && regFree (ic, XH_IDX));
+    return (regFree (XL_IDX, ic) && regFree (XH_IDX, ic));
   if (idx == Y_IDX)
-    return (regFree (ic, YL_IDX) && regFree (ic, YH_IDX));
+    return (regFree (YL_IDX, ic) && regFree (YH_IDX, ic));
   return (!bitVectBitValue (ic->rMask, idx));
 }
 
-static bool regDead (const iCode *ic, int idx)
+static bool regDead (int idx, const iCode *ic)
 {
   if (idx == X_IDX)
-    return (regDead (ic, XL_IDX) && regDead (ic, XH_IDX));
+    return (regDead (XL_IDX, ic) && regDead (XH_IDX, ic));
   if (idx == Y_IDX)
-    return (regDead (ic, YL_IDX) && regDead (ic, YH_IDX));
+    return (regDead (YL_IDX, ic) && regDead (YH_IDX, ic));
   return (!bitVectBitValue (ic->rSurv, idx));
+}
+
+/*-----------------------------------------------------------------*/
+/* newAsmop - creates a new asmOp                                  */
+/*-----------------------------------------------------------------*/
+static asmop *
+newAsmop (short type)
+{
+  asmop *aop;
+
+  aop = Safe_calloc (1, sizeof (asmop));
+  aop->type = type;
+
+  return aop;
+}
+
+/*-----------------------------------------------------------------*/
+/* aopOp - allocates an asmop for an operand  :                    */
+/*-----------------------------------------------------------------*/
+static void
+aopOp (operand *op, const iCode *ic)
+{
+  wassert (op);
+}
+
+/*-----------------------------------------------------------------*/
+/* freeAsmop - free up the asmop given to an operand               */
+/*----------------------------------------------------------------*/
+static void
+freeAsmop (operand *op)
+{
+  asmop *aop;
+
+  wassert (op);
+
+  aop = op->aop;
+
+  if (!aop)
+    return;
+
+  Safe_free (aop);
+
+  op->aop = NULL;
+  if (IS_SYMOP (op))
+    {
+      OP_SYMBOL (op)->aop = NULL;
+      /* if the symbol has a spill */
+      if (SPIL_LOC (op))
+        SPIL_LOC (op)->aop = NULL;
+    }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -185,13 +235,32 @@ genEndFunction ( iCode *ic)
 /* genLabel - generates a label                                    */
 /*-----------------------------------------------------------------*/
 static void
-genLabel (const iCode * ic)
+genLabel (const iCode *ic)
 {
   /* special case never generate */
   if (IC_LABEL (ic) == entryLabel)
     return;
 
   emitLabel (IC_LABEL (ic));
+}
+
+/*-----------------------------------------------------------------*/
+/* genAssign - generate code for assignment                        */
+/*-----------------------------------------------------------------*/
+static void
+genAssign (const iCode *ic)
+{
+  operand *result, *right;
+  int size, offset;
+
+  result = IC_RESULT (ic);
+  right = IC_RIGHT (ic);
+
+  aopOp (right, ic);
+  aopOp (result, ic);
+
+  freeAsmop (right);
+  freeAsmop (result);
 }
 
 /*---------------------------------------------------------------------*/
@@ -262,7 +331,12 @@ genSTM8iCode (iCode *ic)
     case LEFT_OP:
     case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case '=':
+      genAssign (ic);
+
     case IFX:
     case ADDRESS_OF:
     case JUMPTABLE:
@@ -280,7 +354,7 @@ genSTM8iCode (iCode *ic)
     }
 }
 
-unsigned char
+unsigned int
 drySTM8iCode (iCode *ic)
 {
   regalloc_dry_run = TRUE;

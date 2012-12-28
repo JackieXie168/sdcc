@@ -27,7 +27,7 @@ extern "C"
 {
   #include "ralloc.h"
   #include "gen.h"
-  unsigned char drySTM8iCode (iCode *ic);
+  unsigned int drySTM8iCode (iCode *ic);
   bool stm8_assignment_optimal;
 };
 
@@ -252,6 +252,24 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
       std::cerr << "ERROR: No Assignments at root\n";
       exit(-1);
     }
+
+  for(unsigned int v = 0; v < boost::num_vertices(I); v++)
+    {
+      symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
+      if(winner.global[v] >= 0)
+        { 
+          sym->regs[I[v].byte] = stm8_regs + winner.global[v];   
+          sym->nRegs = I[v].size;
+        }
+      else
+        {
+          sym->regs[I[v].byte] = 0;
+          sym->nRegs = I[v].size;
+        }
+    }
+
+  for(unsigned int i = 0; i < boost::num_vertices(G); i++)
+    set_surviving_regs(winner, i, G, I);	// Never freed. Memory leak?
 
   return(!assignment_optimal);
 }
