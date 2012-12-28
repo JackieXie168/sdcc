@@ -56,6 +56,8 @@ typedef struct reg_info
   char *name;                   /* name */
 } reg_info;
 
+extern reg_info stm8_regs[];
+
 void stm8_assignRegisters (ebbIndex *);
 
 iCode *stm8_ralloc2_cc(ebbIndex *ebbi);

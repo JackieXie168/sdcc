@@ -31,6 +31,71 @@ extern "C"
   bool stm8_assignment_optimal;
 };
 
+template <class G_t, class I_t>
+static void set_surviving_regs(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  iCode *ic = G[i].ic;
+  
+  ic->rSurv = newBitVect(port->num_regs);
+  
+  std::set<var_t>::const_iterator v, v_end;
+  for (v = G[i].alive.begin(), v_end = G[i].alive.end(); v != v_end; ++v)
+    if(a.global[*v] >= 0 && G[i].dying.find(*v) == G[i].dying.end())
+      if(!((IC_RESULT(ic) && !POINTER_SET(ic)) && IS_SYMOP(IC_RESULT(ic)) && OP_SYMBOL_CONST(IC_RESULT(ic))->key == I[*v].v))
+        ic->rSurv = bitVectSetBit(ic->rSurv, a.global[*v]);
+}
+
+template<class G_t>
+static void unset_surviving_regs(unsigned short int i, const G_t &G)
+{
+  iCode *ic = G[i].ic;
+  
+  freeBitVect(ic->rSurv);
+}
+
+template <class G_t, class I_t>
+static void assign_operand_for_cost(operand *o, const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  if(!o || !IS_SYMOP(o))
+    return;
+  symbol *sym = OP_SYMBOL(o);
+  operand_map_t::const_iterator oi, oi_end;
+  for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+    {
+      var_t v = oi->second;
+      if(a.global[v] >= 0)
+        { 
+          sym->regs[I[v].byte] = stm8_regs + a.global[v];   
+          sym->nRegs = I[v].size;
+        }
+      else
+        {
+          sym->regs[I[v].byte] = 0;
+          sym->nRegs = I[v].size;
+        }
+    }
+}
+
+template <class G_t, class I_t>
+static void assign_operands_for_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+  
+  if(ic->op == IFX)
+    assign_operand_for_cost(IC_COND(ic), a, i, G, I);
+  else if(ic->op == JUMPTABLE)
+    assign_operand_for_cost(IC_JTCOND(ic), a, i, G, I);
+  else
+    {
+      assign_operand_for_cost(IC_LEFT(ic), a, i, G, I);
+      assign_operand_for_cost(IC_RIGHT(ic), a, i, G, I);
+      assign_operand_for_cost(IC_RESULT(ic), a, i, G, I);
+    }
+    
+  if(ic->op == SEND && ic->builtinSEND)
+    assign_operands_for_cost(a, *(adjacent_vertices(i, G).first), G, I);
+}
+
 // Cost function.
 template <class G_t, class I_t>
 static float instruction_cost(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
@@ -106,12 +171,12 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case DUMMY_READ_VOLATILE:
     case CRITICAL:
     case ENDCRITICAL:
-    case SWAP:
+    case SWAP:*/
       assign_operands_for_cost(a, i, G, I);
       set_surviving_regs(a, i, G, I);
-      c = dryhc08iCode(ic);
+      c = drySTM8iCode(ic);
       unset_surviving_regs(i, G);
-      return(c);*/
+      return(c);
     default:
       return(0.0f);
     }

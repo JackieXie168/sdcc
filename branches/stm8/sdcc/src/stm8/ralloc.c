@@ -3,6 +3,17 @@
 
 extern void genSTM08Code (iCode *);
 
+reg_info stm8_regs[] =
+{
+
+  {REG_GPR, A_IDX,   "a"},
+  {REG_GPR, XL_IDX,  "xl"},
+  {REG_GPR, XH_IDX,  "xh"},
+  {REG_GPR, YL_IDX,  "yl"},
+  {REG_GPR, YH_IDX,  "yh"},
+  {REG_CND, C_IDX,   "c"},
+};
+
 /* Flags to turn on debugging code.
  */
 enum
