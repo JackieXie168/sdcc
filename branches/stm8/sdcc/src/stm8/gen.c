@@ -78,19 +78,25 @@ static const char *aopGet(const asmop *aop, int offset)
 {
   static char buffer[256];
 
+  if (aop->type == AOP_LIT)
+    {
+      snprintf (buffer, 256, "#$%x", byteOfVal (aop->aopu.aop_lit, offset));
+      return (buffer);
+    }
+
   if (aopRS (aop) && aop->aopu.bytes[offset].in_reg)
     return (aop->aopu.bytes[offset].byteu.reg->name);
 
   if (aopRS (aop) && !aop->aopu.bytes[offset].in_reg)
     {
       int soffset = aop->aopu.bytes[offset].byteu.stk + _G.stack.pushed;
-      snprintf (buffer, 256, "($%d, sp)", soffset); //
+      snprintf (buffer, 256, "($%x, sp)", soffset); //
       return (buffer);
     }
 
   if (aop->type == AOP_DIR)
     {
-      snprintf (buffer, 256, "$%s+%d", aop->aopu.aop_immd, offset);
+      snprintf (buffer, 256, "$%s+%x", aop->aopu.aop_immd, offset);
       return (buffer);
     }
 
@@ -127,6 +133,11 @@ ld_cost (const asmop *op1, int offset1, const asmop *op2, int offset2)
     case AOP_STK:
       switch (op2type)
         {
+        case AOP_LIT:
+          if (r1Idx != A_IDX)
+            goto error;
+          cost (2, 1);
+          return;
         case AOP_REG:
         case AOP_REGSTK:
         case AOP_STK:
@@ -185,12 +196,24 @@ error:
 }
 
 static void
+mov_cost (const asmop *op1, const asmop *op2)
+{
+  if (op2->type == AOP_LIT || op2->type == AOP_IMMD)
+    cost (4, 1);
+  else
+    cost (5, 1);
+}
+
+static void
 emit3cost (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
 {
   switch (inst)
   {
   case A_LD:
     ld_cost (op1, offset1, op2, offset2);
+    break;
+  case A_MOV:
+    mov_cost (op1, op2);
     break;
   default:
     wassertl (0, "Tried get cost for unknown instruction");
