@@ -93,6 +93,8 @@ regTypeNum (void)
     }
 }
 
+void stm8_init_asmops (void);
+
 /*-----------------------------------------------------------------*/
 /* assignRegisters - assigns registers to each live range as need  */
 /*-----------------------------------------------------------------*/
@@ -102,6 +104,8 @@ stm8_assignRegisters (ebbIndex * ebbi)
   eBBlock **ebbs = ebbi->bbOrder;
   int count = ebbi->count;
   iCode *ic;
+
+  stm8_init_asmops();
 
   /* TODO: Register packing. */
 

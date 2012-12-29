@@ -36,10 +36,154 @@ static struct
 }
 _G;
 
+enum asminst
+{
+  A_LD,
+  A_MOV
+};
+
+static const char *asminstnames[] =
+{
+  "ld",
+  "mov"
+};
+
+static struct asmop asmop_a;
+static struct asmop *const ASMOP_A = &asmop_a;
+
+void
+stm8_init_asmops (void)
+{
+  asmop_a.type = AOP_REG;
+  asmop_a.size = 1;
+  asmop_a.aopu.bytes[0].in_reg = TRUE;
+  asmop_a.aopu.bytes[0].byteu.reg = stm8_regs + A_IDX;
+}
+
+/*-----------------------------------------------------------------*/
+/* aopRS - asmop in register or on stack                           */
+/*-----------------------------------------------------------------*/
+bool aopRS (const asmop *aop)
+{
+  return (aop->type == AOP_REG || aop->type == AOP_REGSTK || aop->type == AOP_STK);
+}
+
 static void cost(unsigned int bytes, unsigned int cycles)
 {
   regalloc_dry_run_cost_bytes += bytes;
   regalloc_dry_run_cost_cycles += cycles;
+}
+
+static void
+ld_cost (const asmop *op1, int offset1, const asmop *op2, int offset2)
+{
+  AOP_TYPE op1type = op1->type;
+  AOP_TYPE op2type = op2->type;
+
+  /* Costs are symmetric */
+  if (aopRS (op2) || op2type == AOP_DUMMY)
+    {
+      asmop *tmp = op1;
+      op1 = op2;
+      op2 = tmp;
+      op1type = op1->type;
+      op2type = op2->type;
+    }
+
+  int r1Idx = ((aopRS (op1) && op1->aopu.bytes[offset1].in_reg)) ? op1->aopu.bytes[offset1].byteu.reg->rIdx : 1;
+  int r2Idx = ((aopRS (op2) && op2->aopu.bytes[offset2].in_reg)) ? op2->aopu.bytes[offset2].byteu.reg->rIdx : 1;
+
+  switch (op1type)
+    {
+    case AOP_REG:
+    case AOP_REGSTK:
+    case AOP_STK:
+      switch (op2type)
+        {
+        case AOP_REG:
+        case AOP_REGSTK:
+        case AOP_STK:
+          switch (r1Idx)
+            {
+            case A_IDX:
+              switch (r2Idx)
+                {
+                case XL_IDX:
+                case XH_IDX:
+                  cost (1, 1);
+                  return;
+                case YL_IDX:
+                case YH_IDX:
+                case -1:
+                  cost (2, 1);
+                  return;
+                default:
+                  goto error;
+                }
+            case XL_IDX:
+            case XH_IDX:
+              if (r2Idx != A_IDX)
+                goto error;
+              cost (1, 1);
+              return;
+            case YL_IDX:
+            case YH_IDX:
+            case -1:
+              if (r2Idx != A_IDX)
+                goto error;
+              cost (2, 1);
+              return;
+          }
+        case AOP_DIR:
+          if (r1Idx != A_IDX)
+            goto error;
+          cost (3, 2);
+          return;
+        default:
+          goto error;
+        }
+    case AOP_DIR:
+      if (r2Idx != A_IDX)
+        goto error;
+      cost (3, 2);
+      return;
+    default:
+      goto error;
+    }
+error:
+  printf("op1 type: %d, offset %d, rIdx %d\n", op1type, offset1, r1Idx);
+  printf("op2 type: %d, offset %d, rIdx %d\n", op2type, offset2, r2Idx);
+  wassert (0);
+  cost (8, 4 * 8);
+}
+
+static void
+emit3cost (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
+{
+  switch (inst)
+  {
+  case A_LD:
+    ld_cost (op1, offset1, op2, offset2);
+    break;
+  default:
+    wassertl (0, "Tried get cost for unknown instruction");
+  }
+}
+
+static void
+emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
+{
+  emit3cost (inst, op1, offset1, op2, offset2);
+  if (regalloc_dry_run)
+    return;
+
+  // TODO: Emit instruction.
+}
+
+static void
+emit3 (enum asminst inst, asmop *op1, asmop *op2)
+{
+  emit3_o (inst, op1, 0, op2, 0);
 }
 
 static bool regFree (int idx, const iCode *ic)
@@ -58,14 +202,6 @@ static bool regDead (int idx, const iCode *ic)
   if (idx == Y_IDX)
     return (regDead (YL_IDX, ic) && regDead (YH_IDX, ic));
   return (!bitVectBitValue (ic->rSurv, idx));
-}
-
-/*-----------------------------------------------------------------*/
-/* aopRS - asmop in register or on stack                           */
-/*-----------------------------------------------------------------*/
-bool aopRS (const asmop *aop)
-{
-  return (aop->type == AOP_REG || aop->type == AOP_REGSTK || aop->type == AOP_STK);
 }
 
 /*-----------------------------------------------------------------*/
@@ -268,14 +404,27 @@ adjustStack (int n)
 /* cheapMove - Copy a byte from one asmop to another               */
 /*-----------------------------------------------------------------*/
 static void
-cheapMove (asmop *result, int roffset, asmop *source, int soffset)
+cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 {
   if (aopRS (result) && aopRS (source) &&
     result->aopu.bytes[roffset].in_reg && source->aopu.bytes[soffset].in_reg &&
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
     return;
 
-  wassertl (0, "Unimplemented.");
+  if (aopRS (result) && result->aopu.bytes[roffset].in_reg && result->aopu.bytes[roffset].byteu.reg->rIdx == A_IDX ||
+    aopRS (source) && source->aopu.bytes[soffset].in_reg && source->aopu.bytes[soffset].byteu.reg->rIdx == A_IDX)
+    emit3_o (A_LD, result, roffset, source, soffset);
+  else if (result->type == AOP_DIR && (source->type == AOP_DIR || source->type == AOP_LIT))
+    emit3_o (A_MOV, result, roffset, source, soffset);
+  else
+    {
+      if (save_a)
+        /*push ()*/;
+      emit3_o (A_LD, ASMOP_A, 0, source, soffset);
+      emit3_o (A_LD, result, roffset, ASMOP_A, 0);
+      if (save_a)
+        /*pop ()*/;
+    }
 }
 
 /*-----------------------------------------------------------------*/
@@ -322,7 +471,7 @@ skip_byte:
 
       if (i < size)
         {
-          cheapMove (result, i, source, i);       // We can safely assign a byte.
+          cheapMove (result, i, source, i , FALSE);       // We can safely assign a byte. TODO: Take care of A!
           regsize--;
           assigned[i] = TRUE;
           continue;
@@ -451,7 +600,7 @@ genAssign (const iCode *ic)
   // TODO: Efficient handling of some special cases.
 
   for (i = 0; i < result->aop->size; i++)
-    cheapMove (result->aop, 0, right->aop, 0);
+    cheapMove (result->aop, 0, right->aop, 0, FALSE); // TODO: Take care of A.
 
   freeAsmop (right);
   freeAsmop (result);

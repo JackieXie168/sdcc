@@ -160,9 +160,9 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case GETWORD:
     case LEFT_OP:
     case RIGHT_OP:
-    case GET_VALUE_AT_ADDRESS:
+    case GET_VALUE_AT_ADDRESS:*/
     case '=':
-    case IFX:
+    /*case IFX:
     case ADDRESS_OF:
     case JUMPTABLE:
     case CAST:
