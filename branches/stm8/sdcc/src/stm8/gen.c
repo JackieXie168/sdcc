@@ -83,13 +83,13 @@ static const char *aopGet(const asmop *aop, int offset)
 
   if (aopRS (aop) && !aop->aopu.bytes[offset].in_reg)
     {
-      snprintf (buffer, 256, "$%s+%d", aop->aopu.aop_immd, offset);
+      snprintf (buffer, 256, "($%d, sp)", 42); // TODO: Correct stack offset!
       return (buffer);
     }
 
   if (aop->type == AOP_DIR)
     {
-      snprintf (buffer, 256, "($%d, sp)", 42); // TODO: Correct stack offset!
+      snprintf (buffer, 256, "$%s+%d", aop->aopu.aop_immd, offset);
       return (buffer);
     }
 
