@@ -1,5 +1,20 @@
 2012-12-29 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCCbtree.cc:
+	  Fix bug #3598841.
+
+2012-12-29 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* sdcc_vc.h.in: converted TABs to spaces
+	* src/SDCCast.c(expandInlineFuncs): even MSVC 2012 still does not support
+	  C99 randomly placed declarations, please place all declarations at the
+	  start of a block
+	* src/sdcc.vcxproj,
+	* src/sdcc.vcxproj.filters: added SDCCbtree.cc and SDCCbtree.h
+	* src/SDCCbtree.cc: fixed STX usage
+
+2012-12-29 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/stm8/ralloc2.cc,
 	  src/stm8/gen.c,
 	  src/stm8/ralloc.c:
@@ -18,7 +33,8 @@
 	  support/regression/tests/gcc-torture-execute-20000717-2.c,
 	  support/regression/tests/gcc-torture-execute-921202-2.c,
 	  support/regression/tests/gcc-torture-execute-20050104-1.c:
-	  Enable some long long regression tests, that now seem to work even on 32-bit systems.
+	  Enable some long long regression tests, that now seem to work even on
+	  32-bit systems.
 
 2012-12-28 Maarten Brock <sourceforge.brock AT dse.nl>
 
