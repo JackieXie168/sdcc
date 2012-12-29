@@ -83,7 +83,8 @@ static const char *aopGet(const asmop *aop, int offset)
 
   if (aopRS (aop) && !aop->aopu.bytes[offset].in_reg)
     {
-      snprintf (buffer, 256, "($%d, sp)", 42); // TODO: Correct stack offset!
+      int soffset = aop->aopu.bytes[offset].byteu.stk + _G.stack.pushed;
+      snprintf (buffer, 256, "($%d, sp)", soffset); //
       return (buffer);
     }
 
@@ -612,6 +613,16 @@ genLabel (const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* genGoto - generates a jump                                      */
+/*-----------------------------------------------------------------*/
+static void
+genGoto (const iCode * ic)
+{
+  emitcode ("jp", "%05d$", labelKey2num (IC_LABEL (ic)->key));
+  cost (3, 1);
+}
+
+/*-----------------------------------------------------------------*/
 /* genAssign - generate code for assignment                        */
 /*-----------------------------------------------------------------*/
 static void
@@ -675,6 +686,9 @@ genSTM8iCode (iCode *ic)
       break;
 
     case GOTO:
+      genGoto (ic);
+      break;
+
     case '+':
     case '-':
     case '*':
