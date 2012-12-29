@@ -74,6 +74,29 @@ static void cost(unsigned int bytes, unsigned int cycles)
   regalloc_dry_run_cost_cycles += cycles;
 }
 
+static const char *aopGet(const asmop *aop, int offset)
+{
+  static char buffer[256];
+
+  if (aopRS (aop) && aop->aopu.bytes[offset].in_reg)
+    return (aop->aopu.bytes[offset].byteu.reg->name);
+
+  if (aopRS (aop) && !aop->aopu.bytes[offset].in_reg)
+    {
+      snprintf (buffer, 256, "$%s+%d", aop->aopu.aop_immd, offset);
+      return (buffer);
+    }
+
+  if (aop->type == AOP_DIR)
+    {
+      snprintf (buffer, 256, "($%d, sp)", 42); // TODO: Correct stack offset!
+      return (buffer);
+    }
+
+  wassert (0);
+  return ("dummy");
+}
+
 static void
 ld_cost (const asmop *op1, int offset1, const asmop *op2, int offset2)
 {
@@ -83,15 +106,18 @@ ld_cost (const asmop *op1, int offset1, const asmop *op2, int offset2)
   /* Costs are symmetric */
   if (aopRS (op2) || op2type == AOP_DUMMY)
     {
-      asmop *tmp = op1;
+      const asmop *tmp = op1;
+      const int tmpo = offset1;
       op1 = op2;
       op2 = tmp;
+      offset1 = offset2;
+      offset2 = tmpo;
       op1type = op1->type;
       op2type = op2->type;
     }
 
-  int r1Idx = ((aopRS (op1) && op1->aopu.bytes[offset1].in_reg)) ? op1->aopu.bytes[offset1].byteu.reg->rIdx : 1;
-  int r2Idx = ((aopRS (op2) && op2->aopu.bytes[offset2].in_reg)) ? op2->aopu.bytes[offset2].byteu.reg->rIdx : 1;
+  int r1Idx = ((aopRS (op1) && op1->aopu.bytes[offset1].in_reg)) ? op1->aopu.bytes[offset1].byteu.reg->rIdx : -1;
+  int r2Idx = ((aopRS (op2) && op2->aopu.bytes[offset2].in_reg)) ? op2->aopu.bytes[offset2].byteu.reg->rIdx : -1;
 
   switch (op1type)
     {
@@ -177,7 +203,9 @@ emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
   if (regalloc_dry_run)
     return;
 
-  // TODO: Emit instruction.
+  char *l = Safe_strdup (aopGet (op1, offset1));
+  emitcode (asminstnames[inst], "%s, %s", l, aopGet (op2, offset2));
+  Safe_free (l);
 }
 
 static void
@@ -355,6 +383,8 @@ aopOp (operand *op, const iCode *ic)
     else if (completly_on_stack)
       aop->type = AOP_STK;
 
+    aop->size = getSize (operandType (op));
+
     op->aop = aop;
     return;
   }
@@ -437,6 +467,8 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
   int ex[4] = {-1, -1, -1, -1};
 
+  emitcode("; genCopy", "");
+
   wassertl (aopRS (source), "Invalid source type.");
   wassertl (aopRS (result), "Invalid result type.");
 
@@ -471,7 +503,7 @@ skip_byte:
 
       if (i < size)
         {
-          cheapMove (result, i, source, i , FALSE);       // We can safely assign a byte. TODO: Take care of A!
+          cheapMove (result, i, source, i, FALSE);       // We can safely assign a byte. TODO: Take care of A!
           regsize--;
           assigned[i] = TRUE;
           continue;
@@ -588,6 +620,8 @@ genAssign (const iCode *ic)
   operand *result, *right;
   int i;
 
+  emitcode("; genAssign", "");
+
   result = IC_RESULT (ic);
   right = IC_RIGHT (ic);
 
@@ -600,7 +634,7 @@ genAssign (const iCode *ic)
   // TODO: Efficient handling of some special cases.
 
   for (i = 0; i < result->aop->size; i++)
-    cheapMove (result->aop, 0, right->aop, 0, FALSE); // TODO: Take care of A.
+    cheapMove (result->aop, i, right->aop, i, FALSE); // TODO: Take care of A.
 
   freeAsmop (right);
   freeAsmop (result);

@@ -2495,7 +2495,7 @@ aopDerefAop (asmop * aop, int offset)
 /*-----------------------------------------------------------------*/
 /* aopAdrStr - for referencing the address of the aop              */
 /*-----------------------------------------------------------------*/
-/* loffset seems to have a weird meaning here. It seems to be nonzero in some places where one would expect an offset ot be zero */
+/* loffset seems to have a weird meaning here. It seems to be nonzero in some places where one would expect an offset to be zero */
 static char *
 aopAdrStr (asmop * aop, int loffset, bool bit16)
 {
