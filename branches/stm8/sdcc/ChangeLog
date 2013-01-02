@@ -1,3 +1,32 @@
+2013-01-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.h,
+	* src/hc08/gen.c: More optimization of literal constant assignments.
+	  Use indexed addressing mode in place of extended in some contexts.
+
+2013-01-01 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* support/scripts/mcs51-disasm: Disassembler for the mcs51 family.
+
+2013-01-01 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/peeph.def: Removed peephole rule #8 since it is handled
+	  in code generator now. Added rules for dbnz.
+	* src/hc08/gen.c:  Rewrote genDbnz(). Minor improvements to genCmp()
+	  and asmopToBool(). Removed some totally wrong code from genIfx().
+
+2012-12-31 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/ralloc.h,
+	* src/hc08/ralloc.c,
+	* src/hc08/gen.c: optimization of literal constant loads/transfers
+
+2012-12-31 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/genarith.c (genAddLit): fixed coding style,
+	  fixed #3599010 by adding implementation of (int + X)
+	  for X in [0x0102; 0x01FE]
+
 2012-12-29 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c,
