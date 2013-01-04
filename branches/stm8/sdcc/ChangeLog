@@ -1,3 +1,57 @@
+2013-01-04 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/ralloc.c: Removd old code from the original fork
+	  from mcs51 that was not being used. Brought the old register
+	  allocator up to date with the current code generator.
+	* src/hc08/gen.c: Support ldhx/sthx with stack operands on s08.
+	  Avoid using hx to assign literals to stack operands on hc08.
+
+2013-01-04 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c (genAssignLit): fixed bug on systems that default
+	  to signed char.
+
+2013-01-03 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
+
+	* src/hc08/gen.c: Fixed code size regression on s08 from overuse
+	  of indexed addressing mode. Clean out some old, unused source.
+	  Initialize hc08_aop_pass[] only once. Correct costs in
+	  accopWithAop() for 2 byte instructions. Small improvements
+	  to addition and subtraction.
+
+2013-01-02 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* device/non-free/include/pic14/pic16f720.h,
+	  device/non-free/include/pic14/pic16f721.h,
+	  device/non-free/include/pic14/pic16lf1902.h,
+	  device/non-free/include/pic14/pic16lf1903.h,
+	  device/non-free/include/pic16/pic18f65j94.h,
+	  device/non-free/include/pic16/pic18f66j60.h,
+	  device/non-free/include/pic16/pic18f66j65.h,
+	  device/non-free/include/pic16/pic18f66j94.h,
+	  device/non-free/include/pic16/pic18f66j99.h,
+	  device/non-free/include/pic16/pic18f67j60.h,
+	  device/non-free/include/pic16/pic18f67j94.h,
+	  device/non-free/include/pic16/pic18f85j94.h,
+	  device/non-free/include/pic16/pic18f86j60.h,
+	  device/non-free/include/pic16/pic18f86j65.h,
+	  device/non-free/include/pic16/pic18f86j94.h,
+	  device/non-free/include/pic16/pic18f86j99.h,
+	  device/non-free/include/pic16/pic18f87j60.h,
+	  device/non-free/include/pic16/pic18f87j94.h,
+	  device/non-free/include/pic16/pic18f95j94.h,
+	  device/non-free/include/pic16/pic18f96j60.h,
+	  device/non-free/include/pic16/pic18f96j65.h,
+	  device/non-free/include/pic16/pic18f96j94.h,
+	  device/non-free/include/pic16/pic18f96j99.h,
+	  device/non-free/include/pic16/pic18f97j60.h,
+	  device/non-free/include/pic16/pic18f97j94.h,
+	  device/non-free/lib/pic14/libdev/pic16f720.c,
+	  device/non-free/lib/pic14/libdev/pic16f721.c,
+	  device/non-free/lib/pic14/libdev/pic16lf1902.c,
+	  device/non-free/lib/pic14/libdev/pic16lf1903.c:
+	  Updated based on the gputils.
+
 2013-01-02 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* src/hc08/gen.h,
