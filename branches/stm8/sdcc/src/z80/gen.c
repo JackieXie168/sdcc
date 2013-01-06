@@ -1513,13 +1513,15 @@ aopOp (operand * op, const iCode * ic, bool result, bool requires_a)
           return;
         }
 
-      if (regalloc_dry_run)     // Todo: Handle dummy iTemp correctly
+      /* On-stack for dry run. */
+      if (sym->nRegs && regalloc_dry_run)
         {
           sym->aop = op->aop = aop = newAsmop (AOP_STK);
           aop->size = getSize (sym->type);
           return;
         }
 
+      /* On stack. */
       if (sym->usl.spillLoc)
         {
           asmop *oldAsmOp = NULL;

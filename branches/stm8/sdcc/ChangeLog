@@ -1,5 +1,20 @@
 2012-01-06 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/z80/gen.c,
+	  src/z80/ralloc.c:
+	  Minor code cleanup.
+
+2013-01-06 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* support/scripts/mcs51-disasm:
+	  Changes in the commandline options:
+	    Renamed --code-size to --rom-size.
+	    Removed: --debug
+	    New: --verbose, --const-area
+	  Extracts more informations from map file.
+
+2012-01-06 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/stm8/ralloc.c,
 	  src/stm8/gen.c:
 	  Infrastructure for the stm8 port.
