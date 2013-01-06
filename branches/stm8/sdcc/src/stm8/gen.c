@@ -743,7 +743,7 @@ genPlus (const iCode *ic)
     {
       if (0) // TODO: Use addw where it provides an advantage.
         ;
-      else // TODO: Take care of A.
+      else // TODO: Take care of A. TODO: Handling of right operands that can't be directly added to a.
         {
           cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
           emit3_o (i ? A_ADC : A_ADD, ASMOP_A, 0, right->aop, i);
