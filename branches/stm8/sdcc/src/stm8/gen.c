@@ -724,6 +724,7 @@ genPlus (const iCode *ic)
   operand *left = IC_LEFT (ic);
   operand *right = IC_RIGHT (ic);
   int size, i;
+  bool started;
 
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
@@ -739,14 +740,29 @@ genPlus (const iCode *ic)
 
   
   size = result->aop->size;
-  for(i = 0; i < size;)
+  for(i = 0, started = FALSE; i < size;)
     {
       if (0) // TODO: Use addw where it provides an advantage.
         ;
       else // TODO: Take care of A. TODO: Handling of right operands that can't be directly added to a.
         {
           cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-          emit3_o (i ? A_ADC : A_ADD, ASMOP_A, 0, right->aop, i);
+          if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+            {
+              // Skip over this byte.
+            }
+          // We can use inc only for the only non-zero byte, since it neither takes into account an existing carry nor does it update the carry.
+          else if (!started && i == size - 1 && right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1)
+            {
+              emitcode ("inc", "a");
+              cost (1, 1);
+              started = TRUE;
+            }
+          else
+            {
+              emit3_o (started ? A_ADC : A_ADD, ASMOP_A, 0, right->aop, i);
+              started = TRUE;
+            }
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
           i++;
         }
