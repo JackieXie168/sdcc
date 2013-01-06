@@ -3,6 +3,8 @@
 	* src/stm8/ralloc.c,
 	  src/stm8/ralloc2.cc:
 	  Register allocation infrastructure for the stm8 port.
+	* src/stm8/gen.c:
+	  Code generation infrastructure for the stm8 port.
 
 2013-01-05 Molnar Karoly <molnarkaroly AT users.sf.net>
 

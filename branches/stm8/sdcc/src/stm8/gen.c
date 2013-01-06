@@ -63,18 +63,42 @@ stm8_init_asmops (void)
 /*-----------------------------------------------------------------*/
 /* aopRS - asmop in register or on stack                           */
 /*-----------------------------------------------------------------*/
-bool aopRS (const asmop *aop)
+static bool
+aopRS (const asmop *aop)
 {
   return (aop->type == AOP_REG || aop->type == AOP_REGSTK || aop->type == AOP_STK);
 }
 
-static void cost(unsigned int bytes, unsigned int cycles)
+/*-----------------------------------------------------------------*/
+/* aopInREg - asmop from offset in the register                    */
+/*-----------------------------------------------------------------*/
+static bool
+aopInReg (const asmop *aop, int offset, short rIdx)
+{
+  if (!aopRS (aop))
+    return (FALSE);
+
+  if (offset >= aop->size)
+    return (FALSE);
+
+  if (rIdx == X_IDX)
+    return (aopInReg (aop, offset, XL_IDX) && aopInReg (aop, offset + 1, XH_IDX));
+
+  if (rIdx == Y_IDX)
+    return (aopInReg (aop, offset, YL_IDX) && aopInReg (aop, offset + 1, YH_IDX));
+
+  return (aop->aopu.bytes[offset].in_reg && aop->aopu.bytes[offset].byteu.reg->rIdx == rIdx);
+}
+
+static void
+cost(unsigned int bytes, unsigned int cycles)
 {
   regalloc_dry_run_cost_bytes += bytes;
   regalloc_dry_run_cost_cycles += cycles;
 }
 
-static const char *aopGet(const asmop *aop, int offset)
+static const char *
+aopGet(const asmop *aop, int offset)
 {
   static char buffer[256];
 
@@ -238,7 +262,8 @@ emit3 (enum asminst inst, asmop *op1, asmop *op2)
   emit3_o (inst, op1, 0, op2, 0);
 }
 
-static bool regFree (int idx, const iCode *ic)
+static bool
+regFree (int idx, const iCode *ic)
 {
   if (idx == X_IDX)
     return (regFree (XL_IDX, ic) && regFree (XH_IDX, ic));
@@ -247,7 +272,8 @@ static bool regFree (int idx, const iCode *ic)
   return (!bitVectBitValue (ic->rMask, idx));
 }
 
-static bool regDead (int idx, const iCode *ic)
+static bool
+regDead (int idx, const iCode *ic)
 {
   if (idx == X_IDX)
     return (regDead (XL_IDX, ic) && regDead (XH_IDX, ic));
@@ -665,10 +691,39 @@ genAssign (const iCode *ic)
   if (aopRS (result->aop) && aopRS (right->aop))
     genCopy (result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
-  // TODO: Efficient handling of some special cases.
-
-  for (i = 0; i < result->aop->size; i++)
-    cheapMove (result->aop, i, right->aop, i, FALSE); // TODO: Take care of A.
+  // TODO: Efficient handling of more special cases.
+  for (i = 0; i < result->aop->size;)
+    {
+      if (aopInReg (result->aop, i, X_IDX) && right->aop->type == AOP_DIR)
+        {
+          emitcode ("ldw", "x, %s", aopGet (right->aop, i));
+          cost (3, 2);
+          i += 2;
+        }
+      else if (aopInReg (result->aop, i, Y_IDX) && right->aop->type == AOP_DIR)
+        {
+          emitcode ("ldw", "y, %s", aopGet (right->aop, i));
+          cost (4, 2);
+          i += 2;
+        }
+      else if (result->aop->type == AOP_DIR && aopInReg (right->aop, i, X_IDX))
+        {
+          emitcode ("ldw", "%s, x", aopGet (result->aop, i));
+          cost (3, 2);
+          i += 2;
+        }
+      else if (result->aop->type == AOP_DIR && aopInReg (right->aop, i, Y_IDX))
+        {
+          emitcode ("ldw", "%s, y", aopGet (result->aop, i));
+          cost (4, 2);
+          i += 2;
+        }
+      else
+        {
+          cheapMove (result->aop, i, right->aop, i, FALSE); // TODO: Take care of A.
+          i++;
+        }
+    }
 
   freeAsmop (right);
   freeAsmop (result);
