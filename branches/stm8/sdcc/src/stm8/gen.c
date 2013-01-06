@@ -140,7 +140,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_DIR)
     {
-      snprintf (buffer, 256, "0x%s+%x", aop->aopu.aop_immd, offset);
+      snprintf (buffer, 256, "%s+0x%x", aop->aopu.aop_immd, offset);
       return (buffer);
     }
 
