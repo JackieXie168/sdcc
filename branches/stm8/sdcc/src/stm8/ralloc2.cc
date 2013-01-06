@@ -153,7 +153,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     return(std::numeric_limits<float>::infinity());*/
 
 #if 1
-  std::cout << "Calculating at cost at ic " << ic->key << " for: ";
+  std::cout << "Calculating at cost at ic " << ic->key << ", op " << ic->op << " for: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
   {
   	std::cout << "(" << i << ", " << int(a.global[i]) << ") ";

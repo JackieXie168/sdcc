@@ -21,11 +21,176 @@ enum
   D_ALLOC = 0,
 };
 
+/** Local static variables */
+static struct
+{
+  set *stackSpil;
+  int slocNum;
+  int stackExtend;
+  int dataExtend;
+} _G;
+
 #if 1
 #define D(_a, _s)       if (_a)  { printf _s; fflush(stdout); }
 #else
 #define D(_a, _s)
 #endif
+
+/** noOverLap - will iterate through the list looking for over lap
+ */
+static int
+noOverLap (set *itmpStack, symbol *fsym)
+{
+  symbol *sym;
+
+  for (sym = setFirstItem (itmpStack); sym; sym = setNextItem (itmpStack))
+    {
+      if (bitVectBitValue (sym->clashes, fsym->key))
+        return 0;
+#if 0
+      // if sym starts before (or on) our end point
+      // and ends after (or on) our start point,
+      // it is an overlap.
+      if (sym->liveFrom <= fsym->liveTo && sym->liveTo >= fsym->liveFrom)
+        {
+          return 0;
+        }
+#endif
+    }
+  return 1;
+}
+
+/*-----------------------------------------------------------------*/
+/* isFree - will return 1 if the a free spil location is found     */
+/*-----------------------------------------------------------------*/
+DEFSETFUNC (isFreeSTM8)
+{
+  symbol *sym = item;
+  V_ARG (symbol **, sloc);
+  V_ARG (symbol *, fsym);
+
+  /* if already found */
+  if (*sloc)
+    return 0;
+
+  /* if it is free && and the itmp assigned to
+     this does not have any overlapping live ranges
+     with the one currently being assigned and
+     the size can be accomodated  */
+  if (sym->isFree && noOverLap (sym->usl.itmpStack, fsym) && getSize (sym->type) >= getSize (fsym->type))
+    {
+      *sloc = sym;
+      return 1;
+    }
+
+  return 0;
+}
+
+/*-----------------------------------------------------------------*/
+/* createStackSpil - create a location on the stack to spil        */
+/*-----------------------------------------------------------------*/
+static symbol *
+createStackSpil (symbol * sym)
+{
+  symbol *sloc = NULL;
+  struct dbuf_s dbuf;
+
+  D (D_ALLOC, ("createStackSpil: for sym %p\n", sym));
+
+  /* first go try and find a free one that is already
+     existing on the stack */
+  if (applyToSet (_G.stackSpil, isFreeSTM8, &sloc, sym))
+    {
+      /* found a free one : just update & return */
+      sym->usl.spillLoc = sloc;
+      sym->stackSpil = 1;
+      sloc->isFree = 0;
+      addSetHead (&sloc->usl.itmpStack, sym);
+      D (D_ALLOC, ("createStackSpil: found existing\n"));
+      return sym;
+    }
+
+  /* could not then have to create one , this is the hard part
+     we need to allocate this on the stack : this is really a
+     hack!! but cannot think of anything better at this time */
+
+  dbuf_init (&dbuf, 128);
+  dbuf_printf (&dbuf, "sloc%d", _G.slocNum++);
+  sloc = newiTemp (dbuf_c_str (&dbuf));
+  dbuf_destroy (&dbuf);
+
+  /* set the type to the spilling symbol */
+  sloc->type = copyLinkChain (sym->type);
+  sloc->etype = getSpec (sloc->type);
+  SPEC_SCLS (sloc->etype) = S_AUTO;
+  SPEC_EXTR (sloc->etype) = 0;
+  SPEC_STAT (sloc->etype) = 0;
+  SPEC_VOLATILE (sloc->etype) = 0;
+
+  allocLocal (sloc);
+
+  sloc->isref = 1;              /* to prevent compiler warning */
+
+  wassertl (currFunc, "Local variable used outside of function.");
+
+  /* if it is on the stack then update the stack */
+  if (IN_STACK (sloc->etype))
+    {
+      if (currFunc)
+        currFunc->stack += getSize (sloc->type);
+      _G.stackExtend += getSize (sloc->type);
+    }
+  else
+    {
+      _G.dataExtend += getSize (sloc->type);
+    }
+
+  /* add it to the stackSpil set */
+  addSetHead (&_G.stackSpil, sloc);
+  sym->usl.spillLoc = sloc;
+  sym->stackSpil = 1;
+
+  /* add it to the set of itempStack set
+     of the spill location */
+  addSetHead (&sloc->usl.itmpStack, sym);
+
+  D (D_ALLOC, ("createStackSpil: created new\n"));
+  return sym;
+}
+
+/*-----------------------------------------------------------------*/
+/* spillThis - spils a specific operand                            */
+/*-----------------------------------------------------------------*/
+static void
+spillThis (symbol *sym)
+{
+  int i;
+
+  D (D_ALLOC, ("spillThis: spilling %p\n", sym));
+
+  sym->for_newralloc = 0;
+
+  /* if this is rematerializable or has a spillLocation
+     we are okay, else we need to create a spillLocation
+     for it */
+  if (!(sym->remat || sym->usl.spillLoc))
+    createStackSpil (sym);
+
+  /* mark it has spilt & put it in the spilt set */
+  sym->isspilt = sym->spillA = 1;
+
+  for (i = 0; i < sym->nRegs; i++)
+    {
+      if (sym->regs[i])
+        sym->regs[i] = 0;
+    }
+
+  if (sym->usl.spillLoc && !sym->remat)
+    {
+      sym->usl.spillLoc->allocreq++;
+    }
+  return;
+}
 
 /*-----------------------------------------------------------------*/
 /* regTypeNum - computes the type & number of registers required   */
@@ -155,8 +320,7 @@ serialRegMark (eBBlock ** ebbs, int count)
                 }
               else if (!sym->for_newralloc)
                 {
-                  // TODO: Implement spillThis().
-                  //spillThis (sym);
+                  spillThis (sym);
                   printf ("Spilt %s due to byte limit.\n", sym->name);
                 }
             }
@@ -164,7 +328,37 @@ serialRegMark (eBBlock ** ebbs, int count)
     }
 }
 
-#if 0
+/*------------------------------------------------------------------*/
+/* verifyRegsAssigned - make sure an iTemp is properly initialized; */
+/* it should either have registers or have beed spilled. Otherwise, */
+/* there was an uninitialized variable, so just spill this to get   */
+/* the operand in a valid state.                                    */
+/*------------------------------------------------------------------*/
+static void
+verifyRegsAssigned (operand * op, iCode * ic)
+{
+  symbol *sym;
+  int i;
+  bool completly_in_regs;
+
+  if (!op)
+    return;
+  if (!IS_ITEMP (op))
+    return;
+
+  sym = OP_SYMBOL (op);
+  if (sym->isspilt)
+    return;
+
+  for(i = 0, completly_in_regs = TRUE; i < sym->nRegs; i++)
+    if (!sym->regs[i])
+      completly_in_regs = FALSE;
+  if (completly_in_regs)
+    return;
+
+  spillThis (sym);
+}
+
 static void
 RegFix (eBBlock ** ebbs, int count)
 {
@@ -180,8 +374,6 @@ RegFix (eBBlock ** ebbs, int count)
 
       for (ic = ebbs[i]->sch; ic; ic = ic->next)
         {
-          deassignLRs (ic, ebbs[i]);
-
           if (SKIP_IC2 (ic))
             continue;
 
@@ -203,7 +395,6 @@ RegFix (eBBlock ** ebbs, int count)
         }
     }
 }
-#endif
 
 void stm8_init_asmops (void);
 
@@ -237,6 +428,9 @@ stm8_assignRegisters (ebbIndex * ebbi)
 
   /* Invoke optimal register allocator */
   ic = stm8_ralloc2_cc (ebbi);
+
+  /* Get spilllocs for all variables that have not been placed compeltly in regs */
+  RegFix (ebbs, count);
 
   if (options.dump_rassgn)
     {

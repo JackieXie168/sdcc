@@ -102,6 +102,10 @@ aopGet(const asmop *aop, int offset)
 {
   static char buffer[256];
 
+  /* Don't really need the value during dry runs, so svae some time. */
+  if (regalloc_dry_run)
+    return ("");
+
   if (aop->type == AOP_LIT)
     {
       snprintf (buffer, 256, "#$%x", byteOfVal (aop->aopu.aop_lit, offset));
@@ -418,7 +422,7 @@ aopOp (operand *op, const iCode *ic)
             completly_on_stack = FALSE;
             aop->aopu.bytes[i].byteu.reg = sym->regs[i];
           }
-        else if (sym->usl.spillLoc)
+        else if (sym->usl.spillLoc || sym->nRegs && regalloc_dry_run)
           {
             completly_in_regs = FALSE;
             aop->aopu.bytes[i].byteu.stk = sym->stack + i;
@@ -836,6 +840,8 @@ drySTM8iCode (iCode *ic)
   genSTM8iCode (ic);
 
   destroy_line_list ();
+
+  wassert (regalloc_dry_run);
 
   return (regalloc_dry_run_cost_bytes);
 }
