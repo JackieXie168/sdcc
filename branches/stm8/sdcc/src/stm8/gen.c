@@ -41,7 +41,9 @@ enum asminst
   A_ADC,
   A_ADD,
   A_LD,
-  A_MOV
+  A_MOV,
+  A_SBC,
+  A_SUB
 };
 
 static const char *asminstnames[] =
@@ -49,7 +51,9 @@ static const char *asminstnames[] =
   "adc",
   "add",
   "ld",
-  "mov"
+  "mov",
+  "sbc",
+  "sub"
 };
 
 static struct asmop asmop_a;
@@ -281,6 +285,10 @@ emit3cost (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
     break;
   case A_MOV:
     mov_cost (op1, op2);
+    break;
+  case A_SBC:
+  case A_SUB:
+    op8_cost (op2, offset2);
     break;
   default:
     wassertl (0, "Tried to get cost for unknown instruction");
@@ -774,6 +782,49 @@ genPlus (const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* genMinus - generates code for subtraction                       */
+/*-----------------------------------------------------------------*/
+static void
+genMinus (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+  int size, i;
+  bool started;
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RIGHT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+  
+  size = result->aop->size;
+  for(i = 0, started = FALSE; i < size;)
+    {
+      if (0) // TODO: Use subw where it provides an advantage.
+        ;
+      else // TODO: Take care of A. TODO: Handling of right operands that can't be directly subtracted from a.
+        {
+          cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+          if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+            {
+              // Skip over this byte.
+            }
+          else
+            {
+              emit3_o (started ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, i);
+              started = TRUE;
+            }
+          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+          i++;
+        }
+    }
+
+  freeAsmop (right);
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
 /* genAssign - generate code for assignment                        */
 /*-----------------------------------------------------------------*/
 static void
@@ -874,6 +925,9 @@ genSTM8iCode (iCode *ic)
       break;
 
     case '-':
+      genMinus (ic);
+      break;
+
     case '*':
     case '/':
     case '%':

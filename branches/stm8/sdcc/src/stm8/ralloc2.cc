@@ -178,8 +178,8 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case '~':
     case UNARYMINUS:*/
     case '+':
-    /*case '-':
-    case '^':
+    case '-':
+    /*case '^':
     case '|':
     case BITWISEAND:
     case IPUSH:
