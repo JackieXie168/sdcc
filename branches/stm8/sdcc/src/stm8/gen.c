@@ -56,8 +56,9 @@ static const char *asminstnames[] =
   "sub"
 };
 
-static struct asmop asmop_a;
+static struct asmop asmop_a, asmop_x;
 static struct asmop *const ASMOP_A = &asmop_a;
+static struct asmop *const ASMOP_X = &asmop_x;
 
 void
 stm8_init_asmops (void)
@@ -66,6 +67,13 @@ stm8_init_asmops (void)
   asmop_a.size = 1;
   asmop_a.aopu.bytes[0].in_reg = TRUE;
   asmop_a.aopu.bytes[0].byteu.reg = stm8_regs + A_IDX;
+
+  asmop_x.type = AOP_REG;
+  asmop_x.size = 2;
+  asmop_x.aopu.bytes[0].in_reg = TRUE;
+  asmop_x.aopu.bytes[0].byteu.reg = stm8_regs + XL_IDX;
+  asmop_x.aopu.bytes[1].in_reg = TRUE;
+  asmop_x.aopu.bytes[1].byteu.reg = stm8_regs + XH_IDX;
 }
 
 /*-----------------------------------------------------------------*/
@@ -612,6 +620,7 @@ skip_byte:
 
       // No byte can be assigned safely (i.e. the assignment is a permutation). Cache one in the accumulator.
       wassertl (0, "Unimplemented.");
+      return;
     }
 
   // In the end, move from the stack to destination.
@@ -734,6 +743,8 @@ genPlus (const iCode *ic)
   int size, i;
   bool started;
 
+  emitcode("; genPlus", "");
+
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
@@ -793,6 +804,8 @@ genMinus (const iCode *ic)
   int size, i;
   bool started;
 
+  emitcode("; genMinus", "");
+
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
@@ -817,6 +830,56 @@ genMinus (const iCode *ic)
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
           i++;
         }
+    }
+
+  freeAsmop (right);
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genPointerGet - generate code for pointer get                   */
+/*-----------------------------------------------------------------*/
+static void
+genPointerGet (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+  int size, i;
+  unsigned offset;
+
+  emitcode("; genPointerGet", "");
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RIGHT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+
+  wassertl (right, "GET_VALUE_AT_ADDRESS without right operand");
+  wassertl (IS_OP_LITERAL (IC_RIGHT (ic)), "GET_VALUE_AT_ADDRESS with non-literal right operand");
+
+  // TODO: Use Y when X is not available (or save X on stack), use ldw, etc.
+
+  //genCopy (ASMOP_X, left, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  // TODO: What if right operand is negative?
+  offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
+
+  size = result->aop->size;
+  for (i = 0; i < size; i++)
+    {
+      if (offset == 0)
+        {
+          emitcode ("ld", "a, (x)");
+          cost (1, 1);
+        }
+      else
+        {
+          emitcode ("ld", "a, ($%x, x)", offset);
+          cost (offset < 256 ? 2 : 3, 1);
+        }
+      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+      offset++;
     }
 
   freeAsmop (right);
@@ -958,8 +1021,11 @@ genSTM8iCode (iCode *ic)
     case GETABIT:
     case LEFT_OP:
     case RIGHT_OP:
-    case GET_VALUE_AT_ADDRESS:
       wassertl (0, "Unimplemented iCode");
+      break;
+
+    case GET_VALUE_AT_ADDRESS:
+      genPointerGet (ic);
       break;
 
     case '=':
