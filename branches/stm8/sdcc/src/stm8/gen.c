@@ -209,6 +209,7 @@ ld_cost (const asmop *op1, int offset1, const asmop *op2, int offset2)
       switch (op2type)
         {
         case AOP_LIT:
+        case AOP_IMMD:
           if (r1Idx != A_IDX)
             goto error;
           cost (2, 1);
