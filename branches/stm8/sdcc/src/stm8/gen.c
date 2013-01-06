@@ -124,7 +124,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_LIT)
     {
-      snprintf (buffer, 256, "#$%x", byteOfVal (aop->aopu.aop_lit, offset));
+      snprintf (buffer, 256, "#0x%x", byteOfVal (aop->aopu.aop_lit, offset));
       return (buffer);
     }
 
@@ -134,13 +134,13 @@ aopGet(const asmop *aop, int offset)
   if (aopRS (aop) && !aop->aopu.bytes[offset].in_reg)
     {
       int soffset = aop->aopu.bytes[offset].byteu.stk + _G.stack.pushed;
-      snprintf (buffer, 256, "($%x, sp)", soffset); //
+      snprintf (buffer, 256, "(0x%x, sp)", soffset); //
       return (buffer);
     }
 
   if (aop->type == AOP_DIR)
     {
-      snprintf (buffer, 256, "$%s+%x", aop->aopu.aop_immd, offset);
+      snprintf (buffer, 256, "0x%s+%x", aop->aopu.aop_immd, offset);
       return (buffer);
     }
 
@@ -875,7 +875,7 @@ genPointerGet (const iCode *ic)
         }
       else
         {
-          emitcode ("ld", "a, ($%x, x)", offset);
+          emitcode ("ld", "a, (0x%x, x)", offset);
           cost (offset < 256 ? 2 : 3, 1);
         }
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
