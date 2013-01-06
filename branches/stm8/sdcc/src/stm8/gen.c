@@ -38,12 +38,16 @@ _G;
 
 enum asminst
 {
+  A_ADC,
+  A_ADD,
   A_LD,
   A_MOV
 };
 
 static const char *asminstnames[] =
 {
+  "adc",
+  "add",
   "ld",
   "mov"
 };
@@ -130,6 +134,37 @@ aopGet(const asmop *aop, int offset)
 
   wassert (0);
   return ("dummy");
+}
+
+static void
+op8_cost (asmop *op2, int offset2)
+{
+  AOP_TYPE op2type = op2->type;
+  int r2Idx = ((aopRS (op2) && op2->aopu.bytes[offset2].in_reg)) ? op2->aopu.bytes[offset2].byteu.reg->rIdx : -1;
+
+  switch (op2type)
+    {
+    case AOP_LIT:
+    case AOP_IMMD:
+      cost (2, 1);
+      return;
+    case AOP_DIR:
+      cost (3, 1);
+      return;
+    case AOP_REG:
+    case AOP_REGSTK:
+    case AOP_STK:
+      if (r2Idx != -1)
+        goto error;
+      cost (2, 1);
+      return;
+    default:
+      goto error;
+    }
+error:
+  printf("op2 type: %d, offset %d, rIdx %d\n", op2type, offset2, r2Idx);
+  wassert (0);
+  cost (8, 4 * 8);
 }
 
 static void
@@ -237,6 +272,10 @@ emit3cost (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
 {
   switch (inst)
   {
+  case A_ADC:
+  case A_ADD:
+    op8_cost (op2, offset2);
+    break;
   case A_LD:
     ld_cost (op1, offset1, op2, offset2);
     break;
@@ -244,7 +283,7 @@ emit3cost (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
     mov_cost (op1, op2);
     break;
   default:
-    wassertl (0, "Tried get cost for unknown instruction");
+    wassertl (0, "Tried to get cost for unknown instruction");
   }
 }
 
@@ -669,10 +708,53 @@ genLabel (const iCode *ic)
 /* genGoto - generates a jump                                      */
 /*-----------------------------------------------------------------*/
 static void
-genGoto (const iCode * ic)
+genGoto (const iCode *ic)
 {
   emitcode ("jp", "%05d$", labelKey2num (IC_LABEL (ic)->key));
   cost (3, 1);
+}
+
+/*-----------------------------------------------------------------*/
+/* genPlus - generates code for addition                           */
+/*-----------------------------------------------------------------*/
+static void
+genPlus (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+  int size, i;
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RIGHT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+
+  /* Swap if left is literal or right is in A. */
+  if (left->aop->type == AOP_LIT || right->aop->size == 1 && aopInReg (right->aop, 1, A_IDX))
+    {
+      operand *t = right;
+      right = left;
+      left = t;
+    }
+
+  
+  size = result->aop->size;
+  for(i = 0; i < size;)
+    {
+      if (0) // TODO: Use addw where it provides an advantage.
+        ;
+      else // TODO: Take care of A.
+        {
+          cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+          emit3_o (i ? A_ADC : A_ADD, ASMOP_A, 0, right->aop, i);
+          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+          i++;
+        }
+    }
+
+  freeAsmop (right);
+  freeAsmop (left);
+  freeAsmop (result);
 }
 
 /*-----------------------------------------------------------------*/
@@ -772,6 +854,9 @@ genSTM8iCode (iCode *ic)
       break;
 
     case '+':
+      genPlus (ic);
+      break;
+
     case '-':
     case '*':
     case '/':
