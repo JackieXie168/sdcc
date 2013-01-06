@@ -118,7 +118,7 @@ aopGet(const asmop *aop, int offset)
 {
   static char buffer[256];
 
-  /* Don't really need the value during dry runs, so svae some time. */
+  /* Don't really need the value during dry runs, so save some time. */
   if (regalloc_dry_run)
     return ("");
 
@@ -140,7 +140,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_DIR)
     {
-      snprintf (buffer, 256, "%s+0x%x", aop->aopu.aop_immd, offset);
+      snprintf (buffer, 256, "%s+%d", aop->aopu.aop_immd, offset);
       return (buffer);
     }
 
