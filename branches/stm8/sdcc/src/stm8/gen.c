@@ -149,7 +149,7 @@ aopGet(const asmop *aop, int offset)
 }
 
 static void
-op8_cost (asmop *op2, int offset2)
+op8_cost (const asmop *op2, int offset2)
 {
   AOP_TYPE op2type = op2->type;
   int r2Idx = ((aopRS (op2) && op2->aopu.bytes[offset2].in_reg)) ? op2->aopu.bytes[offset2].byteu.reg->rIdx : -1;
@@ -280,7 +280,7 @@ mov_cost (const asmop *op1, const asmop *op2)
 }
 
 static void
-emit3cost (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
+emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, int offset2)
 {
   switch (inst)
   {
@@ -497,6 +497,78 @@ aopOp (operand *op, const iCode *ic)
     op->aop = aop;
     return;
   }
+}
+
+static void
+aopPush (const asmop *op, int offset, int size)
+{
+  if (size == 1)
+    {
+      emitcode ("push", "%s", aopGet (op, offset));
+      if (op->type == AOP_LIT)
+        cost (2, 1);
+      else if (op->type == AOP_IMMD)
+        cost (2, 1);
+      else if (aopInReg (op, offset, A_IDX))
+        cost (1, 1);
+      else if (op->type == AOP_DIR)
+        cost (3, 1);
+      else
+        wassertl (0, "Invalid aop type for size 1 for push");
+    }
+  if (size == 2)
+    {
+      if (aopInReg (op, offset, X_IDX))
+        {
+          emitcode ("pushw", "x");
+          cost (1, 2);
+        }
+      else if  (aopInReg (op, offset, Y_IDX))
+        {
+          emitcode ("pushw", "y");
+          cost (2, 2);
+        }
+      else
+        wassertl (0, "Invalid aop type for size 2 for pushw");
+    }
+  else
+    wassertl (0, "Invalid size for push/pushw");
+
+  _G.stack.pushed += size;
+}
+
+static void
+aopPop (const asmop *op, int offset, int size)
+{
+  if (size == 1)
+    {
+      emitcode ("pop", "%s", aopGet (op, offset));
+      if (aopInReg (op, offset, A_IDX))
+        cost (1, 1);
+      else if (op->type == AOP_DIR)
+        cost (3, 1);
+      else
+        wassertl (0, "Invalid aop type for size 1 for pop");
+    }
+  if (size == 2)
+    {
+      if (aopInReg (op, offset, X_IDX))
+        {
+          emitcode ("popw", "x");
+          cost (1, 2);
+        }
+      else if  (aopInReg (op, offset, Y_IDX))
+        {
+          emitcode ("popw", "y");
+          cost (2, 2);
+        }
+      else
+        wassertl (0, "Invalid aop type for size 2 for popw");
+    }
+  else
+    wassertl (0, "Invalid size for pop/popw");
+
+  _G.stack.pushed -= size;
 }
 
 /*--------------------------------------------------------------------------*/

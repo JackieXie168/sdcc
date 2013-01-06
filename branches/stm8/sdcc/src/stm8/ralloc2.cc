@@ -152,7 +152,7 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
   /*if(!inst_sane(a, i, G, I))
     return(std::numeric_limits<float>::infinity());*/
 
-#if 1
+#if 0
   std::cout << "Calculating at cost at ic " << ic->key << ", op " << ic->op << " for: ";
   for(unsigned int i = 0; i < boost::num_vertices(I); i++)
   {
@@ -220,7 +220,9 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
       set_surviving_regs(a, i, G, I);
       c = drySTM8iCode(ic);
       unset_surviving_regs(i, G);
-std::cout << "Got cost " << c << "\n";
+#if 0
+      std::cout << "Got cost " << c << "\n";
+#endif
       return(c);
     default:
       return(0.0f);
