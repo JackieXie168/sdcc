@@ -679,7 +679,6 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         {
           emitcode ("ldw", "%s, x", aopGet (result, i));
           cost (2, 2);
-          x_dead = TRUE;
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
           regsize -= 2;
@@ -690,7 +689,6 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         {
           emitcode ("ldw", "%s, y", aopGet (result, i));
           cost (2, 2);
-          y_dead = TRUE;
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
           regsize -= 2;
@@ -878,8 +876,54 @@ skip_byte:
       return;
     }
 
+  // Last, move everything that can be easily moved from stack to registers.
+  for (i = 0; i < n;)
+    {
+      if (i + 1 < n && aopInReg (result, i, X_IDX) && !result->aopu.bytes[i].in_reg && !source->aopu.bytes[i + 1].in_reg)
+        {
+          emitcode ("ldw", "x, %s", aopGet (source, i));
+          cost (2, 2);
+          assigned[i] = TRUE;
+          assigned[i + 1] = TRUE;
+          regsize -= 2;
+          size -= 2;
+          i += 2;
+        }
+      else if (i + 1 < n && aopInReg (result, i, Y_IDX) && !source->aopu.bytes[i].in_reg && !source->aopu.bytes[i + 1].in_reg)
+        {
+          emitcode ("ldw", "y, %s", aopGet (source, i));
+          cost (2, 2);
+          assigned[i] = TRUE;
+          assigned[i + 1] = TRUE;
+          regsize -= 2;
+          size -= 2;
+          i += 2;
+        }
+      else if (aopInReg (result, i, A_IDX) && !source->aopu.bytes[i].in_reg)
+        {
+          emitcode ("ld", "a, %s", aopGet (source, i));
+          cost (2, 1);
+          assigned[i] = TRUE;
+          regsize--;
+          size--;
+          i++;
+        }
+      else
+        i++;
+    }
+
   // In the end, move from the stack to destination.
-  wassertl (!size, "Unimplemented genCopy for operands not fully in regs.");
+  if (size)
+    {
+      if (regalloc_dry_run)
+        {
+          wassertl (0, "Unimplemented genCopy for operands not fully in regs.");
+          for (i = 0; i < n ; i++)
+            printf ("Byte %d, result in reg %d, source in reg %d.\n", i, result->aopu.bytes[i].in_reg ? result->aopu.bytes[i].byteu.reg->rIdx : -1, source->aopu.bytes[i].in_reg ? source->aopu.bytes[i].byteu.reg->rIdx : -1);
+        }
+      cost (80, 80);
+    }
+  
 }
 
 /*---------------------------------------------------------------------*/
