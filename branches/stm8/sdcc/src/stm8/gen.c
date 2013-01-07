@@ -659,23 +659,97 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 static void
 genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 {
-  int i, regsize, size = result->size;
+  int i, regsize, size = result->size, n = result->size;
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
-  int ex[4] = {-1, -1, -1, -1};
+  int ex[4];
 
   emitcode("; genCopy", "");
 
   wassertl (aopRS (source), "Invalid source type.");
   wassertl (aopRS (result), "Invalid result type.");
 
-  // TODO: Use exg/exgw for optimization.
-
   // Now do the register shuffling.
   for (i = 0, regsize = 0; i < size; i++)
     regsize += source->aopu.bytes[i].in_reg;
 
+  // Try to use exgw
+  ex[0] = -1;
+  ex[1] = -1;
+  ex[2] = -1;
+  ex[3] = -1;
+  if (regsize >= 4)
+    {
+      // Find XL and check that it is exchanged with YL.
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, YL_IDX))
+          ex[0] = i;
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, XL_IDX))
+          ex[1] = i;
+      // Find XH and check that it is exchanged with YH.
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, YH_IDX))
+          ex[2] = i;
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, XH_IDX))
+          ex[3] = i;
+      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0 && ex[3] >= 0)
+        {
+          emitcode ("exgw", "x, y");
+          cost (1, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          assigned[ex[2]] = TRUE;
+          assigned[ex[3]] = TRUE;
+          regsize -= 4;
+          size -= 4;
+        }
+    }
+
+  // Try to use swapw x
+  ex[0] = -1;
+  ex[1] = -1;
   if (regsize >= 2)
     {
+      // Find XL and check that it is exchanged with XH.
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, XH_IDX))
+          ex[0] = i;
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, XL_IDX))
+          ex[1] = i;
+      if (ex[0] >= 0 && ex[1] >= 0)
+        {
+          emitcode ("swapw", "x");
+          cost (1, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          regsize -= 2;
+          size -= 2;
+        }
+    }
+
+  // Try to use swapw y
+  ex[0] = -1;
+  ex[1] = -1;
+  if (regsize >= 2)
+    {
+      // Find YL and check that it is exchanged with YH.
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, YH_IDX))
+          ex[0] = i;
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, YL_IDX))
+          ex[1] = i;
+      if (ex[0] >= 0 && ex[1] >= 0)
+        {
+          emitcode ("swapw", "y");
+          cost (2, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          regsize -= 2;
+          size -= 2;
+        }
     }
 
   while (regsize)
@@ -688,7 +762,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
           if (assigned[i] || !source->aopu.bytes[i].in_reg)
             continue;
 
-          for (j = 0; j < size; j++)
+          for (j = 0; j < n; j++)
             {
               if (!source->aopu.bytes[j].in_reg || !result->aopu.bytes[i].in_reg)
                 continue;
@@ -702,7 +776,7 @@ skip_byte:
           ;
         }
 
-      if (i < size)
+      if (i < n)
         {
           cheapMove (result, i, source, i, FALSE);       // We can safely assign a byte. TODO: Take care of A!
           regsize--;
@@ -716,7 +790,7 @@ skip_byte:
     }
 
   // In the end, move from the stack to destination.
-  wassertl (regsize == size, "Unimplemented.");
+  wassertl (regsize == size, "Unimplemented genCopy for operands not fully in regs.");
 }
 
 /*---------------------------------------------------------------------*/
