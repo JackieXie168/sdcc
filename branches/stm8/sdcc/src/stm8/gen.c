@@ -1292,6 +1292,36 @@ genAddrOf (const iCode *ic)
   freeAsmop (result);
 }
 
+/*-----------------------------------------------------------------*/
+/* genCast - gen code for casting                                  */
+/*-----------------------------------------------------------------*/
+static void
+genCast (const iCode *ic)
+{
+  operand *result, *right;
+
+  emitcode("; genCast", "");
+
+  result = IC_RESULT (ic);
+  right = IC_RIGHT (ic);
+
+  aopOp (right, ic);
+  aopOp (result, ic);
+
+  if (result->aop->size <= right->aop->size)
+    {
+      freeAsmop (right);
+      freeAsmop (result);
+      genAssign (ic);
+      return;
+    }
+
+  wassertl (0, "Unimplemented cast.");
+
+  freeAsmop (right);
+  freeAsmop (result);
+}
+
 /*---------------------------------------------------------------------*/
 /* genSTM8Code - generate code for STM8 for a single iCode instruction */
 /*---------------------------------------------------------------------*/
@@ -1392,7 +1422,7 @@ genSTM8iCode (iCode *ic)
       break;
 
     case CAST:
-      genAssign (ic); // TODO: Really do a cast when necessary.
+      genCast (ic);
       break;
 
     case RECEIVE:
