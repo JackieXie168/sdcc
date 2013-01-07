@@ -879,7 +879,7 @@ skip_byte:
   // Last, move everything that can be easily moved from stack to registers.
   for (i = 0; i < n;)
     {
-      if (i + 1 < n && aopInReg (result, i, X_IDX) && !result->aopu.bytes[i].in_reg && !source->aopu.bytes[i + 1].in_reg)
+      if (i + 1 < n && aopInReg (result, i, X_IDX) && !source->aopu.bytes[i].in_reg && !source->aopu.bytes[i + 1].in_reg)
         {
           emitcode ("ldw", "x, %s", aopGet (source, i));
           cost (2, 2);
@@ -1204,7 +1204,10 @@ genAssign (const iCode *ic)
   aopOp (result, ic);
 
   if (aopRS (result->aop) && aopRS (right->aop))
-    genCopy (result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+    {
+      genCopy (result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+      goto end;
+    }
 
   // TODO: Efficient handling of more special cases.
   for (i = 0; i < result->aop->size;)
@@ -1240,6 +1243,7 @@ genAssign (const iCode *ic)
         }
     }
 
+end:
   freeAsmop (right);
   freeAsmop (result);
 }
