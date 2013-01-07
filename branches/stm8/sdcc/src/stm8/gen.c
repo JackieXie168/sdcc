@@ -515,7 +515,7 @@ aopOp (operand *op, const iCode *ic)
 }
 
 static void
-aopPush (const asmop *op, int offset, int size)
+push (const asmop *op, int offset, int size)
 {
   if (size == 1)
     {
@@ -553,7 +553,7 @@ aopPush (const asmop *op, int offset, int size)
 }
 
 static void
-aopPop (const asmop *op, int offset, int size)
+pop (const asmop *op, int offset, int size)
 {
   if (size == 1)
     {
@@ -668,10 +668,49 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   wassertl (aopRS (source), "Invalid source type.");
   wassertl (aopRS (result), "Invalid result type.");
 
-  // Now do the register shuffling.
   size = n;
   for (i = 0, regsize = 0; i < n; i++)
     regsize += source->aopu.bytes[i].in_reg;
+
+  // First, move everything that can be easily moved from registers to the stack.
+  for (i = 0; i < n;)
+    {
+      if (i + 1 < n && aopInReg (source, i, X_IDX) && !result->aopu.bytes[i].in_reg && !result->aopu.bytes[i + 1].in_reg)
+        {
+          emitcode ("ldw", "%s, x", aopGet (result, i));
+          cost (2, 2);
+          x_dead = TRUE;
+          assigned[i] = TRUE;
+          assigned[i + 1] = TRUE;
+          regsize -= 2;
+          size -= 2;
+          i += 2;
+        }
+      else if (i + 1 < n && aopInReg (source, i, Y_IDX) && !result->aopu.bytes[i].in_reg && !result->aopu.bytes[i + 1].in_reg)
+        {
+          emitcode ("ldw", "%s, y", aopGet (result, i));
+          cost (2, 2);
+          y_dead = TRUE;
+          assigned[i] = TRUE;
+          assigned[i + 1] = TRUE;
+          regsize -= 2;
+          size -= 2;
+          i += 2;
+        }
+      else if (aopInReg (source, i, A_IDX) && !result->aopu.bytes[i].in_reg)
+        {
+          emitcode ("ld", "%s, a", aopGet (result, i));
+          cost (2, 1);
+          assigned[i] = TRUE;
+          regsize--;
+          size--;
+          i++;
+        }
+      else
+        i++;
+    }
+
+  // Now do the register shuffling.
 
   // TODO: Try to use rlwa and rrwa.
 
