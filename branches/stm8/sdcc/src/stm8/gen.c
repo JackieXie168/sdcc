@@ -1065,7 +1065,7 @@ genPlus (const iCode *ic)
       else // TODO: Take care of A. TODO: Handling of right operands that can't be directly added to a.
         {
           cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-          if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+          if (!started && right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
             {
               // Skip over this byte.
             }
@@ -1117,7 +1117,7 @@ genMinus (const iCode *ic)
       else // TODO: Take care of A. TODO: Handling of right operands that can't be directly subtracted from a.
         {
           cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-          if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+          if (!started && right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
             {
               // Skip over this byte.
             }
