@@ -659,7 +659,7 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 static void
 genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 {
-  int i, regsize, size = result->size, n = result->size;
+  int i, regsize, size, n = result->size;
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
   int ex[4];
 
@@ -669,8 +669,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   wassertl (aopRS (result), "Invalid result type.");
 
   // Now do the register shuffling.
-  for (i = 0, regsize = 0; i < size; i++)
+  size = n;
+  for (i = 0, regsize = 0; i < n; i++)
     regsize += source->aopu.bytes[i].in_reg;
+
+  // TODO: Try to use rlwa and rrwa.
 
   // Try to use exgw
   ex[0] = -1;
@@ -703,6 +706,52 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
           assigned[ex[3]] = TRUE;
           regsize -= 4;
           size -= 4;
+        }
+    }
+
+  // Try to use exg a, xl
+  ex[0] = -1;
+  ex[1] = -1;
+  if (regsize >= 2)
+    {
+      // Find XL and check that it is exchanged with XH.
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XL_IDX))
+          ex[0] = i;
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, A_IDX))
+          ex[1] = i;
+      if (ex[0] >= 0 && ex[1] >= 0)
+        {
+          emitcode ("exg", "a, xl");
+          cost (1, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          regsize -= 2;
+          size -= 2;
+        }
+    }
+
+  // Try to use exg a, yl
+  ex[0] = -1;
+  ex[1] = -1;
+  if (regsize >= 2)
+    {
+      // Find XL and check that it is exchanged with XH.
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YL_IDX))
+          ex[0] = i;
+      for (i = 0; i < n; i++)
+        if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, A_IDX))
+          ex[1] = i;
+      if (ex[0] >= 0 && ex[1] >= 0)
+        {
+          emitcode ("exg", "a, yl");
+          cost (1, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          regsize -= 2;
+          size -= 2;
         }
     }
 
@@ -755,7 +804,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   while (regsize)
     {
       // Find lowest byte that can be assigned and needs to be assigned.
-      for (i = 0; i < size; i++)
+      for (i = 0; i < n; i++)
         {
           size_t j;
 
@@ -780,6 +829,7 @@ skip_byte:
         {
           cheapMove (result, i, source, i, FALSE);       // We can safely assign a byte. TODO: Take care of A!
           regsize--;
+          size--;
           assigned[i] = TRUE;
           continue;
         }
@@ -790,7 +840,7 @@ skip_byte:
     }
 
   // In the end, move from the stack to destination.
-  wassertl (regsize == size, "Unimplemented genCopy for operands not fully in regs.");
+  wassertl (!size, "Unimplemented genCopy for operands not fully in regs.");
 }
 
 /*---------------------------------------------------------------------*/
