@@ -56,9 +56,10 @@ static const char *asminstnames[] =
   "sub"
 };
 
-static struct asmop asmop_a, asmop_x;
+static struct asmop asmop_a, asmop_x, asmop_y;
 static struct asmop *const ASMOP_A = &asmop_a;
 static struct asmop *const ASMOP_X = &asmop_x;
+static struct asmop *const ASMOP_Y = &asmop_y;
 
 void
 stm8_init_asmops (void)
@@ -74,6 +75,13 @@ stm8_init_asmops (void)
   asmop_x.aopu.bytes[0].byteu.reg = stm8_regs + XL_IDX;
   asmop_x.aopu.bytes[1].in_reg = TRUE;
   asmop_x.aopu.bytes[1].byteu.reg = stm8_regs + XH_IDX;
+
+  asmop_y.type = AOP_REG;
+  asmop_y.size = 2;
+  asmop_y.aopu.bytes[0].in_reg = TRUE;
+  asmop_y.aopu.bytes[0].byteu.reg = stm8_regs + YL_IDX;
+  asmop_y.aopu.bytes[1].in_reg = TRUE;
+  asmop_y.aopu.bytes[1].byteu.reg = stm8_regs + YH_IDX;
 }
 
 /*-----------------------------------------------------------------*/
@@ -665,6 +673,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   // Now do the register shuffling.
   for (i = 0, regsize = 0; i < size; i++)
     regsize += source->aopu.bytes[i].in_reg;
+
+  if (regsize >= 2)
+    {
+    }
+
   while (regsize)
     {
       // Find lowest byte that can be assigned and needs to be assigned.
@@ -1024,6 +1037,50 @@ genAssign (const iCode *ic)
   freeAsmop (result);
 }
 
+/*-----------------------------------------------------------------*/
+/* genAddrOf - generates code for address of                       */
+/*-----------------------------------------------------------------*/
+static void
+genAddrOf (const iCode *ic)
+{
+  operand *result, *left;
+
+  emitcode("; genAddrOf", "");
+
+  result = IC_RESULT (ic);
+  left = IC_LEFT (ic);
+
+  symbol *sym;
+  wassert (IS_TRUE_SYMOP (left));
+  sym = OP_SYMBOL (left);
+
+  aopOp (result, ic);
+
+  if (sym->onStack)
+    {
+      wassertl (0, "Taking address of on-stack variables not implemented yet.");
+    }
+  else // TODO: HAndle case of cheapMove() using A, but A alive.
+    {
+      if (aopInReg (result->aop, 0, Y_IDX) || regDead (Y_IDX, ic) && !regDead (X_IDX, ic))
+        {
+          emitcode ("ldw", "y, #%s", sym->name);
+          cost (4, 2);
+          cheapMove (result->aop, 0, ASMOP_Y, 0, FALSE);
+          cheapMove (result->aop, 1, ASMOP_Y, 1, FALSE);
+        }
+      else // TODO: Handle case of both X and Y alive; TODO: Use mov when destination is a global variable.
+        {
+          emitcode ("ldw", "x, #%s", sym->name);
+          cost (3, 2);
+          cheapMove (result->aop, 0, ASMOP_X, 0, FALSE);
+          cheapMove (result->aop, 1, ASMOP_X, 1, FALSE);
+        }
+    }
+
+  freeAsmop (result);
+}
+
 /*---------------------------------------------------------------------*/
 /* genSTM8Code - generate code for STM8 for a single iCode instruction */
 /*---------------------------------------------------------------------*/
@@ -1112,9 +1169,21 @@ genSTM8iCode (iCode *ic)
       break;
 
     case IFX:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case ADDRESS_OF:
+      genAddrOf (ic);
+      break;
+
     case JUMPTABLE:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case CAST:
+      genAssign (ic); // TODO: Really do a cast when necessary.
+      break;
+
     case RECEIVE:
     case SEND:
     case DUMMY_READ_VOLATILE:
