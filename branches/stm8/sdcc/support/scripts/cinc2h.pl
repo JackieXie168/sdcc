@@ -118,8 +118,9 @@ use constant DIST_BITSIZE  => 32;
 use constant DIST_DEFSIZE  => 32;
 use constant DIST_COMSIZE  => 32;
 
-my $PROGRAM = 'cinc2h.pl';
+my $PROGRAM  = 'cinc2h.pl';
 my $time_str = '';
+my $year     = '';
 
 my $gputils_path   = "$ENV{HOME}/svn_snapshots/gputils/gputils";
 my $gp_header_path = '';
@@ -1331,7 +1332,7 @@ sub print_license($)
  * This $_[0] of the $mcu MCU.
  *
  * This file is part of the GNU PIC library for SDCC, originally
- * created by Molnar Karoly <molnarkaroly\@users.sf.net> 2012.
+ * created by Molnar Karoly <molnarkaroly\@users.sf.net> $year.
  *
  * This file is generated automatically by the $PROGRAM${time_str}.
  *
@@ -1622,6 +1623,7 @@ $device_name = lc($mcu) . '.c';
 
 read_content_from_header("$gp_header_path/$fname");
 
+$year     = strftime('%Y', gmtime);
 $time_str = strftime(', %F %T UTC', gmtime) if (! $no_timestamp);
 
         # Creates the directory structure.
