@@ -27,7 +27,11 @@
     This program disassembles the hex files. It assumes that the hex file
     contains MCS51 instructions.
 
-    Proposal for use: ./mcs51-disasm.pl -M 8052.h program.hex > program.asm
+    Proposal for use: ./mcs51-disasm.pl -M 8052.h program.hex > program.dasm
+
+	or	./mcs51-disasm.pl -M 8052.h -as program.hex > program.asm
+
+	or	./mcs51-disasm.pl -M 8052.h -as -hc program.hex > program.asm
 
   $Id$
 =cut
@@ -76,15 +80,17 @@ my @default_paths =
   );
 
 my $default_include_path = '';
-my $include_path = '';
-my $hex_file = '';
-my $map_file = '';
-my $header_file = '';
+my $include_path	 = '';
+my $hex_file		 = '';
+my $map_file 		 = '';
+my $map_readed		 = FALSE;
+my $header_file		 = '';
 
 my $verbose           = 0;
 my $hex_constant      = FALSE;
 my $gen_assembly_code = FALSE;
 my $no_explanations   = FALSE;
+my $find_lost_labels  = FALSE;
 
 my @rom = ();
 my $rom_size = MCS51_ROM_SIZE;
@@ -102,7 +108,7 @@ my %xram_by_address	 = ();
 my $stack_start		 = -1;
 my $stack_size		 = 0;
 
-my %variables_by_address      = ();
+my %variable_names_by_address = ();
 my %variable_sizes_by_address = ();
 my $max_variable_addr = 0;
 
@@ -135,7 +141,12 @@ use constant DPL => 0x82;
 use constant DPH => 0x83;
 use constant PSW => 0xD0;
 
-use constant MOV_DIRECT_DATA => 0x75;
+use constant INST_AJMP => 0x01;
+use constant INST_LJMP => 0x02;
+use constant INST_SJMP => 0x80;
+use constant INST_RET  => 0x22;
+use constant INST_RETI => 0x32;
+
 use constant LJMP_SIZE => 3;
 
 my $DPTR;
@@ -149,8 +160,9 @@ use constant SILENT2 => 2;
 
 my $decoder_silent_level;
 
-use constant ALIGN_SIZE  => 5;
-use constant TBL_COLUMNS => 8;
+use constant EXPL_ALIGN_SIZE => 5;
+use constant STAT_ALIGN_SIZE => 6;
+use constant TBL_COLUMNS     => 8;
 
 =back
 	The structure of one element of the %blocks_by_address hash:
@@ -159,9 +171,11 @@ use constant TBL_COLUMNS => 8;
 	TYPE  => 0,
 	SIZE  => 0,
 	LABEL => {
-		 TYPE    => 0,
-		 NAME    => '',
-		 PRINTED => FALSE
+		 TYPE       => 0,
+		 NAME       => '',
+		 PRINTED    => FALSE,
+		 CALL_COUNT => 0,
+		 JUMP_COUNT => 0
 		 }
 	}
 =cut
@@ -176,12 +190,12 @@ use constant BL_TYPE_LABEL  =>  1;
 use constant BL_TYPE_JTABLE =>  2;
 use constant BL_TYPE_CONST  =>  3;
 
-my @label_names =
+my %label_names =
   (
-  'Function_',
-  'Label_',
-  'Jumptable_',
-  'Constant_'
+  eval BL_TYPE_SUB    => 'Function_',
+  eval BL_TYPE_LABEL  => 'Label_',
+  eval BL_TYPE_JTABLE => 'Jumptable_',
+  eval BL_TYPE_CONST  => 'Constant_'
   );
 
 my %empty_blocks_by_address = ();
@@ -660,7 +674,7 @@ sub is_constant($)
 
   foreach (sort {$a <=> $b} keys(%const_blocks_by_address))
     {
-    return TRUE if ($_ <= $Address && $Address <= $const_areas_by_address{$_});
+    return TRUE if ($_ <= $Address && $Address <= $const_blocks_by_address{$_});
     last if ($_ > $Address);
     }
 
@@ -700,9 +714,11 @@ sub add_block($$$$$)
   if (! defined($blocks_by_address{$Address}))
     {
     $label = {
-	     TYPE    => $LabelType,
-	     NAME    => $LabelName,
-	     PRINTED => FALSE
+	     TYPE       => $LabelType,
+	     NAME       => $LabelName,
+	     PRINTED    => FALSE,
+	     CALL_COUNT => 0,
+	     JUMP_COUNT => 0
 	     };
 
     $blocks_by_address{$Address} = {
@@ -779,6 +795,8 @@ sub add_block($$$$$)
       $empty_blocks_by_address{$Address} = ($Address + $Size - 1) if ($Size > 0);
       }
     }
+
+  return $label;
   }
 
 #-------------------------------------------------------------------------------
@@ -787,9 +805,10 @@ sub add_block($$$$$)
 	# Store address entry of a procedure.
 	#
 
-sub add_func_label($$)
+sub add_func_label($$$)
   {
-  my ($Address, $Name) = @_;
+  my ($Address, $Name, $Map_mode) = @_;
+  my $label;
 
   if ($Address < 0)
     {
@@ -797,11 +816,14 @@ sub add_func_label($$)
     return;
     }
 
-#  if (! defined($blocks_by_address{$Address}))
-#    {
-#    Log(sprintf("add_func_label(): This address (0x%04X) does not shows an instruction!", $Address), 2);
-#    return;
-#    }
+  if (! $Map_mode)
+    {
+    if (! defined($blocks_by_address{$Address}))
+      {
+      Log(sprintf("add_func_label(): This address (0x%04X) does not shows an instruction!", $Address), 2);
+      return;
+      }
+    }
 
   if (is_constant($Address) || is_empty($Address))
     {
@@ -809,7 +831,8 @@ sub add_func_label($$)
     return;
     }
 
-  add_block($Address, BLOCK_INSTR, 0, BL_TYPE_SUB, $Name);
+  $label = add_block($Address, BLOCK_INSTR, 0, BL_TYPE_SUB, $Name);
+  ++$label->{CALL_COUNT} if (! $Map_mode);
   }
 
 #-------------------------------------------------------------------------------
@@ -818,10 +841,10 @@ sub add_func_label($$)
 	# Store a label.
 	#
 
-sub add_jump_label($$$$)
+sub add_jump_label($$$$$)
   {
-  my ($TargetAddr, $Name, $Type, $SourceAddr) = @_;
-  my $type;
+  my ($TargetAddr, $Name, $Type, $SourceAddr, $Map_mode) = @_;
+  my ($label, $type);
 
   if ($TargetAddr < 0)
     {
@@ -829,11 +852,14 @@ sub add_jump_label($$$$)
     return;
     }
 
-#  if (! defined($blocks_by_address{$TargetAddr}))
-#    {
-#    Log(sprintf("add_jump_label(): This address (0x%04X) does not shows an instruction!", $TargetAddr), 2);
-#    return;
-#    }
+  if (! $Map_mode)
+    {
+    if (! defined($blocks_by_address{$TargetAddr}))
+      {
+      Log(sprintf("add_jump_label(): This address (0x%04X) does not shows an instruction!", $TargetAddr), 2);
+      return;
+      }
+    }
 
   if (is_constant($TargetAddr) || is_empty($TargetAddr))
     {
@@ -847,7 +873,8 @@ sub add_jump_label($$$$)
     $Name = $interrupts_by_address{$SourceAddr} if ($Name eq '');
     }
 
-  add_block($TargetAddr, BLOCK_INSTR, 0, $Type, $Name);
+  $label = add_block($TargetAddr, BLOCK_INSTR, 0, $Type, $Name);
+  ++$label->{JUMP_COUNT} if (! $Map_mode);
   }
 
 ################################################################################
@@ -966,11 +993,11 @@ sub read_map_file()
 
 	if ($state == MAP_CODE0)
 	  {
-	  add_func_label($addr, $name);
+	  add_func_label($addr, $name, TRUE);
 	  }
 	else
 	  {
-	  add_jump_label($addr, $name, BL_TYPE_LABEL, EMPTY);
+	  add_jump_label($addr, $name, BL_TYPE_LABEL, EMPTY, TRUE);
 	  }
 	}
       } # elsif ($state == MAP_CODE0 || $state == MAP_CODE1)
@@ -987,9 +1014,9 @@ sub read_map_file()
 
 	($addr, $name) = (hex($1), $2);
 
-	if (! defined($variables_by_address{$addr}))
+	if (! defined($variable_names_by_address{$addr}))
 	  {
-	  $variables_by_address{$addr}      = $name;
+	  $variable_names_by_address{$addr}      = $name;
 	  $variable_sizes_by_address{$addr} = 1;
 	  }
 
@@ -1002,6 +1029,7 @@ sub read_map_file()
       }
     } # while (<MAP>)
 
+  $map_readed = TRUE;
   close(MAP);
   }
 
@@ -1019,7 +1047,7 @@ sub fix_multi_byte_variables()
   my $prev_name = '';
   my ($i, $var_size);
 
-  foreach (sort {$a <=> $b} keys(%variables_by_address))
+  foreach (sort {$a <=> $b} keys(%variable_names_by_address))
     {
     if ($prev_addr > EMPTY)
       {
@@ -1031,7 +1059,7 @@ sub fix_multi_byte_variables()
 
 	for ($i = 1; $i < $var_size; ++$i)
 	  {
-	  $variables_by_address{$prev_addr + $i} = "($prev_name + $i)";
+	  $variable_names_by_address{$prev_addr + $i} = "($prev_name + $i)";
 	  }
 
 	$variable_sizes_by_address{$prev_addr} = $var_size;
@@ -1039,7 +1067,7 @@ sub fix_multi_byte_variables()
       }
 
     $prev_addr = $_;
-    $prev_name = $variables_by_address{$_};
+    $prev_name = $variable_names_by_address{$_};
     }
   }
 
@@ -1070,19 +1098,19 @@ sub add_names_labels()
 
     if ($type == BL_TYPE_SUB)
       {
-      $label->{NAME} = sprintf("%s%03u", $label_names[$type], $fidx++);
+      $label->{NAME} = sprintf("$label_names{$type}%03u", $fidx++);
       }
     elsif ($type == BL_TYPE_LABEL)
       {
-      $label->{NAME} = sprintf("%s%03u", $label_names[$type], $lidx++);
+      $label->{NAME} = sprintf("$label_names{$type}%03u", $lidx++);
       }
     elsif ($type == BL_TYPE_JTABLE)
       {
-      $label->{NAME} = sprintf("%s%03u", $label_names[$type], $jidx++);
+      $label->{NAME} = sprintf("$label_names{$type}%03u", $jidx++);
       }
     elsif ($type == BL_TYPE_CONST)
       {
-      $label->{NAME} = sprintf("%s%03u", $label_names[$type], $cidx++);
+      $label->{NAME} = sprintf("$label_names{$type}%03u", $cidx++);
       }
     }
   }
@@ -1243,14 +1271,14 @@ sub label_finder($$)
         # AJMP	addr11			aaa00001 aaaaaaaa		a10 a9 a8 0 0 0 0 1	a7-a0
 
     $addr = (($Address + $instr_size) & 0xF800) | (($instr & 0xE0) << 3) | $rom[$Address + 1];
-    add_jump_label($addr, '', BL_TYPE_LABEL, $Address);
+    add_jump_label($addr, '', BL_TYPE_LABEL, $Address, FALSE);
     }
   elsif ($instr_mask0 == 0x11)
     {
 	# ACALL	addr11			aaa10001 aaaaaaaa		a10 a9 a8 1 0 0 0 1	a7-a0
 
     $addr = (($Address + $instr_size) & 0xF800) | (($instr & 0xE0) << 3) | $rom[$Address + 1];
-    add_func_label($addr, '');
+    add_func_label($addr, '', FALSE);
     }
   elsif ($instr_mask1 == 0xB6 || $instr_mask2 == 0xB8)
     {
@@ -1258,28 +1286,28 @@ sub label_finder($$)
 	# CJNE	Rn, #data, rel		10111rrr dddddddd rrrrrrrr	R0 .. R7 	data		relative address
 
     $addr = $Address + $instr_size + expand_offset($rom[$Address + 2]);
-    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY);
+    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY, FALSE);
     }
   elsif ($instr_mask2 == 0xD8)
     {
 	# DJNZ	Rn, rel			11011rrr rrrrrrrr		R0 .. R7	relative address
 
     $addr = $Address + $instr_size + expand_offset($rom[$Address + 1]);
-    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY);
+    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY, FALSE);
     }
   elsif ($instr == 0x02)
     {
 	# LJMP	addr16			00000010 aaaaaaaa aaaaaaaa	a15-a8 a7-a0	absolute address
 
     $addr = ($rom[$Address + 1] << 8) | $rom[$Address + 2];
-    add_jump_label($addr, '', BL_TYPE_LABEL, $Address);
+    add_jump_label($addr, '', BL_TYPE_LABEL, $Address, FALSE);
     }
   elsif ($instr == 0x12)
     {
 	# LCALL	addr16			00010010 aaaaaaaa aaaaaaaa	a15-a8 a7-a0	absolute address
 
     $addr = ($rom[$Address + 1] << 8) | $rom[$Address + 2];
-    add_func_label($addr, '');
+    add_func_label($addr, '', FALSE);
     }
   elsif ($instr == 0x10 || $instr == 0x20 ||
 	 $instr == 0x30 || $instr == 0xB4 ||
@@ -1293,7 +1321,7 @@ sub label_finder($$)
 	# DJNZ	direct, rel		11010101 aaaaaaaa rrrrrrrr	register address	relative address
 
     $addr = $Address + $instr_size + expand_offset($rom[$Address + 2]);
-    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY);
+    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY, FALSE);
     }
   elsif ($instr == 0x40 || $instr == 0x50 ||
 	 $instr == 0x60 || $instr == 0x70 ||
@@ -1306,7 +1334,7 @@ sub label_finder($$)
 	# SJMP	rel			10000000 rrrrrrrr		relative address
 
     $addr = $Address + $instr_size + expand_offset($rom[$Address + 1]);
-    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY);
+    add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY, FALSE);
     }
   }
 
@@ -1332,9 +1360,9 @@ sub regname($$)
     $str = ($gen_assembly_code) ? sprintf("0x%02X", $Address) : "R${reg}<#$bank>";
     $$StrRef = $str;
 
-    if (defined($variables_by_address{$Address}))
+    if (defined($variable_names_by_address{$Address}))
       {
-      my $var = $variables_by_address{$Address};
+      my $var = $variable_names_by_address{$Address};
 
       printf STDERR ("This address (0x%02X) belongs to two names: \"$str\" and \"$var\"\n", $Address);
       }
@@ -1344,11 +1372,11 @@ sub regname($$)
     $str = $sfrs_by_address{$Address};
     $$StrRef = $str;
     }
-  elsif (defined($variables_by_address{$Address}))
+  elsif (defined($variable_names_by_address{$Address}))
     {
     $str = sprintf "0x%02X", $Address;
     $$StrRef = "[$str]";
-    $str = $variables_by_address{$Address};
+    $str = $variable_names_by_address{$Address};
     }
   else
     {
@@ -1416,7 +1444,7 @@ sub print_3($$$)
     }
   else
     {
-    print "$_[0]\t" . align($_[1], ALIGN_SIZE) . "; $_[2]\n";
+    print "$_[0]\t" . align($_[1], EXPL_ALIGN_SIZE) . "; $_[2]\n";
     }
   }
 
@@ -2771,7 +2799,7 @@ sub jmp_A_DPTR()
 
   if ($DPTR != EMPTY)
     {
-    add_jump_label($DPTR, '', BL_TYPE_JTABLE, EMPTY);
+    add_jump_label($DPTR, '', BL_TYPE_JTABLE, EMPTY, FALSE);
     $str0 = jump_direction($DPTR);
     }
   else
@@ -2960,7 +2988,7 @@ sub movc_A_A_DPTR()
   {
 	# MOVC	A, @A+DPTR		10010011
 
-  add_jump_label($DPTR, '', BL_TYPE_LABEL, EMPTY) if ($DPTR != EMPTY);
+  add_jump_label($DPTR, '', BL_TYPE_LABEL, EMPTY, FALSE) if ($DPTR != EMPTY);
 
   print_3('movc', 'A, @A+DPTR', 'ACC = ROM[DPTR + ACC]');
   }
@@ -3734,7 +3762,8 @@ sub instruction_decoder($$)
     }
   else
     {
-    print "\t" if ($decoder_silent_level == SILENT0);
+    print STDERR "Internal error: The size of intruction (addr:0x%04X) is zero!", $dcd_address;
+    exit(1);
     }
 
   $dcd_Ri_regs = $dcd_instr & 0x01;
@@ -4087,6 +4116,49 @@ sub find_labels_in_code()
 #-------------------------------------------------------------------------------
 
 	#
+	# Finds lost address of branchs and procedures.
+	#
+
+sub find_lost_labels_in_code()
+  {
+  my ($block, $prev_block, $prev_addr, $label, $instr);
+
+  $prev_addr  = EMPTY;
+  $prev_block = undef;
+  foreach (sort {$a <=> $b} keys(%blocks_by_address))
+    {
+    $block = \%{$blocks_by_address{$_}};
+
+    next if ($block->{TYPE} != BLOCK_INSTR);
+
+    if ($prev_addr != EMPTY)
+      {
+      $instr = $rom[$prev_addr];
+      $label = $block->{LABEL};
+
+      if (defined($label) && $label->{TYPE} == BL_TYPE_NONE)
+	{
+	if ($instr == INST_RET || $instr == INST_RETI)
+	  {
+	  Log(sprintf("Lost function label at the 0x%04X address.", $_), 5);
+	  add_func_label($_, '', TRUE);
+	  }
+	elsif ($instr == INST_LJMP || $instr == INST_SJMP || ($instr & 0x1F) == INST_AJMP)
+	  {
+	  Log(sprintf("Lost jump label at the 0x%04X address.", $_), 5);
+	  add_jump_label($_, '', BL_TYPE_LABEL, EMPTY, TRUE);
+	  }
+	}
+      }
+
+    $prev_addr  = $_;
+    $prev_block = $block;
+    }
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
 	# Prints the global symbols.
 	#
 
@@ -4117,7 +4189,11 @@ sub emit_globals($)
 
       next if ($label->{TYPE} != BL_TYPE_SUB);
 
-      printf "0x%04X:\t$label->{NAME}\n", $_;
+      my $str1 = sprintf "0x%04X", $_;
+      my $cnt1 = sprintf "%3u", $label->{CALL_COUNT};
+      my $cnt2 = sprintf "%3u", $label->{JUMP_COUNT};
+      my $str2 = ($label->{CALL_COUNT} || $label->{JUMP_COUNT}) ? "calls: $cnt1, jumps: $cnt2" : 'not used';
+      print "$str1:\t" . align($label->{NAME}, STAT_ALIGN_SIZE) . "($str2)\n";
       }
     }
 
@@ -4268,7 +4344,7 @@ sub emit_ram_data($)
 
       if (defined($size))
 	{
-	print "$variables_by_address{$_}::\n\t.ds $size\n";
+	print "$variable_names_by_address{$_}::\n\t.ds $size\n";
 	$next_addr = $_ + $size;
 	}
       else
@@ -4288,13 +4364,24 @@ sub emit_ram_data($)
 
       $size = $variable_sizes_by_address{$_};
 
+      my $str = sprintf "0x%02X", $_;
+
       if (defined($size))
 	{
-	printf "0x%02X:\t$variables_by_address{$_}\t(%u bytes)\n", $_, $size;
+        my $cnt = sprintf "%3u", $size;
+
+	print "$str:\t" . align($variable_names_by_address{$_}, STAT_ALIGN_SIZE) . "($cnt bytes)\n";
 	}
       else
 	{
-	printf "0x%02X:\tvariable_0x%02X\t(1 bytes)\n", $_, $_;
+	if ($map_readed)
+	  {
+	  print "$str:\t" . align("variable_$str", STAT_ALIGN_SIZE) . "(  1 bytes)\n";
+	  }
+	else
+	  {
+	  print "$str:\tvariable_$str\n";
+	  }
 	}
       }
     }
@@ -4443,15 +4530,15 @@ sub print_constants($$)
 
   $prev_is_jump = FALSE;
 
-  $col = ($gen_assembly_code) ? '     ' : '    ';
+  $col = ($gen_assembly_code) ? '      ' : '    ';
 
   if ($gen_assembly_code)
     {
-    print ";$table_border\n;\t\t$table_header |\n;$table_border\n";
+    print ";$table_border\n;\t\t $table_header  |\n;$table_border\n";
     }
   else
     {
-    print "$table_border\n|          |  $table_header  |  $table_header   |\n$table_border\n";
+    print "$table_border\n|          |  $table_header  |  $table_header  |\n$table_border\n";
     }
 
   @constants = @rom[$Address .. ($Address + $size - 1)];
@@ -4488,10 +4575,10 @@ sub print_constants($$)
     if ($gen_assembly_code)
       {
       print $left_align .
-	    join(' ', map {
-			  $spc = (--$len) ? ', ' : '';
-			  sprintf((($hex_constant || $_ < ord(' ') || $_ >= 0x7F) ? "%02X$spc" : "'%c'"), $_);
-			  } @line) . "\n";
+	    join(', ', map {
+			  $spc = (--$len) ? ' ' : '';
+			  sprintf((($hex_constant || $_ < ord(' ') || $_ >= 0x7F) ? "0x%02X" : "'%c'$spc"), $_);
+			  } @line) . "$right_align ;\n";
       }
     else
       {
@@ -4500,7 +4587,7 @@ sub print_constants($$)
       print "$right_align | $left_align " .
 	    join(' ', map {
 			  sprintf((($_ < ord(' ') || $_ >= 0x7F) ? "%02X " : "'%c'"), $_);
-			  } @line) . "$right_align  |\n";
+			  } @line) . "$right_align |\n";
       }
     } # while (TRUE)
 
@@ -4524,13 +4611,13 @@ sub disassembler()
 
   if ($gen_assembly_code)
     {
-    $table_header = join('   ', map { sprintf '%02X', $_ } (0 .. (TBL_COLUMNS - 1)));
-    $table_border = ('-' x (TBL_COLUMNS * 5 + 13)) . '+';
+    $table_header = join('    ', map { sprintf '%02X', $_ } (0 .. (TBL_COLUMNS - 1)));
+    $table_border = ('-' x (TBL_COLUMNS * 6 + 14)) . '+';
     }
   else
     {
     $table_header = join('  ', map { sprintf '%02X', $_ } (0 .. (TBL_COLUMNS - 1)));
-    $table_border = '+' . ('-' x 10) . '+' . ('-' x (TBL_COLUMNS * 4 + 2)) . '+' . ('-' x (TBL_COLUMNS * 4 + 3)) . '+';
+    $table_border = '+' . ('-' x 10) . '+' . ('-' x (TBL_COLUMNS * 4 + 2)) . '+' . ('-' x (TBL_COLUMNS * 4 + 2)) . '+';
     }
 
   invalidate_DPTR_Rx();
@@ -4674,6 +4761,11 @@ EOT
 	    visible address, hex codes and besides replaces the pseudo Rn<#x>
 	    register names.) Emits global symbol table, SFR table, Bits table, etc.
 
+	-fl|--find-lost-labels
+
+	    Finds the "lost" labels. These may be found such in program parts,
+	    which are directly not get call.
+
 	-ne|--no-explanations
 
 	    Eliminates after the instructions visible explaining texts.
@@ -4786,6 +4878,11 @@ for (my $i = 0; $i < @ARGV; )
       $gen_assembly_code = TRUE;
       }
 
+    when (/^-(fl|-find-lost-labels)$/o)
+      {
+      $find_lost_labels = TRUE;
+      }
+
     when (/^-(ne|-no-explanations)$/o)
       {
       $no_explanations = TRUE;
@@ -4855,6 +4952,7 @@ split_code_to_blocks();
 preliminary_survey(SILENT2);
 preliminary_survey(SILENT1);
 find_labels_in_code();
+find_lost_labels_in_code() if ($find_lost_labels);
 add_names_labels();
 disassembler();
 print_hidden_labels() if ($verbose > 2);
