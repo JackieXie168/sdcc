@@ -27,11 +27,11 @@
     This program disassembles the hex files. It assumes that the hex file
     contains MCS51 instructions.
 
-    Proposal for use: ./mcs51-disasm.pl -M 8052.h program.hex > program.dasm
+    Proposal for use: ./mcs51-disasm.pl -M 8052.h -fl -rj program.hex > program.dasm
 
-	or	./mcs51-disasm.pl -M 8052.h -as program.hex > program.asm
+	or	./mcs51-disasm.pl -M 8052.h -fl -rj -as program.hex > program.asm
 
-	or	./mcs51-disasm.pl -M 8052.h -as -hc program.hex > program.asm
+	or	./mcs51-disasm.pl -M 8052.h -fl -rj -as -hc program.hex > program.asm
 
   $Id$
 =cut
@@ -86,11 +86,12 @@ my $map_file 		 = '';
 my $map_readed		 = FALSE;
 my $header_file		 = '';
 
-my $verbose           = 0;
-my $hex_constant      = FALSE;
-my $gen_assembly_code = FALSE;
-my $no_explanations   = FALSE;
-my $find_lost_labels  = FALSE;
+my $verbose		  = 0;
+my $hex_constant	  = FALSE;
+my $gen_assembly_code	  = FALSE;
+my $no_explanations	  = FALSE;
+my $recognize_jump_tables = FALSE;
+my $find_lost_labels	  = FALSE;
 
 my @rom = ();
 my $rom_size = MCS51_ROM_SIZE;
@@ -102,6 +103,7 @@ my %sfrs_by_address	 = ();
 my %sfrs_by_names	 = ();
 my %used_banks		 = ();
 my %registers_by_address = ();
+my %sfr_bits_by_address	 = ();
 my %bits_by_address	 = ();
 my %iram_by_address	 = ();
 my %xram_by_address	 = ();
@@ -135,17 +137,33 @@ my @instruction_sizes =
   );
 
 use constant BANK_LAST_ADDR => 0x1F;
+use constant BIT_LAST_ADDR  => 0x7F;
 
 use constant SP  => 0x81;
 use constant DPL => 0x82;
 use constant DPH => 0x83;
 use constant PSW => 0xD0;
+use constant ACC => 0xE0;
 
-use constant INST_AJMP => 0x01;
-use constant INST_LJMP => 0x02;
-use constant INST_SJMP => 0x80;
-use constant INST_RET  => 0x22;
-use constant INST_RETI => 0x32;
+use constant INST_AJMP			=> 0x01;
+use constant INST_LJMP			=> 0x02;
+use constant INST_SJMP			=> 0x80;
+use constant INST_RET			=> 0x22;
+use constant INST_RETI			=> 0x32;
+use constant INST_ADD_A_DATA		=> 0x24;
+use constant INST_JMP_A_DPTR		=> 0x73;
+use constant INST_MOV_DIRECT_DATA	=> 0x75;
+use constant INST_MOVC_A_APC		=> 0x83;
+use constant INST_MOV_DIRECT_DIRECT	=> 0x85;
+use constant INST_MOV_DPTR_DATA 	=> 0x90;
+use constant INST_MOVC_A_DPTR		=> 0x93;
+use constant INST_PUSH_DIRECT		=> 0xC0;
+use constant INST_XCH_A_DIRECT		=> 0xC5;
+use constant INST_POP_DIRECT		=> 0xD0;
+use constant INST_CLR_A			=> 0xE4;
+use constant INST_MOV_A_DIRECT		=> 0xE5;
+use constant INST_MOV_A_Rn		=> 0xE8;
+use constant INST_MOV_DIRECT_A		=> 0xF5;
 
 use constant LJMP_SIZE => 3;
 
@@ -169,6 +187,7 @@ use constant TBL_COLUMNS     => 8;
 
 	{
 	TYPE  => 0,
+	ADDR  => 0,
 	SIZE  => 0,
 	LABEL => {
 		 TYPE       => 0,
@@ -180,21 +199,25 @@ use constant TBL_COLUMNS     => 8;
 	}
 =cut
 
-use constant BLOCK_INSTR => 0;
-use constant BLOCK_CONST => 1;
-use constant BLOCK_EMPTY => 2;
+use constant BLOCK_INSTR    => 0;
+use constant BLOCK_CONST    => 1;
+use constant BLOCK_JTABLE   => 1;
+use constant BLOCK_EMPTY    => 2;
+use constant BLOCK_DISABLED => 3;
 
 use constant BL_TYPE_NONE   => -1;
 use constant BL_TYPE_SUB    =>  0;
 use constant BL_TYPE_LABEL  =>  1;
 use constant BL_TYPE_JTABLE =>  2;
-use constant BL_TYPE_CONST  =>  3;
+use constant BL_TYPE_JLABEL =>  3;
+use constant BL_TYPE_CONST  =>  4;
 
 my %label_names =
   (
   eval BL_TYPE_SUB    => 'Function_',
   eval BL_TYPE_LABEL  => 'Label_',
   eval BL_TYPE_JTABLE => 'Jumptable_',
+  eval BL_TYPE_JLABEL => 'JTlabel_',
   eval BL_TYPE_CONST  => 'Constant_'
   );
 
@@ -723,6 +746,7 @@ sub add_block($$$$$)
 
     $blocks_by_address{$Address} = {
 				   TYPE  => $Type,
+				   ADDR  => $Address,
 				   SIZE  => $Size,
 				   LABEL => $label
 				   };
@@ -780,6 +804,7 @@ sub add_block($$$$$)
       {
       if ($LabelType != BL_TYPE_NONE)
 	{
+	$label->{TYPE} = $LabelType;
 	$labels_by_address{$Address} = $label;
 	$max_label_addr = $Address if ($max_label_addr < $Address);
 	}
@@ -1079,11 +1104,12 @@ sub fix_multi_byte_variables()
 
 sub add_names_labels()
   {
-  my ($addr, $label, $fidx, $lidx, $jidx, $cidx, $type);
+  my ($addr, $label, $fidx, $lidx, $jidx, $jtidx, $cidx, $type);
 
   $fidx = 0;
   $lidx = 0;
   $jidx = 0;
+  $jtidx = 0;
   $cidx = 0;
 
   for ($addr = 0; $addr <= $max_label_addr; ++$addr)
@@ -1107,6 +1133,10 @@ sub add_names_labels()
     elsif ($type == BL_TYPE_JTABLE)
       {
       $label->{NAME} = sprintf("$label_names{$type}%03u", $jidx++);
+      }
+    elsif ($type == BL_TYPE_JLABEL)
+      {
+      $label->{NAME} = sprintf("$label_names{$type}%03u", $jtidx++);
       }
     elsif ($type == BL_TYPE_CONST)
       {
@@ -1399,9 +1429,9 @@ sub bitname($$)
   my ($Address, $StrRef) = @_;
   my $str;
 
-  if (defined($bits_by_address{$Address}))
+  if (defined($sfr_bits_by_address{$Address}))
     {
-    $str = $bits_by_address{$Address};
+    $str = $sfr_bits_by_address{$Address};
     $$StrRef = $str;
     }
   else
@@ -2265,6 +2295,7 @@ sub jbc_bit()
     print_3('jbc', "$rb0, $rb1", "If ($name0 == H) then $name0 = L and jumps$str1 hither: $str0");
     }
 
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   invalidate_DPTR_Rx();
   $prev_is_jump = TRUE;
   }
@@ -2344,6 +2375,7 @@ sub jb_bit()
     print_3('jb', "$rb0, $rb1", "If ($name0 == H) then jumps$str2 hither: $str1$str0");
     }
 
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   invalidate_DPTR_Rx();
   $prev_is_jump = TRUE;
   }
@@ -2420,6 +2452,7 @@ sub jnb_bit()
     print_3('jnb', "$rb0, $rb1", "If ($name0 == L) then jumps$str2 hither: $str1$str0");
     }
 
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   invalidate_DPTR_Rx();
   $prev_is_jump = TRUE;
   }
@@ -2529,6 +2562,22 @@ sub orl_direct_data()
     $rb0  = regname($dcd_parm0, \$name0);
     $rb1  = sprintf "0x%02X", $dcd_parm1;
     $str0 = present_char($dcd_parm1);
+    }
+
+  if ($dcd_parm0 == PSW)
+    {
+    my $bank = ($dcd_parm1 >> 3) & 0x03;
+
+    $used_banks{$bank} = TRUE;
+
+    if ($decoder_silent_level == SILENT0)
+      {
+      $str0 = " (select bank #$bank)" if (($dcd_parm1 & ~0x18) == 0x00);
+      }
+    }
+
+  if ($decoder_silent_level == SILENT0)
+    {
     print_3('orl', "$rb0, #$rb1", "$name0 |= $rb1$str0");
     }
 
@@ -2787,6 +2836,8 @@ sub orl_C_bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('orl', "C, $rb0", "CY |= $name0");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -2832,7 +2883,7 @@ sub mov_A_data()
 
 sub mov_direct_data()
   {
-  my ($rb0, $rb1, $name0, $str0, $str1);
+  my ($rb0, $rb1, $name0, $str0);
 
 	# MOV	direct, #data		01110101 aaaaaaaa dddddddd	register address	data
 
@@ -2841,7 +2892,6 @@ sub mov_direct_data()
     $rb0  = regname($dcd_parm0, \$name0);
     $rb1  = sprintf "0x%02X", $dcd_parm1;
     $str0 = '';
-    $str1 = sprintf "%02X", $dcd_parm0;
     }
 
   if ($dcd_parm0 == PSW)
@@ -2854,10 +2904,6 @@ sub mov_direct_data()
       {
       $str0 = " (select bank #$bank)" if (($dcd_parm1 & ~0x18) == 0x00);
       }
-    }
-  elsif ($dcd_parm0 == SP)
-    {
-    $stack_start = $dcd_parm1 + 1;
     }
   else
     {
@@ -2908,6 +2954,8 @@ sub anl_C_bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('anl', "C, $rb0", "CY &= $name0");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -2980,6 +3028,8 @@ sub mov_bit_C()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('mov', "$rb0, C", "$name0 = CY");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -3039,6 +3089,8 @@ sub orl_C__bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('orl', "C, /$rb0", "CY = ~$name0");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -3054,6 +3106,8 @@ sub mov_C_bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('mov', "C, $rb0", "CY = $name0");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -3116,6 +3170,8 @@ sub anl_C__bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('anl', "C, /$rb0", "CY &= ~$name0");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -3131,6 +3187,8 @@ sub cpl_bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('cpl', $rb0, "$name0 = ~$name0");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -3218,6 +3276,8 @@ sub clr_bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('clr', $rb0, "$name0 = L");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -3287,6 +3347,8 @@ sub setb_bit()
     $rb0 = bitname($dcd_parm0, \$name0);
     print_3('setb', $rb0, "$name0 = H");
     }
+
+  $bits_by_address{$dcd_parm0} = TRUE if ($dcd_parm0 <= BIT_LAST_ADDR);
   }
 
 #-------------------------------------------------------------------------------
@@ -3819,13 +3881,13 @@ sub bit_add_to_list($$)
   {
   my ($Address, $Name) = @_;
 
-  if (! defined($bits_by_address{$Address}))
+  if (! defined($sfr_bits_by_address{$Address}))
     {
-    $bits_by_address{$Address} = $Name;
+    $sfr_bits_by_address{$Address} = $Name;
     }
   else
     {
-    Log(sprintf("Warning, the address: 0x%03X already busy by the $bits_by_address{$Address} bit.", $Address), 2);
+    Log(sprintf("Warning, the address: 0x%03X already busy by the $sfr_bits_by_address{$Address} bit.", $Address), 2);
     }
   }
 
@@ -4098,6 +4160,58 @@ sub preliminary_survey($)
 #-------------------------------------------------------------------------------
 
 	#
+	# Determine the start of stack.
+	#
+
+sub determine_stack()
+  {
+  my ($block, $instr, $addr);
+
+  return if (! defined($blocks_by_address{0}));
+
+  $block = \%{$blocks_by_address{0}};
+  return if ($block->{TYPE} != BLOCK_INSTR);
+
+  $instr = $rom[$block->{ADDR}];
+
+  if ($block->{SIZE} == 3 && $instr == INST_LJMP)
+    {
+	# ljmp	#0xTTTT
+
+    $addr = ($rom[$block->{ADDR} + 1] << 8) | $rom[$block->{ADDR} + 2];
+    }
+  elsif ($block->{SIZE} == 2 && ($instr & 0x1F) == INST_AJMP)
+    {
+	# ajmp	#0xTTTT
+
+    $addr = (($block->{ADDR} + 2) & 0xF800) | ((($instr & 0xE0) << 3) | $rom[$block->{ADDR} + 1]);
+    }
+  elsif ($block->{SIZE} == 2 && $instr == INST_SJMP)
+    {
+	# sjmp	#0xTTTT
+
+    $addr = $block->{ADDR} + 2 + expand_offset($rom[$block->{ADDR} + 1]);
+    }
+  else
+    {
+    return;
+    }
+
+  return if (! defined($blocks_by_address{$addr}));
+
+  $block = \%{$blocks_by_address{$addr}};
+  return if ($block->{TYPE} != BLOCK_INSTR);
+
+  $instr = $rom[$block->{ADDR}];
+  return if ($block->{SIZE} != 3 || $instr != INST_MOV_DIRECT_DATA || $rom[$block->{ADDR} + 1] != SP);
+
+  $stack_start = $rom[$block->{ADDR} + 2] + 1;
+  $stack_size  = 0x100 - $stack_start;
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
 	# Finds address of branchs and procedures.
 	#
 
@@ -4159,6 +4273,180 @@ sub find_lost_labels_in_code()
 #-------------------------------------------------------------------------------
 
 	#
+	# Turns off the has become redundant blocks.
+	#
+
+sub disable_instruction_blocks($$)
+  {
+  my ($Start, $End) = @_;
+
+  foreach (sort {$a <=> $b} keys(%blocks_by_address))
+    {
+    next if ($Start > $_);
+    last if ($End < $_);
+
+    $blocks_by_address{$_}->{TYPE} = BLOCK_DISABLED;
+    }
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
+	# Adds the jump addresses from a jump table.
+	#
+
+sub add_jump_address_in_table($$$)
+  {
+  my ($AddrLow, $AddrHigh, $Size) = @_;
+  my ($end, $addr);
+
+  $end = $AddrLow + $Size;
+  while ($AddrLow < $end)
+    {
+    $addr = $rom[$AddrLow] | ($rom[$AddrHigh] << 8);
+    add_jump_label($addr, '', BL_TYPE_JLABEL, EMPTY, FALSE);
+    ++$AddrLow;
+    ++$AddrHigh;
+    }
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
+	# Jump tables looking for in the code.
+	#
+
+sub recognize_jump_tables_in_code()
+  {
+  my @blocks = ((undef) x 9);
+  my @instrs = ((EMPTY) x 9);
+  my ($parm, $data1, $data2, $addrL, $addrH, $size);
+
+  foreach (sort {$a <=> $b} keys(%blocks_by_address))
+    {
+    shift(@instrs);
+    push(@instrs, $rom[$_]);
+
+    shift(@blocks);
+    push(@blocks, \%{$blocks_by_address{$_}});
+
+    next if (! defined($blocks[0]) || ! defined($blocks[8]));
+    next if ($blocks[0]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[1]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[2]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[3]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[4]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[5]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[6]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[7]->{TYPE} != BLOCK_INSTR);
+    next if ($blocks[8]->{TYPE} != BLOCK_INSTR);
+
+    if ($blocks[0]->{SIZE} == 2 && $instrs[0] == INST_ADD_A_DATA &&		# add	A, #0xZZ
+
+	$blocks[1]->{SIZE} == 1 && $instrs[1] == INST_MOVC_A_APC &&		# movc	A, @A+PC
+
+	$blocks[2]->{SIZE} == 2 && $rom[$blocks[2]->{ADDR} + 1] == DPL &&
+	($instrs[2] == INST_XCH_A_DIRECT ||					# xch	A, DPL
+	 $instrs[2] == INST_MOV_DIRECT_A) &&					# mov	DPL, A
+
+	(($blocks[3]->{SIZE} == 2 && $instrs[3] == INST_MOV_A_DIRECT) ||	# mov	A, direct
+	 ($blocks[3]->{SIZE} == 1 && ($instrs[3] & 0xF8) == INST_MOV_A_Rn)) &&	# mov	A, Rn
+
+	$blocks[4]->{SIZE} == 2 && $instrs[4] == INST_ADD_A_DATA &&		# add	A, #0xZZ
+
+	$blocks[5]->{SIZE} == 1 && $instrs[5] == INST_MOVC_A_APC &&		# movc	A, @A+PC
+
+	$blocks[6]->{SIZE} == 2 && $instrs[6] == INST_MOV_DIRECT_A &&		# mov	DPH, A
+	$rom[$blocks[6]->{ADDR} + 1] == DPH &&
+
+	$blocks[7]->{SIZE} == 1 && $instrs[7] == INST_CLR_A &&			# clr	A
+
+	$blocks[8]->{SIZE} == 1 && $instrs[8] == INST_JMP_A_DPTR)		# jmp	@A+DPTR
+      {
+=back
+	24 0B		add	A, #0x0B
+	83		movc	A, @A+PC
+	F5 82		mov	DPL, A
+
+	E5 F0		mov	A, B
+	    or
+	ED		mov	A, R5
+
+	24 25		add	A, #0x25
+	83		movc	A, @A+PC
+	F5 83		mov	DPH, A
+	E4		clr	A
+	73		jmp	@A+DPTR
+=cut
+
+      $addrL = $blocks[2]->{ADDR} + $rom[$blocks[0]->{ADDR} + 1];
+      $addrH = $blocks[6]->{ADDR} + $rom[$blocks[4]->{ADDR} + 1];
+      $size  = $addrH - $addrL;
+
+      disable_instruction_blocks($addrL, $addrH + $size - 1);
+      add_block($addrL, BLOCK_JTABLE, $size, BL_TYPE_JTABLE, '');
+      add_block($addrH, BLOCK_JTABLE, $size, BL_TYPE_JTABLE, '');
+      add_jump_address_in_table($addrL, $addrH, $size);
+      }
+    elsif ($blocks[0]->{SIZE} == 3 && $instrs[0] == INST_MOV_DPTR_DATA &&	# mov	DPTR, #tLow
+
+	   $blocks[1]->{SIZE} == 1 && $instrs[1] == INST_MOVC_A_DPTR &&		# movc	A, @A+DPTR
+
+	   (($blocks[2]->{SIZE} == 2 && $instrs[2] == INST_XCH_A_DIRECT) ||	# xch	A, XX
+	    ($blocks[2]->{SIZE} == 2 && $instrs[2] == INST_PUSH_DIRECT &&	# push	ACC
+	     $rom[$blocks[2]->{ADDR} + 1] == ACC)) &&
+
+	   $blocks[3]->{SIZE} == 3 && $instrs[3] == INST_MOV_DPTR_DATA &&	# mov	DPTR, #tHigh
+
+	   $blocks[4]->{SIZE} == 1 && $instrs[4] == INST_MOVC_A_DPTR &&		# movc	A, @A+DPTR
+
+	   $blocks[5]->{SIZE} == 2 && $instrs[5] == INST_MOV_DIRECT_A &&	# mov	DPH, A
+	   $rom[$blocks[5]->{ADDR} + 1] == DPH &&
+
+	   (($blocks[6]->{SIZE} == 3 && $instrs[6] == INST_MOV_DIRECT_DIRECT &&	# mov	DPL, XX
+	     $rom[$blocks[6]->{ADDR} + 2] == DPL) ||
+	    ($blocks[6]->{SIZE} == 2 && $instrs[6] == INST_POP_DIRECT &&	# pop	DPL
+	     $rom[$blocks[6]->{ADDR} + 1] == DPL)) &&
+
+	   $blocks[7]->{SIZE} == 1 && $instrs[7] == INST_CLR_A &&		# clr	A
+
+	   $blocks[8]->{SIZE} == 1 && $instrs[8] == INST_JMP_A_DPTR)		# jmp	@A+DPTR
+      {
+=back
+	90 00 79	mov	DPTR, #0x0079
+	93		movc	A, @A+DPTR
+
+	C5 F0		xch	A, B
+	    or
+	C0 E0		push	ACC
+
+	90 01 79	mov	DPTR, #0x0179
+	93		movc	A, @A+DPTR
+	F5 83		mov	DPH, A
+
+	85 F0 82	mov	DPL, B
+	    or
+	D0 82		pop	DPL
+
+	E4		clr	A
+	73		jmp	@A+DPTR
+=cut
+
+      $addrL = ($rom[$blocks[0]->{ADDR} + 1] << 8) | $rom[$blocks[0]->{ADDR} + 2];
+      $addrH = ($rom[$blocks[3]->{ADDR} + 1] << 8) | $rom[$blocks[3]->{ADDR} + 2];
+      $size  = $addrH - $addrL;
+
+      disable_instruction_blocks($addrL, $addrH + $size - 1);
+      add_block($addrL, BLOCK_JTABLE, $size, BL_TYPE_JTABLE, '');
+      add_block($addrH, BLOCK_JTABLE, $size, BL_TYPE_JTABLE, '');
+      add_jump_address_in_table($addrL, $addrH, $size);
+      }
+    }
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
 	# Prints the global symbols.
 	#
 
@@ -4203,7 +4491,7 @@ sub emit_globals($)
 #-------------------------------------------------------------------------------
 
 	#
-	# Prints the sfrs.
+	# Prints the SFRs.
 	#
 
 sub emit_sfrs($)
@@ -4238,32 +4526,32 @@ sub emit_sfrs($)
 #-------------------------------------------------------------------------------
 
 	#
-	# Prints the bits.
+	# Prints the SFR bits.
 	#
 
-sub emit_bits($)
+sub emit_sfr_bits($)
   {
   my $Assembly_mode = $_[0];
 
-  return if (! scalar(keys(%bits_by_address)));
+  return if (! scalar(keys(%sfr_bits_by_address)));
 
   if ($Assembly_mode)
     {
     print ";$border0\n;\tSpecial function bits\n;$border0\n\n" .
 	  "\t.area\tRSEG\t(ABS,DATA)\n\t.org\t0x0000\n\n";
 
-    foreach (sort {$a <=> $b} keys(%bits_by_address))
+    foreach (sort {$a <=> $b} keys(%sfr_bits_by_address))
       {
-      printf "$bits_by_address{$_}\t=\t0x%02X\n", $_;
+      printf "$sfr_bits_by_address{$_}\t=\t0x%02X\n", $_;
       }
     }
   else
     {
     print ";$border0\n;\tSpecial function bits\n;$border0\n\n";
 
-    foreach (sort {$a <=> $b} keys(%bits_by_address))
+    foreach (sort {$a <=> $b} keys(%sfr_bits_by_address))
       {
-      printf "0x%02X:\t$bits_by_address{$_}\n", $_;
+      printf "0x%02X:\t$sfr_bits_by_address{$_}\n", $_;
       }
     }
 
@@ -4387,6 +4675,97 @@ sub emit_ram_data($)
     }
 
   print "\n";
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
+	# Prints the bits.
+	#
+
+sub emit_bits($)
+  {
+  my $Assembly_mode = $_[0];
+  my $str;
+
+  return if (! scalar(keys(%bits_by_address)));
+
+  if ($Assembly_mode)
+    {
+    print ";$border0\n;\tbit data\n;$border0\n\n" .
+	  "\t.area\tBSEG\t(BIT)\n\n";
+
+    foreach (sort {$a <=> $b} keys(%bits_by_address))
+      {
+      $str = sprintf "%02X", $_;
+      print "bit_0x${str}::\n\t.ds 1\n";
+      }
+    }
+  else
+    {
+    print ";$border0\n;\tbit data\n;$border0\n\n";
+
+    foreach (sort {$a <=> $b} keys(%bits_by_address))
+      {
+      $str = sprintf "%02X", $_;
+      print "0x${str}:\tbit_0x$str\n";
+      }
+    }
+
+  print "\n";
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
+	# Prints a map from the RAM.
+	#
+
+sub emit_ram_map()
+  {
+  my @ram = ();
+  my ($i, $v);
+
+  for ($i = 0; $i < 256; ++$i)
+    {
+    $ram[$i] = ((defined($registers_by_address{$i})) ? 'd' : ' ');
+    }
+
+  $used_banks{0} = TRUE;
+  foreach (sort {$a <=> $b} keys(%used_banks))
+    {
+    $i = $_ * 8;
+    $v = $i + 7;
+    do
+      {
+      $ram[$i] = "$_";
+      ++$i;
+      }
+    while ($i <= $v);
+    }
+
+  foreach (sort {$a <=> $b} keys(%bits_by_address))
+    {
+    $ram[0x20 + int($_ / 8)] = 'B';
+    }
+
+  if ($stack_start > 0)
+    {
+    for ($i = $stack_start; $i < 256; ++$i)
+      {
+      $ram[$i] = 'S';
+      }
+    }
+
+  print ";$border0\n;\tInternal RAM layout\n;$border0\n\n";
+
+  for ($i = 0; $i < 256; $i += 16)
+    {
+    printf "0x%02X: |", $i & 0xF0;
+    print join('|', @ram[$i .. ($i + 15)]) . "|\n";
+    }
+
+  print "\n0-3:Register Banks, B:Bits, d:Data, S:Stack\n\n";
   }
 
 #-------------------------------------------------------------------------------
@@ -4520,13 +4899,15 @@ sub print_constants($$)
   {
   my ($Address, $BlockRef) = @_;
   my ($size, $i, $len, $frag, $byte, $spc, $col);
-  my ($left_align, $right_align);
+  my ($left_align, $right_align, $hc);
   my @constants;
   my @line;
 
   $size = $BlockRef->{SIZE};
 
   return if (! $size);
+
+  $hc = ($BlockRef->{TYPE} == BLOCK_JTABLE) || $hex_constant;
 
   $prev_is_jump = FALSE;
 
@@ -4576,9 +4957,8 @@ sub print_constants($$)
       {
       print $left_align .
 	    join(', ', map {
-			  $spc = (--$len) ? ' ' : '';
-			  sprintf((($hex_constant || $_ < ord(' ') || $_ >= 0x7F) ? "0x%02X" : "'%c'$spc"), $_);
-			  } @line) . "$right_align ;\n";
+			   sprintf((($hc || $_ < ord(' ') || $_ >= 0x7F) ? "0x%02X" : "'%c' "), $_);
+			   } @line) . "$right_align ;\n";
       }
     else
       {
@@ -4627,11 +5007,12 @@ sub disassembler()
     {
     emit_globals(TRUE);
     emit_sfrs(TRUE);
-    emit_bits(TRUE);
+    emit_sfr_bits(TRUE);
     emit_banks(TRUE);
     emit_ram_data(TRUE);
+    emit_bits(TRUE);
 
-    if ($stack_start)
+    if ($stack_start > 0)
       {
       print ";$border0\n;\tStack segment\n;$border0\n\n\t.area\tSSEG\t(DATA)\n" .
 	    "__start__stack:\n\t.ds 1\n\n";
@@ -4646,11 +5027,19 @@ sub disassembler()
     }
   else
     {
+    emit_ram_map();
     emit_globals(FALSE);
     emit_sfrs(FALSE);
-    emit_bits(FALSE);
+    emit_sfr_bits(FALSE);
     emit_banks(FALSE);
     emit_ram_data(FALSE);
+    emit_bits(FALSE);
+
+    if ($stack_start > 0)
+      {
+      printf ";$border0\n;\tStack: start=0x%02X, size=%u bytes\n;$border0\n\n", $stack_start, $stack_size;
+      }
+
     emit_indirect_ram(FALSE);
     emit_external_ram(FALSE);
     print ";$border0\n\n";
@@ -4673,7 +5062,7 @@ sub disassembler()
 
       instruction_decoder($_, $ref);
       }
-    elsif ($ref->{TYPE} == BLOCK_CONST)
+    elsif ($ref->{TYPE} == BLOCK_CONST || $ref->{TYPE} == BLOCK_JTABLE)
       {
       print_label($_);
       print "\n" if ($prev_is_jump);
@@ -4760,6 +5149,10 @@ EOT
 	    Generates the assembly source file. (Eliminates before the instructions
 	    visible address, hex codes and besides replaces the pseudo Rn<#x>
 	    register names.) Emits global symbol table, SFR table, Bits table, etc.
+
+	-rj|--recognize-jump-tables
+
+	    Recognizes the jump tables.
 
 	-fl|--find-lost-labels
 
@@ -4878,6 +5271,11 @@ for (my $i = 0; $i < @ARGV; )
       $gen_assembly_code = TRUE;
       }
 
+    when (/^-(rj|-recognize-jump-tables)$/o)
+      {
+      $recognize_jump_tables = TRUE;
+      }
+
     when (/^-(fl|-find-lost-labels)$/o)
       {
       $find_lost_labels = TRUE;
@@ -4952,6 +5350,8 @@ split_code_to_blocks();
 preliminary_survey(SILENT2);
 preliminary_survey(SILENT1);
 find_labels_in_code();
+determine_stack();
+recognize_jump_tables_in_code() if ($recognize_jump_tables);
 find_lost_labels_in_code() if ($find_lost_labels);
 add_names_labels();
 disassembler();
