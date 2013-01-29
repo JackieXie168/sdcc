@@ -33,6 +33,10 @@
 
 	or	./mcs51-disasm.pl -M 8052.h -fl -rj -as -hc program.hex > program.asm
 
+
+    Warning! This program is not able to find all variable. Especially them not, whose
+    can be found in the indirect or external RAM.
+
   $Id$
 =cut
 
@@ -85,6 +89,7 @@ my $hex_file		 = '';
 my $map_file 		 = '';
 my $map_readed		 = FALSE;
 my $header_file		 = '';
+my $name_list		 = '';
 
 my $verbose		  = 0;
 my $hex_constant	  = FALSE;
@@ -99,20 +104,23 @@ my %const_areas_by_address  = ();	# From the command line parameters.
 
 my %const_blocks_by_address = ();
 
-my %sfrs_by_address	 = ();
-my %sfrs_by_names	 = ();
-my %used_banks		 = ();
-my %registers_by_address = ();
-my %sfr_bits_by_address	 = ();
-my %bits_by_address	 = ();
-my %iram_by_address	 = ();
-my %xram_by_address	 = ();
-my $stack_start		 = -1;
-my $stack_size		 = 0;
+my %sfrs_by_address	  = ();
+my %sfrs_by_names	  = ();
+my %used_banks		  = ();
+my %registers_by_address  = ();
+my %sfr_bits_by_address	  = ();
+my %bits_by_address	  = ();
+my %bit_names_by_address  = ();
+my %iram_by_address	  = ();
+my %xram_by_address	  = ();
+my %xram_names_by_address = ();
+my $stack_start		  = -1;
+my $stack_size		  = 0;
 
-my %variable_names_by_address = ();
-my %variable_sizes_by_address = ();
-my $max_variable_addr = 0;
+my %ram_names_by_address  = ();
+my %ram_sizes_by_address  = ();
+my $max_variable_addr     = 0;
+
 
 	# Sizes of the instructions.
 
@@ -147,6 +155,8 @@ use constant ACC => 0xE0;
 
 use constant INST_AJMP			=> 0x01;
 use constant INST_LJMP			=> 0x02;
+use constant INST_ACALL			=> 0x11;
+use constant INST_LCALL			=> 0x12;
 use constant INST_SJMP			=> 0x80;
 use constant INST_RET			=> 0x22;
 use constant INST_RETI			=> 0x32;
@@ -164,6 +174,19 @@ use constant INST_CLR_A			=> 0xE4;
 use constant INST_MOV_A_DIRECT		=> 0xE5;
 use constant INST_MOV_A_Rn		=> 0xE8;
 use constant INST_MOV_DIRECT_A		=> 0xF5;
+use constant INST_CJNE_A_DATA		=> 0xB4;
+use constant INST_CJNE_A_DIRECT		=> 0xB5;
+use constant INST_CJNE__Ri_DATA		=> 0xB6;
+use constant INST_CJNE_Rn_DATA		=> 0xB8;
+use constant INST_DJNZ_Rn		=> 0xD8;
+use constant INST_DJNZ_DIRECT		=> 0xD5;
+use constant INST_JBC_BIT		=> 0x10;
+use constant INST_JB_BIT		=> 0x20;
+use constant INST_JNB_BIT		=> 0x30;
+use constant INST_JC			=> 0x40;
+use constant INST_JNC			=> 0x50;
+use constant INST_JZ			=> 0x60;
+use constant INST_JNZ			=> 0x70;
 
 use constant LJMP_SIZE => 3;
 
@@ -902,6 +925,25 @@ sub add_jump_label($$$$$)
   ++$label->{JUMP_COUNT} if (! $Map_mode);
   }
 
+#-------------------------------------------------------------------------------
+
+	#
+	# Store a variable name.
+	#
+
+sub add_variable($$)
+  {
+  my ($Address, $Name) = @_;
+
+  if (! defined($ram_names_by_address{$Address}))
+    {
+    $ram_names_by_address{$Address} = $Name;
+    $ram_sizes_by_address{$Address} = 1;
+    }
+
+  $max_variable_addr = $Address if ($max_variable_addr < $Address);
+  }
+
 ################################################################################
 ################################################################################
 
@@ -960,7 +1002,7 @@ sub read_map_file()
 	{
 	$state = MAP_CODE1;
 	}
-      elsif (/^DSEG\s+/o)
+      elsif (/^(D|O)SEG\s+/o)
 	{
 	$state = MAP_DATA;
 	}
@@ -1037,15 +1079,7 @@ sub read_map_file()
 	# 00000039  _counter                           data
 	# 0000004C  _flash_read_PARM_2                 flash
 
-	($addr, $name) = (hex($1), $2);
-
-	if (! defined($variable_names_by_address{$addr}))
-	  {
-	  $variable_names_by_address{$addr}      = $name;
-	  $variable_sizes_by_address{$addr} = 1;
-	  }
-
-	$max_variable_addr = $addr if ($max_variable_addr < $addr);
+	add_variable(hex($1), $2);
 	}
       } # elsif ($state == MAP_DATA)
     elsif ($state == MAP_CONST)
@@ -1056,6 +1090,96 @@ sub read_map_file()
 
   $map_readed = TRUE;
   close(MAP);
+  }
+
+#-------------------------------------------------------------------------------
+
+use constant NAMES_NULL => 0;
+use constant NAMES_BIT  => 1;
+use constant NAMES_RAM  => 2;
+use constant NAMES_XRAM => 3;
+use constant NAMES_ROM  => 4;
+
+sub read_name_list()
+  {
+  my ($line, $addr, $name, $state);
+
+  return if ($name_list eq '');
+
+  if (! open(NAMES, '<', $name_list))
+    {
+    print STDERR "$PROGRAM : Could not open. -> \"$name_list\"\n";
+    exit(1);
+    }
+
+  $state = NAMES_NULL;
+
+  foreach (grep(! /^\s*$/o, <NAMES>))
+    {
+    chomp;
+    s/\r$//o;
+    s/^\s*|\s*$//go;
+
+    if (/^\[BIT\]$/io)
+      {
+      $state = NAMES_BIT;
+      next;
+      }
+    elsif (/^\[RAM\]$/io)
+      {
+      $state = NAMES_RAM;
+      next;
+      }
+    elsif (/^\[XRAM\]$/io)
+      {
+      $state = NAMES_XRAM;
+      next;
+      }
+    elsif (/^\[ROM\]$/io)
+      {
+      $state = NAMES_ROM;
+      next;
+      }
+
+    $line = $_;
+
+    given ($state)
+      {
+      when (NAMES_BIT)
+	{
+	if ($line =~ /^0x([[:xdigit:]]+)\s*:\s*(\S+)$/io)
+	  {
+	  $bit_names_by_address{hex($1)} = $2;
+	  }
+	}
+
+      when (NAMES_RAM)
+	{
+	if ($line =~ /^0x([[:xdigit:]]+)\s*:\s*(\S+)$/io)
+	  {
+	  add_variable(hex($1), $2);
+	  }
+	}
+
+      when (NAMES_XRAM)
+	{
+	if ($line =~ /^0x([[:xdigit:]]+)\s*:\s*(\S+)$/io)
+	  {
+	  $xram_names_by_address{hex($1)} = $2;
+	  }
+	}
+
+      when (NAMES_ROM)
+	{
+	if ($line =~ /^0x([[:xdigit:]]+)\s*:\s*(\S+)$/io)
+	  {
+	  add_jump_label(hex($1), $2, BL_TYPE_LABEL, EMPTY, TRUE);
+	  }
+	}
+      } # given ($state)
+    } # foreach (grep(! /^\s*$/o, <NAMES>))
+
+  close(NAMES);
   }
 
 #-------------------------------------------------------------------------------
@@ -1072,7 +1196,7 @@ sub fix_multi_byte_variables()
   my $prev_name = '';
   my ($i, $var_size);
 
-  foreach (sort {$a <=> $b} keys(%variable_names_by_address))
+  foreach (sort {$a <=> $b} keys(%ram_names_by_address))
     {
     if ($prev_addr > EMPTY)
       {
@@ -1084,15 +1208,15 @@ sub fix_multi_byte_variables()
 
 	for ($i = 1; $i < $var_size; ++$i)
 	  {
-	  $variable_names_by_address{$prev_addr + $i} = "($prev_name + $i)";
+	  $ram_names_by_address{$prev_addr + $i} = "($prev_name + $i)";
 	  }
 
-	$variable_sizes_by_address{$prev_addr} = $var_size;
+	$ram_sizes_by_address{$prev_addr} = $var_size;
 	}
       }
 
     $prev_addr = $_;
-    $prev_name = $variable_names_by_address{$_};
+    $prev_name = $ram_names_by_address{$_};
     }
   }
 
@@ -1296,21 +1420,22 @@ sub label_finder($$)
   $instr_mask1 = $instr & 0xFE;
   $instr_mask2 = $instr & 0xF8;
 
-  if ($instr_mask0 == 0x01)
+  if ($instr_mask0 == INST_AJMP)
     {
         # AJMP	addr11			aaa00001 aaaaaaaa		a10 a9 a8 0 0 0 0 1	a7-a0
 
     $addr = (($Address + $instr_size) & 0xF800) | (($instr & 0xE0) << 3) | $rom[$Address + 1];
     add_jump_label($addr, '', BL_TYPE_LABEL, $Address, FALSE);
     }
-  elsif ($instr_mask0 == 0x11)
+  elsif ($instr_mask0 == INST_ACALL)
     {
 	# ACALL	addr11			aaa10001 aaaaaaaa		a10 a9 a8 1 0 0 0 1	a7-a0
 
     $addr = (($Address + $instr_size) & 0xF800) | (($instr & 0xE0) << 3) | $rom[$Address + 1];
     add_func_label($addr, '', FALSE);
     }
-  elsif ($instr_mask1 == 0xB6 || $instr_mask2 == 0xB8)
+  elsif ($instr_mask1 == INST_CJNE__Ri_DATA ||
+	 $instr_mask2 == INST_CJNE_Rn_DATA)
     {
 	# CJNE	@Ri, #data, rel		1011011i dddddddd rrrrrrrr	R0 .. R1 	data		relative address
 	# CJNE	Rn, #data, rel		10111rrr dddddddd rrrrrrrr	R0 .. R7 	data		relative address
@@ -1318,30 +1443,33 @@ sub label_finder($$)
     $addr = $Address + $instr_size + expand_offset($rom[$Address + 2]);
     add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY, FALSE);
     }
-  elsif ($instr_mask2 == 0xD8)
+  elsif ($instr_mask2 == INST_DJNZ_Rn)
     {
 	# DJNZ	Rn, rel			11011rrr rrrrrrrr		R0 .. R7	relative address
 
     $addr = $Address + $instr_size + expand_offset($rom[$Address + 1]);
     add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY, FALSE);
     }
-  elsif ($instr == 0x02)
+  elsif ($instr == INST_LJMP)
     {
 	# LJMP	addr16			00000010 aaaaaaaa aaaaaaaa	a15-a8 a7-a0	absolute address
 
     $addr = ($rom[$Address + 1] << 8) | $rom[$Address + 2];
     add_jump_label($addr, '', BL_TYPE_LABEL, $Address, FALSE);
     }
-  elsif ($instr == 0x12)
+  elsif ($instr == INST_LCALL)
     {
 	# LCALL	addr16			00010010 aaaaaaaa aaaaaaaa	a15-a8 a7-a0	absolute address
 
     $addr = ($rom[$Address + 1] << 8) | $rom[$Address + 2];
     add_func_label($addr, '', FALSE);
     }
-  elsif ($instr == 0x10 || $instr == 0x20 ||
-	 $instr == 0x30 || $instr == 0xB4 ||
-	 $instr == 0xB5 || $instr == 0xD5)
+  elsif ($instr == INST_JBC_BIT ||
+	 $instr == INST_JB_BIT ||
+	 $instr == INST_JNB_BIT ||
+	 $instr == INST_CJNE_A_DATA ||
+	 $instr == INST_CJNE_A_DIRECT ||
+	 $instr == INST_DJNZ_DIRECT)
     {
 	# JBC	bit, rel		00010000 bbbbbbbb rrrrrrrr	bit address		relative address
 	# JB	bit, rel		00100000 bbbbbbbb rrrrrrrr	bit address		relative address
@@ -1353,9 +1481,11 @@ sub label_finder($$)
     $addr = $Address + $instr_size + expand_offset($rom[$Address + 2]);
     add_jump_label($addr, '', BL_TYPE_LABEL, EMPTY, FALSE);
     }
-  elsif ($instr == 0x40 || $instr == 0x50 ||
-	 $instr == 0x60 || $instr == 0x70 ||
-	 $instr == 0x80)
+  elsif ($instr == INST_JC ||
+	 $instr == INST_JNC ||
+	 $instr == INST_JZ ||
+	 $instr == INST_JNZ ||
+	 $instr == INST_SJMP)
     {
 	# JC	rel			01000000 rrrrrrrr 		relative address
 	# JNC	rel			01010000 rrrrrrrr 		relative address
@@ -1390,9 +1520,9 @@ sub regname($$)
     $str = ($gen_assembly_code) ? sprintf("0x%02X", $Address) : "R${reg}<#$bank>";
     $$StrRef = $str;
 
-    if (defined($variable_names_by_address{$Address}))
+    if (defined($ram_names_by_address{$Address}))
       {
-      my $var = $variable_names_by_address{$Address};
+      my $var = $ram_names_by_address{$Address};
 
       printf STDERR ("This address (0x%02X) belongs to two names: \"$str\" and \"$var\"\n", $Address);
       }
@@ -1402,11 +1532,11 @@ sub regname($$)
     $str = $sfrs_by_address{$Address};
     $$StrRef = $str;
     }
-  elsif (defined($variable_names_by_address{$Address}))
+  elsif (defined($ram_names_by_address{$Address}))
     {
     $str = sprintf "0x%02X", $Address;
     $$StrRef = "[$str]";
-    $str = $variable_names_by_address{$Address};
+    $str = $ram_names_by_address{$Address};
     }
   else
     {
@@ -2905,6 +3035,10 @@ sub mov_direct_data()
       $str0 = " (select bank #$bank)" if (($dcd_parm1 & ~0x18) == 0x00);
       }
     }
+#  elsif ($dcd_parm0 == SP)
+#    {
+#    $stack_start = ($dcd_parm1 + 1) if ($stack_start < 0);
+#    }
   else
     {
     $str0 = present_char($dcd_parm1);
@@ -4140,6 +4274,166 @@ sub split_code_to_blocks()
 
 #-------------------------------------------------------------------------------
 
+        #
+	# If the $BlockRef a call, then follows.
+        #
+
+sub follow_call($)
+  {
+  my $BlockRef = $_[0];
+  my ($addr, $size, $instr);
+
+  $addr  = $BlockRef->{ADDR};
+  $size  = $BlockRef->{SIZE};
+  $instr = $rom[$addr];
+
+  if ($instr == INST_LCALL)
+    {
+    return (($rom[$addr + 1] << 8) | $rom[$addr + 2]);
+    }
+  elsif (($instr & 0x1F) == INST_ACALL)
+    {
+    return ((($addr + $size) & 0xF800) | (($instr & 0xE0) << 3) | $rom[$addr + 1]);
+    }
+
+  return EMPTY;
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
+	# If the $BlockRef a unconditional jump, then follows.
+	#
+
+sub follow_unconditional_jump($)
+  {
+  my $BlockRef = $_[0];
+  my ($addr, $size, $instr);
+
+  $addr  = $BlockRef->{ADDR};
+  $size  = $BlockRef->{SIZE};
+  $instr = $rom[$addr];
+
+  if ($size == 3 && $instr == INST_LJMP)
+    {
+    return (($rom[$addr + 1] << 8) | $rom[$addr + 2]);
+    }
+  elsif ($size == 2)
+    {
+    if (($instr & 0x1F) == INST_AJMP)
+      {
+      return ((($addr + $size) & 0xF800) | ((($instr & 0xE0) << 3) | $rom[$addr + 1]));
+      }
+    elsif ($instr == INST_SJMP)
+      {
+      return ($addr + $size + expand_offset($rom[$addr + 1]));
+      }
+    }
+
+  return EMPTY;
+  }
+
+#-------------------------------------------------------------------------------
+
+        #
+	# If the $BlockRef a conditional jump, then follows.
+        #
+
+sub follow_conditional_jump($)
+  {
+  my $BlockRef = $_[0];
+  my ($addr, $size, $instr, $instr_mask1, $instr_mask2);
+
+  return EMPTY if ($BlockRef->{TYPE} != BLOCK_INSTR);
+
+  $addr  = $BlockRef->{ADDR};
+  $size  = $BlockRef->{SIZE};
+  $instr = $rom[$addr];
+
+  $instr_mask1 = $instr & 0xFE;
+  $instr_mask2 = $instr & 0xF8;
+
+  if ($instr_mask1 == INST_CJNE__Ri_DATA ||
+      $instr_mask2 == INST_CJNE_Rn_DATA)
+    {
+    return ($addr + $size + expand_offset($rom[$addr + 2]));
+    }
+  elsif ($instr_mask2 == INST_DJNZ_Rn)
+    {
+    return ($addr + $size + expand_offset($rom[$addr + 1]));
+    }
+  elsif ($instr == INST_JBC_BIT ||
+	 $instr == INST_JB_BIT ||
+	 $instr == INST_JNB_BIT ||
+	 $instr == INST_CJNE_A_DATA ||
+	 $instr == INST_CJNE_A_DIRECT ||
+	 $instr == INST_DJNZ_DIRECT)
+    {
+    return ($addr + $size + expand_offset($rom[$addr + 2]));
+    }
+  elsif ($instr == INST_JC ||
+	 $instr == INST_JNC ||
+	 $instr == INST_JZ ||
+	 $instr == INST_JNZ ||
+	 $instr == INST_SJMP)
+    {
+    return ($addr + $size + expand_offset($rom[$addr + 1]));
+    }
+
+  return EMPTY;
+  }
+
+#-------------------------------------------------------------------------------
+
+	#
+	# Determine the start of stack.
+	#
+
+sub determine_stack()
+  {
+  my ($block, $instr, $addr, $count, $size, $t);
+
+  return if (! defined($blocks_by_address{0}));
+
+  $addr = follow_unconditional_jump(\%{$blocks_by_address{0}});
+  return if ($addr == EMPTY);
+
+  return if (! defined($blocks_by_address{$addr}));
+
+	# At most so much block looks through.
+  $count = 30;
+  do
+    {
+    $block = \%{$blocks_by_address{$addr}};
+
+    return if ($block->{TYPE} != BLOCK_INSTR);
+    return if (follow_unconditional_jump($block) != EMPTY);
+    return if (follow_call($block) != EMPTY);
+
+    $addr  = $block->{ADDR};
+    $size  = $block->{SIZE};
+    $instr = $rom[$addr];
+
+    return if ($size == 2 && ($instr == INST_PUSH_DIRECT || $instr == INST_POP_DIRECT));
+
+    $t = follow_conditional_jump($block);
+
+    return if ($t != EMPTY && $t > $addr);
+
+    if ($size == 3 && $instr == INST_MOV_DIRECT_DATA && $rom[$addr + 1] == SP)
+      {
+      $stack_start = $rom[$addr + 2] + 1;
+      $stack_size  = 0x100 - $stack_start;
+      return;
+      }
+
+    $addr += $size;	# Compute the address of next block.
+    }
+  while (--$count);
+  }
+
+#-------------------------------------------------------------------------------
+
 	#
 	# Previously assess the code.
 	#
@@ -4155,58 +4449,6 @@ sub preliminary_survey($)
 
     instruction_decoder($_, $block);
     }
-  }
-
-#-------------------------------------------------------------------------------
-
-	#
-	# Determine the start of stack.
-	#
-
-sub determine_stack()
-  {
-  my ($block, $instr, $addr);
-
-  return if (! defined($blocks_by_address{0}));
-
-  $block = \%{$blocks_by_address{0}};
-  return if ($block->{TYPE} != BLOCK_INSTR);
-
-  $instr = $rom[$block->{ADDR}];
-
-  if ($block->{SIZE} == 3 && $instr == INST_LJMP)
-    {
-	# ljmp	#0xTTTT
-
-    $addr = ($rom[$block->{ADDR} + 1] << 8) | $rom[$block->{ADDR} + 2];
-    }
-  elsif ($block->{SIZE} == 2 && ($instr & 0x1F) == INST_AJMP)
-    {
-	# ajmp	#0xTTTT
-
-    $addr = (($block->{ADDR} + 2) & 0xF800) | ((($instr & 0xE0) << 3) | $rom[$block->{ADDR} + 1]);
-    }
-  elsif ($block->{SIZE} == 2 && $instr == INST_SJMP)
-    {
-	# sjmp	#0xTTTT
-
-    $addr = $block->{ADDR} + 2 + expand_offset($rom[$block->{ADDR} + 1]);
-    }
-  else
-    {
-    return;
-    }
-
-  return if (! defined($blocks_by_address{$addr}));
-
-  $block = \%{$blocks_by_address{$addr}};
-  return if ($block->{TYPE} != BLOCK_INSTR);
-
-  $instr = $rom[$block->{ADDR}];
-  return if ($block->{SIZE} != 3 || $instr != INST_MOV_DIRECT_DATA || $rom[$block->{ADDR} + 1] != SP);
-
-  $stack_start = $rom[$block->{ADDR} + 2] + 1;
-  $stack_size  = 0x100 - $stack_start;
   }
 
 #-------------------------------------------------------------------------------
@@ -4628,11 +4870,11 @@ sub emit_ram_data($)
 	printf("\t.ds 0x%02X\n", $_ - $next_addr) if ($_ > $next_addr);
 	}
 
-      $size = $variable_sizes_by_address{$_};
+      $size = $ram_sizes_by_address{$_};
 
       if (defined($size))
 	{
-	print "$variable_names_by_address{$_}::\n\t.ds $size\n";
+	print "$ram_names_by_address{$_}::\n\t.ds $size\n";
 	$next_addr = $_ + $size;
 	}
       else
@@ -4650,7 +4892,7 @@ sub emit_ram_data($)
       {
       last if ($_ > 0x7F);
 
-      $size = $variable_sizes_by_address{$_};
+      $size = $ram_sizes_by_address{$_};
 
       my $str = sprintf "0x%02X", $_;
 
@@ -4658,7 +4900,7 @@ sub emit_ram_data($)
 	{
         my $cnt = sprintf "%3u", $size;
 
-	print "$str:\t" . align($variable_names_by_address{$_}, STAT_ALIGN_SIZE) . "($cnt bytes)\n";
+	print "$str:\t" . align($ram_names_by_address{$_}, STAT_ALIGN_SIZE) . "($cnt bytes)\n";
 	}
       else
 	{
@@ -4686,7 +4928,7 @@ sub emit_ram_data($)
 sub emit_bits($)
   {
   my $Assembly_mode = $_[0];
-  my $str;
+  my ($name, $str);
 
   return if (! scalar(keys(%bits_by_address)));
 
@@ -4697,8 +4939,9 @@ sub emit_bits($)
 
     foreach (sort {$a <=> $b} keys(%bits_by_address))
       {
-      $str = sprintf "%02X", $_;
-      print "bit_0x${str}::\n\t.ds 1\n";
+      $name = $bit_names_by_address{$_};
+      $str  = (defined($name)) ? $name : (sprintf "bit_0x%02X", $_);
+      print "${str}::\n\t.ds 1\n";
       }
     }
   else
@@ -4707,8 +4950,9 @@ sub emit_bits($)
 
     foreach (sort {$a <=> $b} keys(%bits_by_address))
       {
-      $str = sprintf "%02X", $_;
-      print "0x${str}:\tbit_0x$str\n";
+      $name = $bit_names_by_address{$_};
+      $str  = (defined($name)) ? $name : (sprintf "bit_0x%02X", $_);
+      printf "0x%02X:\t$str\n", $_;
       }
     }
 
@@ -4718,7 +4962,7 @@ sub emit_bits($)
 #-------------------------------------------------------------------------------
 
 	#
-	# Prints a map from the RAM.
+	# Prints the map from the RAM.
 	#
 
 sub emit_ram_map()
@@ -4729,6 +4973,7 @@ sub emit_ram_map()
   for ($i = 0; $i < 256; ++$i)
     {
     $ram[$i] = ((defined($registers_by_address{$i})) ? 'd' : ' ');
+    $ram[$i] = 'I' if (defined($iram_by_address{$i}));
     }
 
   $used_banks{0} = TRUE;
@@ -4765,7 +5010,7 @@ sub emit_ram_map()
     print join('|', @ram[$i .. ($i + 15)]) . "|\n";
     }
 
-  print "\n0-3:Register Banks, B:Bits, d:Data, S:Stack\n\n";
+  print "\n0-3:Register Banks, B:Bits, d:Data, I:iRAM, S:Stack\n\n";
   }
 
 #-------------------------------------------------------------------------------
@@ -4777,6 +5022,7 @@ sub emit_ram_map()
 sub emit_indirect_ram($)
   {
   my $Assembly_mode = $_[0];
+  my ($name, $str);
 
   return if (! scalar(keys(%iram_by_address)));
 
@@ -4787,7 +5033,9 @@ sub emit_indirect_ram($)
 
     foreach (sort {$a <=> $b} keys(%iram_by_address))
       {
-      printf "iram_0x%02X::\n\t.ds 1\n", $_;
+      $name = $ram_names_by_address{$_};
+      $str  = (defined($name)) ? $name : (sprintf "iram_0x%02X", $_);
+      printf "${str}::\n\t.ds 1\n", $_;
       }
     }
   else
@@ -4796,7 +5044,9 @@ sub emit_indirect_ram($)
 
     foreach (sort {$a <=> $b} keys(%iram_by_address))
       {
-      printf "0x%02X:\tiram_0x%02X\n", $_, $_;
+      $name = $ram_names_by_address{$_};
+      $str  = (defined($name)) ? $name : (sprintf "iram_0x%02X", $_);
+      printf "0x%02X:\t$str\n", $_;
       }
     }
 
@@ -4812,6 +5062,7 @@ sub emit_indirect_ram($)
 sub emit_external_ram($)
   {
   my $Assembly_mode = $_[0];
+  my ($name, $str);
 
   return if (! scalar(keys(%xram_by_address)));
 
@@ -4821,7 +5072,9 @@ sub emit_external_ram($)
 
     foreach (sort {$a <=> $b} keys(%xram_by_address))
       {
-      printf "xram_0x%04X\t=\t0x%04X\n", $_, $_;
+      $name = $xram_names_by_address{$_};
+      $str  = (defined($name)) ? $name : (sprintf "xram_0x%04X", $_);
+      printf "$str\t=\t0x%04X\n", $_;
       }
     }
   else
@@ -4830,7 +5083,9 @@ sub emit_external_ram($)
 
     foreach (sort {$a <=> $b} keys(%xram_by_address))
       {
-      printf "0x%04X:\txram_0x%04X\n", $_, $_;
+      $name = $xram_names_by_address{$_};
+      $str  = (defined($name)) ? $name : (sprintf "xram_0x%04X", $_);
+      printf "0x%04X:\t$str\n", $_;
       }
     }
 
@@ -5159,6 +5414,34 @@ EOT
 	    Finds the "lost" labels. These may be found such in program parts,
 	    which are directly not get call.
 
+	--name-list <list_file>
+
+	    The file contains list of names. They may be: Names of variables and
+	    names of labels. For example:
+
+		[BIT]
+		0x07:flag
+		..
+		..
+		..
+		[RAM]
+		0x31:counter
+		..
+		..
+		..
+		[XRAM]
+		0x208:pressure
+		..
+		..
+		..
+		[ROM]
+		0x05FC: UART_interrupt
+		..
+		..
+		..
+
+	    The contents of list override the names from map file.
+
 	-ne|--no-explanations
 
 	    Eliminates after the instructions visible explaining texts.
@@ -5281,6 +5564,12 @@ for (my $i = 0; $i < @ARGV; )
       $find_lost_labels = TRUE;
       }
 
+    when (/^--name-list$/o)
+      {
+      param_exist($opt, $i);
+      $name_list = $ARGV[$i++];
+      }
+
     when (/^-(ne|-no-explanations)$/o)
       {
       $no_explanations = TRUE;
@@ -5344,13 +5633,19 @@ if ($header_file ne '')
   read_header("$include_path/$header_file");
   }
 
+if ($name_list ne '')
+  {
+  is_file_ok($name_list);
+  }
+
 read_map_file();
+read_name_list();
 fix_multi_byte_variables();
 split_code_to_blocks();
+determine_stack();
 preliminary_survey(SILENT2);
 preliminary_survey(SILENT1);
 find_labels_in_code();
-determine_stack();
 recognize_jump_tables_in_code() if ($recognize_jump_tables);
 find_lost_labels_in_code() if ($find_lost_labels);
 add_names_labels();

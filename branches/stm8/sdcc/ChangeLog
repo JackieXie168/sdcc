@@ -1,3 +1,27 @@
+2013-01-29 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* support/scripts/mcs51-disasm.pl: Use informations of the OSEG area from map file.
+
+2013-01-28 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* support/scripts/mcs51-disasm.pl: New command option: --name-list
+
+2013-01-28 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/hc08/gen.c,
+	  More efficient calls to _Noreturn functions.
+
+2013-01-28 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* support/scripts/mcs51-disasm.pl: Improved finds of stack. Prints into
+	  map the iRAM.
+
+2013-01-27 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCpeeph.c,
+	  src/z80/gen.c,
+	  More efficient calls to _Noreturn functions.
+
 2013-01-27 Molnar Karoly <molnarkaroly AT users.sf.net>
 
 	* support/scripts/mcs51-disasm.pl: Prints the map of RAM, list of bits and
