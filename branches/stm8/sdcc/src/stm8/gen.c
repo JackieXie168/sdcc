@@ -637,8 +637,13 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
     return;
 
-  if (aopRS (result) && result->aopu.bytes[roffset].in_reg && result->aopu.bytes[roffset].byteu.reg->rIdx == A_IDX ||
-    aopRS (source) && source->aopu.bytes[soffset].in_reg && source->aopu.bytes[soffset].byteu.reg->rIdx == A_IDX)
+  if ((aopInReg (result, roffset, A_IDX) || result->type == AOP_STK) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
+  // Could also use clr for AOP_DIR, but it provides no advantage over mov below.
+    {
+      emitcode ("clr", "%s", aopGet (result, roffset));
+      cost(result->type == AOP_STK ? 2 : 1, 1);
+    }
+  else if (aopInReg (result, roffset, A_IDX) || aopInReg (result, soffset, A_IDX))
     emit3_o (A_LD, result, roffset, source, soffset);
   else if (result->type == AOP_DIR && (source->type == AOP_DIR || source->type == AOP_LIT))
     emit3_o (A_MOV, result, roffset, source, soffset);

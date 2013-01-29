@@ -1,3 +1,8 @@
+2013-01-29 Philipp Klaus Krause <philipp AT colecovision.eu>
+
+	* src/stm8/gen.c:
+	  Use clr for more efficient zeroing.
+
 2013-01-29 Molnar Karoly <molnarkaroly AT users.sf.net>
 
 	* support/scripts/mcs51-disasm.pl: Use informations of the OSEG area from map file.
