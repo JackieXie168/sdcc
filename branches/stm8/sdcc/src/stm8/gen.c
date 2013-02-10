@@ -577,7 +577,7 @@ push (const asmop *op, int offset, int size)
       else
         wassertl (0, "Invalid aop type for size 1 for push");
     }
-  if (size == 2)
+  else if (size == 2)
     {
       if (aopInReg (op, offset, X_IDX))
         {
@@ -611,7 +611,7 @@ pop (const asmop *op, int offset, int size)
       else
         wassertl (0, "Invalid aop type for size 1 for pop");
     }
-  if (size == 2)
+  else if (size == 2)
     {
       if (aopInReg (op, offset, X_IDX))
         {
@@ -707,6 +707,61 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 }
 
 /*-----------------------------------------------------------------*/
+/* genCopy - Copy the value - stack to stack only                  */
+/*-----------------------------------------------------------------*/
+static void
+genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_free, bool x_free, bool y_free, bool really_do_it_now)
+{
+  int i, n = result->size;
+
+  for (i = 0; i < n;)
+    {
+      // Could transfer two bytes at a time now.
+      if (i + 1 < n &&
+        !assigned[i] && !assigned[i + 1] &&
+        !result->aopu.bytes[i].in_reg && !result->aopu.bytes[i + 1].in_reg &&
+        !source->aopu.bytes[i].in_reg && !source->aopu.bytes[i + 1].in_reg)
+        {
+          wassert(*size >= 2);
+          if (y_free)
+            {
+              emitcode ("ldw", "y, %s", aopGet (source, i));
+              emitcode ("ldw", "%s, y", aopGet (result, i));
+            }
+          else if (x_free)
+            {
+              emitcode ("ldw", "x, %s", aopGet (source, i));
+              emitcode ("ldw", "%s, x", aopGet (result, i));
+            }
+          cost (4, 4);   
+          assigned[i] = TRUE;
+          assigned[i + 1] = TRUE;
+          (*size) -= 2;
+          i += 2;
+        }
+      else
+        i++;
+    }
+
+  for (i = 0; i < n;)
+    {
+      // Just one byte to transfer.
+      if (a_free && !assigned[i] &&
+        (i + 1 >= n || assigned[i + 1] || really_do_it_now) &&
+        !result->aopu.bytes[i].in_reg && !source->aopu.bytes[i].in_reg)
+        {
+          wassert(*size >= 1);
+          cheapMove (result, i, source, i, FALSE);
+          assigned[i] = TRUE;
+          (*size)--;
+          i++;
+        }
+      else
+        i++;
+    }
+}
+
+/*-----------------------------------------------------------------*/
 /* genCopy - Copy the value from one reg/stk asmop to another      */
 /*-----------------------------------------------------------------*/
 static void
@@ -715,9 +770,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   int i, regsize, size, n = result->size;
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
   int ex[4];
+  bool a_free, x_free, y_free;
 
   emitcode("; genCopy", "");
 
+  wassertl (n <= 8, "Invalid size for genCopy().");
   wassertl (aopRS (source), "Invalid source type.");
   wassertl (aopRS (result), "Invalid result type.");
 
@@ -725,7 +782,22 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   for (i = 0, regsize = 0; i < n; i++)
     regsize += source->aopu.bytes[i].in_reg;
 
-  // First, move everything that can be easily moved from registers to the stack.
+  // Copy (stack-to-stack) what we can with whatever free regs we have.
+  a_free = !a_dead;
+  x_free = !x_dead;
+  y_free = !y_dead;
+  for (i = 0; i < n; i++)
+    {
+      if (aopInReg (source, i, A_IDX))
+        a_free = FALSE;
+      else if (aopInReg (source, i, XL_IDX) || aopInReg (source, i, XH_IDX))
+        x_free = FALSE;
+      else if (aopInReg (source, i, YL_IDX) || aopInReg (source, i, YH_IDX))
+        y_free = FALSE;
+    }
+  genCopyStack (result, source, assigned, &size, a_free, x_free, y_free, FALSE);
+
+  // Move everything that can be easily moved from registers to the stack.
   for (i = 0; i < n;)
     {
       if (i + 1 < n && aopInReg (source, i, X_IDX) && !result->aopu.bytes[i].in_reg && !result->aopu.bytes[i + 1].in_reg)
@@ -989,18 +1061,39 @@ skip_byte:
         i++;
     }
 
-  // In the end, move the rest
+  wassertl (size >= 0, "genCopy() copied more than there is to be copied.");
+
+  // Copy (stack-to-stack) what we can with whatever free regs we have now.
+  a_free = !a_dead;
+  x_free = !x_dead;
+  y_free = !y_dead;
+  for (i = 0; i < n; i++)
+    {
+      if (aopInReg (result, i, A_IDX))
+        a_free = FALSE;
+      else if (aopInReg (result, i, XL_IDX) || aopInReg (result, i, XH_IDX))
+        x_free = FALSE;
+      else if (aopInReg (result, i, YL_IDX) || aopInReg (result, i, YH_IDX))
+        y_free = FALSE;
+    }
+  genCopyStack (result, source, assigned, &size, a_free, x_free, y_free, FALSE);
+
+  // Free a reg to copy (stack-to-stack) whatever is left.
   if (size)
     {
-      if (!regalloc_dry_run)
-        {
-          wassertl (0, "Unimplemented genCopy for operands.");
-          for (i = 0; i < n ; i++)
-            printf ("Byte %d, result in reg %d, source in reg %d.\n", i, result->aopu.bytes[i].in_reg ? result->aopu.bytes[i].byteu.reg->rIdx : -1, source->aopu.bytes[i].in_reg ? source->aopu.bytes[i].byteu.reg->rIdx : -1);
-        }
+      push (ASMOP_A, 0, 1);
+      genCopyStack (result, source, assigned, &size, TRUE, x_free, y_free, TRUE);
+      pop (ASMOP_A, 0, 1);
+    }
+
+  if (size)
+    {
+      wassertl (0, "genCopy failed to completly copy operands.");
+      printf ("%d bytes left.\n", size);
+      for (i = 0; i < n ; i++)
+        printf ("Byte %d, result in reg %d, source in reg %d. %s assigned.\n", i, result->aopu.bytes[i].in_reg ? result->aopu.bytes[i].byteu.reg->rIdx : -1, source->aopu.bytes[i].in_reg ? source->aopu.bytes[i].byteu.reg->rIdx : -1, assigned[i] ? "" : "not");
       cost (80, 80);
     }
-  
 }
 
 /*---------------------------------------------------------------------*/
