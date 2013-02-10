@@ -6,11 +6,11 @@ top_builddir = @top_builddir@
 
 LIB_TYPE     = @LIB_TYPE@
 
-SCC = $(top_builddir)/bin/sdcc -mhc08
-SAS = $(top_builddir)/bin/sdas6808
+SCC = $(top_builddir)/bin/sdcc -mstm8
+SAS = $(top_builddir)/bin/sdasstm8
 
 # override PORTDIR defined by super (parent) makefile
-override PORTDIR = ../build/hc08
+override PORTDIR = ../build/stm8
 
 include $(srcdir)/../incl.mk
 
@@ -67,7 +67,7 @@ else
 	$(top_builddir)/bin/sdar -rc $@ $(OBJ) $(STM8OBJECTS)
     else
 	rm -f $@
-	for i in $(basename $(OBJ) $(HC08OBJECTS)); do echo $$i >>$@; done
+	for i in $(basename $(OBJ) $(STM8OBJECTS)); do echo $$i >>$@; done
 	cp $(OBJ) $(STM8OBJECTS) $(PORTDIR)
     endif
   endif

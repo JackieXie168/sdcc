@@ -46,7 +46,8 @@ enum asminst
   A_LD,
   A_MOV,
   A_SBC,
-  A_SUB
+  A_SUB,
+  A_TNZ
 };
 
 static const char *asminstnames[] =
@@ -56,7 +57,8 @@ static const char *asminstnames[] =
   "ld",
   "mov",
   "sbc",
-  "sub"
+  "sub",
+  "tnz"
 };
 
 static struct asmop asmop_a, asmop_x, asmop_y;
@@ -165,6 +167,7 @@ aopGet(const asmop *aop, int offset)
   return ("dummy");
 }
 
+/* For operantions that always have the accumulator as left operand. */
 static void
 op8_cost (const asmop *op2, int offset2)
 {
@@ -192,6 +195,38 @@ op8_cost (const asmop *op2, int offset2)
     }
 error:
   printf("op2 type: %d, offset %d, rIdx %d\n", op2type, offset2, r2Idx);
+  wassert (0);
+  cost (8, 4 * 8);
+}
+
+/* For operations that have only one operand, i.e. tnz */
+static void
+op_cost (const asmop *op1, int offset1)
+{
+  AOP_TYPE op1type = op1->type;
+  int r1Idx = ((aopRS (op1) && op1->aopu.bytes[offset1].in_reg)) ? op1->aopu.bytes[offset1].byteu.reg->rIdx : -1;
+
+  switch (op1type)
+    {
+    case AOP_DIR:
+      cost (4, 1);
+      return;
+    case AOP_REG:
+      if (r1Idx != A_IDX)
+        goto error;
+      cost (1, 1);
+      return;
+    case AOP_REGSTK:
+    case AOP_STK:
+      if (r1Idx != -1)
+        goto error;
+      cost (2, 1);
+      return;
+    default:
+      goto error;
+    }
+error:
+  printf("op1 type: %d, offset %d, rIdx %d\n", op1type, offset1, r1Idx);
   wassert (0);
   cost (8, 4 * 8);
 }
@@ -316,6 +351,9 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
   case A_SUB:
     op8_cost (op2, offset2);
     break;
+  case A_TNZ:
+    op_cost (op1, offset1);
+    break;
   default:
     wassertl (0, "Tried to get cost for unknown instruction");
   }
@@ -328,9 +366,14 @@ emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
   if (regalloc_dry_run)
     return;
 
-  char *l = Safe_strdup (aopGet (op1, offset1));
-  emitcode (asminstnames[inst], "%s, %s", l, aopGet (op2, offset2));
-  Safe_free (l);
+  if (op2)
+    {
+      char *l = Safe_strdup (aopGet (op1, offset1));
+      emitcode (asminstnames[inst], "%s, %s", l, aopGet (op2, offset2));
+      Safe_free (l);
+    }
+  else
+    emitcode (asminstnames[inst], "%s", aopGet (op1, offset1));
 }
 
 static void
@@ -918,16 +961,40 @@ skip_byte:
           size--;
           i++;
         }
+      // TODO: Use ldw to load xl, xh, yl, yh when the other half is not in use.
+      else if ((aopInReg (result, i, XL_IDX) || aopInReg (result, i, YL_IDX)) && !source->aopu.bytes[i].in_reg)
+        {
+          emitcode ("exg", "a, %s", aopGet (result, i));
+          emitcode ("ld", "a, %s", aopGet (source, i));
+          emitcode ("exg", "a, %s", aopGet (result, i));
+          cost (4, 3);
+          assigned[i] = TRUE;
+          regsize--;
+          size--;
+          i++;
+        }
+      else if ((aopInReg (result, i, XH_IDX) || aopInReg (result, i, YH_IDX)) && !source->aopu.bytes[i].in_reg)
+        {
+          bool y = aopInReg (result, i, YH_IDX);
+          emitcode ("rlwa", y ? "y, a" : "x, a");
+          emitcode ("ld", "a, %s", aopGet (source, i));
+          emitcode ("rrwa", y ? "y, a" : "x, a");
+          cost (4, 3 + y * 2);
+          assigned[i] = TRUE;
+          regsize--;
+          size--;
+          i++;
+        }
       else
         i++;
     }
 
-  // In the end, move from the stack to destination.
+  // In the end, move the rest
   if (size)
     {
-      if (regalloc_dry_run)
+      if (!regalloc_dry_run)
         {
-          wassertl (0, "Unimplemented genCopy for operands not fully in regs.");
+          wassertl (0, "Unimplemented genCopy for operands.");
           for (i = 0; i < n ; i++)
             printf ("Byte %d, result in reg %d, source in reg %d.\n", i, result->aopu.bytes[i].in_reg ? result->aopu.bytes[i].byteu.reg->rIdx : -1, source->aopu.bytes[i].in_reg ? source->aopu.bytes[i].byteu.reg->rIdx : -1);
         }
@@ -1264,7 +1331,81 @@ end:
 static void
 genIfx (const iCode *ic)
 {
+  // TODO: This function currently reports code size costs only, other costs will depend on profiler information.
+
+  operand *const cond = IC_COND (ic);
+  symbol *const tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  aopOp (cond, ic);
+
   D (emitcode ("; genIfx", ""));
+
+  if (IS_BOOL (operandType (cond)) && cond->aop->type == AOP_DIR)
+    {
+      if (tlbl)
+        emitcode (IC_FALSE (ic) ? "btjt" : "btjf", "%s, #0, !tlabel", aopGet (cond->aop, 0), labelKey2num (tlbl));
+      cost (5, 0);
+    }
+  else if (cond->aop->size == 1 && (aopRS (cond->aop) || cond->aop->type == AOP_DIR))
+    {
+      // Need to swap when operand is in part of x or y.
+      int swapidx = -1;
+      if (aopRS (cond->aop) && !aopInReg (cond->aop, 0, A_IDX) && cond->aop->aopu.bytes[0].in_reg)
+          swapidx = cond->aop->aopu.bytes[0].byteu.reg->rIdx;
+
+      if (swapidx != -1)
+        {
+          if (aopInReg (cond->aop, 0, XL_IDX) || aopInReg (cond->aop, 0, YL_IDX))
+            {
+              emitcode ("exg", "a, %s", aopGet (cond->aop, 0));
+              cost (1, 1);
+            }
+          else 
+            {
+              emitcode ("rlwa", aopInReg (cond->aop, 0, XL_IDX) ? "x, a" : "y, a");
+              cost (aopInReg (cond->aop, 0, XH_IDX) ? 1 : 2, 1);
+            }
+        }
+
+      emit3 (A_TNZ, swapidx == -1 ? cond->aop : ASMOP_A, 0);
+
+      if (swapidx != -1)
+        {
+          if (aopInReg (cond->aop, 0, XL_IDX) || aopInReg (cond->aop, 0, YL_IDX))
+            {
+              emitcode ("exg", "a, %s", aopGet (cond->aop, 0));
+              cost (1, 1);
+            }
+          else
+            {
+              emitcode ("rrwa", aopInReg (cond->aop, 0, XL_IDX) ? "x, a" : "y, a");
+              cost (aopInReg (cond->aop, 0, XH_IDX) ? 1 : 2, 1);
+            }
+        }
+
+      if (tlbl)
+        emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
+      cost (2, 0);
+    }
+  else if (aopInReg (cond->aop, 0, C_IDX))
+    {
+      wassertl (IS_BOOL (operandType (cond)), "Variable of type other than _Bool in carry bit.");
+      if (tlbl)
+        emitcode (IC_FALSE (ic) ? "jrc" : "jrnc", "!tlabel", labelKey2num (tlbl));
+      cost (2, 0);
+    }
+  else
+    {
+      wassertl (0, "Unimplemented Ifx operand.");
+    }
+
+  if (tlbl)
+    {
+      emitcode ("jp", "!tlabel", labelKey2num ((IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key));
+      cost (3, 0);
+      emitLabel (tlbl);
+    }
+
+  freeAsmop (cond);
 }
 
 /*-----------------------------------------------------------------*/

@@ -2,6 +2,8 @@
 
 	* src/stm8/gen.c:
 	  Various code generation fixes, improvements, debug messages.
+	* device/lib/stm8/Makefile.in:
+	  Fix some hc08 leftovers.
 
 2013-02-08 Molnar Karoly <molnarkaroly AT users.sf.net>
 
