@@ -22,6 +22,9 @@
 #include "ralloc.h"
 #include "gen.h"
 
+/* Use the D macro for basic (unobtrusive) debugging messages */
+#define D(x) do if (options.verboseAsm) { x; } while (0)
+
 static bool regalloc_dry_run;
 static unsigned char regalloc_dry_run_cost_bytes;
 static unsigned char regalloc_dry_run_cost_cycles;
@@ -637,12 +640,12 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
     return;
 
-  if ((aopInReg (result, roffset, A_IDX) || result->type == AOP_STK) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
+  /*if ((aopInReg (result, roffset, A_IDX) || result->type == AOP_STK) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
   // Could also use clr for AOP_DIR, but it provides no advantage over mov below.
     {
       emitcode ("clr", "%s", aopGet (result, roffset));
       cost(result->type == AOP_STK ? 2 : 1, 1);
-    }
+    }*/ // TODO: When can we use clr, which destroys flags?
   else if (aopInReg (result, roffset, A_IDX) || aopInReg (result, soffset, A_IDX))
     emit3_o (A_LD, result, roffset, source, soffset);
   else if (result->type == AOP_DIR && (source->type == AOP_DIR || source->type == AOP_LIT))
@@ -651,8 +654,10 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
     {
       if (save_a)
         /*push ()*/;
-      emit3_o (A_LD, ASMOP_A, 0, source, soffset);
-      emit3_o (A_LD, result, roffset, ASMOP_A, 0);
+      if (!aopInReg (source, soffset, A_IDX))
+        emit3_o (A_LD, ASMOP_A, 0, source, soffset);
+      if (!aopInReg (result, roffset, A_IDX))
+        emit3_o (A_LD, result, roffset, ASMOP_A, 0);
       if (save_a)
         /*pop ()*/;
     }
@@ -975,13 +980,13 @@ genFunction (iCode *ic)
 /* genEndFunction - generates epilogue for functions               */
 /*-----------------------------------------------------------------*/
 static void
-genEndFunction ( iCode *ic)
+genEndFunction (iCode *ic)
 {
   symbol *sym = OP_SYMBOL (IC_LEFT (ic));
 
   if (IFFUNC_ISNAKED(sym->type))
   {
-      emitcode(";", "naked function: no epilogue.");
+      D (emitcode (";", "naked function: no epilogue."));
       if (options.debug && currFunc)
         debugFile->writeEndFunction (currFunc, ic, 0);
       return;
@@ -1047,7 +1052,7 @@ genPlus (const iCode *ic)
   int size, i;
   bool started;
 
-  emitcode("; genPlus", "");
+  D (emitcode ("; genPlus", ""));
 
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
@@ -1108,7 +1113,7 @@ genMinus (const iCode *ic)
   int size, i;
   bool started;
 
-  emitcode("; genMinus", "");
+  D (emitcode ("; genMinus", ""));
 
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
@@ -1153,7 +1158,7 @@ genPointerGet (const iCode *ic)
   int size, i;
   unsigned offset;
 
-  emitcode("; genPointerGet", "");
+  D (emitcode ("; genPointerGet", ""));
 
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
@@ -1200,7 +1205,7 @@ genAssign (const iCode *ic)
   operand *result, *right;
   int i;
 
-  emitcode("; genAssign", "");
+  D (emitcode ("; genAssign", ""));
 
   result = IC_RESULT (ic);
   right = IC_RIGHT (ic);
@@ -1254,6 +1259,15 @@ end:
 }
 
 /*-----------------------------------------------------------------*/
+/* genIfx - generate code for Ifx statement                        */
+/*-----------------------------------------------------------------*/
+static void
+genIfx (const iCode *ic)
+{
+  D (emitcode ("; genIfx", ""));
+}
+
+/*-----------------------------------------------------------------*/
 /* genAddrOf - generates code for address of                       */
 /*-----------------------------------------------------------------*/
 static void
@@ -1261,7 +1275,7 @@ genAddrOf (const iCode *ic)
 {
   operand *result, *left;
 
-  emitcode("; genAddrOf", "");
+  D (emitcode ("; genAddrOf", ""));
 
   result = IC_RESULT (ic);
   left = IC_LEFT (ic);
@@ -1276,7 +1290,7 @@ genAddrOf (const iCode *ic)
     {
       wassertl (0, "Taking address of on-stack variables not implemented yet.");
     }
-  else // TODO: HAndle case of cheapMove() using A, but A alive.
+  else // TODO: Handle case of cheapMove() using A, but A alive.
     {
       if (aopInReg (result->aop, 0, Y_IDX) || regDead (Y_IDX, ic) && !regDead (X_IDX, ic))
         {
@@ -1305,7 +1319,7 @@ genCast (const iCode *ic)
 {
   operand *result, *right;
 
-  emitcode("; genCast", "");
+  D (emitcode ("; genCast", ""));
 
   result = IC_RESULT (ic);
   right = IC_RIGHT (ic);
@@ -1415,7 +1429,7 @@ genSTM8iCode (iCode *ic)
       break;
 
     case IFX:
-      wassertl (0, "Unimplemented iCode");
+      genIfx (ic);
       break;
 
     case ADDRESS_OF:

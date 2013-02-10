@@ -1,3 +1,8 @@
+2013-02-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* src/stm8/gen.c:
+	  Various code generation fixes, improvements, debug messages.
+
 2013-02-08 Molnar Karoly <molnarkaroly AT users.sf.net>
 
 	* support/scripts/mcs51-disasm.pl: bugfix
