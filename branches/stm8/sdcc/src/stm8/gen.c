@@ -1493,8 +1493,14 @@ genSTM8iCode (iCode *ic)
     case '!':
     case '~':
     case UNARYMINUS:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case IPUSH:
     case IPOP:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case CALL:
     case PCALL:
       wassertl (0, "Unimplemented iCode");
@@ -1531,6 +1537,9 @@ genSTM8iCode (iCode *ic)
     case '*':
     case '/':
     case '%':
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case '>':
     case '<':
       wassertl (0, "Unimplemented iCode");
@@ -1546,16 +1555,31 @@ genSTM8iCode (iCode *ic)
       break;
 
     case EQ_OP:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case AND_OP:
     case OR_OP:
     case '^':
     case '|':
     case BITWISEAND:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case INLINEASM:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case RRC:
     case RLC:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case GETHBIT:
     case GETABIT:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case LEFT_OP:
     case RIGHT_OP:
       wassertl (0, "Unimplemented iCode");
@@ -1587,6 +1611,9 @@ genSTM8iCode (iCode *ic)
 
     case RECEIVE:
     case SEND:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case DUMMY_READ_VOLATILE:
     case CRITICAL:
     case ENDCRITICAL:

@@ -1,6 +1,7 @@
 2013-02-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
-	* src/stm8/gen.c:
+	* src/stm8/gen.c,
+	  src/stm8/main.c:
 	  Various code generation fixes, improvements, debug messages.
 	* device/lib/stm8/Makefile.in:
 	  Fix some hc08 leftovers.

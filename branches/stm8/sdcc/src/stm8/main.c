@@ -74,6 +74,13 @@ stm8_getRegName (const struct reg_info *reg)
   return "err";
 }
 
+/* Indicate which extended bit operations this port supports */
+static bool
+hasExtBitOp (int op, int size)
+{
+  return FALSE; /* None for now - some will be implemented later. */
+}
+
 /** $1 is always the basename.
     $2 is always the output file.
     $3 varies
@@ -200,7 +207,7 @@ PORT stm8_port = {
   NULL,                         /* process_pragma */
   NULL,                         /* getMangledFunctionName */
   NULL,                         /* hasNativeMulFor */
-  NULL,                         /* hasExtBitOp */
+  hasExtBitOp,                  /* hasExtBitOp */
   NULL,                         /* oclsExpense */
   TRUE,
   TRUE,                         /* little endian */
