@@ -43,9 +43,14 @@ enum asminst
 {
   A_ADC,
   A_ADD,
+  A_CLR,
   A_LD,
   A_MOV,
+  A_RLC,
+  A_RRC,
   A_SBC,
+  A_SLL,
+  A_SRL,
   A_SUB,
   A_TNZ
 };
@@ -54,9 +59,14 @@ static const char *asminstnames[] =
 {
   "adc",
   "add",
+  "clr",
   "ld",
   "mov",
+  "rlc",
+  "rrc",
   "sbc",
+  "sll",
+  "srl",
   "sub",
   "tnz"
 };
@@ -194,7 +204,7 @@ op8_cost (const asmop *op2, int offset2)
       goto error;
     }
 error:
-  printf("op2 type: %d, offset %d, rIdx %d\n", op2type, offset2, r2Idx);
+  fprintf(stderr, "op2 type: %d, offset %d, rIdx %d\n", op2type, offset2, r2Idx);
   wassert (0);
   cost (8, 4 * 8);
 }
@@ -226,7 +236,7 @@ op_cost (const asmop *op1, int offset1)
       goto error;
     }
 error:
-  printf("op1 type: %d, offset %d, rIdx %d\n", op1type, offset1, r1Idx);
+  fprintf(stderr, "op1 type: %d, offset %d, rIdx %d\n", op1type, offset1, r1Idx);
   wassert (0);
   cost (8, 4 * 8);
 }
@@ -317,8 +327,8 @@ ld_cost (const asmop *op1, int offset1, const asmop *op2, int offset2)
       goto error;
     }
 error:
-  printf("op1 type: %d, offset %d, rIdx %d\n", op1type, offset1, r1Idx);
-  printf("op2 type: %d, offset %d, rIdx %d\n", op2type, offset2, r2Idx);
+  fprintf(stderr, "op1 type: %d, offset %d, rIdx %d\n", op1type, offset1, r1Idx);
+  fprintf(stderr, "op2 type: %d, offset %d, rIdx %d\n", op2type, offset2, r2Idx);
   wassert (0);
   cost (8, 4 * 8);
 }
@@ -341,13 +351,26 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
   case A_ADD:
     op8_cost (op2, offset2);
     break;
+  case A_CLR:
+    op_cost (op1, offset1);
+    break;
   case A_LD:
     ld_cost (op1, offset1, op2, offset2);
     break;
   case A_MOV:
     mov_cost (op1, op2);
     break;
+  case A_RLC:
+  case A_RRC:
+    op_cost (op1, offset1);
+    break;
   case A_SBC:
+    op8_cost (op2, offset2);
+    break;
+  case A_SLL:
+  case A_SRL:
+    op_cost (op1, offset1);
+    break;
   case A_SUB:
     op8_cost (op2, offset2);
     break;
@@ -1306,6 +1329,215 @@ genMinus (const iCode *ic)
   freeAsmop (result);
 }
 
+static void
+genAssign (const iCode *ic);
+
+/*------------------------------------------------------------------*/
+/* genLeftShiftLiteral - left shifting by known count for size <= 2 */
+/*------------------------------------------------------------------*/
+static void
+genLeftShiftLiteral (operand *left, operand *right, operand *result, const iCode *ic)
+{
+  int shCount = (int) ulFromVal (right->aop->aopu.aop_lit);
+  int size;
+
+  D (emitcode ("; genLeftShiftLiteral", ""));
+
+  size = getSize (operandType (result));
+
+  /* I suppose that the left size >= result size */
+  wassert (getSize (operandType (left)) >= size);
+
+  if (shCount >= (size * 8))
+    {
+      aopOp (left, ic);
+      aopOp (result, ic);
+
+      while (size--)
+        emit3_o (A_CLR, result->aop, size, 0, 0);
+    }
+  else
+    {
+      int i;
+
+      wassertl (size <= 2, "Shifting of longs should be handled by generic function.");
+
+      genAssign (ic); // Move into result.
+
+      aopOp (left, ic);
+      aopOp (result, ic);
+
+      while (shCount--)
+        for(i = 0; i < size;)
+          {
+            if (aopInReg (result->aop, i, X_IDX))
+              {
+                emitcode ("sllw", "x");
+                cost (1, 2);
+                i += 2;
+              }
+            else if (aopInReg (result->aop, i, Y_IDX))
+              {
+                emitcode ("sllw", "y");
+                cost (2, 2);
+                i += 2;
+              }
+            else
+              {
+                int swapidx = -1;
+                if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg)
+                  swapidx = result->aop->aopu.bytes[i].byteu.reg->rIdx;
+
+                if (swapidx == -1)
+                  emit3_o (i ? A_RLC : A_SLL, result->aop, i, 0, 0);
+                else
+                  {
+                    if (!regalloc_dry_run)
+                      wassertl (0, "Unimplemented left shift.");
+                    cost (80, 80);
+                  }
+
+                i++;
+              }
+          }
+    }
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genLeftShift - generates code for left shifting                 */
+/*-----------------------------------------------------------------*/
+static void
+genLeftShift (const iCode *ic)
+{
+  operand *left, *right, *result;
+
+  right = IC_RIGHT (ic);
+  left = IC_LEFT (ic);
+  result = IC_RESULT (ic);
+
+  aopOp (right, ic);
+
+  /* if the shift count is known then do it
+     as efficiently as possible */
+  if (right->aop->type == AOP_LIT && getSize (operandType (result)) <= 2)
+    {
+      genLeftShiftLiteral (left, right, result, ic);
+      freeAsmop (right);
+      return;
+    }
+
+  wassertl (0, "Unimplemented left shift by non-literal.");
+
+  freeAsmop (right);
+}
+
+/*------------------------------------------------------------------*/
+/* genRightShiftLiteral - right shifting by known count for size <= 2*/
+/*------------------------------------------------------------------*/
+static void
+genRightShiftLiteral (operand *left, operand *right, operand *result, const iCode *ic)
+{
+  int shCount = (int) ulFromVal (right->aop->aopu.aop_lit);
+  int size;
+
+  D (emitcode ("; genRightShiftLiteral", ""));
+
+  size = getSize (operandType (result));
+
+  wassertl (SPEC_USIGN (getSpec (operandType (left))), "Unimplemented signed right shift.");
+
+  /* I suppose that the left size >= result size */
+  wassert (getSize (operandType (left)) >= size);
+
+  if (shCount >= (size * 8))
+    {
+      aopOp (left, ic);
+      aopOp (result, ic);
+
+      while (size--)
+        emit3_o (A_CLR, result->aop, size, 0, 0);
+    }
+  else
+    {
+      int i;
+
+      wassertl (size <= 2, "Shifting of longs should be handled by generic function.");
+
+      genAssign (ic); // Move into result.
+
+      aopOp (left, ic);
+      aopOp (result, ic);
+
+      while (shCount--)
+        for(i = size - 1; i >= 0;)
+          {
+            if (i > 0 && i == size - 1 && aopInReg (result->aop, i - 1, X_IDX))
+              {
+                emitcode ("srlw", "x");
+                cost (1, 2);
+                i -= 2;
+              }
+            else if (i > 0 && i == size - 1 && aopInReg (result->aop, i - 1, Y_IDX))
+              {
+                emitcode ("srlw", "y");
+                cost (2, 2);
+                i -= 2;
+              }
+            else
+              {
+                int swapidx = -1;
+                if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg)
+                  swapidx = result->aop->aopu.bytes[i].byteu.reg->rIdx;
+
+                if (swapidx == -1)
+                  emit3_o ((i == size - 1) ? A_RRC : A_SRL, result->aop, i, 0, 0);
+                else
+                  {
+                    if (!regalloc_dry_run)
+                      wassertl (0, "Unimplemented left shift.");
+                    cost (80, 80);
+                  }
+
+                i--;
+              }
+          }
+    }
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genRightShift - generates code for right shifting               */
+/*-----------------------------------------------------------------*/
+static void
+genRightShift (const iCode *ic)
+{
+  operand *left, *right, *result;
+
+  right = IC_RIGHT (ic);
+  left = IC_LEFT (ic);
+  result = IC_RESULT (ic);
+
+  aopOp (right, ic);
+
+  /* if the shift count is known then do it
+     as efficiently as possible */
+  if (right->aop->type == AOP_LIT && getSize (operandType (result)) <= 2)
+    {
+      genRightShiftLiteral (left, right, result, ic);
+      freeAsmop (right);
+      return;
+    }
+
+  wassertl (0, "Unimplemented right shift by non-literal.");
+
+  freeAsmop (right);
+}
+
 /*-----------------------------------------------------------------*/
 /* genPointerGet - generate code for pointer get                   */
 /*-----------------------------------------------------------------*/
@@ -1654,7 +1886,13 @@ genSTM8iCode (iCode *ic)
     case AND_OP:
     case OR_OP:
     case '^':
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case '|':
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case BITWISEAND:
       wassertl (0, "Unimplemented iCode");
       break;
@@ -1674,8 +1912,11 @@ genSTM8iCode (iCode *ic)
       break;
 
     case LEFT_OP:
+      genLeftShift (ic);
+      break;
+
     case RIGHT_OP:
-      wassertl (0, "Unimplemented iCode");
+      genRightShift (ic);
       break;
 
     case GET_VALUE_AT_ADDRESS:
