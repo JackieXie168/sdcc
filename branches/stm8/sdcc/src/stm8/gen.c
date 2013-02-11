@@ -1928,7 +1928,7 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
                   swapidx = result->aop->aopu.bytes[i].byteu.reg->rIdx;
 
                 if (swapidx == -1)
-                  emit3_o ((i == size - 1) ? A_RRC : A_SRL, result->aop, i, 0, 0);
+                  emit3_o ((i != size - 1) ? A_RRC : A_SRL, result->aop, i, 0, 0);
                 else
                   {
                     if (!regalloc_dry_run)
