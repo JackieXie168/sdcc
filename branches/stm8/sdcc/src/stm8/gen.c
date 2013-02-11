@@ -1264,11 +1264,70 @@ genEndFunction (iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* genReturn - generate code for return statement                  */
+/*-----------------------------------------------------------------*/
+static void
+genReturn (const iCode *ic)
+{
+  operand *left = IC_LEFT (ic);
+  int size;
+
+  D (emitcode ("; genReturn", ""));
+
+  /* if we have no return value then
+     just generate the "ret" */
+  if (!IC_LEFT (ic))
+    goto jumpret;
+
+  /* we have something to return then
+     move the return value into place */
+  aopOp (left, ic);
+  size = left->aop->size;
+
+  switch (size)
+    {
+    case 1:
+      cheapMove (ASMOP_A, 0, left->aop, 0, FALSE);
+      break;
+    case 2:
+      if (aopInReg (left->aop, 0, X_IDX))
+        ;
+      else if (aopInReg (left->aop, 0, Y_IDX))
+        {
+          emitcode ("exgw", "x, y");
+          cost (1, 1);
+        }
+      else // TODO: Do not overwrite A when we still need it! TODO: Use more efficient 16-bit load where possible!
+        {
+          cheapMove (ASMOP_X, 0, left->aop, 0, FALSE);
+          cheapMove (ASMOP_X, 1, left->aop, 1, FALSE);
+        }
+      break;
+    default:
+      wassertl (0, "Return not implemented for return value of this size.");
+    }
+
+  freeAsmop (left);
+
+jumpret:
+  /* generate a jump to the return label
+     if the next is not the return statement */
+  if (!(ic->next && ic->next->op == LABEL && IC_LABEL (ic->next) == returnLabel))
+    {
+      if (!regalloc_dry_run)
+        emitcode ("jp", "%05d$", labelKey2num (returnLabel->key));
+      cost (3, 1);
+    }
+}
+
+/*-----------------------------------------------------------------*/
 /* genLabel - generates a label                                    */
 /*-----------------------------------------------------------------*/
 static void
 genLabel (const iCode *ic)
 {
+  D (emitcode ("; genLabel", ""));
+
   /* special case never generate */
   if (IC_LABEL (ic) == entryLabel)
     return;
@@ -1282,6 +1341,8 @@ genLabel (const iCode *ic)
 static void
 genGoto (const iCode *ic)
 {
+  D (emitcode ("; genGoto", ""));
+
   emitcode ("jp", "%05d$", labelKey2num (IC_LABEL (ic)->key));
   cost (3, 1);
 }
@@ -1957,7 +2018,7 @@ genSTM8iCode (iCode *ic)
       break;
 
     case RETURN:
-      wassertl (0, "Unimplemented iCode");
+      genReturn (ic);
       break;
 
     case LABEL:

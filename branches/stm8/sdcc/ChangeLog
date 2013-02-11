@@ -1,7 +1,7 @@
 2013-02-10 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/stm8/gen.c:
-	  Basic code generation infrastructure for &, |.
+	  Basic code generation infrastructure for &, |, RETURN.
 
 2013-02-10 Molnar Karoly <molnarkaroly AT users.sf.net>
 
