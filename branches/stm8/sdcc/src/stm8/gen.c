@@ -773,27 +773,20 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
     result->aopu.bytes[roffset].in_reg && source->aopu.bytes[soffset].in_reg &&
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
     return;
-
-  /*if ((aopInReg (result, roffset, A_IDX) || result->type == AOP_STK) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
-  // Could also use clr for AOP_DIR, but it provides no advantage over mov below.
-    {
-      emitcode ("clr", "%s", aopGet (result, roffset));
-      cost(result->type == AOP_STK ? 2 : 1, 1);
-    }*/ // TODO: When can we use clr, which destroys flags?
-  else if (aopInReg (result, roffset, A_IDX) || aopInReg (result, soffset, A_IDX))
+  else if (aopInReg (result, roffset, A_IDX) || aopInReg (source, soffset, A_IDX))
     emit3_o (A_LD, result, roffset, source, soffset);
   else if (result->type == AOP_DIR && (source->type == AOP_DIR || source->type == AOP_LIT))
     emit3_o (A_MOV, result, roffset, source, soffset);
   else
     {
       if (save_a)
-        /*push ()*/;
+        push (ASMOP_A, 0, 1);
       if (!aopInReg (source, soffset, A_IDX))
         emit3_o (A_LD, ASMOP_A, 0, source, soffset);
       if (!aopInReg (result, roffset, A_IDX))
         emit3_o (A_LD, result, roffset, ASMOP_A, 0);
       if (save_a)
-        /*pop ()*/;
+        pop (ASMOP_A, 0, 1);
     }
 }
 
@@ -1344,18 +1337,7 @@ genReturn (const iCode *ic)
       cheapMove (ASMOP_A, 0, left->aop, 0, FALSE);
       break;
     case 2:
-      if (aopInReg (left->aop, 0, X_IDX))
-        ;
-      else if (aopInReg (left->aop, 0, Y_IDX))
-        {
-          emitcode ("exgw", "x, y");
-          cost (1, 1);
-        }
-      else // TODO: Do not overwrite A when we still need it! TODO: Use more efficient 16-bit load where possible!
-        {
-          cheapMove (ASMOP_X, 0, left->aop, 0, FALSE);
-          cheapMove (ASMOP_X, 1, left->aop, 1, FALSE);
-        }
+      genMove (ASMOP_X, left->aop, TRUE, TRUE, TRUE);
       break;
     default:
       wassertl (0, "Return not implemented for return value of this size.");
