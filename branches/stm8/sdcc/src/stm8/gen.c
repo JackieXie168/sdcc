@@ -1276,6 +1276,85 @@ stm8_emitDebuggerSymbol (const char *debugSym)
   _G.debugLine = 0;
 }
 
+static void
+emitCall (const iCode *ic, bool ispcall)
+{
+  bool SomethingReturned, bigreturn;
+  sym_link *dtype = operandType (IC_LEFT (ic));
+  sym_link *etype = getSpec (dtype);
+  sym_link *ftype = IS_FUNCPTR (dtype) ? dtype->next : dtype;
+
+  // TODO: Parameters.
+
+  /* Return value of big type or returning struct or union. */
+  bigreturn = (getSize (ftype->next) > 2);
+  if (bigreturn)
+    {
+      wassertl (0, "Unimplemented return value size.");
+    }
+
+  if (ispcall)
+    {
+      operand *left = IC_LEFT (ic);
+
+      aopOp (left, ic);
+
+      if (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD)
+        {
+          emitcode ("call", "%s", aopGet (left->aop, 0));
+          cost (3, 4);
+        }
+      else
+        {
+          wassertl (0, "Unimplemented call through pointer.");
+        }
+      freeAsmop (left);
+    }
+  else
+    {
+      if (IS_LITERAL (etype))
+        {
+          emitcode ("call", "0x%04X", ulFromVal (OP_VALUE (IC_LEFT (ic))));
+          cost (3, 4);
+        }
+      else
+        {
+          bool jump = (!ic->parmBytes && IFFUNC_ISNORETURN (OP_SYMBOL (IC_LEFT (ic))->type));
+          emitcode (jump ? "jp" : "call", "%s",
+            (OP_SYMBOL (IC_LEFT (ic))->rname[0] ? OP_SYMBOL (IC_LEFT (ic))->rname : OP_SYMBOL (IC_LEFT (ic))->name));
+          cost (3, jump ? 1 : 4);
+        }
+    }
+
+  SomethingReturned = (IS_ITEMP (IC_RESULT (ic)) &&
+                       (OP_SYMBOL (IC_RESULT (ic))->nRegs || OP_SYMBOL (IC_RESULT (ic))->spildir))
+                       || IS_TRUE_SYMOP (IC_RESULT (ic));
+
+  // TODO: Assign return value.
+}
+
+/*-----------------------------------------------------------------*/
+/* genCall - generates a call statement                            */
+/*-----------------------------------------------------------------*/
+static void
+genCall (const iCode *ic)
+{
+  D (emitcode ("; genCall", ""));
+
+  emitCall (ic, FALSE);
+}
+
+/*-----------------------------------------------------------------*/
+/* genPCall - generates a call by pointer statement                */
+/*-----------------------------------------------------------------*/
+static void
+genPCall (const iCode *ic)
+{
+  D (emitcode ("; genPcall", ""));
+
+  emitCall (ic, TRUE);
+}
+
 /*-----------------------------------------------------------------*/
 /* genFunction - generated code for function entry                 */
 /*-----------------------------------------------------------------*/
@@ -2200,15 +2279,13 @@ genAddrOf (const iCode *ic)
         {
           emitcode ("ldw", "y, #%s", sym->name);
           cost (4, 2);
-          cheapMove (result->aop, 0, ASMOP_Y, 0, FALSE);
-          cheapMove (result->aop, 1, ASMOP_Y, 1, FALSE);
+          genMove (result->aop, ASMOP_Y, regDead (A_IDX, ic), FALSE, regDead (X_IDX, ic));
         }
       else // TODO: Handle case of both X and Y alive; TODO: Use mov when destination is a global variable.
         {
           emitcode ("ldw", "x, #%s", sym->name);
           cost (3, 2);
-          cheapMove (result->aop, 0, ASMOP_X, 0, FALSE);
-          cheapMove (result->aop, 1, ASMOP_X, 1, FALSE);
+          genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
         }
     }
 
@@ -2265,8 +2342,11 @@ genSTM8iCode (iCode *ic)
       break;
 
     case CALL:
+      genCall (ic);
+      break;
+
     case PCALL:
-      wassertl (0, "Unimplemented iCode");
+      genPCall (ic);
       break;
 
     case FUNCTION:

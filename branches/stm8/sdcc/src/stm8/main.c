@@ -174,7 +174,7 @@ PORT stm8_port = {
    -1, 0, 0, 4, 0, 2},
   /* no native mul/div support for now. */
   {
-   -1, -1},
+   0, -1},
   {
    stm8_emitDebuggerSymbol},
   {
