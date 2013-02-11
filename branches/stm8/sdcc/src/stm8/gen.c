@@ -1197,13 +1197,13 @@ genMove(asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   // TODO: Efficient handling of more special cases.
   for (i = 0; i < result->size;)
     {
-      if (aopInReg (result, i, X_IDX) && source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT)
+      if (aopInReg (result, i, X_IDX) && (source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT))
         {
           emitcode ("ldw", "x, %s", aopGet (source, i));
           cost (3, 2);
           i += 2;
         }
-      else if (aopInReg (result, i, Y_IDX) && source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT)
+      else if (aopInReg (result, i, Y_IDX) && (source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT))
         {
           emitcode ("ldw", "y, %s", aopGet (source, i));
           cost (4, 2);
