@@ -1187,6 +1187,55 @@ skip_byte:
     }
 }
 
+/*-----------------------------------------------------------------*/
+/* genMove - Copy the value from one asmop to another              */
+/*-----------------------------------------------------------------*/
+static void
+genMove(asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
+{
+  int i;
+
+  if (aopRS (result) && aopRS (source))
+    {
+      genCopy (result, source, a_dead, x_dead, y_dead);
+      return;
+    }
+
+  // TODO: Efficient handling of more special cases.
+  for (i = 0; i < result->size;)
+    {
+      if (aopInReg (result, i, X_IDX) && source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT)
+        {
+          emitcode ("ldw", "x, %s", aopGet (source, i));
+          cost (3, 2);
+          i += 2;
+        }
+      else if (aopInReg (result, i, Y_IDX) && source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT)
+        {
+          emitcode ("ldw", "y, %s", aopGet (source, i));
+          cost (4, 2);
+          i += 2;
+        }
+      else if (result->type == AOP_DIR && aopInReg (source, i, X_IDX))
+        {
+          emitcode ("ldw", "%s, x", aopGet (result, i));
+          cost (3, 2);
+          i += 2;
+        }
+      else if (result->type == AOP_DIR && aopInReg (source, i, Y_IDX))
+        {
+          emitcode ("ldw", "%s, y", aopGet (result, i));
+          cost (4, 2);
+          i += 2;
+        }
+      else
+        {
+          cheapMove (result, i, source, i, FALSE); // TODO: Take care of A.
+          i++;
+        }
+    }
+}
+
 /*---------------------------------------------------------------------*/
 /* stm8_emitDebuggerSymbol - associate the current code location       */
 /*   with a debugger symbol                                            */
@@ -1686,9 +1735,6 @@ genAnd (const iCode *ic)
   freeAsmop (result);
 }
 
-static void
-genAssign (const iCode *ic);
-
 /*------------------------------------------------------------------*/
 /* genLeftShiftLiteral - left shifting by known count for size <= 2 */
 /*------------------------------------------------------------------*/
@@ -1719,10 +1765,10 @@ genLeftShiftLiteral (operand *left, operand *right, operand *result, const iCode
 
       wassertl (size <= 2, "Shifting of longs should be handled by generic function.");
 
-      genAssign (ic); // Move into result.
-
       aopOp (left, ic);
       aopOp (result, ic);
+
+      genMove (result->aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
       while (shCount--)
         for(i = 0; i < size;)
@@ -1823,10 +1869,10 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
 
       wassertl (size <= 2, "Shifting of longs should be handled by generic function.");
 
-      genAssign (ic); // Move into result.
-
       aopOp (left, ic);
       aopOp (result, ic);
+
+      genMove (result->aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
       while (shCount--)
         for(i = size - 1; i >= 0;)
@@ -1962,47 +2008,8 @@ genAssign (const iCode *ic)
   aopOp (right, ic);
   aopOp (result, ic);
 
-  if (aopRS (result->aop) && aopRS (right->aop))
-    {
-      genCopy (result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
-      goto end;
-    }
+  genMove(result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
-  // TODO: Efficient handling of more special cases.
-  for (i = 0; i < result->aop->size;)
-    {
-      if (aopInReg (result->aop, i, X_IDX) && right->aop->type == AOP_DIR)
-        {
-          emitcode ("ldw", "x, %s", aopGet (right->aop, i));
-          cost (3, 2);
-          i += 2;
-        }
-      else if (aopInReg (result->aop, i, Y_IDX) && right->aop->type == AOP_DIR)
-        {
-          emitcode ("ldw", "y, %s", aopGet (right->aop, i));
-          cost (4, 2);
-          i += 2;
-        }
-      else if (result->aop->type == AOP_DIR && aopInReg (right->aop, i, X_IDX))
-        {
-          emitcode ("ldw", "%s, x", aopGet (result->aop, i));
-          cost (3, 2);
-          i += 2;
-        }
-      else if (result->aop->type == AOP_DIR && aopInReg (right->aop, i, Y_IDX))
-        {
-          emitcode ("ldw", "%s, y", aopGet (result->aop, i));
-          cost (4, 2);
-          i += 2;
-        }
-      else
-        {
-          cheapMove (result->aop, i, right->aop, i, FALSE); // TODO: Take care of A.
-          i++;
-        }
-    }
-
-end:
   freeAsmop (right);
   freeAsmop (result);
 }
