@@ -43,32 +43,38 @@ enum asminst
 {
   A_ADC,
   A_ADD,
+  A_AND,
   A_CLR,
   A_LD,
   A_MOV,
+  A_OR,
   A_RLC,
   A_RRC,
   A_SBC,
   A_SLL,
   A_SRL,
   A_SUB,
-  A_TNZ
+  A_TNZ,
+  A_XOR
 };
 
 static const char *asminstnames[] =
 {
   "adc",
   "add",
+  "and",
   "clr",
   "ld",
   "mov",
+  "or",
   "rlc",
   "rrc",
   "sbc",
   "sll",
   "srl",
   "sub",
-  "tnz"
+  "tnz",
+  "xor"
 };
 
 static struct asmop asmop_a, asmop_x, asmop_y;
@@ -349,6 +355,7 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
   {
   case A_ADC:
   case A_ADD:
+  case A_AND:
     op8_cost (op2, offset2);
     break;
   case A_CLR:
@@ -359,6 +366,9 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
     break;
   case A_MOV:
     mov_cost (op1, op2);
+    break;
+  case A_OR:
+    op8_cost (op2, offset2);
     break;
   case A_RLC:
   case A_RRC:
@@ -376,6 +386,9 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
     break;
   case A_TNZ:
     op_cost (op1, offset1);
+    break;
+  case A_XOR:
+    op8_cost (op2, offset2);
     break;
   default:
     wassertl (0, "Tried to get cost for unknown instruction");
@@ -653,6 +666,56 @@ pop (const asmop *op, int offset, int size)
     wassertl (0, "Invalid size for pop/popw");
 
   _G.stack.pushed -= size;
+}
+
+void swap_to_a(int idx)
+{
+  switch (idx)
+    {
+    case XL_IDX:
+      emitcode ("exg", "a, yl");
+      cost (1, 1);
+      break;
+    case XH_IDX:
+      emitcode ("rlwa", "x");
+      cost (1, 1);
+      break;
+    case YL_IDX:
+      emitcode ("exg", "a, yl");
+      cost (1, 1);
+      break;
+    case YH_IDX:
+      emitcode ("rlwa", "y");
+      cost (2, 1);
+      break;
+    default:
+      wassert (0);
+    }
+}
+
+void swap_from_a(int idx)
+{
+  switch (idx)
+    {
+    case XL_IDX:
+      emitcode ("exg", "a, yl");
+      cost (1, 1);
+      break;
+    case XH_IDX:
+      emitcode ("rrwa", "x");
+      cost (1, 1);
+      break;
+    case YL_IDX:
+      emitcode ("exg", "a, yl");
+      cost (1, 1);
+      break;
+    case YH_IDX:
+      emitcode ("rrwa", "y");
+      cost (2, 1);
+      break;
+    default:
+      wassert (0);
+    }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1329,6 +1392,82 @@ genMinus (const iCode *ic)
   freeAsmop (result);
 }
 
+/*-----------------------------------------------------------------*/
+/* genOr - code for and                                            */
+/*-----------------------------------------------------------------*/
+static void
+genOr (const iCode *ic)
+{
+  operand *left, *right, *result;
+  int size, i;
+
+  D (emitcode ("; genOr", ""));
+
+  aopOp ((left = IC_LEFT (ic)), ic);
+  aopOp ((right = IC_RIGHT (ic)), ic);
+  aopOp ((result = IC_RESULT (ic)), ic);
+
+  size = getSize (operandType (result));
+
+  /* if left is a literal & right is not then exchange them */
+  if (left->aop->type == AOP_LIT && right->aop->type != AOP_LIT || size == 1 && aopInReg (right->aop, 0, A_IDX))
+    {
+      operand *tmp = right;
+      right = left;
+      left = tmp;
+    }
+
+  // TODO: Take care of A. TODO: Handling of right operands that can't be directly ored with a. TODO: Use bit set instructions where it is faster.
+  for (i = 0; i < size; i++)
+    {
+      cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+      emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
+      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+    }
+
+  freeAsmop (left);
+  freeAsmop (right);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genAnd - code for and                                           */
+/*-----------------------------------------------------------------*/
+static void
+genAnd (const iCode *ic)
+{
+  operand *left, *right, *result;
+  int size, i;
+
+  D (emitcode ("; genAnd", ""));
+
+  aopOp ((left = IC_LEFT (ic)), ic);
+  aopOp ((right = IC_RIGHT (ic)), ic);
+  aopOp ((result = IC_RESULT (ic)), ic);
+
+  size = getSize (operandType (result));
+
+  /* if left is a literal & right is not then exchange them */
+  if (left->aop->type == AOP_LIT && right->aop->type != AOP_LIT || size == 1 && aopInReg (right->aop, 0, A_IDX))
+    {
+      operand *tmp = right;
+      right = left;
+      left = tmp;
+    }
+
+  // TODO: Take care of A. TODO: Handling of right operands that can't be directly anded with a. TODO: Use bit reset instructions where it is faster.
+  for (i = 0; i < size; i++)
+    {
+      cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+      emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
+      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+    }
+
+  freeAsmop (left);
+  freeAsmop (right);
+  freeAsmop (result);
+}
+
 static void
 genAssign (const iCode *ic);
 
@@ -1678,34 +1817,12 @@ genIfx (const iCode *ic)
           swapidx = cond->aop->aopu.bytes[0].byteu.reg->rIdx;
 
       if (swapidx != -1)
-        {
-          if (aopInReg (cond->aop, 0, XL_IDX) || aopInReg (cond->aop, 0, YL_IDX))
-            {
-              emitcode ("exg", "a, %s", aopGet (cond->aop, 0));
-              cost (1, 1);
-            }
-          else 
-            {
-              emitcode ("rlwa", aopInReg (cond->aop, 0, XL_IDX) ? "x, a" : "y, a");
-              cost (aopInReg (cond->aop, 0, XH_IDX) ? 1 : 2, 1);
-            }
-        }
+        swap_to_a (swapidx);
 
       emit3 (A_TNZ, swapidx == -1 ? cond->aop : ASMOP_A, 0);
 
       if (swapidx != -1)
-        {
-          if (aopInReg (cond->aop, 0, XL_IDX) || aopInReg (cond->aop, 0, YL_IDX))
-            {
-              emitcode ("exg", "a, %s", aopGet (cond->aop, 0));
-              cost (1, 1);
-            }
-          else
-            {
-              emitcode ("rrwa", aopInReg (cond->aop, 0, XL_IDX) ? "x, a" : "y, a");
-              cost (aopInReg (cond->aop, 0, XH_IDX) ? 1 : 2, 1);
-            }
-        }
+        swap_from_a (swapidx);
 
       if (tlbl)
         emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
@@ -1885,16 +2002,19 @@ genSTM8iCode (iCode *ic)
 
     case AND_OP:
     case OR_OP:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case '^':
       wassertl (0, "Unimplemented iCode");
       break;
 
     case '|':
-      wassertl (0, "Unimplemented iCode");
+      genOr (ic);
       break;
 
     case BITWISEAND:
-      wassertl (0, "Unimplemented iCode");
+      genAnd (ic);
       break;
 
     case INLINEASM:
