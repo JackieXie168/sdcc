@@ -1,7 +1,9 @@
 2013-02-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* src/stm8/gen.c:
-	  Code generation fixes and refactoring.
+	  Code generation fixes and refactoring, implement ^.
+	* src/SDCCopt.c:
+	  Enable lospre for stm8.
 
 2013-02-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 

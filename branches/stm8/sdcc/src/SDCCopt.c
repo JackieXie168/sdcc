@@ -2203,7 +2203,7 @@ eBBlockFromiCode (iCode * ic)
   /* lospre */
   adjustIChain (ebbi->bbOrder, ebbi->count);
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
-  if (optimize.lospre && (TARGET_Z80_LIKE || TARGET_HC08_LIKE)) /* Todo: enable for other ports. */
+  if (optimize.lospre && (TARGET_Z80_LIKE || TARGET_HC08_LIKE || TARGET_IS_STM8)) /* Todo: enable for other ports. */
     lospre (ic, ebbi);
   /* Break down again and redo some steps to not confuse live range analysis. */
   ebbi = iCodeBreakDown (ic);

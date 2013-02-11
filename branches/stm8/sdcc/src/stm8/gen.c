@@ -1642,7 +1642,49 @@ genCmp (iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* genOr - code for and                                            */
+/* genXor- code for xor                                            */
+/*-----------------------------------------------------------------*/
+static void
+genXor (const iCode *ic)
+{
+  operand *left, *right, *result;
+  int size, i;
+
+  D (emitcode ("; genXor", ""));
+
+  aopOp ((left = IC_LEFT (ic)), ic);
+  aopOp ((right = IC_RIGHT (ic)), ic);
+  aopOp ((result = IC_RESULT (ic)), ic);
+
+  size = getSize (operandType (result));
+
+  /* if left is a literal & right is not then exchange them */
+  if (left->aop->type == AOP_LIT && right->aop->type != AOP_LIT || size == 1 && aopInReg (right->aop, 0, A_IDX))
+    {
+      operand *tmp = right;
+      right = left;
+      left = tmp;
+    }
+
+  // TODO: Take care of operands partially in A. TODO: Handling of right operands that can't be directly xored with a. TODO: Use bit complement instructions where it is faster.
+  if (!regDead (A_IDX, ic))
+    push (ASMOP_A, 0, 1);
+  for (i = 0; i < size; i++)
+    {
+      cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+      emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
+      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+    }
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
+
+  freeAsmop (left);
+  freeAsmop (right);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genOr - code for or                                             */
 /*-----------------------------------------------------------------*/
 static void
 genOr (const iCode *ic)
@@ -1666,13 +1708,17 @@ genOr (const iCode *ic)
       left = tmp;
     }
 
-  // TODO: Take care of A. TODO: Handling of right operands that can't be directly ored with a. TODO: Use bit set instructions where it is faster.
+  // TODO: Take care of oparands partially in A. TODO: Handling of right operands that can't be directly ored with a. TODO: Use bit set instructions where it is faster.
+  if (!regDead (A_IDX, ic))
+    push (ASMOP_A, 0, 1);
   for (i = 0; i < size; i++)
     {
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
       emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
     }
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
 
   freeAsmop (left);
   freeAsmop (right);
@@ -1704,13 +1750,17 @@ genAnd (const iCode *ic)
       left = tmp;
     }
 
-  // TODO: Take care of A. TODO: Handling of right operands that can't be directly anded with a. TODO: Use bit reset instructions where it is faster.
+  // TODO: Take care of operands partially in A. TODO: Handling of right operands that can't be directly anded with a. TODO: Use bit reset instructions where it is faster.
+  if (!regDead (A_IDX, ic))
+    push (ASMOP_A, 0, 1);
   for (i = 0; i < size; i++)
     {
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
       emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
     }
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
 
   freeAsmop (left);
   freeAsmop (right);
@@ -1980,7 +2030,6 @@ static void
 genAssign (const iCode *ic)
 {
   operand *result, *right;
-  int i;
 
   D (emitcode ("; genAssign", ""));
 
@@ -2213,7 +2262,7 @@ genSTM8iCode (iCode *ic)
       break;
 
     case '^':
-      wassertl (0, "Unimplemented iCode");
+      genXor (ic);
       break;
 
     case '|':
