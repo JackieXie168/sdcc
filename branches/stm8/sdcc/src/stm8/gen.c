@@ -45,6 +45,7 @@ enum asminst
   A_ADD,
   A_AND,
   A_CLR,
+  A_CP,
   A_LD,
   A_MOV,
   A_OR,
@@ -64,6 +65,7 @@ static const char *asminstnames[] =
   "add",
   "and",
   "clr",
+  "cp",
   "ld",
   "mov",
   "or",
@@ -360,6 +362,9 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
     break;
   case A_CLR:
     op_cost (op1, offset1);
+    break;
+  case A_CP:
+    op8_cost (op2, offset2);
     break;
   case A_LD:
     ld_cost (op1, offset1, op2, offset2);
@@ -858,7 +863,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   int ex[4];
   bool a_free, x_free, y_free;
 
-  emitcode("; genCopy", "");
+  D (emitcode("; genCopy", ""));
 
   wassertl (n <= 8, "Invalid size for genCopy().");
   wassertl (aopRS (source), "Invalid source type.");
@@ -1447,6 +1452,158 @@ genMinus (const iCode *ic)
           i++;
         }
     }
+
+  freeAsmop (right);
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* exchangedCmp : returns the opcode need if the two operands are  */
+/*                exchanged in a comparison                        */
+/*-----------------------------------------------------------------*/
+static int
+exchangedCmp (int opcode)
+{
+  switch (opcode)
+    {
+    case '<':
+      return '>';
+    case '>':
+      return '<';
+    case LE_OP:
+      return GE_OP;
+    case GE_OP:
+      return LE_OP;
+    case NE_OP:
+      return NE_OP;
+    case EQ_OP:
+      return EQ_OP;
+    default:
+      werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "opcode not a comparison");
+    }
+  return EQ_OP;                 /* shouldn't happen, but need to return something */
+}
+
+/*------------------------------------------------------------------*/
+/* branchInstCmp : returns the conditional branch instruction that  */
+/*                 will branch if the comparison is true            */
+/*------------------------------------------------------------------*/
+static char *
+branchInstCmp (int opcode, int sign)
+{
+  switch (opcode)
+    {
+    case '<':
+      if (sign)
+        return "jrslt";
+      else
+        return "jrc";
+    case '>':
+      if (sign)
+        return "jrsgt";
+      else
+        return "jrugt";
+    case LE_OP:
+      if (sign)
+        return "jrsle";
+      else
+        return "jrule";
+    case GE_OP:
+      if (sign)
+        return "jrsge";
+      else
+        return "jrnc";
+    case NE_OP:
+      return "jrne";
+    case EQ_OP:
+      return "jreq";
+    default:
+      werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "opcode not a comparison");
+    }
+  return "brn";
+}
+
+/*------------------------------------------------------------------*/
+/* genCmp :- greater or less than (and maybe with equal) comparison */
+/*------------------------------------------------------------------*/
+static void
+genCmp (iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+  sym_link *letype, *retype;
+  int sign, opcode;
+  int size;
+
+  D (emitcode ("; genCmp", ""));
+
+  opcode = ic->op;
+  sign = 0;
+  if (IS_SPEC (operandType (left)) && IS_SPEC (operandType (right)))
+    {
+      letype = getSpec (operandType (left));
+      retype = getSpec (operandType (right));
+      sign = !(SPEC_USIGN (letype) | SPEC_USIGN (retype));
+    }
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RIGHT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+
+  /* Prefer literal operand on right */
+  if (left->aop->type == AOP_LIT || right->aop->type != AOP_LIT && left->aop->type == AOP_DIR)
+    {
+      operand *temp = left;
+      left = right;
+      right = temp;
+      opcode = exchangedCmp (opcode);
+    }
+
+  size = max (left->aop->size, right->aop->size);
+
+  if (size == 1 &&
+    right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK &&
+    aopInReg (left->aop, 0, A_IDX))
+    emit3 (A_CP, ASMOP_A, right->aop);
+  else if (size == 2 &&
+    right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK &&
+    (aopInReg (left->aop, 0, X_IDX) || aopInReg (left->aop, 0, Y_IDX)))
+    {
+      if (aopInReg (left->aop, 0, Y_IDX) && right->aop->type == AOP_STK)
+        {
+          emitcode ("exgw", "x, y");
+          emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+          emitcode ("exgw", "x, y");
+          cost (4, 4);
+        }
+      else
+        {
+          emitcode ("cpw", aopInReg (left->aop, 0, X_IDX) ? "x, %s" : "x, %s", aopGet (right->aop, 0));
+          cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
+        }
+    }
+  else // TODO: Implement.
+    {
+      if (!regalloc_dry_run)
+        wassertl (0, "Unimplemented comparison operands.");
+      cost (80, 80);
+    }
+
+  {
+    symbol *tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+    symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+
+    emitcode (branchInstCmp (opcode, sign), "%05d$", labelKey2num (tlbl1));
+
+    emitcode ("jp", "%05d$", labelKey2num (tlbl2));
+    cost (3, 1);
+    if (!regalloc_dry_run)
+      emitLabel (tlbl1);
+    if (!regalloc_dry_run)
+      emitLabel (tlbl2);
+  }
 
   freeAsmop (right);
   freeAsmop (left);
@@ -2045,7 +2202,7 @@ genSTM8iCode (iCode *ic)
 
     case '>':
     case '<':
-      wassertl (0, "Unimplemented iCode");
+      genCmp(ic);
       break;
 
     case LE_OP:
