@@ -1,10 +1,10 @@
 /*
- * This declarations of the PIC16F1787 MCU.
+ * This declarations of the PIC16F1789 MCU.
  *
  * This file is part of the GNU PIC library for SDCC, originally
  * created by Molnar Karoly <molnarkaroly@users.sf.net> 2013.
  *
- * This file is generated automatically by the cinc2h.pl, 2013-03-05 18:28:13 UTC.
+ * This file is generated automatically by the cinc2h.pl, 2013-03-15 21:50:54 UTC.
  *
  * SDCC is licensed under the GNU Public license (GPL) v2. Note that
  * this license covers the code to the compiler and other executables,
@@ -22,8 +22,8 @@
  * See http://sdcc.sourceforge.net/ for the latest information on sdcc.
  */
 
-#ifndef __PIC16F1787_H__
-#define __PIC16F1787_H__
+#ifndef __PIC16F1789_H__
+#define __PIC16F1789_H__
 
 //==============================================================================
 //
@@ -98,8 +98,8 @@
 #define CMOUT_ADDR              0x0115
 #define BORCON_ADDR             0x0116
 #define FVRCON_ADDR             0x0117
-#define DACCON0_ADDR            0x0118
-#define DACCON1_ADDR            0x0119
+#define DAC1CON0_ADDR           0x0118
+#define DAC1CON1_ADDR           0x0119
 #define CM4CON0_ADDR            0x011A
 #define CM4CON1_ADDR            0x011B
 #define APFCON2_ADDR            0x011C
@@ -110,6 +110,7 @@
 #define CM3CON1_ADDR            0x011F
 #define ANSELA_ADDR             0x018C
 #define ANSELB_ADDR             0x018D
+#define ANSELC_ADDR             0x018E
 #define ANSELD_ADDR             0x018F
 #define ANSELE_ADDR             0x0190
 #define EEADR_ADDR              0x0191
@@ -206,112 +207,154 @@
 #define IOCEF_ADDR              0x039F
 #define OPA1CON_ADDR            0x0511
 #define OPA2CON_ADDR            0x0513
+#define OPA3CON_ADDR            0x0515
 #define CLKRCON_ADDR            0x051A
-#define PSMC1CON_ADDR           0x0811
-#define PSMC1MDL_ADDR           0x0812
-#define PSMC1SYNC_ADDR          0x0813
-#define PSMC1CLK_ADDR           0x0814
-#define PSMC1OEN_ADDR           0x0815
-#define PSMC1POL_ADDR           0x0816
-#define PSMC1BLNK_ADDR          0x0817
-#define PSMC1REBS_ADDR          0x0818
-#define PSMC1FEBS_ADDR          0x0819
-#define PSMC1PHS_ADDR           0x081A
-#define PSMC1DCS_ADDR           0x081B
-#define PSMC1PRS_ADDR           0x081C
-#define PSMC1ASDC_ADDR          0x081D
-#define PSMC1ASDL_ADDR          0x081E
-#define PSMC1ASDS_ADDR          0x081F
-#define PSMC1INT_ADDR           0x0820
-#define PSMC1PH_ADDR            0x0821
-#define PSMC1PHL_ADDR           0x0821
-#define PSMC1PHH_ADDR           0x0822
-#define PSMC1DC_ADDR            0x0823
-#define PSMC1DCL_ADDR           0x0823
-#define PSMC1DCH_ADDR           0x0824
-#define PSMC1PR_ADDR            0x0825
-#define PSMC1PRL_ADDR           0x0825
-#define PSMC1PRH_ADDR           0x0826
-#define PSMC1TMR_ADDR           0x0827
-#define PSMC1TMRL_ADDR          0x0827
-#define PSMC1TMRH_ADDR          0x0828
-#define PSMC1DBR_ADDR           0x0829
-#define PSMC1DBF_ADDR           0x082A
-#define PSMC1BLKR_ADDR          0x082B
-#define PSMC1BLKF_ADDR          0x082C
-#define PSMC1FFA_ADDR           0x082D
-#define PSMC1STR0_ADDR          0x082E
-#define PSMC1STR1_ADDR          0x082F
-#define PSMC2CON_ADDR           0x0831
-#define PSMC2MDL_ADDR           0x0832
-#define PSMC2SYNC_ADDR          0x0833
-#define PSMC2CLK_ADDR           0x0834
-#define PSMC2OEN_ADDR           0x0835
-#define PSMC2POL_ADDR           0x0836
-#define PSMC2BLNK_ADDR          0x0837
-#define PSMC2REBS_ADDR          0x0838
-#define PSMC2FEBS_ADDR          0x0839
-#define PSMC2PHS_ADDR           0x083A
-#define PSMC2DCS_ADDR           0x083B
-#define PSMC2PRS_ADDR           0x083C
-#define PSMC2ASDC_ADDR          0x083D
-#define PSMC2ASDL_ADDR          0x083E
-#define PSMC2ASDS_ADDR          0x083F
-#define PSMC2INT_ADDR           0x0840
-#define PSMC2PH_ADDR            0x0841
-#define PSMC2PHL_ADDR           0x0841
-#define PSMC2PHH_ADDR           0x0842
-#define PSMC2DC_ADDR            0x0843
-#define PSMC2DCL_ADDR           0x0843
-#define PSMC2DCH_ADDR           0x0844
-#define PSMC2PR_ADDR            0x0845
-#define PSMC2PRL_ADDR           0x0845
-#define PSMC2PRH_ADDR           0x0846
-#define PSMC2TMR_ADDR           0x0847
-#define PSMC2TMRL_ADDR          0x0847
-#define PSMC2TMRH_ADDR          0x0848
-#define PSMC2DBR_ADDR           0x0849
-#define PSMC2DBF_ADDR           0x084A
-#define PSMC2BLKR_ADDR          0x084B
-#define PSMC2BLKF_ADDR          0x084C
-#define PSMC2FFA_ADDR           0x084D
-#define PSMC2STR0_ADDR          0x084E
-#define PSMC2STR1_ADDR          0x084F
-#define PSMC3CON_ADDR           0x0851
-#define PSMC3MDL_ADDR           0x0852
-#define PSMC3SYNC_ADDR          0x0853
-#define PSMC3CLK_ADDR           0x0854
-#define PSMC3OEN_ADDR           0x0855
-#define PSMC3POL_ADDR           0x0856
-#define PSMC3BLNK_ADDR          0x0857
-#define PSMC3REBS_ADDR          0x0858
-#define PSMC3FEBS_ADDR          0x0859
-#define PSMC3PHS_ADDR           0x085A
-#define PSMC3DCS_ADDR           0x085B
-#define PSMC3PRS_ADDR           0x085C
-#define PSMC3ASDC_ADDR          0x085D
-#define PSMC3ASDL_ADDR          0x085E
-#define PSMC3ASDS_ADDR          0x085F
-#define PSMC3INT_ADDR           0x0860
-#define PSMC3PH_ADDR            0x0861
-#define PSMC3PHL_ADDR           0x0861
-#define PSMC3PHH_ADDR           0x0862
-#define PSMC3DC_ADDR            0x0863
-#define PSMC3DCL_ADDR           0x0863
-#define PSMC3DCH_ADDR           0x0864
-#define PSMC3PR_ADDR            0x0865
-#define PSMC3PRL_ADDR           0x0865
-#define PSMC3PRH_ADDR           0x0866
-#define PSMC3TMR_ADDR           0x0867
-#define PSMC3TMRL_ADDR          0x0867
-#define PSMC3TMRH_ADDR          0x0868
-#define PSMC3DBR_ADDR           0x0869
-#define PSMC3DBF_ADDR           0x086A
-#define PSMC3BLKR_ADDR          0x086B
-#define PSMC3BLKF_ADDR          0x086C
-#define PSMC3FFA_ADDR           0x086D
-#define PSMC3STR0_ADDR          0x086E
-#define PSMC3STR1_ADDR          0x086F
+#define DAC2CON0_ADDR           0x0591
+#define DAC2CON1_ADDR           0x0592
+#define DAC3CON0_ADDR           0x0593
+#define DAC3CON1_ADDR           0x0594
+#define DAC4CON0_ADDR           0x0595
+#define DAC4CON1_ADDR           0x0596
+#define PSMC1CON_ADDR           0x0E91
+#define PSMC1MDL_ADDR           0x0E92
+#define PSMC1SYNC_ADDR          0x0E93
+#define PSMC1CLK_ADDR           0x0E94
+#define PSMC1OEN_ADDR           0x0E95
+#define PSMC1POL_ADDR           0x0E96
+#define PSMC1BLNK_ADDR          0x0E97
+#define PSMC1REBS_ADDR          0x0E98
+#define PSMC1FEBS_ADDR          0x0E99
+#define PSMC1PHS_ADDR           0x0E9A
+#define PSMC1DCS_ADDR           0x0E9B
+#define PSMC1PRS_ADDR           0x0E9C
+#define PSMC1ASDC_ADDR          0x0E9D
+#define PSMC1ASDL_ADDR          0x0E9E
+#define PSMC1ASDS_ADDR          0x0E9F
+#define PSMC1INT_ADDR           0x0EA0
+#define PSMC1PH_ADDR            0x0EA1
+#define PSMC1PHL_ADDR           0x0EA1
+#define PSMC1PHH_ADDR           0x0EA2
+#define PSMC1DC_ADDR            0x0EA3
+#define PSMC1DCL_ADDR           0x0EA3
+#define PSMC1DCH_ADDR           0x0EA4
+#define PSMC1PR_ADDR            0x0EA5
+#define PSMC1PRL_ADDR           0x0EA5
+#define PSMC1PRH_ADDR           0x0EA6
+#define PSMC1TMR_ADDR           0x0EA7
+#define PSMC1TMRL_ADDR          0x0EA7
+#define PSMC1TMRH_ADDR          0x0EA8
+#define PSMC1DBR_ADDR           0x0EA9
+#define PSMC1DBF_ADDR           0x0EAA
+#define PSMC1BLKR_ADDR          0x0EAB
+#define PSMC1BLKF_ADDR          0x0EAC
+#define PSMC1FFA_ADDR           0x0EAD
+#define PSMC1STR0_ADDR          0x0EAE
+#define PSMC1STR1_ADDR          0x0EAF
+#define PSMC2CON_ADDR           0x0EB1
+#define PSMC2MDL_ADDR           0x0EB2
+#define PSMC2SYNC_ADDR          0x0EB3
+#define PSMC2CLK_ADDR           0x0EB4
+#define PSMC2OEN_ADDR           0x0EB5
+#define PSMC2POL_ADDR           0x0EB6
+#define PSMC2BLNK_ADDR          0x0EB7
+#define PSMC2REBS_ADDR          0x0EB8
+#define PSMC2FEBS_ADDR          0x0EB9
+#define PSMC2PHS_ADDR           0x0EBA
+#define PSMC2DCS_ADDR           0x0EBB
+#define PSMC2PRS_ADDR           0x0EBC
+#define PSMC2ASDC_ADDR          0x0EBD
+#define PSMC2ASDL_ADDR          0x0EBE
+#define PSMC2ASDS_ADDR          0x0EBF
+#define PSMC2INT_ADDR           0x0EC0
+#define PSMC2PH_ADDR            0x0EC1
+#define PSMC2PHL_ADDR           0x0EC1
+#define PSMC2PHH_ADDR           0x0EC2
+#define PSMC2DC_ADDR            0x0EC3
+#define PSMC2DCL_ADDR           0x0EC3
+#define PSMC2DCH_ADDR           0x0EC4
+#define PSMC2PR_ADDR            0x0EC5
+#define PSMC2PRL_ADDR           0x0EC5
+#define PSMC2PRH_ADDR           0x0EC6
+#define PSMC2TMR_ADDR           0x0EC7
+#define PSMC2TMRL_ADDR          0x0EC7
+#define PSMC2TMRH_ADDR          0x0EC8
+#define PSMC2DBR_ADDR           0x0EC9
+#define PSMC2DBF_ADDR           0x0ECA
+#define PSMC2BLKR_ADDR          0x0ECB
+#define PSMC2BLKF_ADDR          0x0ECC
+#define PSMC2FFA_ADDR           0x0ECD
+#define PSMC2STR0_ADDR          0x0ECE
+#define PSMC2STR1_ADDR          0x0ECF
+#define PSMC3CON_ADDR           0x0ED1
+#define PSMC3MDL_ADDR           0x0ED2
+#define PSMC3SYNC_ADDR          0x0ED3
+#define PSMC3CLK_ADDR           0x0ED4
+#define PSMC3OEN_ADDR           0x0ED5
+#define PSMC3POL_ADDR           0x0ED6
+#define PSMC3BLNK_ADDR          0x0ED7
+#define PSMC3REBS_ADDR          0x0ED8
+#define PSMC3FEBS_ADDR          0x0ED9
+#define PSMC3PHS_ADDR           0x0EDA
+#define PSMC3DCS_ADDR           0x0EDB
+#define PSMC3PRS_ADDR           0x0EDC
+#define PSMC3ASDC_ADDR          0x0EDD
+#define PSMC3ASDL_ADDR          0x0EDE
+#define PSMC3ASDS_ADDR          0x0EDF
+#define PSMC3INT_ADDR           0x0EE0
+#define PSMC3PH_ADDR            0x0EE1
+#define PSMC3PHL_ADDR           0x0EE1
+#define PSMC3PHH_ADDR           0x0EE2
+#define PSMC3DC_ADDR            0x0EE3
+#define PSMC3DCL_ADDR           0x0EE3
+#define PSMC3DCH_ADDR           0x0EE4
+#define PSMC3PR_ADDR            0x0EE5
+#define PSMC3PRL_ADDR           0x0EE5
+#define PSMC3PRH_ADDR           0x0EE6
+#define PSMC3TMR_ADDR           0x0EE7
+#define PSMC3TMRL_ADDR          0x0EE7
+#define PSMC3TMRH_ADDR          0x0EE8
+#define PSMC3DBR_ADDR           0x0EE9
+#define PSMC3DBF_ADDR           0x0EEA
+#define PSMC3BLKR_ADDR          0x0EEB
+#define PSMC3BLKF_ADDR          0x0EEC
+#define PSMC3FFA_ADDR           0x0EED
+#define PSMC3STR0_ADDR          0x0EEE
+#define PSMC3STR1_ADDR          0x0EEF
+#define PSMC4CON_ADDR           0x0F11
+#define PSMC4MDL_ADDR           0x0F12
+#define PSMC4SYNC_ADDR          0x0F13
+#define PSMC4CLK_ADDR           0x0F14
+#define PSMC4OEN_ADDR           0x0F15
+#define PSMC4POL_ADDR           0x0F16
+#define PSMC4BLNK_ADDR          0x0F17
+#define PSMC4REBS_ADDR          0x0F18
+#define PSMC4FEBS_ADDR          0x0F19
+#define PSMC4PHS_ADDR           0x0F1A
+#define PSMC4DCS_ADDR           0x0F1B
+#define PSMC4PRS_ADDR           0x0F1C
+#define PSMC4ASDC_ADDR          0x0F1D
+#define PSMC4ASDL_ADDR          0x0F1E
+#define PSMC4ASDS_ADDR          0x0F1F
+#define PSMC4INT_ADDR           0x0F20
+#define PSMC4PH_ADDR            0x0F21
+#define PSMC4PHL_ADDR           0x0F21
+#define PSMC4PHH_ADDR           0x0F22
+#define PSMC4DC_ADDR            0x0F23
+#define PSMC4DCL_ADDR           0x0F23
+#define PSMC4DCH_ADDR           0x0F24
+#define PSMC4PR_ADDR            0x0F25
+#define PSMC4PRL_ADDR           0x0F25
+#define PSMC4PRH_ADDR           0x0F26
+#define PSMC4TMR_ADDR           0x0F27
+#define PSMC4TMRL_ADDR          0x0F27
+#define PSMC4TMRH_ADDR          0x0F28
+#define PSMC4DBR_ADDR           0x0F29
+#define PSMC4DBF_ADDR           0x0F2A
+#define PSMC4BLKR_ADDR          0x0F2B
+#define PSMC4BLKF_ADDR          0x0F2C
+#define PSMC4FFA_ADDR           0x0F2D
+#define PSMC4STR0_ADDR          0x0F2E
+#define PSMC4STR1_ADDR          0x0F2F
 #define STATUS_SHAD_ADDR        0x0FE4
 #define WREG_SHAD_ADDR          0x0FE5
 #define BSR_SHAD_ADDR           0x0FE6
@@ -713,11 +756,11 @@ typedef struct
   unsigned PSMC1SIF             : 1;
   unsigned PSMC2SIF             : 1;
   unsigned PSMC3SIF             : 1;
-  unsigned                      : 1;
+  unsigned PSMC4SIF             : 1;
   unsigned PSMC1TIF             : 1;
   unsigned PSMC2TIF             : 1;
   unsigned PSMC3TIF             : 1;
-  unsigned                      : 1;
+  unsigned PSMC4TIF             : 1;
   } __PIR4bits_t;
 
 extern __at(0x0014) volatile __PIR4bits_t PIR4bits;
@@ -725,9 +768,11 @@ extern __at(0x0014) volatile __PIR4bits_t PIR4bits;
 #define _PSMC1SIF               0x01
 #define _PSMC2SIF               0x02
 #define _PSMC3SIF               0x04
+#define _PSMC4SIF               0x08
 #define _PSMC1TIF               0x10
 #define _PSMC2TIF               0x20
 #define _PSMC3TIF               0x40
+#define _PSMC4TIF               0x80
 
 //==============================================================================
 
@@ -1126,11 +1171,11 @@ typedef struct
   unsigned PSMC1SIE             : 1;
   unsigned PSMC2SIE             : 1;
   unsigned PSMC3SIE             : 1;
-  unsigned                      : 1;
+  unsigned PSMC4SIE             : 1;
   unsigned PSMC1TIE             : 1;
   unsigned PSMC2TIE             : 1;
   unsigned PMSC3TIE             : 1;
-  unsigned                      : 1;
+  unsigned PSMC4TIE             : 1;
   } __PIE4bits_t;
 
 extern __at(0x0094) volatile __PIE4bits_t PIE4bits;
@@ -1138,9 +1183,11 @@ extern __at(0x0094) volatile __PIE4bits_t PIE4bits;
 #define _PSMC1SIE               0x01
 #define _PSMC2SIE               0x02
 #define _PSMC3SIE               0x04
+#define _PSMC4SIE               0x08
 #define _PSMC1TIE               0x10
 #define _PSMC2TIE               0x20
 #define _PMSC3TIE               0x40
+#define _PSMC4TIE               0x80
 
 //==============================================================================
 
@@ -1972,19 +2019,31 @@ extern __at(0x0117) volatile __FVRCONbits_t FVRCONbits;
 
 
 //==============================================================================
-//        DACCON0 Bits
+//        DAC1CON0 Bits
 
-extern __at(0x0118) __sfr DACCON0;
+extern __at(0x0118) __sfr DAC1CON0;
 
 typedef union
   {
+  struct
+    {
+    unsigned DAC1NSS            : 1;
+    unsigned                    : 1;
+    unsigned DAC1PSS0           : 1;
+    unsigned DAC1PSS1           : 1;
+    unsigned DAC1OE2            : 1;
+    unsigned DAC1OE1            : 1;
+    unsigned                    : 1;
+    unsigned DAC1EN             : 1;
+    };
+
   struct
     {
     unsigned DACNSS             : 1;
     unsigned                    : 1;
     unsigned DACPSS0            : 1;
     unsigned DACPSS1            : 1;
-    unsigned DACOE2             : 1;
+    unsigned DACOE0             : 1;
     unsigned DACOE1             : 1;
     unsigned                    : 1;
     unsigned DACEN              : 1;
@@ -1996,46 +2055,89 @@ typedef union
     unsigned DACPSS             : 2;
     unsigned                    : 4;
     };
-  } __DACCON0bits_t;
 
-extern __at(0x0118) volatile __DACCON0bits_t DACCON0bits;
+  struct
+    {
+    unsigned                    : 2;
+    unsigned DAC1PSS            : 2;
+    unsigned                    : 4;
+    };
 
+  struct
+    {
+    unsigned                    : 4;
+    unsigned DACOE              : 2;
+    unsigned                    : 2;
+    };
+  } __DAC1CON0bits_t;
+
+extern __at(0x0118) volatile __DAC1CON0bits_t DAC1CON0bits;
+
+#define _DAC1NSS                0x01
 #define _DACNSS                 0x01
+#define _DAC1PSS0               0x04
 #define _DACPSS0                0x04
+#define _DAC1PSS1               0x08
 #define _DACPSS1                0x08
-#define _DACOE2                 0x10
+#define _DAC1OE2                0x10
+#define _DACOE0                 0x10
+#define _DAC1OE1                0x20
 #define _DACOE1                 0x20
+#define _DAC1EN                 0x80
 #define _DACEN                  0x80
 
 //==============================================================================
 
 
 //==============================================================================
-//        DACCON1 Bits
+//        DAC1CON1 Bits
 
-extern __at(0x0119) __sfr DACCON1;
+extern __at(0x0119) __sfr DAC1CON1;
 
-typedef struct
+typedef union
   {
-  unsigned DACR0                : 1;
-  unsigned DACR1                : 1;
-  unsigned DACR2                : 1;
-  unsigned DACR3                : 1;
-  unsigned DACR4                : 1;
-  unsigned DACR5                : 1;
-  unsigned DACR6                : 1;
-  unsigned DACR7                : 1;
-  } __DACCON1bits_t;
+  struct
+    {
+    unsigned DAC1R0             : 1;
+    unsigned DAC1R1             : 1;
+    unsigned DAC1R2             : 1;
+    unsigned DAC1R3             : 1;
+    unsigned DAC1R4             : 1;
+    unsigned DAC1R5             : 1;
+    unsigned DAC1R6             : 1;
+    unsigned DAC1R7             : 1;
+    };
 
-extern __at(0x0119) volatile __DACCON1bits_t DACCON1bits;
+  struct
+    {
+    unsigned DACR0              : 1;
+    unsigned DACR1              : 1;
+    unsigned DACR2              : 1;
+    unsigned DACR3              : 1;
+    unsigned DACR4              : 1;
+    unsigned DACR5              : 1;
+    unsigned DACR6              : 1;
+    unsigned DACR7              : 1;
+    };
+  } __DAC1CON1bits_t;
 
+extern __at(0x0119) volatile __DAC1CON1bits_t DAC1CON1bits;
+
+#define _DAC1R0                 0x01
 #define _DACR0                  0x01
+#define _DAC1R1                 0x02
 #define _DACR1                  0x02
+#define _DAC1R2                 0x04
 #define _DACR2                  0x04
+#define _DAC1R3                 0x08
 #define _DACR3                  0x08
+#define _DAC1R4                 0x10
 #define _DACR4                  0x10
+#define _DAC1R5                 0x20
 #define _DACR5                  0x20
+#define _DAC1R6                 0x40
 #define _DACR6                  0x40
+#define _DAC1R7                 0x80
 #define _DACR7                  0x80
 
 //==============================================================================
@@ -2379,6 +2481,37 @@ extern __at(0x018D) volatile __ANSELBbits_t ANSELBbits;
 #define _ANSB4                  0x10
 #define _ANSB5                  0x20
 #define _ANSB6                  0x40
+
+//==============================================================================
+
+
+//==============================================================================
+//        ANSELC Bits
+
+extern __at(0x018E) __sfr ANSELC;
+
+typedef struct
+  {
+  unsigned ANSC0                : 1;
+  unsigned ANSC1                : 1;
+  unsigned ANSC2                : 1;
+  unsigned ANSC3                : 1;
+  unsigned ANSC4                : 1;
+  unsigned ANSC5                : 1;
+  unsigned ANSC6                : 1;
+  unsigned ANSC7                : 1;
+  } __ANSELCbits_t;
+
+extern __at(0x018E) volatile __ANSELCbits_t ANSELCbits;
+
+#define _ANSC0                  0x01
+#define _ANSC1                  0x02
+#define _ANSC2                  0x04
+#define _ANSC3                  0x08
+#define _ANSC4                  0x10
+#define _ANSC5                  0x20
+#define _ANSC6                  0x40
+#define _ANSC7                  0x80
 
 //==============================================================================
 
@@ -4594,7 +4727,7 @@ typedef union
     {
     unsigned OPA1PCH0           : 1;
     unsigned OPA1PCH1           : 1;
-    unsigned                    : 1;
+    unsigned OPA1PCH2           : 1;
     unsigned                    : 1;
     unsigned                    : 1;
     unsigned                    : 1;
@@ -4604,8 +4737,8 @@ typedef union
 
   struct
     {
-    unsigned OPA1PCH            : 2;
-    unsigned                    : 6;
+    unsigned OPA1PCH            : 3;
+    unsigned                    : 5;
     };
   } __OPA1CONbits_t;
 
@@ -4613,6 +4746,7 @@ extern __at(0x0511) volatile __OPA1CONbits_t OPA1CONbits;
 
 #define _OPA1PCH0               0x01
 #define _OPA1PCH1               0x02
+#define _OPA1PCH2               0x04
 #define _OPA1SP                 0x40
 #define _OPA1EN                 0x80
 
@@ -4630,7 +4764,7 @@ typedef union
     {
     unsigned OPA2PCH0           : 1;
     unsigned OPA2PCH1           : 1;
-    unsigned                    : 1;
+    unsigned OPA2PCH2           : 1;
     unsigned                    : 1;
     unsigned                    : 1;
     unsigned                    : 1;
@@ -4640,8 +4774,8 @@ typedef union
 
   struct
     {
-    unsigned OPA2PCH            : 2;
-    unsigned                    : 6;
+    unsigned OPA2PCH            : 3;
+    unsigned                    : 5;
     };
   } __OPA2CONbits_t;
 
@@ -4649,8 +4783,46 @@ extern __at(0x0513) volatile __OPA2CONbits_t OPA2CONbits;
 
 #define _OPA2PCH0               0x01
 #define _OPA2PCH1               0x02
+#define _OPA2PCH2               0x04
 #define _OPA2SP                 0x40
 #define _OPA2EN                 0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        OPA3CON Bits
+
+extern __at(0x0515) __sfr OPA3CON;
+
+typedef union
+  {
+  struct
+    {
+    unsigned OPA3PCH0           : 1;
+    unsigned OPA3PCH1           : 1;
+    unsigned OPA3PCH2           : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    unsigned OPA3SP             : 1;
+    unsigned OPA3EN             : 1;
+    };
+
+  struct
+    {
+    unsigned OPA3PCH            : 3;
+    unsigned                    : 5;
+    };
+  } __OPA3CONbits_t;
+
+extern __at(0x0515) volatile __OPA3CONbits_t OPA3CONbits;
+
+#define _OPA3PCH0               0x01
+#define _OPA3PCH1               0x02
+#define _OPA3PCH2               0x04
+#define _OPA3SP                 0x40
+#define _OPA3EN                 0x80
 
 //==============================================================================
 
@@ -4703,9 +4875,90 @@ extern __at(0x051A) volatile __CLKRCONbits_t CLKRCONbits;
 
 
 //==============================================================================
+//        DAC2CON0 Bits
+
+extern __at(0x0591) __sfr DAC2CON0;
+
+typedef struct
+  {
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned DAC2OE2              : 1;
+  unsigned DAC2OE1              : 1;
+  unsigned                      : 1;
+  unsigned DAC2EN               : 1;
+  } __DAC2CON0bits_t;
+
+extern __at(0x0591) volatile __DAC2CON0bits_t DAC2CON0bits;
+
+#define _DAC2OE2                0x10
+#define _DAC2OE1                0x20
+#define _DAC2EN                 0x80
+
+//==============================================================================
+
+extern __at(0x0592) __sfr DAC2CON1;
+
+//==============================================================================
+//        DAC3CON0 Bits
+
+extern __at(0x0593) __sfr DAC3CON0;
+
+typedef struct
+  {
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned DAC3OE2              : 1;
+  unsigned DAC3OE1              : 1;
+  unsigned                      : 1;
+  unsigned DAC3EN               : 1;
+  } __DAC3CON0bits_t;
+
+extern __at(0x0593) volatile __DAC3CON0bits_t DAC3CON0bits;
+
+#define _DAC3OE2                0x10
+#define _DAC3OE1                0x20
+#define _DAC3EN                 0x80
+
+//==============================================================================
+
+extern __at(0x0594) __sfr DAC3CON1;
+
+//==============================================================================
+//        DAC4CON0 Bits
+
+extern __at(0x0595) __sfr DAC4CON0;
+
+typedef struct
+  {
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned DAC4OE2              : 1;
+  unsigned DAC4OE1              : 1;
+  unsigned                      : 1;
+  unsigned DAC4EN               : 1;
+  } __DAC4CON0bits_t;
+
+extern __at(0x0595) volatile __DAC4CON0bits_t DAC4CON0bits;
+
+#define _DAC4OE2                0x10
+#define _DAC4OE1                0x20
+#define _DAC4EN                 0x80
+
+//==============================================================================
+
+extern __at(0x0596) __sfr DAC4CON1;
+
+//==============================================================================
 //        PSMC1CON Bits
 
-extern __at(0x0811) __sfr PSMC1CON;
+extern __at(0x0E91) __sfr PSMC1CON;
 
 typedef union
   {
@@ -4728,7 +4981,7 @@ typedef union
     };
   } __PSMC1CONbits_t;
 
-extern __at(0x0811) volatile __PSMC1CONbits_t PSMC1CONbits;
+extern __at(0x0E91) volatile __PSMC1CONbits_t PSMC1CONbits;
 
 #define _P1MODE0                0x01
 #define _P1MODE1                0x02
@@ -4745,7 +4998,7 @@ extern __at(0x0811) volatile __PSMC1CONbits_t PSMC1CONbits;
 //==============================================================================
 //        PSMC1MDL Bits
 
-extern __at(0x0812) __sfr PSMC1MDL;
+extern __at(0x0E92) __sfr PSMC1MDL;
 
 typedef union
   {
@@ -4768,7 +5021,7 @@ typedef union
     };
   } __PSMC1MDLbits_t;
 
-extern __at(0x0812) volatile __PSMC1MDLbits_t PSMC1MDLbits;
+extern __at(0x0E92) volatile __PSMC1MDLbits_t PSMC1MDLbits;
 
 #define _P1MSRC0                0x01
 #define _P1MSRC1                0x02
@@ -4784,7 +5037,7 @@ extern __at(0x0812) volatile __PSMC1MDLbits_t PSMC1MDLbits;
 //==============================================================================
 //        PSMC1SYNC Bits
 
-extern __at(0x0813) __sfr PSMC1SYNC;
+extern __at(0x0E93) __sfr PSMC1SYNC;
 
 typedef union
   {
@@ -4807,7 +5060,7 @@ typedef union
     };
   } __PSMC1SYNCbits_t;
 
-extern __at(0x0813) volatile __PSMC1SYNCbits_t PSMC1SYNCbits;
+extern __at(0x0E93) volatile __PSMC1SYNCbits_t PSMC1SYNCbits;
 
 #define _P1SYNC0                0x01
 #define _P1SYNC1                0x02
@@ -4822,7 +5075,7 @@ extern __at(0x0813) volatile __PSMC1SYNCbits_t PSMC1SYNCbits;
 //==============================================================================
 //        PSMC1CLK Bits
 
-extern __at(0x0814) __sfr PSMC1CLK;
+extern __at(0x0E94) __sfr PSMC1CLK;
 
 typedef union
   {
@@ -4852,7 +5105,7 @@ typedef union
     };
   } __PSMC1CLKbits_t;
 
-extern __at(0x0814) volatile __PSMC1CLKbits_t PSMC1CLKbits;
+extern __at(0x0E94) volatile __PSMC1CLKbits_t PSMC1CLKbits;
 
 #define _P1CSRC0                0x01
 #define _P1CSRC1                0x02
@@ -4865,7 +5118,7 @@ extern __at(0x0814) volatile __PSMC1CLKbits_t PSMC1CLKbits;
 //==============================================================================
 //        PSMC1OEN Bits
 
-extern __at(0x0815) __sfr PSMC1OEN;
+extern __at(0x0E95) __sfr PSMC1OEN;
 
 typedef struct
   {
@@ -4879,7 +5132,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC1OENbits_t;
 
-extern __at(0x0815) volatile __PSMC1OENbits_t PSMC1OENbits;
+extern __at(0x0E95) volatile __PSMC1OENbits_t PSMC1OENbits;
 
 #define _P1OEA                  0x01
 #define _P1OEB                  0x02
@@ -4894,7 +5147,7 @@ extern __at(0x0815) volatile __PSMC1OENbits_t PSMC1OENbits;
 //==============================================================================
 //        PSMC1POL Bits
 
-extern __at(0x0816) __sfr PSMC1POL;
+extern __at(0x0E96) __sfr PSMC1POL;
 
 typedef struct
   {
@@ -4908,7 +5161,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC1POLbits_t;
 
-extern __at(0x0816) volatile __PSMC1POLbits_t PSMC1POLbits;
+extern __at(0x0E96) volatile __PSMC1POLbits_t PSMC1POLbits;
 
 #define _P1POLA                 0x01
 #define _P1POLB                 0x02
@@ -4924,7 +5177,7 @@ extern __at(0x0816) volatile __PSMC1POLbits_t PSMC1POLbits;
 //==============================================================================
 //        PSMC1BLNK Bits
 
-extern __at(0x0817) __sfr PSMC1BLNK;
+extern __at(0x0E97) __sfr PSMC1BLNK;
 
 typedef union
   {
@@ -4954,7 +5207,7 @@ typedef union
     };
   } __PSMC1BLNKbits_t;
 
-extern __at(0x0817) volatile __PSMC1BLNKbits_t PSMC1BLNKbits;
+extern __at(0x0E97) volatile __PSMC1BLNKbits_t PSMC1BLNKbits;
 
 #define _P1REBM0                0x01
 #define _P1REBM1                0x02
@@ -4967,7 +5220,7 @@ extern __at(0x0817) volatile __PSMC1BLNKbits_t PSMC1BLNKbits;
 //==============================================================================
 //        PSMC1REBS Bits
 
-extern __at(0x0818) __sfr PSMC1REBS;
+extern __at(0x0E98) __sfr PSMC1REBS;
 
 typedef struct
   {
@@ -4981,7 +5234,7 @@ typedef struct
   unsigned P1REBSIN             : 1;
   } __PSMC1REBSbits_t;
 
-extern __at(0x0818) volatile __PSMC1REBSbits_t PSMC1REBSbits;
+extern __at(0x0E98) volatile __PSMC1REBSbits_t PSMC1REBSbits;
 
 #define _P1REBSC1               0x02
 #define _P1REBSC2               0x04
@@ -4995,7 +5248,7 @@ extern __at(0x0818) volatile __PSMC1REBSbits_t PSMC1REBSbits;
 //==============================================================================
 //        PSMC1FEBS Bits
 
-extern __at(0x0819) __sfr PSMC1FEBS;
+extern __at(0x0E99) __sfr PSMC1FEBS;
 
 typedef struct
   {
@@ -5009,7 +5262,7 @@ typedef struct
   unsigned P1FEBSIN             : 1;
   } __PSMC1FEBSbits_t;
 
-extern __at(0x0819) volatile __PSMC1FEBSbits_t PSMC1FEBSbits;
+extern __at(0x0E99) volatile __PSMC1FEBSbits_t PSMC1FEBSbits;
 
 #define _P1FEBSC1               0x02
 #define _P1FEBSC2               0x04
@@ -5023,7 +5276,7 @@ extern __at(0x0819) volatile __PSMC1FEBSbits_t PSMC1FEBSbits;
 //==============================================================================
 //        PSMC1PHS Bits
 
-extern __at(0x081A) __sfr PSMC1PHS;
+extern __at(0x0E9A) __sfr PSMC1PHS;
 
 typedef struct
   {
@@ -5037,7 +5290,7 @@ typedef struct
   unsigned P1PHSIN              : 1;
   } __PSMC1PHSbits_t;
 
-extern __at(0x081A) volatile __PSMC1PHSbits_t PSMC1PHSbits;
+extern __at(0x0E9A) volatile __PSMC1PHSbits_t PSMC1PHSbits;
 
 #define _P1PHST                 0x01
 #define _P1PHSC1                0x02
@@ -5052,7 +5305,7 @@ extern __at(0x081A) volatile __PSMC1PHSbits_t PSMC1PHSbits;
 //==============================================================================
 //        PSMC1DCS Bits
 
-extern __at(0x081B) __sfr PSMC1DCS;
+extern __at(0x0E9B) __sfr PSMC1DCS;
 
 typedef struct
   {
@@ -5066,7 +5319,7 @@ typedef struct
   unsigned P1DCSIN              : 1;
   } __PSMC1DCSbits_t;
 
-extern __at(0x081B) volatile __PSMC1DCSbits_t PSMC1DCSbits;
+extern __at(0x0E9B) volatile __PSMC1DCSbits_t PSMC1DCSbits;
 
 #define _P1DCST                 0x01
 #define _P1DCSC1                0x02
@@ -5081,7 +5334,7 @@ extern __at(0x081B) volatile __PSMC1DCSbits_t PSMC1DCSbits;
 //==============================================================================
 //        PSMC1PRS Bits
 
-extern __at(0x081C) __sfr PSMC1PRS;
+extern __at(0x0E9C) __sfr PSMC1PRS;
 
 typedef struct
   {
@@ -5095,7 +5348,7 @@ typedef struct
   unsigned P1PRSIN              : 1;
   } __PSMC1PRSbits_t;
 
-extern __at(0x081C) volatile __PSMC1PRSbits_t PSMC1PRSbits;
+extern __at(0x0E9C) volatile __PSMC1PRSbits_t PSMC1PRSbits;
 
 #define _P1PRST                 0x01
 #define _P1PRSC1                0x02
@@ -5110,7 +5363,7 @@ extern __at(0x081C) volatile __PSMC1PRSbits_t PSMC1PRSbits;
 //==============================================================================
 //        PSMC1ASDC Bits
 
-extern __at(0x081D) __sfr PSMC1ASDC;
+extern __at(0x0E9D) __sfr PSMC1ASDC;
 
 typedef struct
   {
@@ -5124,7 +5377,7 @@ typedef struct
   unsigned P1ASE                : 1;
   } __PSMC1ASDCbits_t;
 
-extern __at(0x081D) volatile __PSMC1ASDCbits_t PSMC1ASDCbits;
+extern __at(0x0E9D) volatile __PSMC1ASDCbits_t PSMC1ASDCbits;
 
 #define _P1ASDOV                0x01
 #define _P1ARSEN                0x20
@@ -5137,7 +5390,7 @@ extern __at(0x081D) volatile __PSMC1ASDCbits_t PSMC1ASDCbits;
 //==============================================================================
 //        PSMC1ASDL Bits
 
-extern __at(0x081E) __sfr PSMC1ASDL;
+extern __at(0x0E9E) __sfr PSMC1ASDL;
 
 typedef struct
   {
@@ -5151,7 +5404,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC1ASDLbits_t;
 
-extern __at(0x081E) volatile __PSMC1ASDLbits_t PSMC1ASDLbits;
+extern __at(0x0E9E) volatile __PSMC1ASDLbits_t PSMC1ASDLbits;
 
 #define _P1ASDLA                0x01
 #define _P1ASDLB                0x02
@@ -5166,7 +5419,7 @@ extern __at(0x081E) volatile __PSMC1ASDLbits_t PSMC1ASDLbits;
 //==============================================================================
 //        PSMC1ASDS Bits
 
-extern __at(0x081F) __sfr PSMC1ASDS;
+extern __at(0x0E9F) __sfr PSMC1ASDS;
 
 typedef struct
   {
@@ -5180,7 +5433,7 @@ typedef struct
   unsigned P1ASDSIN             : 1;
   } __PSMC1ASDSbits_t;
 
-extern __at(0x081F) volatile __PSMC1ASDSbits_t PSMC1ASDSbits;
+extern __at(0x0E9F) volatile __PSMC1ASDSbits_t PSMC1ASDSbits;
 
 #define _P1ASDSC1               0x02
 #define _P1ASDSC2               0x04
@@ -5194,7 +5447,7 @@ extern __at(0x081F) volatile __PSMC1ASDSbits_t PSMC1ASDSbits;
 //==============================================================================
 //        PSMC1INT Bits
 
-extern __at(0x0820) __sfr PSMC1INT;
+extern __at(0x0EA0) __sfr PSMC1INT;
 
 typedef struct
   {
@@ -5208,7 +5461,7 @@ typedef struct
   unsigned P1TOVIE              : 1;
   } __PSMC1INTbits_t;
 
-extern __at(0x0820) volatile __PSMC1INTbits_t PSMC1INTbits;
+extern __at(0x0EA0) volatile __PSMC1INTbits_t PSMC1INTbits;
 
 #define _P1TPRIF                0x01
 #define _P1TDCIF                0x02
@@ -5221,12 +5474,12 @@ extern __at(0x0820) volatile __PSMC1INTbits_t PSMC1INTbits;
 
 //==============================================================================
 
-extern __at(0x0821) __sfr PSMC1PH;
+extern __at(0x0EA1) __sfr PSMC1PH;
 
 //==============================================================================
 //        PSMC1PHL Bits
 
-extern __at(0x0821) __sfr PSMC1PHL;
+extern __at(0x0EA1) __sfr PSMC1PHL;
 
 typedef struct
   {
@@ -5240,7 +5493,7 @@ typedef struct
   unsigned PSMC1PH7             : 1;
   } __PSMC1PHLbits_t;
 
-extern __at(0x0821) volatile __PSMC1PHLbits_t PSMC1PHLbits;
+extern __at(0x0EA1) volatile __PSMC1PHLbits_t PSMC1PHLbits;
 
 #define _PSMC1PH0               0x01
 #define _PSMC1PH1               0x02
@@ -5257,7 +5510,7 @@ extern __at(0x0821) volatile __PSMC1PHLbits_t PSMC1PHLbits;
 //==============================================================================
 //        PSMC1PHH Bits
 
-extern __at(0x0822) __sfr PSMC1PHH;
+extern __at(0x0EA2) __sfr PSMC1PHH;
 
 typedef struct
   {
@@ -5271,7 +5524,7 @@ typedef struct
   unsigned PSMC1PH15            : 1;
   } __PSMC1PHHbits_t;
 
-extern __at(0x0822) volatile __PSMC1PHHbits_t PSMC1PHHbits;
+extern __at(0x0EA2) volatile __PSMC1PHHbits_t PSMC1PHHbits;
 
 #define _PSMC1PH8               0x01
 #define _PSMC1PH9               0x02
@@ -5284,12 +5537,12 @@ extern __at(0x0822) volatile __PSMC1PHHbits_t PSMC1PHHbits;
 
 //==============================================================================
 
-extern __at(0x0823) __sfr PSMC1DC;
+extern __at(0x0EA3) __sfr PSMC1DC;
 
 //==============================================================================
 //        PSMC1DCL Bits
 
-extern __at(0x0823) __sfr PSMC1DCL;
+extern __at(0x0EA3) __sfr PSMC1DCL;
 
 typedef struct
   {
@@ -5303,7 +5556,7 @@ typedef struct
   unsigned PSMC1DC7             : 1;
   } __PSMC1DCLbits_t;
 
-extern __at(0x0823) volatile __PSMC1DCLbits_t PSMC1DCLbits;
+extern __at(0x0EA3) volatile __PSMC1DCLbits_t PSMC1DCLbits;
 
 #define _PSMC1DC0               0x01
 #define _PSMC1DC1               0x02
@@ -5320,7 +5573,7 @@ extern __at(0x0823) volatile __PSMC1DCLbits_t PSMC1DCLbits;
 //==============================================================================
 //        PSMC1DCH Bits
 
-extern __at(0x0824) __sfr PSMC1DCH;
+extern __at(0x0EA4) __sfr PSMC1DCH;
 
 typedef struct
   {
@@ -5334,7 +5587,7 @@ typedef struct
   unsigned PSMC1DC15            : 1;
   } __PSMC1DCHbits_t;
 
-extern __at(0x0824) volatile __PSMC1DCHbits_t PSMC1DCHbits;
+extern __at(0x0EA4) volatile __PSMC1DCHbits_t PSMC1DCHbits;
 
 #define _PSMC1DC8               0x01
 #define _PSMC1DC9               0x02
@@ -5347,12 +5600,12 @@ extern __at(0x0824) volatile __PSMC1DCHbits_t PSMC1DCHbits;
 
 //==============================================================================
 
-extern __at(0x0825) __sfr PSMC1PR;
+extern __at(0x0EA5) __sfr PSMC1PR;
 
 //==============================================================================
 //        PSMC1PRL Bits
 
-extern __at(0x0825) __sfr PSMC1PRL;
+extern __at(0x0EA5) __sfr PSMC1PRL;
 
 typedef struct
   {
@@ -5366,7 +5619,7 @@ typedef struct
   unsigned PSMC1PR7             : 1;
   } __PSMC1PRLbits_t;
 
-extern __at(0x0825) volatile __PSMC1PRLbits_t PSMC1PRLbits;
+extern __at(0x0EA5) volatile __PSMC1PRLbits_t PSMC1PRLbits;
 
 #define _PSMC1PR0               0x01
 #define _PSMC1PR1               0x02
@@ -5383,7 +5636,7 @@ extern __at(0x0825) volatile __PSMC1PRLbits_t PSMC1PRLbits;
 //==============================================================================
 //        PSMC1PRH Bits
 
-extern __at(0x0826) __sfr PSMC1PRH;
+extern __at(0x0EA6) __sfr PSMC1PRH;
 
 typedef struct
   {
@@ -5397,7 +5650,7 @@ typedef struct
   unsigned PSMC1PR15            : 1;
   } __PSMC1PRHbits_t;
 
-extern __at(0x0826) volatile __PSMC1PRHbits_t PSMC1PRHbits;
+extern __at(0x0EA6) volatile __PSMC1PRHbits_t PSMC1PRHbits;
 
 #define _PSMC1PR8               0x01
 #define _PSMC1PR9               0x02
@@ -5410,12 +5663,12 @@ extern __at(0x0826) volatile __PSMC1PRHbits_t PSMC1PRHbits;
 
 //==============================================================================
 
-extern __at(0x0827) __sfr PSMC1TMR;
+extern __at(0x0EA7) __sfr PSMC1TMR;
 
 //==============================================================================
 //        PSMC1TMRL Bits
 
-extern __at(0x0827) __sfr PSMC1TMRL;
+extern __at(0x0EA7) __sfr PSMC1TMRL;
 
 typedef struct
   {
@@ -5429,7 +5682,7 @@ typedef struct
   unsigned PSMC1TMR7            : 1;
   } __PSMC1TMRLbits_t;
 
-extern __at(0x0827) volatile __PSMC1TMRLbits_t PSMC1TMRLbits;
+extern __at(0x0EA7) volatile __PSMC1TMRLbits_t PSMC1TMRLbits;
 
 #define _PSMC1TMR0              0x01
 #define _PSMC1TMR1              0x02
@@ -5446,7 +5699,7 @@ extern __at(0x0827) volatile __PSMC1TMRLbits_t PSMC1TMRLbits;
 //==============================================================================
 //        PSMC1TMRH Bits
 
-extern __at(0x0828) __sfr PSMC1TMRH;
+extern __at(0x0EA8) __sfr PSMC1TMRH;
 
 typedef struct
   {
@@ -5460,7 +5713,7 @@ typedef struct
   unsigned PSMC1TMR15           : 1;
   } __PSMC1TMRHbits_t;
 
-extern __at(0x0828) volatile __PSMC1TMRHbits_t PSMC1TMRHbits;
+extern __at(0x0EA8) volatile __PSMC1TMRHbits_t PSMC1TMRHbits;
 
 #define _PSMC1TMR8              0x01
 #define _PSMC1TMR9              0x02
@@ -5477,7 +5730,7 @@ extern __at(0x0828) volatile __PSMC1TMRHbits_t PSMC1TMRHbits;
 //==============================================================================
 //        PSMC1DBR Bits
 
-extern __at(0x0829) __sfr PSMC1DBR;
+extern __at(0x0EA9) __sfr PSMC1DBR;
 
 typedef struct
   {
@@ -5491,7 +5744,7 @@ typedef struct
   unsigned PSMC1DBR7            : 1;
   } __PSMC1DBRbits_t;
 
-extern __at(0x0829) volatile __PSMC1DBRbits_t PSMC1DBRbits;
+extern __at(0x0EA9) volatile __PSMC1DBRbits_t PSMC1DBRbits;
 
 #define _PSMC1DBR0              0x01
 #define _PSMC1DBR1              0x02
@@ -5508,7 +5761,7 @@ extern __at(0x0829) volatile __PSMC1DBRbits_t PSMC1DBRbits;
 //==============================================================================
 //        PSMC1DBF Bits
 
-extern __at(0x082A) __sfr PSMC1DBF;
+extern __at(0x0EAA) __sfr PSMC1DBF;
 
 typedef struct
   {
@@ -5522,7 +5775,7 @@ typedef struct
   unsigned PSMC1DBF7            : 1;
   } __PSMC1DBFbits_t;
 
-extern __at(0x082A) volatile __PSMC1DBFbits_t PSMC1DBFbits;
+extern __at(0x0EAA) volatile __PSMC1DBFbits_t PSMC1DBFbits;
 
 #define _PSMC1DBF0              0x01
 #define _PSMC1DBF1              0x02
@@ -5539,7 +5792,7 @@ extern __at(0x082A) volatile __PSMC1DBFbits_t PSMC1DBFbits;
 //==============================================================================
 //        PSMC1BLKR Bits
 
-extern __at(0x082B) __sfr PSMC1BLKR;
+extern __at(0x0EAB) __sfr PSMC1BLKR;
 
 typedef struct
   {
@@ -5553,7 +5806,7 @@ typedef struct
   unsigned PSMC1BLKR7           : 1;
   } __PSMC1BLKRbits_t;
 
-extern __at(0x082B) volatile __PSMC1BLKRbits_t PSMC1BLKRbits;
+extern __at(0x0EAB) volatile __PSMC1BLKRbits_t PSMC1BLKRbits;
 
 #define _PSMC1BLKR0             0x01
 #define _PSMC1BLKR1             0x02
@@ -5570,7 +5823,7 @@ extern __at(0x082B) volatile __PSMC1BLKRbits_t PSMC1BLKRbits;
 //==============================================================================
 //        PSMC1BLKF Bits
 
-extern __at(0x082C) __sfr PSMC1BLKF;
+extern __at(0x0EAC) __sfr PSMC1BLKF;
 
 typedef struct
   {
@@ -5584,7 +5837,7 @@ typedef struct
   unsigned PSMC1BLKF7           : 1;
   } __PSMC1BLKFbits_t;
 
-extern __at(0x082C) volatile __PSMC1BLKFbits_t PSMC1BLKFbits;
+extern __at(0x0EAC) volatile __PSMC1BLKFbits_t PSMC1BLKFbits;
 
 #define _PSMC1BLKF0             0x01
 #define _PSMC1BLKF1             0x02
@@ -5601,7 +5854,7 @@ extern __at(0x082C) volatile __PSMC1BLKFbits_t PSMC1BLKFbits;
 //==============================================================================
 //        PSMC1FFA Bits
 
-extern __at(0x082D) __sfr PSMC1FFA;
+extern __at(0x0EAD) __sfr PSMC1FFA;
 
 typedef union
   {
@@ -5624,7 +5877,7 @@ typedef union
     };
   } __PSMC1FFAbits_t;
 
-extern __at(0x082D) volatile __PSMC1FFAbits_t PSMC1FFAbits;
+extern __at(0x0EAD) volatile __PSMC1FFAbits_t PSMC1FFAbits;
 
 #define _PSMC1FFA0              0x01
 #define _PSMC1FFA1              0x02
@@ -5637,7 +5890,7 @@ extern __at(0x082D) volatile __PSMC1FFAbits_t PSMC1FFAbits;
 //==============================================================================
 //        PSMC1STR0 Bits
 
-extern __at(0x082E) __sfr PSMC1STR0;
+extern __at(0x0EAE) __sfr PSMC1STR0;
 
 typedef struct
   {
@@ -5651,7 +5904,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC1STR0bits_t;
 
-extern __at(0x082E) volatile __PSMC1STR0bits_t PSMC1STR0bits;
+extern __at(0x0EAE) volatile __PSMC1STR0bits_t PSMC1STR0bits;
 
 #define _P1STRA                 0x01
 #define _P1STRB                 0x02
@@ -5666,7 +5919,7 @@ extern __at(0x082E) volatile __PSMC1STR0bits_t PSMC1STR0bits;
 //==============================================================================
 //        PSMC1STR1 Bits
 
-extern __at(0x082F) __sfr PSMC1STR1;
+extern __at(0x0EAF) __sfr PSMC1STR1;
 
 typedef struct
   {
@@ -5680,7 +5933,7 @@ typedef struct
   unsigned P1SSYNC              : 1;
   } __PSMC1STR1bits_t;
 
-extern __at(0x082F) volatile __PSMC1STR1bits_t PSMC1STR1bits;
+extern __at(0x0EAF) volatile __PSMC1STR1bits_t PSMC1STR1bits;
 
 #define _P1HSMEN                0x01
 #define _P1LSMEN                0x02
@@ -5692,7 +5945,7 @@ extern __at(0x082F) volatile __PSMC1STR1bits_t PSMC1STR1bits;
 //==============================================================================
 //        PSMC2CON Bits
 
-extern __at(0x0831) __sfr PSMC2CON;
+extern __at(0x0EB1) __sfr PSMC2CON;
 
 typedef union
   {
@@ -5715,7 +5968,7 @@ typedef union
     };
   } __PSMC2CONbits_t;
 
-extern __at(0x0831) volatile __PSMC2CONbits_t PSMC2CONbits;
+extern __at(0x0EB1) volatile __PSMC2CONbits_t PSMC2CONbits;
 
 #define _P2MODE0                0x01
 #define _P2MODE1                0x02
@@ -5732,7 +5985,7 @@ extern __at(0x0831) volatile __PSMC2CONbits_t PSMC2CONbits;
 //==============================================================================
 //        PSMC2MDL Bits
 
-extern __at(0x0832) __sfr PSMC2MDL;
+extern __at(0x0EB2) __sfr PSMC2MDL;
 
 typedef union
   {
@@ -5755,7 +6008,7 @@ typedef union
     };
   } __PSMC2MDLbits_t;
 
-extern __at(0x0832) volatile __PSMC2MDLbits_t PSMC2MDLbits;
+extern __at(0x0EB2) volatile __PSMC2MDLbits_t PSMC2MDLbits;
 
 #define _P2MSRC0                0x01
 #define _P2MSRC1                0x02
@@ -5771,7 +6024,7 @@ extern __at(0x0832) volatile __PSMC2MDLbits_t PSMC2MDLbits;
 //==============================================================================
 //        PSMC2SYNC Bits
 
-extern __at(0x0833) __sfr PSMC2SYNC;
+extern __at(0x0EB3) __sfr PSMC2SYNC;
 
 typedef union
   {
@@ -5794,7 +6047,7 @@ typedef union
     };
   } __PSMC2SYNCbits_t;
 
-extern __at(0x0833) volatile __PSMC2SYNCbits_t PSMC2SYNCbits;
+extern __at(0x0EB3) volatile __PSMC2SYNCbits_t PSMC2SYNCbits;
 
 #define _P2SYNC0                0x01
 #define _P2SYNC1                0x02
@@ -5809,7 +6062,7 @@ extern __at(0x0833) volatile __PSMC2SYNCbits_t PSMC2SYNCbits;
 //==============================================================================
 //        PSMC2CLK Bits
 
-extern __at(0x0834) __sfr PSMC2CLK;
+extern __at(0x0EB4) __sfr PSMC2CLK;
 
 typedef union
   {
@@ -5839,7 +6092,7 @@ typedef union
     };
   } __PSMC2CLKbits_t;
 
-extern __at(0x0834) volatile __PSMC2CLKbits_t PSMC2CLKbits;
+extern __at(0x0EB4) volatile __PSMC2CLKbits_t PSMC2CLKbits;
 
 #define _P2CSRC0                0x01
 #define _P2CSRC1                0x02
@@ -5852,7 +6105,7 @@ extern __at(0x0834) volatile __PSMC2CLKbits_t PSMC2CLKbits;
 //==============================================================================
 //        PSMC2OEN Bits
 
-extern __at(0x0835) __sfr PSMC2OEN;
+extern __at(0x0EB5) __sfr PSMC2OEN;
 
 typedef struct
   {
@@ -5866,7 +6119,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC2OENbits_t;
 
-extern __at(0x0835) volatile __PSMC2OENbits_t PSMC2OENbits;
+extern __at(0x0EB5) volatile __PSMC2OENbits_t PSMC2OENbits;
 
 #define _P2OEA                  0x01
 #define _P2OEB                  0x02
@@ -5877,7 +6130,7 @@ extern __at(0x0835) volatile __PSMC2OENbits_t PSMC2OENbits;
 //==============================================================================
 //        PSMC2POL Bits
 
-extern __at(0x0836) __sfr PSMC2POL;
+extern __at(0x0EB6) __sfr PSMC2POL;
 
 typedef struct
   {
@@ -5891,7 +6144,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC2POLbits_t;
 
-extern __at(0x0836) volatile __PSMC2POLbits_t PSMC2POLbits;
+extern __at(0x0EB6) volatile __PSMC2POLbits_t PSMC2POLbits;
 
 #define _P2POLA                 0x01
 #define _P2POLB                 0x02
@@ -5903,7 +6156,7 @@ extern __at(0x0836) volatile __PSMC2POLbits_t PSMC2POLbits;
 //==============================================================================
 //        PSMC2BLNK Bits
 
-extern __at(0x0837) __sfr PSMC2BLNK;
+extern __at(0x0EB7) __sfr PSMC2BLNK;
 
 typedef union
   {
@@ -5933,7 +6186,7 @@ typedef union
     };
   } __PSMC2BLNKbits_t;
 
-extern __at(0x0837) volatile __PSMC2BLNKbits_t PSMC2BLNKbits;
+extern __at(0x0EB7) volatile __PSMC2BLNKbits_t PSMC2BLNKbits;
 
 #define _P2REBM0                0x01
 #define _P2REBM1                0x02
@@ -5946,7 +6199,7 @@ extern __at(0x0837) volatile __PSMC2BLNKbits_t PSMC2BLNKbits;
 //==============================================================================
 //        PSMC2REBS Bits
 
-extern __at(0x0838) __sfr PSMC2REBS;
+extern __at(0x0EB8) __sfr PSMC2REBS;
 
 typedef struct
   {
@@ -5960,7 +6213,7 @@ typedef struct
   unsigned P2REBSIN             : 1;
   } __PSMC2REBSbits_t;
 
-extern __at(0x0838) volatile __PSMC2REBSbits_t PSMC2REBSbits;
+extern __at(0x0EB8) volatile __PSMC2REBSbits_t PSMC2REBSbits;
 
 #define _P2REBSC1               0x02
 #define _P2REBSC2               0x04
@@ -5974,7 +6227,7 @@ extern __at(0x0838) volatile __PSMC2REBSbits_t PSMC2REBSbits;
 //==============================================================================
 //        PSMC2FEBS Bits
 
-extern __at(0x0839) __sfr PSMC2FEBS;
+extern __at(0x0EB9) __sfr PSMC2FEBS;
 
 typedef struct
   {
@@ -5988,7 +6241,7 @@ typedef struct
   unsigned P2FEBSIN             : 1;
   } __PSMC2FEBSbits_t;
 
-extern __at(0x0839) volatile __PSMC2FEBSbits_t PSMC2FEBSbits;
+extern __at(0x0EB9) volatile __PSMC2FEBSbits_t PSMC2FEBSbits;
 
 #define _P2FEBSC1               0x02
 #define _P2FEBSC2               0x04
@@ -6002,7 +6255,7 @@ extern __at(0x0839) volatile __PSMC2FEBSbits_t PSMC2FEBSbits;
 //==============================================================================
 //        PSMC2PHS Bits
 
-extern __at(0x083A) __sfr PSMC2PHS;
+extern __at(0x0EBA) __sfr PSMC2PHS;
 
 typedef struct
   {
@@ -6016,7 +6269,7 @@ typedef struct
   unsigned P2PHSIN              : 1;
   } __PSMC2PHSbits_t;
 
-extern __at(0x083A) volatile __PSMC2PHSbits_t PSMC2PHSbits;
+extern __at(0x0EBA) volatile __PSMC2PHSbits_t PSMC2PHSbits;
 
 #define _P2PHST                 0x01
 #define _P2PHSC1                0x02
@@ -6031,7 +6284,7 @@ extern __at(0x083A) volatile __PSMC2PHSbits_t PSMC2PHSbits;
 //==============================================================================
 //        PSMC2DCS Bits
 
-extern __at(0x083B) __sfr PSMC2DCS;
+extern __at(0x0EBB) __sfr PSMC2DCS;
 
 typedef struct
   {
@@ -6045,7 +6298,7 @@ typedef struct
   unsigned P2DCSIN              : 1;
   } __PSMC2DCSbits_t;
 
-extern __at(0x083B) volatile __PSMC2DCSbits_t PSMC2DCSbits;
+extern __at(0x0EBB) volatile __PSMC2DCSbits_t PSMC2DCSbits;
 
 #define _P2DCST                 0x01
 #define _P2DCSC1                0x02
@@ -6060,7 +6313,7 @@ extern __at(0x083B) volatile __PSMC2DCSbits_t PSMC2DCSbits;
 //==============================================================================
 //        PSMC2PRS Bits
 
-extern __at(0x083C) __sfr PSMC2PRS;
+extern __at(0x0EBC) __sfr PSMC2PRS;
 
 typedef struct
   {
@@ -6074,7 +6327,7 @@ typedef struct
   unsigned P2PRSIN              : 1;
   } __PSMC2PRSbits_t;
 
-extern __at(0x083C) volatile __PSMC2PRSbits_t PSMC2PRSbits;
+extern __at(0x0EBC) volatile __PSMC2PRSbits_t PSMC2PRSbits;
 
 #define _P2PRST                 0x01
 #define _P2PRSC1                0x02
@@ -6089,7 +6342,7 @@ extern __at(0x083C) volatile __PSMC2PRSbits_t PSMC2PRSbits;
 //==============================================================================
 //        PSMC2ASDC Bits
 
-extern __at(0x083D) __sfr PSMC2ASDC;
+extern __at(0x0EBD) __sfr PSMC2ASDC;
 
 typedef struct
   {
@@ -6103,7 +6356,7 @@ typedef struct
   unsigned P2ASE                : 1;
   } __PSMC2ASDCbits_t;
 
-extern __at(0x083D) volatile __PSMC2ASDCbits_t PSMC2ASDCbits;
+extern __at(0x0EBD) volatile __PSMC2ASDCbits_t PSMC2ASDCbits;
 
 #define _P2ASDOV                0x01
 #define _P2ARSEN                0x20
@@ -6116,7 +6369,7 @@ extern __at(0x083D) volatile __PSMC2ASDCbits_t PSMC2ASDCbits;
 //==============================================================================
 //        PSMC2ASDL Bits
 
-extern __at(0x083E) __sfr PSMC2ASDL;
+extern __at(0x0EBE) __sfr PSMC2ASDL;
 
 typedef struct
   {
@@ -6130,7 +6383,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC2ASDLbits_t;
 
-extern __at(0x083E) volatile __PSMC2ASDLbits_t PSMC2ASDLbits;
+extern __at(0x0EBE) volatile __PSMC2ASDLbits_t PSMC2ASDLbits;
 
 #define _P2ASDLA                0x01
 #define _P2ASDLB                0x02
@@ -6141,7 +6394,7 @@ extern __at(0x083E) volatile __PSMC2ASDLbits_t PSMC2ASDLbits;
 //==============================================================================
 //        PSMC2ASDS Bits
 
-extern __at(0x083F) __sfr PSMC2ASDS;
+extern __at(0x0EBF) __sfr PSMC2ASDS;
 
 typedef struct
   {
@@ -6155,7 +6408,7 @@ typedef struct
   unsigned P2ASDSIN             : 1;
   } __PSMC2ASDSbits_t;
 
-extern __at(0x083F) volatile __PSMC2ASDSbits_t PSMC2ASDSbits;
+extern __at(0x0EBF) volatile __PSMC2ASDSbits_t PSMC2ASDSbits;
 
 #define _P2ASDSC1               0x02
 #define _P2ASDSC2               0x04
@@ -6169,7 +6422,7 @@ extern __at(0x083F) volatile __PSMC2ASDSbits_t PSMC2ASDSbits;
 //==============================================================================
 //        PSMC2INT Bits
 
-extern __at(0x0840) __sfr PSMC2INT;
+extern __at(0x0EC0) __sfr PSMC2INT;
 
 typedef struct
   {
@@ -6183,7 +6436,7 @@ typedef struct
   unsigned P2TOVIE              : 1;
   } __PSMC2INTbits_t;
 
-extern __at(0x0840) volatile __PSMC2INTbits_t PSMC2INTbits;
+extern __at(0x0EC0) volatile __PSMC2INTbits_t PSMC2INTbits;
 
 #define _P2TPRIF                0x01
 #define _P2TDCIF                0x02
@@ -6196,12 +6449,12 @@ extern __at(0x0840) volatile __PSMC2INTbits_t PSMC2INTbits;
 
 //==============================================================================
 
-extern __at(0x0841) __sfr PSMC2PH;
+extern __at(0x0EC1) __sfr PSMC2PH;
 
 //==============================================================================
 //        PSMC2PHL Bits
 
-extern __at(0x0841) __sfr PSMC2PHL;
+extern __at(0x0EC1) __sfr PSMC2PHL;
 
 typedef struct
   {
@@ -6215,7 +6468,7 @@ typedef struct
   unsigned PSMC2PH7             : 1;
   } __PSMC2PHLbits_t;
 
-extern __at(0x0841) volatile __PSMC2PHLbits_t PSMC2PHLbits;
+extern __at(0x0EC1) volatile __PSMC2PHLbits_t PSMC2PHLbits;
 
 #define _PSMC2PH0               0x01
 #define _PSMC2PH1               0x02
@@ -6232,7 +6485,7 @@ extern __at(0x0841) volatile __PSMC2PHLbits_t PSMC2PHLbits;
 //==============================================================================
 //        PSMC2PHH Bits
 
-extern __at(0x0842) __sfr PSMC2PHH;
+extern __at(0x0EC2) __sfr PSMC2PHH;
 
 typedef struct
   {
@@ -6246,7 +6499,7 @@ typedef struct
   unsigned PSMC2PH15            : 1;
   } __PSMC2PHHbits_t;
 
-extern __at(0x0842) volatile __PSMC2PHHbits_t PSMC2PHHbits;
+extern __at(0x0EC2) volatile __PSMC2PHHbits_t PSMC2PHHbits;
 
 #define _PSMC2PH8               0x01
 #define _PSMC2PH9               0x02
@@ -6259,12 +6512,12 @@ extern __at(0x0842) volatile __PSMC2PHHbits_t PSMC2PHHbits;
 
 //==============================================================================
 
-extern __at(0x0843) __sfr PSMC2DC;
+extern __at(0x0EC3) __sfr PSMC2DC;
 
 //==============================================================================
 //        PSMC2DCL Bits
 
-extern __at(0x0843) __sfr PSMC2DCL;
+extern __at(0x0EC3) __sfr PSMC2DCL;
 
 typedef struct
   {
@@ -6278,7 +6531,7 @@ typedef struct
   unsigned PSMC2DC7             : 1;
   } __PSMC2DCLbits_t;
 
-extern __at(0x0843) volatile __PSMC2DCLbits_t PSMC2DCLbits;
+extern __at(0x0EC3) volatile __PSMC2DCLbits_t PSMC2DCLbits;
 
 #define _PSMC2DC0               0x01
 #define _PSMC2DC1               0x02
@@ -6295,7 +6548,7 @@ extern __at(0x0843) volatile __PSMC2DCLbits_t PSMC2DCLbits;
 //==============================================================================
 //        PSMC2DCH Bits
 
-extern __at(0x0844) __sfr PSMC2DCH;
+extern __at(0x0EC4) __sfr PSMC2DCH;
 
 typedef struct
   {
@@ -6309,7 +6562,7 @@ typedef struct
   unsigned PSMC2DC15            : 1;
   } __PSMC2DCHbits_t;
 
-extern __at(0x0844) volatile __PSMC2DCHbits_t PSMC2DCHbits;
+extern __at(0x0EC4) volatile __PSMC2DCHbits_t PSMC2DCHbits;
 
 #define _PSMC2DC8               0x01
 #define _PSMC2DC9               0x02
@@ -6322,12 +6575,12 @@ extern __at(0x0844) volatile __PSMC2DCHbits_t PSMC2DCHbits;
 
 //==============================================================================
 
-extern __at(0x0845) __sfr PSMC2PR;
+extern __at(0x0EC5) __sfr PSMC2PR;
 
 //==============================================================================
 //        PSMC2PRL Bits
 
-extern __at(0x0845) __sfr PSMC2PRL;
+extern __at(0x0EC5) __sfr PSMC2PRL;
 
 typedef struct
   {
@@ -6341,7 +6594,7 @@ typedef struct
   unsigned PSMC2PR7             : 1;
   } __PSMC2PRLbits_t;
 
-extern __at(0x0845) volatile __PSMC2PRLbits_t PSMC2PRLbits;
+extern __at(0x0EC5) volatile __PSMC2PRLbits_t PSMC2PRLbits;
 
 #define _PSMC2PR0               0x01
 #define _PSMC2PR1               0x02
@@ -6358,7 +6611,7 @@ extern __at(0x0845) volatile __PSMC2PRLbits_t PSMC2PRLbits;
 //==============================================================================
 //        PSMC2PRH Bits
 
-extern __at(0x0846) __sfr PSMC2PRH;
+extern __at(0x0EC6) __sfr PSMC2PRH;
 
 typedef struct
   {
@@ -6372,7 +6625,7 @@ typedef struct
   unsigned PSMC2PR15            : 1;
   } __PSMC2PRHbits_t;
 
-extern __at(0x0846) volatile __PSMC2PRHbits_t PSMC2PRHbits;
+extern __at(0x0EC6) volatile __PSMC2PRHbits_t PSMC2PRHbits;
 
 #define _PSMC2PR8               0x01
 #define _PSMC2PR9               0x02
@@ -6385,12 +6638,12 @@ extern __at(0x0846) volatile __PSMC2PRHbits_t PSMC2PRHbits;
 
 //==============================================================================
 
-extern __at(0x0847) __sfr PSMC2TMR;
+extern __at(0x0EC7) __sfr PSMC2TMR;
 
 //==============================================================================
 //        PSMC2TMRL Bits
 
-extern __at(0x0847) __sfr PSMC2TMRL;
+extern __at(0x0EC7) __sfr PSMC2TMRL;
 
 typedef struct
   {
@@ -6404,7 +6657,7 @@ typedef struct
   unsigned PSMC2TMR7            : 1;
   } __PSMC2TMRLbits_t;
 
-extern __at(0x0847) volatile __PSMC2TMRLbits_t PSMC2TMRLbits;
+extern __at(0x0EC7) volatile __PSMC2TMRLbits_t PSMC2TMRLbits;
 
 #define _PSMC2TMR0              0x01
 #define _PSMC2TMR1              0x02
@@ -6421,7 +6674,7 @@ extern __at(0x0847) volatile __PSMC2TMRLbits_t PSMC2TMRLbits;
 //==============================================================================
 //        PSMC2TMRH Bits
 
-extern __at(0x0848) __sfr PSMC2TMRH;
+extern __at(0x0EC8) __sfr PSMC2TMRH;
 
 typedef struct
   {
@@ -6435,7 +6688,7 @@ typedef struct
   unsigned PSMC2TMR15           : 1;
   } __PSMC2TMRHbits_t;
 
-extern __at(0x0848) volatile __PSMC2TMRHbits_t PSMC2TMRHbits;
+extern __at(0x0EC8) volatile __PSMC2TMRHbits_t PSMC2TMRHbits;
 
 #define _PSMC2TMR8              0x01
 #define _PSMC2TMR9              0x02
@@ -6452,7 +6705,7 @@ extern __at(0x0848) volatile __PSMC2TMRHbits_t PSMC2TMRHbits;
 //==============================================================================
 //        PSMC2DBR Bits
 
-extern __at(0x0849) __sfr PSMC2DBR;
+extern __at(0x0EC9) __sfr PSMC2DBR;
 
 typedef struct
   {
@@ -6466,7 +6719,7 @@ typedef struct
   unsigned PSMC2DBR7            : 1;
   } __PSMC2DBRbits_t;
 
-extern __at(0x0849) volatile __PSMC2DBRbits_t PSMC2DBRbits;
+extern __at(0x0EC9) volatile __PSMC2DBRbits_t PSMC2DBRbits;
 
 #define _PSMC2DBR0              0x01
 #define _PSMC2DBR1              0x02
@@ -6483,7 +6736,7 @@ extern __at(0x0849) volatile __PSMC2DBRbits_t PSMC2DBRbits;
 //==============================================================================
 //        PSMC2DBF Bits
 
-extern __at(0x084A) __sfr PSMC2DBF;
+extern __at(0x0ECA) __sfr PSMC2DBF;
 
 typedef struct
   {
@@ -6497,7 +6750,7 @@ typedef struct
   unsigned PSMC2DBF7            : 1;
   } __PSMC2DBFbits_t;
 
-extern __at(0x084A) volatile __PSMC2DBFbits_t PSMC2DBFbits;
+extern __at(0x0ECA) volatile __PSMC2DBFbits_t PSMC2DBFbits;
 
 #define _PSMC2DBF0              0x01
 #define _PSMC2DBF1              0x02
@@ -6514,7 +6767,7 @@ extern __at(0x084A) volatile __PSMC2DBFbits_t PSMC2DBFbits;
 //==============================================================================
 //        PSMC2BLKR Bits
 
-extern __at(0x084B) __sfr PSMC2BLKR;
+extern __at(0x0ECB) __sfr PSMC2BLKR;
 
 typedef struct
   {
@@ -6528,7 +6781,7 @@ typedef struct
   unsigned PSMC2BLKR7           : 1;
   } __PSMC2BLKRbits_t;
 
-extern __at(0x084B) volatile __PSMC2BLKRbits_t PSMC2BLKRbits;
+extern __at(0x0ECB) volatile __PSMC2BLKRbits_t PSMC2BLKRbits;
 
 #define _PSMC2BLKR0             0x01
 #define _PSMC2BLKR1             0x02
@@ -6545,7 +6798,7 @@ extern __at(0x084B) volatile __PSMC2BLKRbits_t PSMC2BLKRbits;
 //==============================================================================
 //        PSMC2BLKF Bits
 
-extern __at(0x084C) __sfr PSMC2BLKF;
+extern __at(0x0ECC) __sfr PSMC2BLKF;
 
 typedef struct
   {
@@ -6559,7 +6812,7 @@ typedef struct
   unsigned PSMC2BLKF7           : 1;
   } __PSMC2BLKFbits_t;
 
-extern __at(0x084C) volatile __PSMC2BLKFbits_t PSMC2BLKFbits;
+extern __at(0x0ECC) volatile __PSMC2BLKFbits_t PSMC2BLKFbits;
 
 #define _PSMC2BLKF0             0x01
 #define _PSMC2BLKF1             0x02
@@ -6576,7 +6829,7 @@ extern __at(0x084C) volatile __PSMC2BLKFbits_t PSMC2BLKFbits;
 //==============================================================================
 //        PSMC2FFA Bits
 
-extern __at(0x084D) __sfr PSMC2FFA;
+extern __at(0x0ECD) __sfr PSMC2FFA;
 
 typedef union
   {
@@ -6599,7 +6852,7 @@ typedef union
     };
   } __PSMC2FFAbits_t;
 
-extern __at(0x084D) volatile __PSMC2FFAbits_t PSMC2FFAbits;
+extern __at(0x0ECD) volatile __PSMC2FFAbits_t PSMC2FFAbits;
 
 #define _PSMC2FFA0              0x01
 #define _PSMC2FFA1              0x02
@@ -6612,7 +6865,7 @@ extern __at(0x084D) volatile __PSMC2FFAbits_t PSMC2FFAbits;
 //==============================================================================
 //        PSMC2STR0 Bits
 
-extern __at(0x084E) __sfr PSMC2STR0;
+extern __at(0x0ECE) __sfr PSMC2STR0;
 
 typedef struct
   {
@@ -6626,7 +6879,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC2STR0bits_t;
 
-extern __at(0x084E) volatile __PSMC2STR0bits_t PSMC2STR0bits;
+extern __at(0x0ECE) volatile __PSMC2STR0bits_t PSMC2STR0bits;
 
 #define _P2STRA                 0x01
 #define _P2STRB                 0x02
@@ -6637,7 +6890,7 @@ extern __at(0x084E) volatile __PSMC2STR0bits_t PSMC2STR0bits;
 //==============================================================================
 //        PSMC2STR1 Bits
 
-extern __at(0x084F) __sfr PSMC2STR1;
+extern __at(0x0ECF) __sfr PSMC2STR1;
 
 typedef struct
   {
@@ -6651,7 +6904,7 @@ typedef struct
   unsigned P2SSYNC              : 1;
   } __PSMC2STR1bits_t;
 
-extern __at(0x084F) volatile __PSMC2STR1bits_t PSMC2STR1bits;
+extern __at(0x0ECF) volatile __PSMC2STR1bits_t PSMC2STR1bits;
 
 #define _P2HSMEN                0x01
 #define _P2LSMEN                0x02
@@ -6663,7 +6916,7 @@ extern __at(0x084F) volatile __PSMC2STR1bits_t PSMC2STR1bits;
 //==============================================================================
 //        PSMC3CON Bits
 
-extern __at(0x0851) __sfr PSMC3CON;
+extern __at(0x0ED1) __sfr PSMC3CON;
 
 typedef union
   {
@@ -6686,7 +6939,7 @@ typedef union
     };
   } __PSMC3CONbits_t;
 
-extern __at(0x0851) volatile __PSMC3CONbits_t PSMC3CONbits;
+extern __at(0x0ED1) volatile __PSMC3CONbits_t PSMC3CONbits;
 
 #define _P3MODE0                0x01
 #define _P3MODE1                0x02
@@ -6703,7 +6956,7 @@ extern __at(0x0851) volatile __PSMC3CONbits_t PSMC3CONbits;
 //==============================================================================
 //        PSMC3MDL Bits
 
-extern __at(0x0852) __sfr PSMC3MDL;
+extern __at(0x0ED2) __sfr PSMC3MDL;
 
 typedef union
   {
@@ -6726,7 +6979,7 @@ typedef union
     };
   } __PSMC3MDLbits_t;
 
-extern __at(0x0852) volatile __PSMC3MDLbits_t PSMC3MDLbits;
+extern __at(0x0ED2) volatile __PSMC3MDLbits_t PSMC3MDLbits;
 
 #define _P3MSRC0                0x01
 #define _P3MSRC1                0x02
@@ -6742,7 +6995,7 @@ extern __at(0x0852) volatile __PSMC3MDLbits_t PSMC3MDLbits;
 //==============================================================================
 //        PSMC3SYNC Bits
 
-extern __at(0x0853) __sfr PSMC3SYNC;
+extern __at(0x0ED3) __sfr PSMC3SYNC;
 
 typedef union
   {
@@ -6765,7 +7018,7 @@ typedef union
     };
   } __PSMC3SYNCbits_t;
 
-extern __at(0x0853) volatile __PSMC3SYNCbits_t PSMC3SYNCbits;
+extern __at(0x0ED3) volatile __PSMC3SYNCbits_t PSMC3SYNCbits;
 
 #define _P3SYNC0                0x01
 #define _P3SYNC1                0x02
@@ -6780,7 +7033,7 @@ extern __at(0x0853) volatile __PSMC3SYNCbits_t PSMC3SYNCbits;
 //==============================================================================
 //        PSMC3CLK Bits
 
-extern __at(0x0854) __sfr PSMC3CLK;
+extern __at(0x0ED4) __sfr PSMC3CLK;
 
 typedef union
   {
@@ -6810,7 +7063,7 @@ typedef union
     };
   } __PSMC3CLKbits_t;
 
-extern __at(0x0854) volatile __PSMC3CLKbits_t PSMC3CLKbits;
+extern __at(0x0ED4) volatile __PSMC3CLKbits_t PSMC3CLKbits;
 
 #define _P3CSRC0                0x01
 #define _P3CSRC1                0x02
@@ -6823,7 +7076,7 @@ extern __at(0x0854) volatile __PSMC3CLKbits_t PSMC3CLKbits;
 //==============================================================================
 //        PSMC3OEN Bits
 
-extern __at(0x0855) __sfr PSMC3OEN;
+extern __at(0x0ED5) __sfr PSMC3OEN;
 
 typedef struct
   {
@@ -6837,7 +7090,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC3OENbits_t;
 
-extern __at(0x0855) volatile __PSMC3OENbits_t PSMC3OENbits;
+extern __at(0x0ED5) volatile __PSMC3OENbits_t PSMC3OENbits;
 
 #define _P3OEA                  0x01
 #define _P3OEB                  0x02
@@ -6852,7 +7105,7 @@ extern __at(0x0855) volatile __PSMC3OENbits_t PSMC3OENbits;
 //==============================================================================
 //        PSMC3POL Bits
 
-extern __at(0x0856) __sfr PSMC3POL;
+extern __at(0x0ED6) __sfr PSMC3POL;
 
 typedef struct
   {
@@ -6866,7 +7119,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC3POLbits_t;
 
-extern __at(0x0856) volatile __PSMC3POLbits_t PSMC3POLbits;
+extern __at(0x0ED6) volatile __PSMC3POLbits_t PSMC3POLbits;
 
 #define _P3POLA                 0x01
 #define _P3POLB                 0x02
@@ -6882,7 +7135,7 @@ extern __at(0x0856) volatile __PSMC3POLbits_t PSMC3POLbits;
 //==============================================================================
 //        PSMC3BLNK Bits
 
-extern __at(0x0857) __sfr PSMC3BLNK;
+extern __at(0x0ED7) __sfr PSMC3BLNK;
 
 typedef union
   {
@@ -6912,7 +7165,7 @@ typedef union
     };
   } __PSMC3BLNKbits_t;
 
-extern __at(0x0857) volatile __PSMC3BLNKbits_t PSMC3BLNKbits;
+extern __at(0x0ED7) volatile __PSMC3BLNKbits_t PSMC3BLNKbits;
 
 #define _P3REBM0                0x01
 #define _P3REBM1                0x02
@@ -6925,7 +7178,7 @@ extern __at(0x0857) volatile __PSMC3BLNKbits_t PSMC3BLNKbits;
 //==============================================================================
 //        PSMC3REBS Bits
 
-extern __at(0x0858) __sfr PSMC3REBS;
+extern __at(0x0ED8) __sfr PSMC3REBS;
 
 typedef struct
   {
@@ -6939,7 +7192,7 @@ typedef struct
   unsigned P3REBSIN             : 1;
   } __PSMC3REBSbits_t;
 
-extern __at(0x0858) volatile __PSMC3REBSbits_t PSMC3REBSbits;
+extern __at(0x0ED8) volatile __PSMC3REBSbits_t PSMC3REBSbits;
 
 #define _P3REBSC1               0x02
 #define _P3REBSC2               0x04
@@ -6953,7 +7206,7 @@ extern __at(0x0858) volatile __PSMC3REBSbits_t PSMC3REBSbits;
 //==============================================================================
 //        PSMC3FEBS Bits
 
-extern __at(0x0859) __sfr PSMC3FEBS;
+extern __at(0x0ED9) __sfr PSMC3FEBS;
 
 typedef struct
   {
@@ -6967,7 +7220,7 @@ typedef struct
   unsigned P3FEBSIN             : 1;
   } __PSMC3FEBSbits_t;
 
-extern __at(0x0859) volatile __PSMC3FEBSbits_t PSMC3FEBSbits;
+extern __at(0x0ED9) volatile __PSMC3FEBSbits_t PSMC3FEBSbits;
 
 #define _P3FEBSC1               0x02
 #define _P3FEBSC2               0x04
@@ -6981,7 +7234,7 @@ extern __at(0x0859) volatile __PSMC3FEBSbits_t PSMC3FEBSbits;
 //==============================================================================
 //        PSMC3PHS Bits
 
-extern __at(0x085A) __sfr PSMC3PHS;
+extern __at(0x0EDA) __sfr PSMC3PHS;
 
 typedef struct
   {
@@ -6995,7 +7248,7 @@ typedef struct
   unsigned P3PHSIN              : 1;
   } __PSMC3PHSbits_t;
 
-extern __at(0x085A) volatile __PSMC3PHSbits_t PSMC3PHSbits;
+extern __at(0x0EDA) volatile __PSMC3PHSbits_t PSMC3PHSbits;
 
 #define _P3PHST                 0x01
 #define _P3PHSC1                0x02
@@ -7010,7 +7263,7 @@ extern __at(0x085A) volatile __PSMC3PHSbits_t PSMC3PHSbits;
 //==============================================================================
 //        PSMC3DCS Bits
 
-extern __at(0x085B) __sfr PSMC3DCS;
+extern __at(0x0EDB) __sfr PSMC3DCS;
 
 typedef struct
   {
@@ -7024,7 +7277,7 @@ typedef struct
   unsigned P3DCSIN              : 1;
   } __PSMC3DCSbits_t;
 
-extern __at(0x085B) volatile __PSMC3DCSbits_t PSMC3DCSbits;
+extern __at(0x0EDB) volatile __PSMC3DCSbits_t PSMC3DCSbits;
 
 #define _P3DCST                 0x01
 #define _P3DCSC1                0x02
@@ -7039,7 +7292,7 @@ extern __at(0x085B) volatile __PSMC3DCSbits_t PSMC3DCSbits;
 //==============================================================================
 //        PSMC3PRS Bits
 
-extern __at(0x085C) __sfr PSMC3PRS;
+extern __at(0x0EDC) __sfr PSMC3PRS;
 
 typedef struct
   {
@@ -7053,7 +7306,7 @@ typedef struct
   unsigned P3PRSIN              : 1;
   } __PSMC3PRSbits_t;
 
-extern __at(0x085C) volatile __PSMC3PRSbits_t PSMC3PRSbits;
+extern __at(0x0EDC) volatile __PSMC3PRSbits_t PSMC3PRSbits;
 
 #define _P3PRST                 0x01
 #define _P3PRSC1                0x02
@@ -7068,7 +7321,7 @@ extern __at(0x085C) volatile __PSMC3PRSbits_t PSMC3PRSbits;
 //==============================================================================
 //        PSMC3ASDC Bits
 
-extern __at(0x085D) __sfr PSMC3ASDC;
+extern __at(0x0EDD) __sfr PSMC3ASDC;
 
 typedef struct
   {
@@ -7082,7 +7335,7 @@ typedef struct
   unsigned P3ASE                : 1;
   } __PSMC3ASDCbits_t;
 
-extern __at(0x085D) volatile __PSMC3ASDCbits_t PSMC3ASDCbits;
+extern __at(0x0EDD) volatile __PSMC3ASDCbits_t PSMC3ASDCbits;
 
 #define _P3ASDOV                0x01
 #define _P3ARSEN                0x20
@@ -7095,7 +7348,7 @@ extern __at(0x085D) volatile __PSMC3ASDCbits_t PSMC3ASDCbits;
 //==============================================================================
 //        PSMC3ASDL Bits
 
-extern __at(0x085E) __sfr PSMC3ASDL;
+extern __at(0x0EDE) __sfr PSMC3ASDL;
 
 typedef struct
   {
@@ -7109,7 +7362,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC3ASDLbits_t;
 
-extern __at(0x085E) volatile __PSMC3ASDLbits_t PSMC3ASDLbits;
+extern __at(0x0EDE) volatile __PSMC3ASDLbits_t PSMC3ASDLbits;
 
 #define _P3ASDLA                0x01
 #define _P3ASDLB                0x02
@@ -7124,7 +7377,7 @@ extern __at(0x085E) volatile __PSMC3ASDLbits_t PSMC3ASDLbits;
 //==============================================================================
 //        PSMC3ASDS Bits
 
-extern __at(0x085F) __sfr PSMC3ASDS;
+extern __at(0x0EDF) __sfr PSMC3ASDS;
 
 typedef struct
   {
@@ -7138,7 +7391,7 @@ typedef struct
   unsigned P3ASDSIN             : 1;
   } __PSMC3ASDSbits_t;
 
-extern __at(0x085F) volatile __PSMC3ASDSbits_t PSMC3ASDSbits;
+extern __at(0x0EDF) volatile __PSMC3ASDSbits_t PSMC3ASDSbits;
 
 #define _P3ASDSC1               0x02
 #define _P3ASDSC2               0x04
@@ -7152,7 +7405,7 @@ extern __at(0x085F) volatile __PSMC3ASDSbits_t PSMC3ASDSbits;
 //==============================================================================
 //        PSMC3INT Bits
 
-extern __at(0x0860) __sfr PSMC3INT;
+extern __at(0x0EE0) __sfr PSMC3INT;
 
 typedef struct
   {
@@ -7166,7 +7419,7 @@ typedef struct
   unsigned P3TOVIE              : 1;
   } __PSMC3INTbits_t;
 
-extern __at(0x0860) volatile __PSMC3INTbits_t PSMC3INTbits;
+extern __at(0x0EE0) volatile __PSMC3INTbits_t PSMC3INTbits;
 
 #define _P3TPRIF                0x01
 #define _P3TDCIF                0x02
@@ -7179,12 +7432,12 @@ extern __at(0x0860) volatile __PSMC3INTbits_t PSMC3INTbits;
 
 //==============================================================================
 
-extern __at(0x0861) __sfr PSMC3PH;
+extern __at(0x0EE1) __sfr PSMC3PH;
 
 //==============================================================================
 //        PSMC3PHL Bits
 
-extern __at(0x0861) __sfr PSMC3PHL;
+extern __at(0x0EE1) __sfr PSMC3PHL;
 
 typedef struct
   {
@@ -7198,7 +7451,7 @@ typedef struct
   unsigned PSMC3PH7             : 1;
   } __PSMC3PHLbits_t;
 
-extern __at(0x0861) volatile __PSMC3PHLbits_t PSMC3PHLbits;
+extern __at(0x0EE1) volatile __PSMC3PHLbits_t PSMC3PHLbits;
 
 #define _PSMC3PH0               0x01
 #define _PSMC3PH1               0x02
@@ -7215,7 +7468,7 @@ extern __at(0x0861) volatile __PSMC3PHLbits_t PSMC3PHLbits;
 //==============================================================================
 //        PSMC3PHH Bits
 
-extern __at(0x0862) __sfr PSMC3PHH;
+extern __at(0x0EE2) __sfr PSMC3PHH;
 
 typedef struct
   {
@@ -7229,7 +7482,7 @@ typedef struct
   unsigned PSMC3PH15            : 1;
   } __PSMC3PHHbits_t;
 
-extern __at(0x0862) volatile __PSMC3PHHbits_t PSMC3PHHbits;
+extern __at(0x0EE2) volatile __PSMC3PHHbits_t PSMC3PHHbits;
 
 #define _PSMC3PH8               0x01
 #define _PSMC3PH9               0x02
@@ -7242,12 +7495,12 @@ extern __at(0x0862) volatile __PSMC3PHHbits_t PSMC3PHHbits;
 
 //==============================================================================
 
-extern __at(0x0863) __sfr PSMC3DC;
+extern __at(0x0EE3) __sfr PSMC3DC;
 
 //==============================================================================
 //        PSMC3DCL Bits
 
-extern __at(0x0863) __sfr PSMC3DCL;
+extern __at(0x0EE3) __sfr PSMC3DCL;
 
 typedef struct
   {
@@ -7261,7 +7514,7 @@ typedef struct
   unsigned PSMC3DC7             : 1;
   } __PSMC3DCLbits_t;
 
-extern __at(0x0863) volatile __PSMC3DCLbits_t PSMC3DCLbits;
+extern __at(0x0EE3) volatile __PSMC3DCLbits_t PSMC3DCLbits;
 
 #define _PSMC3DC0               0x01
 #define _PSMC3DC1               0x02
@@ -7278,7 +7531,7 @@ extern __at(0x0863) volatile __PSMC3DCLbits_t PSMC3DCLbits;
 //==============================================================================
 //        PSMC3DCH Bits
 
-extern __at(0x0864) __sfr PSMC3DCH;
+extern __at(0x0EE4) __sfr PSMC3DCH;
 
 typedef struct
   {
@@ -7292,7 +7545,7 @@ typedef struct
   unsigned PSMC3DC15            : 1;
   } __PSMC3DCHbits_t;
 
-extern __at(0x0864) volatile __PSMC3DCHbits_t PSMC3DCHbits;
+extern __at(0x0EE4) volatile __PSMC3DCHbits_t PSMC3DCHbits;
 
 #define _PSMC3DC8               0x01
 #define _PSMC3DC9               0x02
@@ -7305,12 +7558,12 @@ extern __at(0x0864) volatile __PSMC3DCHbits_t PSMC3DCHbits;
 
 //==============================================================================
 
-extern __at(0x0865) __sfr PSMC3PR;
+extern __at(0x0EE5) __sfr PSMC3PR;
 
 //==============================================================================
 //        PSMC3PRL Bits
 
-extern __at(0x0865) __sfr PSMC3PRL;
+extern __at(0x0EE5) __sfr PSMC3PRL;
 
 typedef struct
   {
@@ -7324,7 +7577,7 @@ typedef struct
   unsigned PSMC3PR7             : 1;
   } __PSMC3PRLbits_t;
 
-extern __at(0x0865) volatile __PSMC3PRLbits_t PSMC3PRLbits;
+extern __at(0x0EE5) volatile __PSMC3PRLbits_t PSMC3PRLbits;
 
 #define _PSMC3PR0               0x01
 #define _PSMC3PR1               0x02
@@ -7341,7 +7594,7 @@ extern __at(0x0865) volatile __PSMC3PRLbits_t PSMC3PRLbits;
 //==============================================================================
 //        PSMC3PRH Bits
 
-extern __at(0x0866) __sfr PSMC3PRH;
+extern __at(0x0EE6) __sfr PSMC3PRH;
 
 typedef struct
   {
@@ -7355,7 +7608,7 @@ typedef struct
   unsigned PSMC3PR15            : 1;
   } __PSMC3PRHbits_t;
 
-extern __at(0x0866) volatile __PSMC3PRHbits_t PSMC3PRHbits;
+extern __at(0x0EE6) volatile __PSMC3PRHbits_t PSMC3PRHbits;
 
 #define _PSMC3PR8               0x01
 #define _PSMC3PR9               0x02
@@ -7368,12 +7621,12 @@ extern __at(0x0866) volatile __PSMC3PRHbits_t PSMC3PRHbits;
 
 //==============================================================================
 
-extern __at(0x0867) __sfr PSMC3TMR;
+extern __at(0x0EE7) __sfr PSMC3TMR;
 
 //==============================================================================
 //        PSMC3TMRL Bits
 
-extern __at(0x0867) __sfr PSMC3TMRL;
+extern __at(0x0EE7) __sfr PSMC3TMRL;
 
 typedef struct
   {
@@ -7387,7 +7640,7 @@ typedef struct
   unsigned PSMC3TMR7            : 1;
   } __PSMC3TMRLbits_t;
 
-extern __at(0x0867) volatile __PSMC3TMRLbits_t PSMC3TMRLbits;
+extern __at(0x0EE7) volatile __PSMC3TMRLbits_t PSMC3TMRLbits;
 
 #define _PSMC3TMR0              0x01
 #define _PSMC3TMR1              0x02
@@ -7404,7 +7657,7 @@ extern __at(0x0867) volatile __PSMC3TMRLbits_t PSMC3TMRLbits;
 //==============================================================================
 //        PSMC3TMRH Bits
 
-extern __at(0x0868) __sfr PSMC3TMRH;
+extern __at(0x0EE8) __sfr PSMC3TMRH;
 
 typedef struct
   {
@@ -7418,7 +7671,7 @@ typedef struct
   unsigned PSMC3TMR15           : 1;
   } __PSMC3TMRHbits_t;
 
-extern __at(0x0868) volatile __PSMC3TMRHbits_t PSMC3TMRHbits;
+extern __at(0x0EE8) volatile __PSMC3TMRHbits_t PSMC3TMRHbits;
 
 #define _PSMC3TMR8              0x01
 #define _PSMC3TMR9              0x02
@@ -7435,7 +7688,7 @@ extern __at(0x0868) volatile __PSMC3TMRHbits_t PSMC3TMRHbits;
 //==============================================================================
 //        PSMC3DBR Bits
 
-extern __at(0x0869) __sfr PSMC3DBR;
+extern __at(0x0EE9) __sfr PSMC3DBR;
 
 typedef struct
   {
@@ -7449,7 +7702,7 @@ typedef struct
   unsigned PSMC3DBR7            : 1;
   } __PSMC3DBRbits_t;
 
-extern __at(0x0869) volatile __PSMC3DBRbits_t PSMC3DBRbits;
+extern __at(0x0EE9) volatile __PSMC3DBRbits_t PSMC3DBRbits;
 
 #define _PSMC3DBR0              0x01
 #define _PSMC3DBR1              0x02
@@ -7466,7 +7719,7 @@ extern __at(0x0869) volatile __PSMC3DBRbits_t PSMC3DBRbits;
 //==============================================================================
 //        PSMC3DBF Bits
 
-extern __at(0x086A) __sfr PSMC3DBF;
+extern __at(0x0EEA) __sfr PSMC3DBF;
 
 typedef struct
   {
@@ -7480,7 +7733,7 @@ typedef struct
   unsigned PSMC3DBF7            : 1;
   } __PSMC3DBFbits_t;
 
-extern __at(0x086A) volatile __PSMC3DBFbits_t PSMC3DBFbits;
+extern __at(0x0EEA) volatile __PSMC3DBFbits_t PSMC3DBFbits;
 
 #define _PSMC3DBF0              0x01
 #define _PSMC3DBF1              0x02
@@ -7497,7 +7750,7 @@ extern __at(0x086A) volatile __PSMC3DBFbits_t PSMC3DBFbits;
 //==============================================================================
 //        PSMC3BLKR Bits
 
-extern __at(0x086B) __sfr PSMC3BLKR;
+extern __at(0x0EEB) __sfr PSMC3BLKR;
 
 typedef struct
   {
@@ -7511,7 +7764,7 @@ typedef struct
   unsigned PSMC3BLKR7           : 1;
   } __PSMC3BLKRbits_t;
 
-extern __at(0x086B) volatile __PSMC3BLKRbits_t PSMC3BLKRbits;
+extern __at(0x0EEB) volatile __PSMC3BLKRbits_t PSMC3BLKRbits;
 
 #define _PSMC3BLKR0             0x01
 #define _PSMC3BLKR1             0x02
@@ -7528,7 +7781,7 @@ extern __at(0x086B) volatile __PSMC3BLKRbits_t PSMC3BLKRbits;
 //==============================================================================
 //        PSMC3BLKF Bits
 
-extern __at(0x086C) __sfr PSMC3BLKF;
+extern __at(0x0EEC) __sfr PSMC3BLKF;
 
 typedef struct
   {
@@ -7542,7 +7795,7 @@ typedef struct
   unsigned PSMC3BLKF7           : 1;
   } __PSMC3BLKFbits_t;
 
-extern __at(0x086C) volatile __PSMC3BLKFbits_t PSMC3BLKFbits;
+extern __at(0x0EEC) volatile __PSMC3BLKFbits_t PSMC3BLKFbits;
 
 #define _PSMC3BLKF0             0x01
 #define _PSMC3BLKF1             0x02
@@ -7559,7 +7812,7 @@ extern __at(0x086C) volatile __PSMC3BLKFbits_t PSMC3BLKFbits;
 //==============================================================================
 //        PSMC3FFA Bits
 
-extern __at(0x086D) __sfr PSMC3FFA;
+extern __at(0x0EED) __sfr PSMC3FFA;
 
 typedef union
   {
@@ -7582,7 +7835,7 @@ typedef union
     };
   } __PSMC3FFAbits_t;
 
-extern __at(0x086D) volatile __PSMC3FFAbits_t PSMC3FFAbits;
+extern __at(0x0EED) volatile __PSMC3FFAbits_t PSMC3FFAbits;
 
 #define _PSMC3FFA0              0x01
 #define _PSMC3FFA1              0x02
@@ -7595,7 +7848,7 @@ extern __at(0x086D) volatile __PSMC3FFAbits_t PSMC3FFAbits;
 //==============================================================================
 //        PSMC3STR0 Bits
 
-extern __at(0x086E) __sfr PSMC3STR0;
+extern __at(0x0EEE) __sfr PSMC3STR0;
 
 typedef struct
   {
@@ -7609,7 +7862,7 @@ typedef struct
   unsigned                      : 1;
   } __PSMC3STR0bits_t;
 
-extern __at(0x086E) volatile __PSMC3STR0bits_t PSMC3STR0bits;
+extern __at(0x0EEE) volatile __PSMC3STR0bits_t PSMC3STR0bits;
 
 #define _P3STRA                 0x01
 #define _P3STRB                 0x02
@@ -7624,7 +7877,7 @@ extern __at(0x086E) volatile __PSMC3STR0bits_t PSMC3STR0bits;
 //==============================================================================
 //        PSMC3STR1 Bits
 
-extern __at(0x086F) __sfr PSMC3STR1;
+extern __at(0x0EEF) __sfr PSMC3STR1;
 
 typedef struct
   {
@@ -7638,11 +7891,982 @@ typedef struct
   unsigned P3SSYNC              : 1;
   } __PSMC3STR1bits_t;
 
-extern __at(0x086F) volatile __PSMC3STR1bits_t PSMC3STR1bits;
+extern __at(0x0EEF) volatile __PSMC3STR1bits_t PSMC3STR1bits;
 
 #define _P3HSMEN                0x01
 #define _P3LSMEN                0x02
 #define _P3SSYNC                0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4CON Bits
+
+extern __at(0x0F11) __sfr PSMC4CON;
+
+typedef union
+  {
+  struct
+    {
+    unsigned P4MODE0            : 1;
+    unsigned P4MODE1            : 1;
+    unsigned P4MODE2            : 1;
+    unsigned P4MODE3            : 1;
+    unsigned P4DBRE             : 1;
+    unsigned P4DBFE             : 1;
+    unsigned PSMC4LD            : 1;
+    unsigned PSMC4EN            : 1;
+    };
+
+  struct
+    {
+    unsigned P4MODE             : 4;
+    unsigned                    : 4;
+    };
+  } __PSMC4CONbits_t;
+
+extern __at(0x0F11) volatile __PSMC4CONbits_t PSMC4CONbits;
+
+#define _P4MODE0                0x01
+#define _P4MODE1                0x02
+#define _P4MODE2                0x04
+#define _P4MODE3                0x08
+#define _P4DBRE                 0x10
+#define _P4DBFE                 0x20
+#define _PSMC4LD                0x40
+#define _PSMC4EN                0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4MDL Bits
+
+extern __at(0x0F12) __sfr PSMC4MDL;
+
+typedef union
+  {
+  struct
+    {
+    unsigned P4MSRC0            : 1;
+    unsigned P4MSRC1            : 1;
+    unsigned P4MSRC2            : 1;
+    unsigned P4MSRC3            : 1;
+    unsigned                    : 1;
+    unsigned P4MDLBIT           : 1;
+    unsigned P4MDLPOL           : 1;
+    unsigned P4MDLEN            : 1;
+    };
+
+  struct
+    {
+    unsigned P4MSRC             : 4;
+    unsigned                    : 4;
+    };
+  } __PSMC4MDLbits_t;
+
+extern __at(0x0F12) volatile __PSMC4MDLbits_t PSMC4MDLbits;
+
+#define _P4MSRC0                0x01
+#define _P4MSRC1                0x02
+#define _P4MSRC2                0x04
+#define _P4MSRC3                0x08
+#define _P4MDLBIT               0x20
+#define _P4MDLPOL               0x40
+#define _P4MDLEN                0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4SYNC Bits
+
+extern __at(0x0F13) __sfr PSMC4SYNC;
+
+typedef union
+  {
+  struct
+    {
+    unsigned P4SYNC0            : 1;
+    unsigned P4SYNC1            : 1;
+    unsigned P4SYNC2            : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    unsigned P4DCPOL            : 1;
+    unsigned P4PRPOL            : 1;
+    unsigned P4POFST            : 1;
+    };
+
+  struct
+    {
+    unsigned P4SYNC             : 3;
+    unsigned                    : 5;
+    };
+  } __PSMC4SYNCbits_t;
+
+extern __at(0x0F13) volatile __PSMC4SYNCbits_t PSMC4SYNCbits;
+
+#define _P4SYNC0                0x01
+#define _P4SYNC1                0x02
+#define _P4SYNC2                0x04
+#define _P4DCPOL                0x20
+#define _P4PRPOL                0x40
+#define _P4POFST                0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4CLK Bits
+
+extern __at(0x0F14) __sfr PSMC4CLK;
+
+typedef union
+  {
+  struct
+    {
+    unsigned P4CSRC0            : 1;
+    unsigned P4CSRC1            : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    unsigned P4CPRE0            : 1;
+    unsigned P4CPRE1            : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    };
+
+  struct
+    {
+    unsigned P4CSRC             : 2;
+    unsigned                    : 6;
+    };
+
+  struct
+    {
+    unsigned                    : 4;
+    unsigned P4CPRE             : 2;
+    unsigned                    : 2;
+    };
+  } __PSMC4CLKbits_t;
+
+extern __at(0x0F14) volatile __PSMC4CLKbits_t PSMC4CLKbits;
+
+#define _P4CSRC0                0x01
+#define _P4CSRC1                0x02
+#define _P4CPRE0                0x10
+#define _P4CPRE1                0x20
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4OEN Bits
+
+extern __at(0x0F15) __sfr PSMC4OEN;
+
+typedef struct
+  {
+  unsigned P4OEA                : 1;
+  unsigned P4OEB                : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  } __PSMC4OENbits_t;
+
+extern __at(0x0F15) volatile __PSMC4OENbits_t PSMC4OENbits;
+
+#define _P4OEA                  0x01
+#define _P4OEB                  0x02
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4POL Bits
+
+extern __at(0x0F16) __sfr PSMC4POL;
+
+typedef struct
+  {
+  unsigned P4POLA               : 1;
+  unsigned P4POLB               : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4INPOL              : 1;
+  unsigned                      : 1;
+  } __PSMC4POLbits_t;
+
+extern __at(0x0F16) volatile __PSMC4POLbits_t PSMC4POLbits;
+
+#define _P4POLA                 0x01
+#define _P4POLB                 0x02
+#define _P4INPOL                0x40
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4BLNK Bits
+
+extern __at(0x0F17) __sfr PSMC4BLNK;
+
+typedef union
+  {
+  struct
+    {
+    unsigned P4REBM0            : 1;
+    unsigned P4REBM1            : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    unsigned P4FEBM0            : 1;
+    unsigned P4FEBM1            : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    };
+
+  struct
+    {
+    unsigned P4REBM             : 2;
+    unsigned                    : 6;
+    };
+
+  struct
+    {
+    unsigned                    : 4;
+    unsigned P4FEBM             : 2;
+    unsigned                    : 2;
+    };
+  } __PSMC4BLNKbits_t;
+
+extern __at(0x0F17) volatile __PSMC4BLNKbits_t PSMC4BLNKbits;
+
+#define _P4REBM0                0x01
+#define _P4REBM1                0x02
+#define _P4FEBM0                0x10
+#define _P4FEBM1                0x20
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4REBS Bits
+
+extern __at(0x0F18) __sfr PSMC4REBS;
+
+typedef struct
+  {
+  unsigned                      : 1;
+  unsigned P4REBSC1             : 1;
+  unsigned P4REBSC2             : 1;
+  unsigned P4REBSC3             : 1;
+  unsigned P4REBSC4             : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4REBSIN             : 1;
+  } __PSMC4REBSbits_t;
+
+extern __at(0x0F18) volatile __PSMC4REBSbits_t PSMC4REBSbits;
+
+#define _P4REBSC1               0x02
+#define _P4REBSC2               0x04
+#define _P4REBSC3               0x08
+#define _P4REBSC4               0x10
+#define _P4REBSIN               0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4FEBS Bits
+
+extern __at(0x0F19) __sfr PSMC4FEBS;
+
+typedef struct
+  {
+  unsigned                      : 1;
+  unsigned P4FEBSC1             : 1;
+  unsigned P4FEBSC2             : 1;
+  unsigned P4FEBSC3             : 1;
+  unsigned P4FEBSC4             : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4FEBSIN             : 1;
+  } __PSMC4FEBSbits_t;
+
+extern __at(0x0F19) volatile __PSMC4FEBSbits_t PSMC4FEBSbits;
+
+#define _P4FEBSC1               0x02
+#define _P4FEBSC2               0x04
+#define _P4FEBSC3               0x08
+#define _P4FEBSC4               0x10
+#define _P4FEBSIN               0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4PHS Bits
+
+extern __at(0x0F1A) __sfr PSMC4PHS;
+
+typedef struct
+  {
+  unsigned P4PHST               : 1;
+  unsigned P4PHSC1              : 1;
+  unsigned P4PHSC2              : 1;
+  unsigned P4PHSC3              : 1;
+  unsigned P4PHSC4              : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4PHSIN              : 1;
+  } __PSMC4PHSbits_t;
+
+extern __at(0x0F1A) volatile __PSMC4PHSbits_t PSMC4PHSbits;
+
+#define _P4PHST                 0x01
+#define _P4PHSC1                0x02
+#define _P4PHSC2                0x04
+#define _P4PHSC3                0x08
+#define _P4PHSC4                0x10
+#define _P4PHSIN                0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4DCS Bits
+
+extern __at(0x0F1B) __sfr PSMC4DCS;
+
+typedef struct
+  {
+  unsigned P4DCST               : 1;
+  unsigned P4DCSC1              : 1;
+  unsigned P4DCSC2              : 1;
+  unsigned P4DCSC3              : 1;
+  unsigned P4DCSC4              : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4DCSIN              : 1;
+  } __PSMC4DCSbits_t;
+
+extern __at(0x0F1B) volatile __PSMC4DCSbits_t PSMC4DCSbits;
+
+#define _P4DCST                 0x01
+#define _P4DCSC1                0x02
+#define _P4DCSC2                0x04
+#define _P4DCSC3                0x08
+#define _P4DCSC4                0x10
+#define _P4DCSIN                0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4PRS Bits
+
+extern __at(0x0F1C) __sfr PSMC4PRS;
+
+typedef struct
+  {
+  unsigned P4PRST               : 1;
+  unsigned P4PRSC1              : 1;
+  unsigned P4PRSC2              : 1;
+  unsigned P4PRSC3              : 1;
+  unsigned P4PRSC4              : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4PRSIN              : 1;
+  } __PSMC4PRSbits_t;
+
+extern __at(0x0F1C) volatile __PSMC4PRSbits_t PSMC4PRSbits;
+
+#define _P4PRST                 0x01
+#define _P4PRSC1                0x02
+#define _P4PRSC2                0x04
+#define _P4PRSC3                0x08
+#define _P4PRSC4                0x10
+#define _P4PRSIN                0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4ASDC Bits
+
+extern __at(0x0F1D) __sfr PSMC4ASDC;
+
+typedef struct
+  {
+  unsigned P4ASDOV              : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4ARSEN              : 1;
+  unsigned P4ASDEN              : 1;
+  unsigned P4ASE                : 1;
+  } __PSMC4ASDCbits_t;
+
+extern __at(0x0F1D) volatile __PSMC4ASDCbits_t PSMC4ASDCbits;
+
+#define _P4ASDOV                0x01
+#define _P4ARSEN                0x20
+#define _P4ASDEN                0x40
+#define _P4ASE                  0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4ASDL Bits
+
+extern __at(0x0F1E) __sfr PSMC4ASDL;
+
+typedef struct
+  {
+  unsigned P4ASDLA              : 1;
+  unsigned P4ASDLB              : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  } __PSMC4ASDLbits_t;
+
+extern __at(0x0F1E) volatile __PSMC4ASDLbits_t PSMC4ASDLbits;
+
+#define _P4ASDLA                0x01
+#define _P4ASDLB                0x02
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4ASDS Bits
+
+extern __at(0x0F1F) __sfr PSMC4ASDS;
+
+typedef struct
+  {
+  unsigned                      : 1;
+  unsigned P4ASDSC1             : 1;
+  unsigned P4ASDSC2             : 1;
+  unsigned P4ASDSC3             : 1;
+  unsigned P4ASDSC4             : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4ASDSIN             : 1;
+  } __PSMC4ASDSbits_t;
+
+extern __at(0x0F1F) volatile __PSMC4ASDSbits_t PSMC4ASDSbits;
+
+#define _P4ASDSC1               0x02
+#define _P4ASDSC2               0x04
+#define _P4ASDSC3               0x08
+#define _P4ASDSC4               0x10
+#define _P4ASDSIN               0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4INT Bits
+
+extern __at(0x0F20) __sfr PSMC4INT;
+
+typedef struct
+  {
+  unsigned P4TPRIF              : 1;
+  unsigned P4TDCIF              : 1;
+  unsigned P4TPHIF              : 1;
+  unsigned P4TOVIF              : 1;
+  unsigned P4TPRIE              : 1;
+  unsigned P4TDCIE              : 1;
+  unsigned P4TPHIE              : 1;
+  unsigned P4TOVIE              : 1;
+  } __PSMC4INTbits_t;
+
+extern __at(0x0F20) volatile __PSMC4INTbits_t PSMC4INTbits;
+
+#define _P4TPRIF                0x01
+#define _P4TDCIF                0x02
+#define _P4TPHIF                0x04
+#define _P4TOVIF                0x08
+#define _P4TPRIE                0x10
+#define _P4TDCIE                0x20
+#define _P4TPHIE                0x40
+#define _P4TOVIE                0x80
+
+//==============================================================================
+
+extern __at(0x0F21) __sfr PSMC4PH;
+
+//==============================================================================
+//        PSMC4PHL Bits
+
+extern __at(0x0F21) __sfr PSMC4PHL;
+
+typedef struct
+  {
+  unsigned PSMC4PH0             : 1;
+  unsigned PSMC4PH1             : 1;
+  unsigned PSMC4PH2             : 1;
+  unsigned PSMC4PH3             : 1;
+  unsigned PSMC4PH4             : 1;
+  unsigned PSMC4PH5             : 1;
+  unsigned PSMC4PH6             : 1;
+  unsigned PSMC4PH7             : 1;
+  } __PSMC4PHLbits_t;
+
+extern __at(0x0F21) volatile __PSMC4PHLbits_t PSMC4PHLbits;
+
+#define _PSMC4PH0               0x01
+#define _PSMC4PH1               0x02
+#define _PSMC4PH2               0x04
+#define _PSMC4PH3               0x08
+#define _PSMC4PH4               0x10
+#define _PSMC4PH5               0x20
+#define _PSMC4PH6               0x40
+#define _PSMC4PH7               0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4PHH Bits
+
+extern __at(0x0F22) __sfr PSMC4PHH;
+
+typedef struct
+  {
+  unsigned PSMC4PH8             : 1;
+  unsigned PSMC4PH9             : 1;
+  unsigned PSMC4PH10            : 1;
+  unsigned PSMC4PH11            : 1;
+  unsigned PSMC4PH12            : 1;
+  unsigned PSMC4PH13            : 1;
+  unsigned PSMC4PH14            : 1;
+  unsigned PSMC4PH15            : 1;
+  } __PSMC4PHHbits_t;
+
+extern __at(0x0F22) volatile __PSMC4PHHbits_t PSMC4PHHbits;
+
+#define _PSMC4PH8               0x01
+#define _PSMC4PH9               0x02
+#define _PSMC4PH10              0x04
+#define _PSMC4PH11              0x08
+#define _PSMC4PH12              0x10
+#define _PSMC4PH13              0x20
+#define _PSMC4PH14              0x40
+#define _PSMC4PH15              0x80
+
+//==============================================================================
+
+extern __at(0x0F23) __sfr PSMC4DC;
+
+//==============================================================================
+//        PSMC4DCL Bits
+
+extern __at(0x0F23) __sfr PSMC4DCL;
+
+typedef struct
+  {
+  unsigned PSMC4DC0             : 1;
+  unsigned PSMC4DC1             : 1;
+  unsigned PSMC4DC2             : 1;
+  unsigned PSMC4DC3             : 1;
+  unsigned PSMC4DC4             : 1;
+  unsigned PSMC4DC5             : 1;
+  unsigned PSMC4DC6             : 1;
+  unsigned PSMC4DC7             : 1;
+  } __PSMC4DCLbits_t;
+
+extern __at(0x0F23) volatile __PSMC4DCLbits_t PSMC4DCLbits;
+
+#define _PSMC4DC0               0x01
+#define _PSMC4DC1               0x02
+#define _PSMC4DC2               0x04
+#define _PSMC4DC3               0x08
+#define _PSMC4DC4               0x10
+#define _PSMC4DC5               0x20
+#define _PSMC4DC6               0x40
+#define _PSMC4DC7               0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4DCH Bits
+
+extern __at(0x0F24) __sfr PSMC4DCH;
+
+typedef struct
+  {
+  unsigned PSMC4DC8             : 1;
+  unsigned PSMC4DC9             : 1;
+  unsigned PSMC4DC10            : 1;
+  unsigned PSMC4DC11            : 1;
+  unsigned PSMC4DC12            : 1;
+  unsigned PSMC4DC13            : 1;
+  unsigned PSMC4DC14            : 1;
+  unsigned PSMC4DC15            : 1;
+  } __PSMC4DCHbits_t;
+
+extern __at(0x0F24) volatile __PSMC4DCHbits_t PSMC4DCHbits;
+
+#define _PSMC4DC8               0x01
+#define _PSMC4DC9               0x02
+#define _PSMC4DC10              0x04
+#define _PSMC4DC11              0x08
+#define _PSMC4DC12              0x10
+#define _PSMC4DC13              0x20
+#define _PSMC4DC14              0x40
+#define _PSMC4DC15              0x80
+
+//==============================================================================
+
+extern __at(0x0F25) __sfr PSMC4PR;
+
+//==============================================================================
+//        PSMC4PRL Bits
+
+extern __at(0x0F25) __sfr PSMC4PRL;
+
+typedef struct
+  {
+  unsigned PSMC4PR0             : 1;
+  unsigned PSMC4PR1             : 1;
+  unsigned PSMC4PR2             : 1;
+  unsigned PSMC4PR3             : 1;
+  unsigned PSMC4PR4             : 1;
+  unsigned PSMC4PR5             : 1;
+  unsigned PSMC4PR6             : 1;
+  unsigned PSMC4PR7             : 1;
+  } __PSMC4PRLbits_t;
+
+extern __at(0x0F25) volatile __PSMC4PRLbits_t PSMC4PRLbits;
+
+#define _PSMC4PR0               0x01
+#define _PSMC4PR1               0x02
+#define _PSMC4PR2               0x04
+#define _PSMC4PR3               0x08
+#define _PSMC4PR4               0x10
+#define _PSMC4PR5               0x20
+#define _PSMC4PR6               0x40
+#define _PSMC4PR7               0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4PRH Bits
+
+extern __at(0x0F26) __sfr PSMC4PRH;
+
+typedef struct
+  {
+  unsigned PSMC4PR8             : 1;
+  unsigned PSMC4PR9             : 1;
+  unsigned PSMC4PR10            : 1;
+  unsigned PSMC4PR11            : 1;
+  unsigned PSMC4PR12            : 1;
+  unsigned PSMC4PR13            : 1;
+  unsigned PSMC4PR14            : 1;
+  unsigned PSMC4PR15            : 1;
+  } __PSMC4PRHbits_t;
+
+extern __at(0x0F26) volatile __PSMC4PRHbits_t PSMC4PRHbits;
+
+#define _PSMC4PR8               0x01
+#define _PSMC4PR9               0x02
+#define _PSMC4PR10              0x04
+#define _PSMC4PR11              0x08
+#define _PSMC4PR12              0x10
+#define _PSMC4PR13              0x20
+#define _PSMC4PR14              0x40
+#define _PSMC4PR15              0x80
+
+//==============================================================================
+
+extern __at(0x0F27) __sfr PSMC4TMR;
+
+//==============================================================================
+//        PSMC4TMRL Bits
+
+extern __at(0x0F27) __sfr PSMC4TMRL;
+
+typedef struct
+  {
+  unsigned PSMC4TMR0            : 1;
+  unsigned PSMC4TMR1            : 1;
+  unsigned PSMC4TMR2            : 1;
+  unsigned PSMC4TMR3            : 1;
+  unsigned PSMC4TMR4            : 1;
+  unsigned PSMC4TMR5            : 1;
+  unsigned PSMC4TMR6            : 1;
+  unsigned PSMC4TMR7            : 1;
+  } __PSMC4TMRLbits_t;
+
+extern __at(0x0F27) volatile __PSMC4TMRLbits_t PSMC4TMRLbits;
+
+#define _PSMC4TMR0              0x01
+#define _PSMC4TMR1              0x02
+#define _PSMC4TMR2              0x04
+#define _PSMC4TMR3              0x08
+#define _PSMC4TMR4              0x10
+#define _PSMC4TMR5              0x20
+#define _PSMC4TMR6              0x40
+#define _PSMC4TMR7              0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4TMRH Bits
+
+extern __at(0x0F28) __sfr PSMC4TMRH;
+
+typedef struct
+  {
+  unsigned PSMC4TMR8            : 1;
+  unsigned PSMC4TMR9            : 1;
+  unsigned PSMC4TMR10           : 1;
+  unsigned PSMC4TMR11           : 1;
+  unsigned PSMC4TMR12           : 1;
+  unsigned PSMC4TMR13           : 1;
+  unsigned PSMC4TMR14           : 1;
+  unsigned PSMC4TMR15           : 1;
+  } __PSMC4TMRHbits_t;
+
+extern __at(0x0F28) volatile __PSMC4TMRHbits_t PSMC4TMRHbits;
+
+#define _PSMC4TMR8              0x01
+#define _PSMC4TMR9              0x02
+#define _PSMC4TMR10             0x04
+#define _PSMC4TMR11             0x08
+#define _PSMC4TMR12             0x10
+#define _PSMC4TMR13             0x20
+#define _PSMC4TMR14             0x40
+#define _PSMC4TMR15             0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4DBR Bits
+
+extern __at(0x0F29) __sfr PSMC4DBR;
+
+typedef struct
+  {
+  unsigned PSMC4DBR0            : 1;
+  unsigned PSMC4DBR1            : 1;
+  unsigned PSMC4DBR2            : 1;
+  unsigned PSMC4DBR3            : 1;
+  unsigned PSMC4DBR4            : 1;
+  unsigned PSMC4DBR5            : 1;
+  unsigned PSMC4DBR6            : 1;
+  unsigned PSMC4DBR7            : 1;
+  } __PSMC4DBRbits_t;
+
+extern __at(0x0F29) volatile __PSMC4DBRbits_t PSMC4DBRbits;
+
+#define _PSMC4DBR0              0x01
+#define _PSMC4DBR1              0x02
+#define _PSMC4DBR2              0x04
+#define _PSMC4DBR3              0x08
+#define _PSMC4DBR4              0x10
+#define _PSMC4DBR5              0x20
+#define _PSMC4DBR6              0x40
+#define _PSMC4DBR7              0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4DBF Bits
+
+extern __at(0x0F2A) __sfr PSMC4DBF;
+
+typedef struct
+  {
+  unsigned PSMC4DBF0            : 1;
+  unsigned PSMC4DBF1            : 1;
+  unsigned PSMC4DBF2            : 1;
+  unsigned PSMC4DBF3            : 1;
+  unsigned PSMC4DBF4            : 1;
+  unsigned PSMC4DBF5            : 1;
+  unsigned PSMC4DBF6            : 1;
+  unsigned PSMC4DBF7            : 1;
+  } __PSMC4DBFbits_t;
+
+extern __at(0x0F2A) volatile __PSMC4DBFbits_t PSMC4DBFbits;
+
+#define _PSMC4DBF0              0x01
+#define _PSMC4DBF1              0x02
+#define _PSMC4DBF2              0x04
+#define _PSMC4DBF3              0x08
+#define _PSMC4DBF4              0x10
+#define _PSMC4DBF5              0x20
+#define _PSMC4DBF6              0x40
+#define _PSMC4DBF7              0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4BLKR Bits
+
+extern __at(0x0F2B) __sfr PSMC4BLKR;
+
+typedef struct
+  {
+  unsigned PSMC4BLKR0           : 1;
+  unsigned PSMC4BLKR1           : 1;
+  unsigned PSMC4BLKR2           : 1;
+  unsigned PSMC4BLKR3           : 1;
+  unsigned PSMC4BLKR4           : 1;
+  unsigned PSMC4BLKR5           : 1;
+  unsigned PSMC4BLKR6           : 1;
+  unsigned PSMC4BLKR7           : 1;
+  } __PSMC4BLKRbits_t;
+
+extern __at(0x0F2B) volatile __PSMC4BLKRbits_t PSMC4BLKRbits;
+
+#define _PSMC4BLKR0             0x01
+#define _PSMC4BLKR1             0x02
+#define _PSMC4BLKR2             0x04
+#define _PSMC4BLKR3             0x08
+#define _PSMC4BLKR4             0x10
+#define _PSMC4BLKR5             0x20
+#define _PSMC4BLKR6             0x40
+#define _PSMC4BLKR7             0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4BLKF Bits
+
+extern __at(0x0F2C) __sfr PSMC4BLKF;
+
+typedef struct
+  {
+  unsigned PSMC4BLKF0           : 1;
+  unsigned PSMC4BLKF1           : 1;
+  unsigned PSMC4BLKF2           : 1;
+  unsigned PSMC4BLKF3           : 1;
+  unsigned PSMC4BLKF4           : 1;
+  unsigned PSMC4BLKF5           : 1;
+  unsigned PSMC4BLKF6           : 1;
+  unsigned PSMC4BLKF7           : 1;
+  } __PSMC4BLKFbits_t;
+
+extern __at(0x0F2C) volatile __PSMC4BLKFbits_t PSMC4BLKFbits;
+
+#define _PSMC4BLKF0             0x01
+#define _PSMC4BLKF1             0x02
+#define _PSMC4BLKF2             0x04
+#define _PSMC4BLKF3             0x08
+#define _PSMC4BLKF4             0x10
+#define _PSMC4BLKF5             0x20
+#define _PSMC4BLKF6             0x40
+#define _PSMC4BLKF7             0x80
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4FFA Bits
+
+extern __at(0x0F2D) __sfr PSMC4FFA;
+
+typedef union
+  {
+  struct
+    {
+    unsigned PSMC4FFA0          : 1;
+    unsigned PSMC4FFA1          : 1;
+    unsigned PSMC4FFA2          : 1;
+    unsigned PSMC4FFA3          : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    unsigned                    : 1;
+    };
+
+  struct
+    {
+    unsigned PSMC4FFA           : 4;
+    unsigned                    : 4;
+    };
+  } __PSMC4FFAbits_t;
+
+extern __at(0x0F2D) volatile __PSMC4FFAbits_t PSMC4FFAbits;
+
+#define _PSMC4FFA0              0x01
+#define _PSMC4FFA1              0x02
+#define _PSMC4FFA2              0x04
+#define _PSMC4FFA3              0x08
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4STR0 Bits
+
+extern __at(0x0F2E) __sfr PSMC4STR0;
+
+typedef struct
+  {
+  unsigned P4STRA               : 1;
+  unsigned P4STRB               : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  } __PSMC4STR0bits_t;
+
+extern __at(0x0F2E) volatile __PSMC4STR0bits_t PSMC4STR0bits;
+
+#define _P4STRA                 0x01
+#define _P4STRB                 0x02
+
+//==============================================================================
+
+
+//==============================================================================
+//        PSMC4STR1 Bits
+
+extern __at(0x0F2F) __sfr PSMC4STR1;
+
+typedef struct
+  {
+  unsigned P4HSMEN              : 1;
+  unsigned P4LSMEN              : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned                      : 1;
+  unsigned P4SSYNC              : 1;
+  } __PSMC4STR1bits_t;
+
+extern __at(0x0F2F) volatile __PSMC4STR1bits_t PSMC4STR1bits;
+
+#define _P4HSMEN                0x01
+#define _P4LSMEN                0x02
+#define _P4SSYNC                0x80
 
 //==============================================================================
 
@@ -7802,6 +9026,15 @@ extern __at(0x0FEF) __sfr TOSH;
 #define ANSB5                   ANSELBbits.ANSB5                // bit 5
 #define ANSB6                   ANSELBbits.ANSB6                // bit 6
 
+#define ANSC0                   ANSELCbits.ANSC0                // bit 0
+#define ANSC1                   ANSELCbits.ANSC1                // bit 1
+#define ANSC2                   ANSELCbits.ANSC2                // bit 2
+#define ANSC3                   ANSELCbits.ANSC3                // bit 3
+#define ANSC4                   ANSELCbits.ANSC4                // bit 4
+#define ANSC5                   ANSELCbits.ANSC5                // bit 5
+#define ANSC6                   ANSELCbits.ANSC6                // bit 6
+#define ANSC7                   ANSELCbits.ANSC7                // bit 7
+
 #define ANSD0                   ANSELDbits.ANSD0                // bit 0
 #define ANSD1                   ANSELDbits.ANSD1                // bit 1
 #define ANSD2                   ANSELDbits.ANSD2                // bit 2
@@ -7945,21 +9178,47 @@ extern __at(0x0FEF) __sfr TOSH;
 #define MC3OUT                  CMOUTbits.MC3OUT                // bit 2
 #define MC4OUT                  CMOUTbits.MC4OUT                // bit 3
 
-#define DACNSS                  DACCON0bits.DACNSS              // bit 0
-#define DACPSS0                 DACCON0bits.DACPSS0             // bit 2
-#define DACPSS1                 DACCON0bits.DACPSS1             // bit 3
-#define DACOE2                  DACCON0bits.DACOE2              // bit 4
-#define DACOE1                  DACCON0bits.DACOE1              // bit 5
-#define DACEN                   DACCON0bits.DACEN               // bit 7
+#define DAC1NSS                 DAC1CON0bits.DAC1NSS            // bit 0, shadows bit in DAC1CON0bits
+#define DACNSS                  DAC1CON0bits.DACNSS             // bit 0, shadows bit in DAC1CON0bits
+#define DAC1PSS0                DAC1CON0bits.DAC1PSS0           // bit 2, shadows bit in DAC1CON0bits
+#define DACPSS0                 DAC1CON0bits.DACPSS0            // bit 2, shadows bit in DAC1CON0bits
+#define DAC1PSS1                DAC1CON0bits.DAC1PSS1           // bit 3, shadows bit in DAC1CON0bits
+#define DACPSS1                 DAC1CON0bits.DACPSS1            // bit 3, shadows bit in DAC1CON0bits
+#define DAC1OE2                 DAC1CON0bits.DAC1OE2            // bit 4, shadows bit in DAC1CON0bits
+#define DACOE0                  DAC1CON0bits.DACOE0             // bit 4, shadows bit in DAC1CON0bits
+#define DAC1OE1                 DAC1CON0bits.DAC1OE1            // bit 5, shadows bit in DAC1CON0bits
+#define DACOE1                  DAC1CON0bits.DACOE1             // bit 5, shadows bit in DAC1CON0bits
+#define DAC1EN                  DAC1CON0bits.DAC1EN             // bit 7, shadows bit in DAC1CON0bits
+#define DACEN                   DAC1CON0bits.DACEN              // bit 7, shadows bit in DAC1CON0bits
 
-#define DACR0                   DACCON1bits.DACR0               // bit 0
-#define DACR1                   DACCON1bits.DACR1               // bit 1
-#define DACR2                   DACCON1bits.DACR2               // bit 2
-#define DACR3                   DACCON1bits.DACR3               // bit 3
-#define DACR4                   DACCON1bits.DACR4               // bit 4
-#define DACR5                   DACCON1bits.DACR5               // bit 5
-#define DACR6                   DACCON1bits.DACR6               // bit 6
-#define DACR7                   DACCON1bits.DACR7               // bit 7
+#define DAC1R0                  DAC1CON1bits.DAC1R0             // bit 0, shadows bit in DAC1CON1bits
+#define DACR0                   DAC1CON1bits.DACR0              // bit 0, shadows bit in DAC1CON1bits
+#define DAC1R1                  DAC1CON1bits.DAC1R1             // bit 1, shadows bit in DAC1CON1bits
+#define DACR1                   DAC1CON1bits.DACR1              // bit 1, shadows bit in DAC1CON1bits
+#define DAC1R2                  DAC1CON1bits.DAC1R2             // bit 2, shadows bit in DAC1CON1bits
+#define DACR2                   DAC1CON1bits.DACR2              // bit 2, shadows bit in DAC1CON1bits
+#define DAC1R3                  DAC1CON1bits.DAC1R3             // bit 3, shadows bit in DAC1CON1bits
+#define DACR3                   DAC1CON1bits.DACR3              // bit 3, shadows bit in DAC1CON1bits
+#define DAC1R4                  DAC1CON1bits.DAC1R4             // bit 4, shadows bit in DAC1CON1bits
+#define DACR4                   DAC1CON1bits.DACR4              // bit 4, shadows bit in DAC1CON1bits
+#define DAC1R5                  DAC1CON1bits.DAC1R5             // bit 5, shadows bit in DAC1CON1bits
+#define DACR5                   DAC1CON1bits.DACR5              // bit 5, shadows bit in DAC1CON1bits
+#define DAC1R6                  DAC1CON1bits.DAC1R6             // bit 6, shadows bit in DAC1CON1bits
+#define DACR6                   DAC1CON1bits.DACR6              // bit 6, shadows bit in DAC1CON1bits
+#define DAC1R7                  DAC1CON1bits.DAC1R7             // bit 7, shadows bit in DAC1CON1bits
+#define DACR7                   DAC1CON1bits.DACR7              // bit 7, shadows bit in DAC1CON1bits
+
+#define DAC2OE2                 DAC2CON0bits.DAC2OE2            // bit 4
+#define DAC2OE1                 DAC2CON0bits.DAC2OE1            // bit 5
+#define DAC2EN                  DAC2CON0bits.DAC2EN             // bit 7
+
+#define DAC3OE2                 DAC3CON0bits.DAC3OE2            // bit 4
+#define DAC3OE1                 DAC3CON0bits.DAC3OE1            // bit 5
+#define DAC3EN                  DAC3CON0bits.DAC3EN             // bit 7
+
+#define DAC4OE2                 DAC4CON0bits.DAC4OE2            // bit 4
+#define DAC4OE1                 DAC4CON0bits.DAC4OE1            // bit 5
+#define DAC4EN                  DAC4CON0bits.DAC4EN             // bit 7
 
 #define RD                      EECON1bits.RD                   // bit 0
 #define WR                      EECON1bits.WR                   // bit 1
@@ -8198,13 +9457,21 @@ extern __at(0x0FEF) __sfr TOSH;
 
 #define OPA1PCH0                OPA1CONbits.OPA1PCH0            // bit 0
 #define OPA1PCH1                OPA1CONbits.OPA1PCH1            // bit 1
+#define OPA1PCH2                OPA1CONbits.OPA1PCH2            // bit 2
 #define OPA1SP                  OPA1CONbits.OPA1SP              // bit 6
 #define OPA1EN                  OPA1CONbits.OPA1EN              // bit 7
 
 #define OPA2PCH0                OPA2CONbits.OPA2PCH0            // bit 0
 #define OPA2PCH1                OPA2CONbits.OPA2PCH1            // bit 1
+#define OPA2PCH2                OPA2CONbits.OPA2PCH2            // bit 2
 #define OPA2SP                  OPA2CONbits.OPA2SP              // bit 6
 #define OPA2EN                  OPA2CONbits.OPA2EN              // bit 7
+
+#define OPA3PCH0                OPA3CONbits.OPA3PCH0            // bit 0
+#define OPA3PCH1                OPA3CONbits.OPA3PCH1            // bit 1
+#define OPA3PCH2                OPA3CONbits.OPA3PCH2            // bit 2
+#define OPA3SP                  OPA3CONbits.OPA3SP              // bit 6
+#define OPA3EN                  OPA3CONbits.OPA3EN              // bit 7
 
 #define PS0                     OPTION_REGbits.PS0              // bit 0
 #define PS1                     OPTION_REGbits.PS1              // bit 1
@@ -8272,9 +9539,11 @@ extern __at(0x0FEF) __sfr TOSH;
 #define PSMC1SIE                PIE4bits.PSMC1SIE               // bit 0
 #define PSMC2SIE                PIE4bits.PSMC2SIE               // bit 1
 #define PSMC3SIE                PIE4bits.PSMC3SIE               // bit 2
+#define PSMC4SIE                PIE4bits.PSMC4SIE               // bit 3
 #define PSMC1TIE                PIE4bits.PSMC1TIE               // bit 4
 #define PSMC2TIE                PIE4bits.PSMC2TIE               // bit 5
 #define PMSC3TIE                PIE4bits.PMSC3TIE               // bit 6
+#define PSMC4TIE                PIE4bits.PSMC4TIE               // bit 7
 
 #define TMR1IF                  PIR1bits.TMR1IF                 // bit 0
 #define TMR2IF                  PIR1bits.TMR2IF                 // bit 1
@@ -8299,9 +9568,11 @@ extern __at(0x0FEF) __sfr TOSH;
 #define PSMC1SIF                PIR4bits.PSMC1SIF               // bit 0
 #define PSMC2SIF                PIR4bits.PSMC2SIF               // bit 1
 #define PSMC3SIF                PIR4bits.PSMC3SIF               // bit 2
+#define PSMC4SIF                PIR4bits.PSMC4SIF               // bit 3
 #define PSMC1TIF                PIR4bits.PSMC1TIF               // bit 4
 #define PSMC2TIF                PIR4bits.PSMC2TIF               // bit 5
 #define PSMC3TIF                PIR4bits.PSMC3TIF               // bit 6
+#define PSMC4TIF                PIR4bits.PSMC4TIF               // bit 7
 
 #define RA0                     PORTAbits.RA0                   // bit 0
 #define RA1                     PORTAbits.RA1                   // bit 1
@@ -9027,6 +10298,223 @@ extern __at(0x0FEF) __sfr TOSH;
 #define PSMC3TMR6               PSMC3TMRLbits.PSMC3TMR6         // bit 6
 #define PSMC3TMR7               PSMC3TMRLbits.PSMC3TMR7         // bit 7
 
+#define P4ASDOV                 PSMC4ASDCbits.P4ASDOV           // bit 0
+#define P4ARSEN                 PSMC4ASDCbits.P4ARSEN           // bit 5
+#define P4ASDEN                 PSMC4ASDCbits.P4ASDEN           // bit 6
+#define P4ASE                   PSMC4ASDCbits.P4ASE             // bit 7
+
+#define P4ASDLA                 PSMC4ASDLbits.P4ASDLA           // bit 0
+#define P4ASDLB                 PSMC4ASDLbits.P4ASDLB           // bit 1
+
+#define P4ASDSC1                PSMC4ASDSbits.P4ASDSC1          // bit 1
+#define P4ASDSC2                PSMC4ASDSbits.P4ASDSC2          // bit 2
+#define P4ASDSC3                PSMC4ASDSbits.P4ASDSC3          // bit 3
+#define P4ASDSC4                PSMC4ASDSbits.P4ASDSC4          // bit 4
+#define P4ASDSIN                PSMC4ASDSbits.P4ASDSIN          // bit 7
+
+#define PSMC4BLKF0              PSMC4BLKFbits.PSMC4BLKF0        // bit 0
+#define PSMC4BLKF1              PSMC4BLKFbits.PSMC4BLKF1        // bit 1
+#define PSMC4BLKF2              PSMC4BLKFbits.PSMC4BLKF2        // bit 2
+#define PSMC4BLKF3              PSMC4BLKFbits.PSMC4BLKF3        // bit 3
+#define PSMC4BLKF4              PSMC4BLKFbits.PSMC4BLKF4        // bit 4
+#define PSMC4BLKF5              PSMC4BLKFbits.PSMC4BLKF5        // bit 5
+#define PSMC4BLKF6              PSMC4BLKFbits.PSMC4BLKF6        // bit 6
+#define PSMC4BLKF7              PSMC4BLKFbits.PSMC4BLKF7        // bit 7
+
+#define PSMC4BLKR0              PSMC4BLKRbits.PSMC4BLKR0        // bit 0
+#define PSMC4BLKR1              PSMC4BLKRbits.PSMC4BLKR1        // bit 1
+#define PSMC4BLKR2              PSMC4BLKRbits.PSMC4BLKR2        // bit 2
+#define PSMC4BLKR3              PSMC4BLKRbits.PSMC4BLKR3        // bit 3
+#define PSMC4BLKR4              PSMC4BLKRbits.PSMC4BLKR4        // bit 4
+#define PSMC4BLKR5              PSMC4BLKRbits.PSMC4BLKR5        // bit 5
+#define PSMC4BLKR6              PSMC4BLKRbits.PSMC4BLKR6        // bit 6
+#define PSMC4BLKR7              PSMC4BLKRbits.PSMC4BLKR7        // bit 7
+
+#define P4REBM0                 PSMC4BLNKbits.P4REBM0           // bit 0
+#define P4REBM1                 PSMC4BLNKbits.P4REBM1           // bit 1
+#define P4FEBM0                 PSMC4BLNKbits.P4FEBM0           // bit 4
+#define P4FEBM1                 PSMC4BLNKbits.P4FEBM1           // bit 5
+
+#define P4CSRC0                 PSMC4CLKbits.P4CSRC0            // bit 0
+#define P4CSRC1                 PSMC4CLKbits.P4CSRC1            // bit 1
+#define P4CPRE0                 PSMC4CLKbits.P4CPRE0            // bit 4
+#define P4CPRE1                 PSMC4CLKbits.P4CPRE1            // bit 5
+
+#define P4MODE0                 PSMC4CONbits.P4MODE0            // bit 0
+#define P4MODE1                 PSMC4CONbits.P4MODE1            // bit 1
+#define P4MODE2                 PSMC4CONbits.P4MODE2            // bit 2
+#define P4MODE3                 PSMC4CONbits.P4MODE3            // bit 3
+#define P4DBRE                  PSMC4CONbits.P4DBRE             // bit 4
+#define P4DBFE                  PSMC4CONbits.P4DBFE             // bit 5
+#define PSMC4LD                 PSMC4CONbits.PSMC4LD            // bit 6
+#define PSMC4EN                 PSMC4CONbits.PSMC4EN            // bit 7
+
+#define PSMC4DBF0               PSMC4DBFbits.PSMC4DBF0          // bit 0
+#define PSMC4DBF1               PSMC4DBFbits.PSMC4DBF1          // bit 1
+#define PSMC4DBF2               PSMC4DBFbits.PSMC4DBF2          // bit 2
+#define PSMC4DBF3               PSMC4DBFbits.PSMC4DBF3          // bit 3
+#define PSMC4DBF4               PSMC4DBFbits.PSMC4DBF4          // bit 4
+#define PSMC4DBF5               PSMC4DBFbits.PSMC4DBF5          // bit 5
+#define PSMC4DBF6               PSMC4DBFbits.PSMC4DBF6          // bit 6
+#define PSMC4DBF7               PSMC4DBFbits.PSMC4DBF7          // bit 7
+
+#define PSMC4DBR0               PSMC4DBRbits.PSMC4DBR0          // bit 0
+#define PSMC4DBR1               PSMC4DBRbits.PSMC4DBR1          // bit 1
+#define PSMC4DBR2               PSMC4DBRbits.PSMC4DBR2          // bit 2
+#define PSMC4DBR3               PSMC4DBRbits.PSMC4DBR3          // bit 3
+#define PSMC4DBR4               PSMC4DBRbits.PSMC4DBR4          // bit 4
+#define PSMC4DBR5               PSMC4DBRbits.PSMC4DBR5          // bit 5
+#define PSMC4DBR6               PSMC4DBRbits.PSMC4DBR6          // bit 6
+#define PSMC4DBR7               PSMC4DBRbits.PSMC4DBR7          // bit 7
+
+#define PSMC4DC8                PSMC4DCHbits.PSMC4DC8           // bit 0
+#define PSMC4DC9                PSMC4DCHbits.PSMC4DC9           // bit 1
+#define PSMC4DC10               PSMC4DCHbits.PSMC4DC10          // bit 2
+#define PSMC4DC11               PSMC4DCHbits.PSMC4DC11          // bit 3
+#define PSMC4DC12               PSMC4DCHbits.PSMC4DC12          // bit 4
+#define PSMC4DC13               PSMC4DCHbits.PSMC4DC13          // bit 5
+#define PSMC4DC14               PSMC4DCHbits.PSMC4DC14          // bit 6
+#define PSMC4DC15               PSMC4DCHbits.PSMC4DC15          // bit 7
+
+#define PSMC4DC0                PSMC4DCLbits.PSMC4DC0           // bit 0
+#define PSMC4DC1                PSMC4DCLbits.PSMC4DC1           // bit 1
+#define PSMC4DC2                PSMC4DCLbits.PSMC4DC2           // bit 2
+#define PSMC4DC3                PSMC4DCLbits.PSMC4DC3           // bit 3
+#define PSMC4DC4                PSMC4DCLbits.PSMC4DC4           // bit 4
+#define PSMC4DC5                PSMC4DCLbits.PSMC4DC5           // bit 5
+#define PSMC4DC6                PSMC4DCLbits.PSMC4DC6           // bit 6
+#define PSMC4DC7                PSMC4DCLbits.PSMC4DC7           // bit 7
+
+#define P4DCST                  PSMC4DCSbits.P4DCST             // bit 0
+#define P4DCSC1                 PSMC4DCSbits.P4DCSC1            // bit 1
+#define P4DCSC2                 PSMC4DCSbits.P4DCSC2            // bit 2
+#define P4DCSC3                 PSMC4DCSbits.P4DCSC3            // bit 3
+#define P4DCSC4                 PSMC4DCSbits.P4DCSC4            // bit 4
+#define P4DCSIN                 PSMC4DCSbits.P4DCSIN            // bit 7
+
+#define P4FEBSC1                PSMC4FEBSbits.P4FEBSC1          // bit 1
+#define P4FEBSC2                PSMC4FEBSbits.P4FEBSC2          // bit 2
+#define P4FEBSC3                PSMC4FEBSbits.P4FEBSC3          // bit 3
+#define P4FEBSC4                PSMC4FEBSbits.P4FEBSC4          // bit 4
+#define P4FEBSIN                PSMC4FEBSbits.P4FEBSIN          // bit 7
+
+#define PSMC4FFA0               PSMC4FFAbits.PSMC4FFA0          // bit 0
+#define PSMC4FFA1               PSMC4FFAbits.PSMC4FFA1          // bit 1
+#define PSMC4FFA2               PSMC4FFAbits.PSMC4FFA2          // bit 2
+#define PSMC4FFA3               PSMC4FFAbits.PSMC4FFA3          // bit 3
+
+#define P4TPRIF                 PSMC4INTbits.P4TPRIF            // bit 0
+#define P4TDCIF                 PSMC4INTbits.P4TDCIF            // bit 1
+#define P4TPHIF                 PSMC4INTbits.P4TPHIF            // bit 2
+#define P4TOVIF                 PSMC4INTbits.P4TOVIF            // bit 3
+#define P4TPRIE                 PSMC4INTbits.P4TPRIE            // bit 4
+#define P4TDCIE                 PSMC4INTbits.P4TDCIE            // bit 5
+#define P4TPHIE                 PSMC4INTbits.P4TPHIE            // bit 6
+#define P4TOVIE                 PSMC4INTbits.P4TOVIE            // bit 7
+
+#define P4MSRC0                 PSMC4MDLbits.P4MSRC0            // bit 0
+#define P4MSRC1                 PSMC4MDLbits.P4MSRC1            // bit 1
+#define P4MSRC2                 PSMC4MDLbits.P4MSRC2            // bit 2
+#define P4MSRC3                 PSMC4MDLbits.P4MSRC3            // bit 3
+#define P4MDLBIT                PSMC4MDLbits.P4MDLBIT           // bit 5
+#define P4MDLPOL                PSMC4MDLbits.P4MDLPOL           // bit 6
+#define P4MDLEN                 PSMC4MDLbits.P4MDLEN            // bit 7
+
+#define P4OEA                   PSMC4OENbits.P4OEA              // bit 0
+#define P4OEB                   PSMC4OENbits.P4OEB              // bit 1
+
+#define PSMC4PH8                PSMC4PHHbits.PSMC4PH8           // bit 0
+#define PSMC4PH9                PSMC4PHHbits.PSMC4PH9           // bit 1
+#define PSMC4PH10               PSMC4PHHbits.PSMC4PH10          // bit 2
+#define PSMC4PH11               PSMC4PHHbits.PSMC4PH11          // bit 3
+#define PSMC4PH12               PSMC4PHHbits.PSMC4PH12          // bit 4
+#define PSMC4PH13               PSMC4PHHbits.PSMC4PH13          // bit 5
+#define PSMC4PH14               PSMC4PHHbits.PSMC4PH14          // bit 6
+#define PSMC4PH15               PSMC4PHHbits.PSMC4PH15          // bit 7
+
+#define PSMC4PH0                PSMC4PHLbits.PSMC4PH0           // bit 0
+#define PSMC4PH1                PSMC4PHLbits.PSMC4PH1           // bit 1
+#define PSMC4PH2                PSMC4PHLbits.PSMC4PH2           // bit 2
+#define PSMC4PH3                PSMC4PHLbits.PSMC4PH3           // bit 3
+#define PSMC4PH4                PSMC4PHLbits.PSMC4PH4           // bit 4
+#define PSMC4PH5                PSMC4PHLbits.PSMC4PH5           // bit 5
+#define PSMC4PH6                PSMC4PHLbits.PSMC4PH6           // bit 6
+#define PSMC4PH7                PSMC4PHLbits.PSMC4PH7           // bit 7
+
+#define P4PHST                  PSMC4PHSbits.P4PHST             // bit 0
+#define P4PHSC1                 PSMC4PHSbits.P4PHSC1            // bit 1
+#define P4PHSC2                 PSMC4PHSbits.P4PHSC2            // bit 2
+#define P4PHSC3                 PSMC4PHSbits.P4PHSC3            // bit 3
+#define P4PHSC4                 PSMC4PHSbits.P4PHSC4            // bit 4
+#define P4PHSIN                 PSMC4PHSbits.P4PHSIN            // bit 7
+
+#define P4POLA                  PSMC4POLbits.P4POLA             // bit 0
+#define P4POLB                  PSMC4POLbits.P4POLB             // bit 1
+#define P4INPOL                 PSMC4POLbits.P4INPOL            // bit 6
+
+#define PSMC4PR8                PSMC4PRHbits.PSMC4PR8           // bit 0
+#define PSMC4PR9                PSMC4PRHbits.PSMC4PR9           // bit 1
+#define PSMC4PR10               PSMC4PRHbits.PSMC4PR10          // bit 2
+#define PSMC4PR11               PSMC4PRHbits.PSMC4PR11          // bit 3
+#define PSMC4PR12               PSMC4PRHbits.PSMC4PR12          // bit 4
+#define PSMC4PR13               PSMC4PRHbits.PSMC4PR13          // bit 5
+#define PSMC4PR14               PSMC4PRHbits.PSMC4PR14          // bit 6
+#define PSMC4PR15               PSMC4PRHbits.PSMC4PR15          // bit 7
+
+#define PSMC4PR0                PSMC4PRLbits.PSMC4PR0           // bit 0
+#define PSMC4PR1                PSMC4PRLbits.PSMC4PR1           // bit 1
+#define PSMC4PR2                PSMC4PRLbits.PSMC4PR2           // bit 2
+#define PSMC4PR3                PSMC4PRLbits.PSMC4PR3           // bit 3
+#define PSMC4PR4                PSMC4PRLbits.PSMC4PR4           // bit 4
+#define PSMC4PR5                PSMC4PRLbits.PSMC4PR5           // bit 5
+#define PSMC4PR6                PSMC4PRLbits.PSMC4PR6           // bit 6
+#define PSMC4PR7                PSMC4PRLbits.PSMC4PR7           // bit 7
+
+#define P4PRST                  PSMC4PRSbits.P4PRST             // bit 0
+#define P4PRSC1                 PSMC4PRSbits.P4PRSC1            // bit 1
+#define P4PRSC2                 PSMC4PRSbits.P4PRSC2            // bit 2
+#define P4PRSC3                 PSMC4PRSbits.P4PRSC3            // bit 3
+#define P4PRSC4                 PSMC4PRSbits.P4PRSC4            // bit 4
+#define P4PRSIN                 PSMC4PRSbits.P4PRSIN            // bit 7
+
+#define P4REBSC1                PSMC4REBSbits.P4REBSC1          // bit 1
+#define P4REBSC2                PSMC4REBSbits.P4REBSC2          // bit 2
+#define P4REBSC3                PSMC4REBSbits.P4REBSC3          // bit 3
+#define P4REBSC4                PSMC4REBSbits.P4REBSC4          // bit 4
+#define P4REBSIN                PSMC4REBSbits.P4REBSIN          // bit 7
+
+#define P4STRA                  PSMC4STR0bits.P4STRA            // bit 0
+#define P4STRB                  PSMC4STR0bits.P4STRB            // bit 1
+
+#define P4HSMEN                 PSMC4STR1bits.P4HSMEN           // bit 0
+#define P4LSMEN                 PSMC4STR1bits.P4LSMEN           // bit 1
+#define P4SSYNC                 PSMC4STR1bits.P4SSYNC           // bit 7
+
+#define P4SYNC0                 PSMC4SYNCbits.P4SYNC0           // bit 0
+#define P4SYNC1                 PSMC4SYNCbits.P4SYNC1           // bit 1
+#define P4SYNC2                 PSMC4SYNCbits.P4SYNC2           // bit 2
+#define P4DCPOL                 PSMC4SYNCbits.P4DCPOL           // bit 5
+#define P4PRPOL                 PSMC4SYNCbits.P4PRPOL           // bit 6
+#define P4POFST                 PSMC4SYNCbits.P4POFST           // bit 7
+
+#define PSMC4TMR8               PSMC4TMRHbits.PSMC4TMR8         // bit 0
+#define PSMC4TMR9               PSMC4TMRHbits.PSMC4TMR9         // bit 1
+#define PSMC4TMR10              PSMC4TMRHbits.PSMC4TMR10        // bit 2
+#define PSMC4TMR11              PSMC4TMRHbits.PSMC4TMR11        // bit 3
+#define PSMC4TMR12              PSMC4TMRHbits.PSMC4TMR12        // bit 4
+#define PSMC4TMR13              PSMC4TMRHbits.PSMC4TMR13        // bit 5
+#define PSMC4TMR14              PSMC4TMRHbits.PSMC4TMR14        // bit 6
+#define PSMC4TMR15              PSMC4TMRHbits.PSMC4TMR15        // bit 7
+
+#define PSMC4TMR0               PSMC4TMRLbits.PSMC4TMR0         // bit 0
+#define PSMC4TMR1               PSMC4TMRLbits.PSMC4TMR1         // bit 1
+#define PSMC4TMR2               PSMC4TMRLbits.PSMC4TMR2         // bit 2
+#define PSMC4TMR3               PSMC4TMRLbits.PSMC4TMR3         // bit 3
+#define PSMC4TMR4               PSMC4TMRLbits.PSMC4TMR4         // bit 4
+#define PSMC4TMR5               PSMC4TMRLbits.PSMC4TMR5         // bit 5
+#define PSMC4TMR6               PSMC4TMRLbits.PSMC4TMR6         // bit 6
+#define PSMC4TMR7               PSMC4TMRLbits.PSMC4TMR7         // bit 7
+
 #define RX9D                    RC1STAbits.RX9D                 // bit 0
 #define OERR                    RC1STAbits.OERR                 // bit 1
 #define FERR                    RC1STAbits.FERR                 // bit 2
@@ -9300,4 +10788,4 @@ extern __at(0x0FEF) __sfr TOSH;
 
 #endif // #ifndef NO_BIT_DEFINES
 
-#endif // #ifndef __PIC16F1787_H__
+#endif // #ifndef __PIC16F1789_H__

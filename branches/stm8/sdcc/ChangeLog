@@ -1,3 +1,97 @@
+2013-03-16 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Fix bug #2145.
+
+2013-03-18 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/gen_known_bugs.pl: use http instead https since the
+	  LWP::Protocol::https perl module seems not to be installed by default
+
+2013-03-16 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* device/include/pic14/pic14devices.txt,
+	  device/non-free/include/pic14/pic16f1788.h,
+	  device/non-free/include/pic14/pic16f1789.h,
+	  device/non-free/lib/pic14/libdev/Makefile.in,
+	  device/non-free/lib/pic14/libdev/devices.txt,
+	  device/non-free/lib/pic14/libdev/pic16f1788.c,
+	  device/non-free/lib/pic14/libdev/pic16f1789.c,
+	  doc/sdccman.lyx:
+	  New devices: PIC16F1788, PIC16F1789
+
+2013-03-15 Borut Razem <borut.razem AT gmail.com>
+
+	* support/scripts/gen_known_bugs.pl: adapted for Allura bug tracker
+
+2013-03-14 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/peep.c:
+	  Fix bug #2142 (ld is fixed, upper case still open).
+
+2013-03-12 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* support/scripts/mcs51-disasm.pl:
+	  Filters the invalid instructions and code cleaning.
+
+2013-03-12 Sourceforge
+
+	* Project upgrade: Bug and RFE numbers after this
+	  Use a numbering system different from the one
+	  used before (also some other changes).
+	
+2013-03-05 Molnar Karoly <molnarkaroly AT users.sf.net>
+	* device/non-free/include/pic14/pic16f1784.h,
+	  device/non-free/include/pic14/pic16f1786.h,
+	  device/non-free/include/pic14/pic16f1787.h,
+	  device/non-free/include/pic16/pic18f65j94.h,
+	  device/non-free/include/pic16/pic18f66j60.h,
+	  device/non-free/include/pic16/pic18f66j65.h,
+	  device/non-free/include/pic16/pic18f66j94.h,
+	  device/non-free/include/pic16/pic18f66j99.h,
+	  device/non-free/include/pic16/pic18f67j60.h,
+	  device/non-free/include/pic16/pic18f67j94.h,
+	  device/non-free/include/pic16/pic18f85j94.h,
+	  device/non-free/include/pic16/pic18f86j60.h,
+	  device/non-free/include/pic16/pic18f86j65.h,
+	  device/non-free/include/pic16/pic18f86j94.h,
+	  device/non-free/include/pic16/pic18f86j99.h,
+	  device/non-free/include/pic16/pic18f87j60.h,
+	  device/non-free/include/pic16/pic18f87j94.h,
+	  device/non-free/include/pic16/pic18f95j94.h,
+	  device/non-free/include/pic16/pic18f96j60.h,
+	  device/non-free/include/pic16/pic18f96j65.h,
+	  device/non-free/include/pic16/pic18f96j94.h,
+	  device/non-free/include/pic16/pic18f96j99.h,
+	  device/non-free/include/pic16/pic18f97j60.h,
+	  device/non-free/include/pic16/pic18f97j94.h,
+	  support/scripts/cinc2h.pl:
+	  Updated based on the gputils.
+
+2013-03-03 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/gen.c (popGet): improve debugging output,
+	  (SetIrp): handle PO_IMMEDIATES correctly, restructure code,
+	  (genUnpackBits): handle dummy reads w/o result correctly,
+	  (genNearPointerGet): handle dummy reads w/o result efficiently,
+	  together this fixes #3606703
+	* src/pic14/gen.c (genConstPointerGet):
+	  read AOP_SIZE(result) bytes from source, fixes #3606709
+
+2013-02-25 Raphael Neider <rneider AT web.de>
+
+	* src/pic14/ralloc.c (packRegsForOneuse):
+	  prevent NULL ptr dereference (fixes bug #3605966)
+
+2013-02-24 Raphael Neider <rneider AT web.de>
+
+	* device/lib/pic14/libsdcc/ulong2fs.c:
+	  prefer 'while (COND) {}' over 'if (COND) do {} while (COND)'
+	* src/pic14/gen.c (genAnd):
+	  fix for loop condition in ulong2fs.c (fixes #3605855)
+	* device/lib/pic14/libm/Makefile.am:
+	  fix typo in CFLAGS for libme (fixes #3605860)
+
 2013-02-17 Raphael Neider <rneider AT web.de>
 
 	* device/non-free/lib/pic14/configure.in,
