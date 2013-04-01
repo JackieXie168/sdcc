@@ -1,3 +1,40 @@
+2013-03-31 Philipp Klaus Krause <pkk AT spth.de>
+
+	* doc/sdccman.lyx:
+	  Update manual.
+	* src/SDCCmain.c:
+	  Deprecation warning for --small-is-8bits.
+	* device/include/assert.h:
+	  Prepare for static assertions.
+	* src/SDCCast.h:
+	  Fix warning.
+
+2013-03-30 Philipp Klaus Krause <pkk AT spth.de>
+
+	* doc/sdccman.lyx:
+	  Update and reorganize manual.
+	* src/izt:
+	  Kill i186 and tcls900h ports.
+
+2013-03-29 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCC.lex,
+	  src/SDCCast.c,
+	  src/SDCCast.h,
+	  src/SDCC.y,
+	  device/include/stdalign.h,
+	  device/include/stddef.h,
+	  device/include/stdnoreturn.h,
+	  support/regression/tests/align.c:
+	  Support for C11 _Alignof operator.
+
+2013-03-24 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/gen.c:
+	  Use mlt for multiplication by constant in z180 port.
+	* src/SDCCralloc.hpp:
+	  Add comment to reference the paper on the register allocator.
+
 2013-03-16 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:
