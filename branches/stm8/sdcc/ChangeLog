@@ -1,3 +1,10 @@
+2013-04-01 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCsymt.c,
+	  src/stm8/gen.c,
+	  src/stm8/main.c:
+	  STM8: Implement on-stack register passing, taking addresses of on-stack variables, handling of on-stack parameter operands.
+
 2013-03-31 Philipp Klaus Krause <pkk AT spth.de>
 
 	* doc/sdccman.lyx:

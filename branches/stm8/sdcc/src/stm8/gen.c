@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
   gen.c - code generator for STM8.
 
-  Copyright (C) 2012, Philipp Klaus Krause pkk@spth.de, philipp@informatik.uni-frankfurt.de)
+  Copyright (C) 2012 - 2013, Philipp Klaus Krause pkk@spth.de, philipp@informatik.uni-frankfurt.de)
                 2011, Vaclav Peroutka
 
   This program is free software; you can redistribute it and/or modify it
@@ -186,7 +186,7 @@ aopGet(const asmop *aop, int offset)
   if (aopRS (aop) && !aop->aopu.bytes[offset].in_reg)
     {
       int soffset = aop->aopu.bytes[offset].byteu.stk + _G.stack.pushed;
-      snprintf (buffer, 256, "(0x%x, sp)", soffset); //
+      snprintf (buffer, 256, "(0x%02x, sp)", soffset);
       return (buffer);
     }
 
@@ -532,8 +532,13 @@ aopForSym (const iCode *ic, symbol *sym)
   /* Assign depending on the storage class */
   else if (sym->onStack || sym->iaccess)
     {
-      aop = 0;
-      wassertl (0, "Unimplemented on stack asmop.");
+      int offset;
+
+      sym->aop = aop = newAsmop (AOP_STK);
+      aop->size = getSize (sym->type);
+      
+      for(offset = 0; offset < aop->size; offset++)
+        aop->aopu.bytes[offset].byteu.stk = sym->stack + offset;
     }
   else
     {
@@ -572,14 +577,14 @@ aopOp (operand *op, const iCode *ic)
       return;
     }
 
+  sym = OP_SYMBOL (op);
+
   /* if this is a true symbol */
   if (IS_TRUE_SYMOP (op))
     {
-      op->aop = aopForSym (ic, OP_SYMBOL (op));
+      op->aop = aopForSym (ic, sym);
       return;
     }
-
-  sym = OP_SYMBOL (op);
 
   if (sym->remat)
     {
@@ -607,7 +612,7 @@ aopOp (operand *op, const iCode *ic)
             wassertl (sym->stack + i < 200, "Unimplemented EXSTK.");
           }
         else
-          wassertl (0, "Unimplemented dummy.");
+          wassertl (0, "Unimplemented dummy aop.");
       }
 
     if (completly_in_regs)
@@ -752,6 +757,7 @@ adjustStack (int n)
 {
   while (n)
     {
+      // TODO: For small n, adjust stack by using pop/push a and pushw/popw x where these are dead.
       // TODO: For big n, use addition in X or Y when free. Need to fix calling convention before that though.
       if (n > 255)
         {
@@ -1276,6 +1282,87 @@ stm8_emitDebuggerSymbol (const char *debugSym)
   _G.debugLine = 0;
 }
 
+/*-----------------------------------------------------------------*/
+/* genIpush - genrate code for pushing this gets a little complex  */
+/*-----------------------------------------------------------------*/
+static void
+genIpush (const iCode * ic)
+{
+  int size, offset = 0;
+
+  D (emitcode ("; genIPush", ""));
+
+  /* if this is not a parm push : ie. it is spill push
+     and spill push is always done on the local stack */
+  if (!ic->parmPush)
+    {
+      wassertl (0, "Encountered an unsupported spill push.");
+      return;
+    }
+
+#if 0
+  if (_G.saves.saved == FALSE && !regalloc_dry_run /* Cost is counted at CALL or PCALL instead */ )
+    {
+      /* Caller saves, and this is the first iPush. */
+      /* Scan ahead until we find the function that we are pushing parameters to.
+         Count the number of addSets on the way to figure out what registers
+         are used in the send set.
+       */
+      int nAddSets = 0;
+      iCode *walk = ic->next;
+
+      while (walk)
+        {
+          if (walk->op == SEND)
+            {
+              nAddSets++;
+            }
+          else if (walk->op == CALL || walk->op == PCALL)
+            {
+              /* Found it. */
+              break;
+            }
+          else
+            {
+              /* Keep looking. */
+            }
+          walk = walk->next;
+        }
+      _saveRegsForCall (walk, nAddSets, FALSE);
+    }
+#endif
+
+  /* then do the push */
+  aopOp (IC_LEFT (ic), ic);
+
+  for (size = IC_LEFT (ic)->aop->size, offset = 0; size;)
+    {
+      // TODO: For AOP_IMMD, if X is free, when optimizing for code size, ldw x, m  pushw x is better than push m push m+1.
+
+      if (aopInReg (IC_LEFT (ic)->aop, offset, X_IDX) || aopInReg (IC_LEFT (ic)->aop, offset, Y_IDX))
+        {
+          push (IC_LEFT (ic)->aop, offset, 2);
+          offset += 2;
+          size -= 2;
+        }
+      else if (IC_LEFT (ic)->aop->type == AOP_LIT || aopInReg (IC_LEFT (ic)->aop, offset, A_IDX) || IC_LEFT (ic)->aop->type == AOP_DIR || IC_LEFT (ic)->aop->type == AOP_IMMD)
+        {
+          push (IC_LEFT (ic)->aop, offset, 1);
+          offset++;
+          size--;
+        }
+      else
+        {
+          cheapMove (ASMOP_A, 0, IC_LEFT (ic)->aop, offset, FALSE);
+          push (ASMOP_A, 0, 1);
+          offset++;
+          size--;
+        }
+    }
+
+  freeAsmop (IC_LEFT (ic));
+}
+
 static void
 emitCall (const iCode *ic, bool ispcall)
 {
@@ -1330,7 +1417,18 @@ emitCall (const iCode *ic, bool ispcall)
                        (OP_SYMBOL (IC_RESULT (ic))->nRegs || OP_SYMBOL (IC_RESULT (ic))->spildir))
                        || IS_TRUE_SYMOP (IC_RESULT (ic));
 
-  // TODO: Assign return value.
+  if (ic->parmBytes || bigreturn)
+    adjustStack (ic->parmBytes + bigreturn * 2);
+
+  /* if we need assign a result value */
+  if (SomethingReturned && !bigreturn)
+    {
+      aopOp (IC_RESULT (ic), ic);
+
+      // TODO: Implement this!
+
+      freeAsmop (IC_RESULT (ic));
+    }
 }
 
 /*-----------------------------------------------------------------*/
@@ -1390,6 +1488,9 @@ static void
 genEndFunction (iCode *ic)
 {
   symbol *sym = OP_SYMBOL (IC_LEFT (ic));
+
+  wassert (!regalloc_dry_run);
+  wassert (!_G.stack.pushed);
 
   if (IFFUNC_ISNAKED(sym->type))
   {
@@ -1611,6 +1712,13 @@ genMinus (const iCode *ic)
     {
       if (0) // TODO: Use subw where it provides an advantage.
         ;
+      else if (right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK && !aopOnStack (right->aop, i, 1))
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Unimplemented subtraction operand.");
+          cost (80, 80);
+          i++;
+        }
       else // TODO: Take care of A. TODO: Handling of right operands that can't be directly subtracted from a.
         {
           cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
@@ -2256,6 +2364,7 @@ genIfx (const iCode *ic)
 static void
 genAddrOf (const iCode *ic)
 {
+  symbol *sym;
   operand *result, *left;
 
   D (emitcode ("; genAddrOf", ""));
@@ -2263,30 +2372,46 @@ genAddrOf (const iCode *ic)
   result = IC_RESULT (ic);
   left = IC_LEFT (ic);
 
-  symbol *sym;
+  wassert (result);
+  wassert (left);
   wassert (IS_TRUE_SYMOP (left));
   sym = OP_SYMBOL (left);
+  wassert (sym);
 
   aopOp (result, ic);
 
-  if (sym->onStack)
+  // TODO: When optimizing for size, putting on-stack address into y when y is free is cheaper calculating in x, then using exgw.
+  if (aopInReg (result->aop, 0, Y_IDX) || regDead (Y_IDX, ic) && !regDead (X_IDX, ic))
     {
-      wassertl (0, "Taking address of on-stack variables not implemented yet.");
-    }
-  else // TODO: Handle case of cheapMove() using A, but A alive.
-    {
-      if (aopInReg (result->aop, 0, Y_IDX) || regDead (Y_IDX, ic) && !regDead (X_IDX, ic))
+      if (!sym->onStack)
         {
+          wassert (sym->name);
           emitcode ("ldw", "y, #%s", sym->name);
           cost (4, 2);
-          genMove (result->aop, ASMOP_Y, regDead (A_IDX, ic), FALSE, regDead (X_IDX, ic));
         }
-      else // TODO: Handle case of both X and Y alive; TODO: Use mov when destination is a global variable.
+      else
         {
+          emitcode ("ldw", "y, sp");
+          emitcode ("addw", "y, #%d", sym->stack + _G.stack.pushed);
+          cost (6, 3);
+        }
+      genMove (result->aop, ASMOP_Y, regDead (A_IDX, ic), FALSE, regDead (X_IDX, ic));
+    }
+  else // TODO: Handle case of both X and Y alive; TODO: Use mov when destination is a global variable.
+    {
+      if (!sym->onStack)
+        {
+          wassert (sym->name);
           emitcode ("ldw", "x, #%s", sym->name);
           cost (3, 2);
-          genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
         }
+      else
+        {
+          emitcode ("ldw", "x, sp");
+          emitcode ("addw", "x, #%d", sym->stack + _G.stack.pushed);
+          cost (4, 3);
+        }
+      genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
     }
 
   freeAsmop (result);
@@ -2337,6 +2462,9 @@ genSTM8iCode (iCode *ic)
       break;
 
     case IPUSH:
+      genIpush (ic);
+      break;
+
     case IPOP:
       wassertl (0, "Unimplemented iCode");
       break;

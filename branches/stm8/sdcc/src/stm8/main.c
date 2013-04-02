@@ -64,6 +64,14 @@ stm8_finaliseOptions (void)
 static void
 stm8_setDefaultOptions (void)
 {
+  options.nopeep = 0;
+  options.stackAuto = 1;
+  options.mainreturn = 1;
+  options.intlong_rent = 1;
+  options.float_rent = 1;
+  options.noRegParams = 1;
+
+  options.out_fmt = 'i';        /* Default output format is ihx */
 }
 
 static const char *
