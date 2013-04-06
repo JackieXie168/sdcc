@@ -1818,7 +1818,7 @@ genCmp (iCode *ic)
   operand *right = IC_RIGHT (ic);
   sym_link *letype, *retype;
   int sign, opcode;
-  int size;
+  int size, i;
 
   D (emitcode ("; genCmp", ""));
 
@@ -1836,7 +1836,9 @@ genCmp (iCode *ic)
   aopOp (IC_RESULT (ic), ic);
 
   /* Prefer literal operand on right */
-  if (left->aop->type == AOP_LIT || right->aop->type != AOP_LIT && left->aop->type == AOP_DIR)
+  if (left->aop->type == AOP_LIT ||
+    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
+    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
     {
       operand *temp = left;
       left = right;
@@ -1867,11 +1869,19 @@ genCmp (iCode *ic)
           cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
         }
     }
-  else // TODO: Implement.
+  else
     {
-      if (!regalloc_dry_run)
-        wassertl (0, "Unimplemented comparison operands.");
-      cost (80, 80);
+      if (!regDead (A_IDX, ic))
+        push (ASMOP_A, 0, 1);
+
+      for (i = 0; i < size; i++)
+        {
+          cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+          emit3_o (i ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, i);
+        }
+
+      if (!regDead (A_IDX, ic))
+        pop (ASMOP_A, 0, 1);
     }
 
   {
