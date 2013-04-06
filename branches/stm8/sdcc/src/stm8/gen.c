@@ -764,27 +764,27 @@ adjustStack (int n)
           emitcode ("addw","sp, #255");
           cost (2, 1);
           n -= 255;
-          _G.stack.pushed -= 127;
+          _G.stack.pushed += 255;
         }
       else if (n < -255)
         {
           emitcode ("subw","sp, #255");
           cost (2, 1);
           n += 255;
-          _G.stack.pushed += 128;
+          _G.stack.pushed -= 255;
         }
       else if (n > 0)
         {
           emitcode ("addw", "sp, #%d", n);
           cost (2, 1);
-          _G.stack.pushed -= n;
+          _G.stack.pushed += n;
           return;
         }
 	  else 
 	    {
 		  emitcode ("subw", "sp, #%d", -n);
           cost (2, 1);
-          _G.stack.pushed += n;
+          _G.stack.pushed -= -n;
           return;
         }
     }
@@ -1418,7 +1418,7 @@ emitCall (const iCode *ic, bool ispcall)
                        || IS_TRUE_SYMOP (IC_RESULT (ic));
 
   if (ic->parmBytes || bigreturn)
-    adjustStack (ic->parmBytes + bigreturn * 2);
+    adjustStack (-ic->parmBytes - bigreturn * 2);
 
   /* if we need assign a result value */
   if (SomethingReturned && !bigreturn)
@@ -1490,6 +1490,11 @@ genEndFunction (iCode *ic)
   symbol *sym = OP_SYMBOL (IC_LEFT (ic));
 
   wassert (!regalloc_dry_run);
+
+  /* adjust the stack for the function */
+  if (sym->stack)
+    adjustStack (sym->stack);
+
   wassert (!_G.stack.pushed);
 
   if (IFFUNC_ISNAKED(sym->type))

@@ -1,3 +1,8 @@
+2013-04-06 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fixes for stack pointer handling.
+
 2013-04-06 Erik Petrich <epetrich AT ivorytower.norman.ok.us>
 
 	* support/regression/tests/literalop.c,
@@ -9,7 +14,7 @@
 2013-04-06 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  Implement comparison for more operand types.
+	  STM8: Implement comparison for more operand types.
 
 2013-04-02 Philipp Klaus Krause <pkk AT spth.de>
 
