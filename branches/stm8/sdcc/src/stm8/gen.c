@@ -79,10 +79,11 @@ static const char *asminstnames[] =
   "xor"
 };
 
-static struct asmop asmop_a, asmop_x, asmop_y;
+static struct asmop asmop_a, asmop_x, asmop_y, asmop_zero;
 static struct asmop *const ASMOP_A = &asmop_a;
 static struct asmop *const ASMOP_X = &asmop_x;
 static struct asmop *const ASMOP_Y = &asmop_y;
+static struct asmop *const ASMOP_ZERO = &asmop_zero;
 
 void
 stm8_init_asmops (void)
@@ -105,6 +106,10 @@ stm8_init_asmops (void)
   asmop_y.aopu.bytes[0].byteu.reg = stm8_regs + YL_IDX;
   asmop_y.aopu.bytes[1].in_reg = TRUE;
   asmop_y.aopu.bytes[1].byteu.reg = stm8_regs + YH_IDX;
+
+  asmop_zero.type = AOP_LIT;
+  asmop_zero.size = 1;
+  asmop_zero.aopu.aop_lit = constVal ("0");
 }
 
 /*-----------------------------------------------------------------*/
@@ -2358,9 +2363,31 @@ genIfx (const iCode *ic)
         emitcode (IC_FALSE (ic) ? "jrc" : "jrnc", "!tlabel", labelKey2num (tlbl));
       cost (2, 0);
     }
+  else if (cond->aop->size == 2 && (aopInReg (cond->aop, 0, X_IDX) || aopInReg (cond->aop, 0, Y_IDX)))
+    {
+      emitcode ("tnzw", aopInReg (cond->aop, 0, X_IDX) ? "x" : "y");
+      cost (aopInReg (cond->aop, 0, X_IDX) ? 1 : 2, 1);
+      if (tlbl)
+        emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
+      cost (2, 0);
+    }
   else
     {
-      wassertl (0, "Unimplemented Ifx operand.");
+      int i;
+
+      if (!regDead (A_IDX, ic))
+        push (A_IDX, 0, 1);
+
+      cheapMove (ASMOP_A, 0, cond->aop, 0, FALSE);
+      for (i = 1; i < cond->aop->size; i++)
+        emit3_o (A_OR, ASMOP_A, 0, cond->aop, i);
+
+      if (!regDead (A_IDX, ic))
+        pop (A_IDX, 0, 1);
+
+      if (tlbl)
+        emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
+      cost (2, 0);
     }
 
   if (tlbl)
@@ -2439,24 +2466,49 @@ static void
 genCast (const iCode *ic)
 {
   operand *result, *right;
+  int size, offset;
+  sym_link *rtype;
 
   D (emitcode ("; genCast", ""));
 
   result = IC_RESULT (ic);
   right = IC_RIGHT (ic);
+  rtype = operandType (right);
 
   aopOp (right, ic);
   aopOp (result, ic);
 
-  if (result->aop->size <= right->aop->size)
+  if (result->aop->size <= right->aop->size && (!IS_BOOL (operandType (result)) || IS_BOOL (operandType (right))))
     {
       freeAsmop (right);
       freeAsmop (result);
       genAssign (ic);
       return;
     }
+  else if (!IS_BOOL (operandType (result)))
+    {
+      size = right->aop->size;
+      offset = 0;
+      while (size--)
+        {
+          cheapMove (result->aop, offset, right->aop, offset, TRUE); // TODO: Relax restriction on A.
+          offset++;
+        }
 
-  wassertl (0, "Unimplemented cast.");
+      /* now depending on the sign of the destination */
+      size = result->aop->size - right->aop->size;
+
+      /* Unsigned or not an integral type - right fill with zeros */
+      if (!IS_SPEC (rtype) || SPEC_USIGN (rtype))
+        {
+          while (size--)
+            cheapMove (result->aop, offset++, ASMOP_ZERO, 0, TRUE); // TODO: Relax restriction on A.
+        }
+      else
+        wassertl (0, "Unimplemented big signed cast.");
+    }
+  else
+    wassertl (0, "Unimplemented cast to _Bool.");
 
   freeAsmop (right);
   freeAsmop (result);
