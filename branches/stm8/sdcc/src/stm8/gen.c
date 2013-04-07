@@ -2487,6 +2487,8 @@ genCast (const iCode *ic)
     }
   else if (!IS_BOOL (operandType (result)))
     {
+      // TODO: Take care handling A.
+
       size = right->aop->size;
       offset = 0;
       while (size--)
@@ -2505,7 +2507,13 @@ genCast (const iCode *ic)
             cheapMove (result->aop, offset++, ASMOP_ZERO, 0, TRUE); // TODO: Relax restriction on A.
         }
       else
-        wassertl (0, "Unimplemented big signed cast.");
+        {
+          cheapMove (ASMOP_A, 0, right->aop, right->aop->size - 1, TRUE); // TODO: Relax restriction on A.
+          emit3 (A_RLC, 0, 0);
+          emit3 (A_SBC, ASMOP_A, ASMOP_A);
+          while (size--)
+            cheapMove (result->aop, offset++, ASMOP_A, 0, TRUE); // TODO: Relax restriction on A.
+        }
     }
   else
     wassertl (0, "Unimplemented cast to _Bool.");
