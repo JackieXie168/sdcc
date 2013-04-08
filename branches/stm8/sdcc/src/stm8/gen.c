@@ -1482,8 +1482,12 @@ genFunction (iCode *ic)
   emitcode (";", " function %s", sym->name);
   emitcode (";", "-----------------------------------------");
 
+  D (emitcode (";", stm8_assignment_optimal ? "Register assignment is optimal." : "; Register assignment might be sub-optimal."));
+  D (emitcode (";", "Stack space usage: %d bytes.", sym->stack));
+
   emitcode ("", "%s:", sym->rname);
   genLine.lineCurr->isLabel = 1;
+
 
   if (IFFUNC_ISNAKED(ftype))
   {
@@ -2278,7 +2282,7 @@ genPointerGet (const iCode *ic)
 
   // TODO: Use Y when X is not available (or save X on stack), use ldw, etc.
 
-  //genCopy (ASMOP_X, left, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   // TODO: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
