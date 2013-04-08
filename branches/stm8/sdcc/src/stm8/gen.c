@@ -249,8 +249,13 @@ error:
 static void
 op_cost (const asmop *op1, int offset1)
 {
-  AOP_TYPE op1type = op1->type;
-  int r1Idx = ((aopRS (op1) && op1->aopu.bytes[offset1].in_reg)) ? op1->aopu.bytes[offset1].byteu.reg->rIdx : -1;
+  AOP_TYPE op1type;
+  int r1Idx;
+
+  wassert (op1);
+
+  op1type = op1->type;
+  r1Idx = ((aopRS (op1) && op1->aopu.bytes[offset1].in_reg)) ? op1->aopu.bytes[offset1].byteu.reg->rIdx : -1;
 
   switch (op1type)
     {
@@ -2580,8 +2585,9 @@ genCast (const iCode *ic)
       else
         {
           cheapMove (ASMOP_A, 0, right->aop, right->aop->size - 1, TRUE); // TODO: Relax restriction on A.
-          emit3 (A_RLC, 0, 0);
-          emit3 (A_SBC, ASMOP_A, ASMOP_A);
+          emit3 (A_RLC, ASMOP_A, 0);
+          emit3 (A_CLR, ASMOP_A, 0);
+          emit3 (A_RRC, ASMOP_A, 0);
           while (size--)
             cheapMove (result->aop, offset++, ASMOP_A, 0, TRUE); // TODO: Relax restriction on A.
         }
