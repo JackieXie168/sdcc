@@ -2347,25 +2347,6 @@ genIfx (const iCode *ic)
         emitcode (IC_FALSE (ic) ? "btjt" : "btjf", "%s, #0, !tlabel", aopGet (cond->aop, 0), labelKey2num (tlbl));
       cost (5, 0);
     }
-  else if (cond->aop->size == 1 && (aopRS (cond->aop) || cond->aop->type == AOP_DIR))
-    {
-      // Need to swap when operand is in part of x or y.
-      int swapidx = -1;
-      if (aopRS (cond->aop) && !aopInReg (cond->aop, 0, A_IDX) && cond->aop->aopu.bytes[0].in_reg)
-          swapidx = cond->aop->aopu.bytes[0].byteu.reg->rIdx;
-
-      if (swapidx != -1)
-        swap_to_a (swapidx);
-
-      emit3 (A_TNZ, swapidx == -1 ? cond->aop : ASMOP_A, 0);
-
-      if (swapidx != -1)
-        swap_from_a (swapidx);
-
-      if (tlbl)
-        emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
-      cost (2, 0);
-    }
   else if (aopInReg (cond->aop, 0, C_IDX))
     {
       wassertl (IS_BOOL (operandType (cond)), "Variable of type other than _Bool in carry bit.");
@@ -2373,31 +2354,41 @@ genIfx (const iCode *ic)
         emitcode (IC_FALSE (ic) ? "jrc" : "jrnc", "!tlabel", labelKey2num (tlbl));
       cost (2, 0);
     }
-  else if (cond->aop->size == 2 && (aopInReg (cond->aop, 0, X_IDX) || aopInReg (cond->aop, 0, Y_IDX)))
+  else if (cond->aop->size == 2 &&
+    (aopInReg (cond->aop, 0, X_IDX) || aopInReg (cond->aop, 0, Y_IDX) ||
+    (cond->aop->type == AOP_REG && (cond->aop->aopu.bytes[0].byteu.reg->rIdx == XH_IDX && cond->aop->aopu.bytes[1].byteu.reg->rIdx == XL_IDX || cond->aop->aopu.bytes[0].byteu.reg->rIdx == YH_IDX && cond->aop->aopu.bytes[1].byteu.reg->rIdx == YL_IDX))))
     {
-      emitcode ("tnzw", aopInReg (cond->aop, 0, X_IDX) ? "x" : "y");
-      cost (aopInReg (cond->aop, 0, X_IDX) ? 1 : 2, 1);
+      bool in_x = (aopInReg (cond->aop, 0, X_IDX) || cond->aop->aopu.bytes[0].byteu.reg->rIdx == XH_IDX && cond->aop->aopu.bytes[1].byteu.reg->rIdx == XL_IDX);
+
+      emitcode ("tnzw", in_x ? "x" : "y");
+      cost (in_x ? 1 : 2, 1);
       if (tlbl)
         emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
       cost (2, 0);
     }
-  else
+  else if (cond->aop->size == 1 && (aopRS (cond->aop) || cond->aop->type == AOP_DIR))
     {
       int i;
 
-      if (!regDead (A_IDX, ic))
-        push (A_IDX, 0, 1);
+      for (i = 0; i < cond->aop->size; i++)
+        {
+          // Need to swap when operand is in part of x or y.
+          int swapidx = -1;
+          if (aopRS (cond->aop) && !aopInReg (cond->aop, 0, A_IDX) && cond->aop->aopu.bytes[0].in_reg)
+            swapidx = cond->aop->aopu.bytes[0].byteu.reg->rIdx;
 
-      cheapMove (ASMOP_A, 0, cond->aop, 0, FALSE);
-      for (i = 1; i < cond->aop->size; i++)
-        emit3_o (A_OR, ASMOP_A, 0, cond->aop, i);
+          if (swapidx != -1)
+            swap_to_a (swapidx);
 
-      if (!regDead (A_IDX, ic))
-        pop (A_IDX, 0, 1);
+          emit3 (A_TNZ, swapidx == -1 ? cond->aop : ASMOP_A, 0);
 
-      if (tlbl)
-        emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
-      cost (2, 0);
+          if (swapidx != -1)
+            swap_from_a (swapidx);
+
+          if (tlbl)
+            emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
+          cost (2, 0);
+        }
     }
 
   if (tlbl)
