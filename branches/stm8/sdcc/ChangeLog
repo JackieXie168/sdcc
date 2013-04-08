@@ -5,6 +5,8 @@
 	* device/include/sdcc-lib.h,
 	  device/include/asm/stm8/features.h:
 	  STM8: Port feature header.
+	* device/include/math.h:
+	  STM8: Port feature configuration.
 
 2013-04-07 Philipp Klaus Krause <pkk AT spth.de>
 
