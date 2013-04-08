@@ -1505,7 +1505,7 @@ genEndFunction (iCode *ic)
   if (sym->stack)
     adjustStack (sym->stack);
 
-  wassert (!_G.stack.pushed, "Unbalanced stack.");
+  wassertl (!_G.stack.pushed, "Unbalanced stack.");
 
   if (IFFUNC_ISNAKED(sym->type))
   {
