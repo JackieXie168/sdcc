@@ -1,6 +1,11 @@
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
+	  STM8: Allow more operands in xor, and, or.
+
+2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
 	  STM8: Implement integer unary minus, or fix.
 
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>

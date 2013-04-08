@@ -2138,21 +2138,63 @@ genXor (const iCode *ic)
 
   size = getSize (operandType (result));
 
-  /* if left is a literal & right is not then exchange them */
-  if (left->aop->type == AOP_LIT && right->aop->type != AOP_LIT || size == 1 && aopInReg (right->aop, 0, A_IDX))
+  /* Prefer literal operand on right */
+  if (left->aop->type == AOP_LIT ||
+    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
+    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
     {
-      operand *tmp = right;
-      right = left;
-      left = tmp;
+      operand *temp = left;
+      left = right;
+      right = temp;
     }
 
-  // TODO: Take care of operands partially in A. TODO: Handling of right operands that can't be directly xored with a. TODO: Use bit complement instructions where it is faster.
+  // TODO: Take care of operands partially in A. TODO: Use bit complement instructions where it is faster.
   if (!regDead (A_IDX, ic))
     push (ASMOP_A, 0, 1);
   for (i = 0; i < size; i++)
     {
+      asmop *right_stacked = NULL;
+      int right_offset;
+
+      if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
+        {
+          if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
+            {
+              right_stacked = ASMOP_X;
+              right_offset = 1;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
+            {
+              right_stacked = ASMOP_X;
+              right_offset = 0;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
+            {
+              right_stacked = ASMOP_Y;
+              right_offset = 1;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
+            {
+              right_stacked = ASMOP_Y;
+              right_offset = 0;
+            }
+          else
+            wassert (0);
+          push (right_stacked, 0, 2);
+        }
+
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-      emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
+      if (!right_stacked)
+        emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
+      else
+        {
+          emitcode ("xor", "a, (%d, sp)", right_offset);
+          cost (2, 1);
+        }
+
+      if (right_stacked)
+        pop (right_stacked, 0, 2);
+
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
     }
   if (!regDead (A_IDX, ic))
@@ -2180,32 +2222,63 @@ genOr (const iCode *ic)
 
   size = getSize (operandType (result));
 
-  /* if left is a literal & right is not then exchange them */
-  if (left->aop->type == AOP_LIT && right->aop->type != AOP_LIT || size == 1 && aopInReg (right->aop, 0, A_IDX))
+  /* Prefer literal operand on right */
+  if (left->aop->type == AOP_LIT ||
+    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
+    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
     {
-      operand *tmp = right;
-      right = left;
-      left = tmp;
+      operand *temp = left;
+      left = right;
+      right = temp;
     }
 
-  // TODO: Take care of oparands partially in A. TODO: Handling of right operands that can't be directly ored with a. TODO: Use bit set instructions where it is faster.
+  // TODO: Take care of operands partially in A. TODO: Use bit set instructions where it is faster.
   if (!regDead (A_IDX, ic))
     push (ASMOP_A, 0, 1);
   for (i = 0; i < size; i++)
     {
+      asmop *right_stacked = NULL;
+      int right_offset;
+
       if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
         {
-          if (!regalloc_dry_run)
+          if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
             {
-              fprintf (stderr, "right type %d, size %d\n", right->aop->type, right->aop->size);
-              wassertl (0, "Unimplemented or operand.");
+              right_stacked = ASMOP_X;
+              right_offset = 1;
             }
-          cost (80, 80);
-          continue;
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
+            {
+              right_stacked = ASMOP_X;
+              right_offset = 0;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
+            {
+              right_stacked = ASMOP_Y;
+              right_offset = 1;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
+            {
+              right_stacked = ASMOP_Y;
+              right_offset = 0;
+            }
+          else
+            wassert (0);
+          push (right_stacked, 0, 2);
         }
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-      emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
+      if (!right_stacked)
+        emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
+      else
+        {
+          emitcode ("or", "a, (%d, sp)", right_offset);
+          cost (2, 1);
+        }
+
+      if (right_stacked)
+        pop (right_stacked, 0, 2);
+
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
     }
   if (!regDead (A_IDX, ic))
@@ -2233,12 +2306,14 @@ genAnd (const iCode *ic)
 
   size = getSize (operandType (result));
 
-  /* if left is a literal & right is not then exchange them */
-  if (left->aop->type == AOP_LIT && right->aop->type != AOP_LIT || size == 1 && aopInReg (right->aop, 0, A_IDX))
+  /* Prefer literal operand on right */
+  if (left->aop->type == AOP_LIT ||
+    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
+    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
     {
-      operand *tmp = right;
-      right = left;
-      left = tmp;
+      operand *temp = left;
+      left = right;
+      right = temp;
     }
 
   // TODO: Take care of operands partially in A. TODO: Handling of right operands that can't be directly anded with a. TODO: Use bit reset instructions where it is faster.
@@ -2246,8 +2321,48 @@ genAnd (const iCode *ic)
     push (ASMOP_A, 0, 1);
   for (i = 0; i < size; i++)
     {
+      asmop *right_stacked = NULL;
+      int right_offset;
+
+      if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
+        {
+          if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
+            {
+              right_stacked = ASMOP_X;
+              right_offset = 1;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
+            {
+              right_stacked = ASMOP_X;
+              right_offset = 0;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
+            {
+              right_stacked = ASMOP_Y;
+              right_offset = 1;
+            }
+          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
+            {
+              right_stacked = ASMOP_Y;
+              right_offset = 0;
+            }
+          else
+            wassert (0);
+          push (right_stacked, 0, 2);
+        }
+
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-      emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
+      if (!right_stacked)
+        emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
+      else
+        {
+          emitcode ("and", "a, (%d, sp)", right_offset);
+          cost (2, 1);
+        }
+
+      if (right_stacked)
+        pop (right_stacked, 0, 2);
+
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
     }
   if (!regDead (A_IDX, ic))
