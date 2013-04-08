@@ -1303,6 +1303,72 @@ stm8_emitDebuggerSymbol (const char *debugSym)
 }
 
 /*-----------------------------------------------------------------*/
+/* genSub - generates code for subtraction                         */
+/*-----------------------------------------------------------------*/
+static void
+genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
+{
+  int size, i;
+  bool started;
+
+  size = result_aop->size;
+  for(i = 0, started = FALSE; i < size;)
+    {
+      if (0) // TODO: Use subw where it provides an advantage.
+        ;
+      else if (right_aop->type == AOP_REG || right_aop->type == AOP_REGSTK && !aopOnStack (right_aop, i, 1))
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Unimplemented subtraction operand.");
+          cost (80, 80);
+          i++;
+        }
+      else // TODO: Take care of A. TODO: Handling of right operands that can't be directly subtracted from a.
+        {
+          cheapMove (ASMOP_A, 0, left_aop, i, FALSE);
+          if (!started && right_aop->type == AOP_LIT && !byteOfVal (right_aop->aopu.aop_lit, i))
+            {
+              // Skip over this byte.
+            }
+          else
+            {
+              emit3_o (started ? A_SBC : A_SUB, ASMOP_A, 0, right_aop, i);
+              started = TRUE;
+            }
+          cheapMove (result_aop, i, ASMOP_A, 0, FALSE);
+          i++;
+        }
+    }
+}
+
+/*-----------------------------------------------------------------*/
+/* genSub - generates code for subtraction                         */
+/*-----------------------------------------------------------------*/
+static void
+genUminus (const iCode *ic)
+{
+  if (IS_FLOAT (operandType (IC_LEFT (ic))))
+    {
+      wassertl (0, "Unimplemented float unary minus.");
+      return;
+    }
+
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+
+  D (emitcode ("; genUminus", ""));
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+
+  genSub (ic, result->aop, ASMOP_ZERO, left->aop);
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
 /* genIpush - genrate code for pushing this gets a little complex  */
 /*-----------------------------------------------------------------*/
 static void
@@ -1721,7 +1787,7 @@ genPlus (const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* genMinus - generates code for subtraction                       */
+/* genMinus - generates code for minus                             */
 /*-----------------------------------------------------------------*/
 static void
 genMinus (const iCode *ic)
@@ -1729,43 +1795,14 @@ genMinus (const iCode *ic)
   operand *result = IC_RESULT (ic);
   operand *left = IC_LEFT (ic);
   operand *right = IC_RIGHT (ic);
-  int size, i;
-  bool started;
 
   D (emitcode ("; genMinus", ""));
 
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
-  
-  size = result->aop->size;
-  for(i = 0, started = FALSE; i < size;)
-    {
-      if (0) // TODO: Use subw where it provides an advantage.
-        ;
-      else if (right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK && !aopOnStack (right->aop, i, 1))
-        {
-          if (!regalloc_dry_run)
-            wassertl (0, "Unimplemented subtraction operand.");
-          cost (80, 80);
-          i++;
-        }
-      else // TODO: Take care of A. TODO: Handling of right operands that can't be directly subtracted from a.
-        {
-          cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-          if (!started && right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
-            {
-              // Skip over this byte.
-            }
-          else
-            {
-              emit3_o (started ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, i);
-              started = TRUE;
-            }
-          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
-          i++;
-        }
-    }
+
+  genSub (ic, result->aop, left->aop, right->aop);
 
   freeAsmop (right);
   freeAsmop (left);
@@ -2764,9 +2801,15 @@ genSTM8iCode (iCode *ic)
   switch (ic->op)
     {
     case '!':
-    case '~':
-    case UNARYMINUS:
       wassertl (0, "Unimplemented iCode");
+      break;
+
+    case '~':
+      wassertl (0, "Unimplemented iCode");
+      break;
+
+    case UNARYMINUS:
+      genUminus (ic);
       break;
 
     case IPUSH:
@@ -2858,6 +2901,9 @@ genSTM8iCode (iCode *ic)
       break;
 
     case GETHBIT:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case GETABIT:
       wassertl (0, "Unimplemented iCode");
       break;
@@ -2900,6 +2946,9 @@ genSTM8iCode (iCode *ic)
       break;
 
     case DUMMY_READ_VOLATILE:
+      wassertl (0, "Unimplemented iCode");
+      break;
+
     case CRITICAL:
     case ENDCRITICAL:
       wassertl (0, "Unimplemented iCode");
