@@ -1428,7 +1428,7 @@ emitCall (const iCode *ic, bool ispcall)
                        || IS_TRUE_SYMOP (IC_RESULT (ic));
 
   if (ic->parmBytes || bigreturn)
-    adjustStack (-ic->parmBytes - bigreturn * 2);
+    adjustStack (ic->parmBytes + bigreturn * 2);
 
   /* if we need assign a result value */
   if (SomethingReturned && !bigreturn)
@@ -1505,7 +1505,7 @@ genEndFunction (iCode *ic)
   if (sym->stack)
     adjustStack (sym->stack);
 
-  wassert (!_G.stack.pushed);
+  wassert (!_G.stack.pushed, "Unbalanced stack.");
 
   if (IFFUNC_ISNAKED(sym->type))
   {

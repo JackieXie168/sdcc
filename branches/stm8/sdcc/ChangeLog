@@ -1,7 +1,7 @@
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Stack adjustment fix.
+	  STM8: Stack adjustment fixes.
 
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
 
