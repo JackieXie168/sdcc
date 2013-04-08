@@ -1355,7 +1355,6 @@ genUminus (const iCode *ic)
 
   operand *result = IC_RESULT (ic);
   operand *left = IC_LEFT (ic);
-  operand *right = IC_RIGHT (ic);
 
   D (emitcode ("; genUminus", ""));
 
@@ -2194,6 +2193,17 @@ genOr (const iCode *ic)
     push (ASMOP_A, 0, 1);
   for (i = 0; i < size; i++)
     {
+      if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
+        {
+          if (!regalloc_dry_run)
+            {
+              fprintf (stderr, "right type %d, size %d\n", right->aop->type, right->aop->size);
+              wassertl (0, "Unimplemented or operand.");
+            }
+          cost (80, 80);
+          continue;
+        }
+
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
       emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
