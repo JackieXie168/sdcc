@@ -1,6 +1,11 @@
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
+	  STM8: Stack adjustment fix.
+
+2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
 	  STM8: Implement cast to _Bool.
 	* device/include/sdcc-lib.h,
 	  device/include/asm/stm8/features.h:

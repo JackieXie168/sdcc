@@ -774,27 +774,27 @@ adjustStack (int n)
           emitcode ("addw","sp, #255");
           cost (2, 1);
           n -= 255;
-          _G.stack.pushed += 255;
+          _G.stack.pushed -= 255;
         }
       else if (n < -255)
         {
           emitcode ("subw","sp, #255");
           cost (2, 1);
           n += 255;
-          _G.stack.pushed -= 255;
+          _G.stack.pushed += 255;
         }
       else if (n > 0)
         {
           emitcode ("addw", "sp, #%d", n);
           cost (2, 1);
-          _G.stack.pushed += n;
+          _G.stack.pushed -= n;
           return;
         }
 	  else 
 	    {
 		  emitcode ("subw", "sp, #%d", -n);
           cost (2, 1);
-          _G.stack.pushed -= -n;
+          _G.stack.pushed += -n;
           return;
         }
     }
