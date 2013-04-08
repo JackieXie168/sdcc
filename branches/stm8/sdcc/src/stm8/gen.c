@@ -81,11 +81,12 @@ static const char *asminstnames[] =
   "xor"
 };
 
-static struct asmop asmop_a, asmop_x, asmop_y, asmop_zero;
+static struct asmop asmop_a, asmop_x, asmop_y, asmop_zero, asmop_one;
 static struct asmop *const ASMOP_A = &asmop_a;
 static struct asmop *const ASMOP_X = &asmop_x;
 static struct asmop *const ASMOP_Y = &asmop_y;
 static struct asmop *const ASMOP_ZERO = &asmop_zero;
+static struct asmop *const ASMOP_ONE = &asmop_one;
 
 void
 stm8_init_asmops (void)
@@ -112,6 +113,10 @@ stm8_init_asmops (void)
   asmop_zero.type = AOP_LIT;
   asmop_zero.size = 1;
   asmop_zero.aopu.aop_lit = constVal ("0");
+
+  asmop_one.type = AOP_LIT;
+  asmop_one.size = 1;
+  asmop_one.aopu.aop_lit = constVal ("1");
 }
 
 /*-----------------------------------------------------------------*/
@@ -1876,21 +1881,36 @@ genCmp (iCode *ic)
     right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK &&
     aopInReg (left->aop, 0, A_IDX))
     emit3 (A_CP, ASMOP_A, right->aop);
-  else if (size == 2 &&
-    right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK &&
-    (aopInReg (left->aop, 0, X_IDX) || aopInReg (left->aop, 0, Y_IDX)))
+  else if (size == 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
     {
       if (aopInReg (left->aop, 0, Y_IDX) && right->aop->type == AOP_STK)
         {
-          emitcode ("exgw", "x, y");
-          emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
-          emitcode ("exgw", "x, y");
-          cost (4, 4);
+          if (regDead (X_IDX, ic) && regDead (Y_IDX, ic))
+            {
+              emitcode ("ldw", "x, y");
+              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              cost (3, 3);
+            }
+          else
+            {
+              emitcode ("exgw", "x, y");
+              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              emitcode ("exgw", "x, y");
+              cost (4, 4);
+            }
         }
       else
         {
-          emitcode ("cpw", aopInReg (left->aop, 0, X_IDX) ? "x, %s" : "x, %s", aopGet (right->aop, 0));
+          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+            push (ASMOP_X, 0, 2);
+
+          genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
+
+          emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet (right->aop, 0));
           cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
+
+          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+            pop (ASMOP_X, 0, 2);
         }
     }
   else
@@ -1913,13 +1933,149 @@ genCmp (iCode *ic)
     symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
     emitcode (branchInstCmp (opcode, sign), "%05d$", labelKey2num (tlbl1));
-
+    cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
     emitcode ("jp", "%05d$", labelKey2num (tlbl2));
     cost (3, 1);
     if (!regalloc_dry_run)
       emitLabel (tlbl1);
+    cheapMove (result->aop, 0, ASMOP_ONE, 0, !regDead (A_IDX, ic));
     if (!regalloc_dry_run)
       emitLabel (tlbl2);
+  }
+
+  freeAsmop (right);
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genCmpEQorNE - equal or not equal comparison                    */
+/*-----------------------------------------------------------------*/
+static void
+genCmpEQorNE (iCode *ic)
+{
+  operand *left, *right, *result;
+  int opcode;
+  int size;
+  symbol *tlbl_NE = NULL;
+  symbol *tlbl_EQ = NULL;
+
+  D (emitcode ("; genCmpEQorNE", ""));
+
+  result = IC_RESULT (ic);
+  left = IC_LEFT (ic);
+  right = IC_RIGHT (ic);
+
+  opcode = ic->op;
+
+  /* assign the amsops */
+  aopOp (left, ic);
+  aopOp (right, ic);
+  aopOp (result, ic);
+
+  /* Prefer literal operand on right */
+  if (left->aop->type == AOP_LIT ||
+    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
+    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
+    {
+      operand *temp = left;
+      left = right;
+      right = temp;
+      opcode = exchangedCmp (opcode);
+    }
+
+  size = max (left->aop->size, right->aop->size);
+
+  if (size == 1 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
+    {
+      if (!regDead (A_IDX, ic) && !aopInReg (left->aop, 0, A_IDX))
+        push (ASMOP_A, 0, 1);
+
+      cheapMove (ASMOP_A, 0, left->aop, 0, FALSE);
+      emit3 (A_CP, ASMOP_A, right->aop);
+
+      if (!regDead (A_IDX, ic) && !aopInReg (left->aop, 0, A_IDX))
+        pop (ASMOP_A, 0, 1);
+    }
+    
+  else if (size == 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
+    {
+      if (aopInReg (left->aop, 0, Y_IDX) && right->aop->type == AOP_STK)
+        {
+          if (regDead (X_IDX, ic) && regDead (Y_IDX, ic))
+            {
+              emitcode ("ldw", "x, y");
+              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              cost (3, 3);
+            }
+          else
+            {
+              emitcode ("exgw", "x, y");
+              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              emitcode ("exgw", "x, y");
+              cost (4, 4);
+            }
+        }
+      else
+        {
+          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+            push (ASMOP_X, 0, 2);
+
+          genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
+
+          emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet (right->aop, 0));
+          cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
+
+          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+            pop (ASMOP_X, 0, 2);
+        }
+    }
+  else
+    {
+      if (!regalloc_dry_run)
+        {
+          fprintf(stderr, "ltype %d, lsize %d, rtype %d, rsize %d\n", left->aop->type, left->aop->size, right->aop->type, right->aop->size);
+          wassertl (0, "Unimplemented comparison operands.");
+        }
+      cost (80, 80);
+    }
+
+  {
+    symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+
+    wassertl (result->aop->size == 1, "Unimplemented result size.");
+
+    if (opcode == EQ_OP)
+      {
+        if (!tlbl_EQ && !regalloc_dry_run)
+          tlbl_EQ = newiTempLabel (NULL);
+        emitcode ("jreq", "%05d$", labelKey2num (tlbl_EQ));
+        cost (2, 0);
+        if (tlbl_NE)
+          emitLabel (tlbl_NE);
+        cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
+        emitcode ("jra", "%05d$", labelKey2num (tlbl));
+        cost (2, 0);
+        if (!regalloc_dry_run)
+          emitLabel (tlbl_EQ);
+        cheapMove (result->aop, 0, ASMOP_ZERO, 1, !regDead (A_IDX, ic));
+      }
+    else
+      {
+        if (!tlbl_NE && !regalloc_dry_run)
+          tlbl_NE = newiTempLabel (NULL);
+        emitcode ("jne", "%05d$", labelKey2num (tlbl_NE));
+        cost (2, 0);
+        cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
+        emitcode ("jra", "%05d$", labelKey2num (tlbl));
+        cost (2, 0);
+        if (!regalloc_dry_run)
+          emitLabel (tlbl_NE);
+        cheapMove (result->aop, 0, ASMOP_ZERO, 1, !regDead (A_IDX, ic));
+      }
+
+    if (!regalloc_dry_run)
+      emitLabel (tlbl);
   }
 
   freeAsmop (right);
@@ -2658,20 +2814,14 @@ genSTM8iCode (iCode *ic)
 
     case '>':
     case '<':
+    case LE_OP:
+    case GE_OP:
       genCmp(ic);
       break;
 
-    case LE_OP:
-    case GE_OP:
     case NE_OP:
-
-      /* note these two are xlated by algebraic equivalence
-         during parsing SDCC.y */
-      werror (E_INTERNAL_ERROR, __FILE__, __LINE__, "got '>=' or '<=' shouldn't have come here");
-      break;
-
     case EQ_OP:
-      wassertl (0, "Unimplemented iCode");
+      genCmpEQorNE (ic);
       break;
 
     case AND_OP:
