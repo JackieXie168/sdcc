@@ -1,7 +1,9 @@
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Implement more comparisons.
+	  STM8: Implement more comparisons, stack handling fix.
+	* src/SDCCsymt.c:
+	  STM8: Allow returning long long (not implemented in code genration yet).
 
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
 

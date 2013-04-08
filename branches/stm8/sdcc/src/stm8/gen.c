@@ -1482,6 +1482,8 @@ genFunction (iCode *ic)
   const symbol *sym = OP_SYMBOL_CONST (IC_LEFT (ic));
   sym_link *ftype = operandType (IC_LEFT (ic));
 
+  _G.stack.pushed = 0;
+
   /* create the function header */
   emitcode (";", "-----------------------------------------");
   emitcode (";", " function %s", sym->name);
@@ -2754,6 +2756,11 @@ genCast (const iCode *ic)
 static void
 genSTM8iCode (iCode *ic)
 {
+#if 0
+  if (!regalloc_dry_run)
+    printf ("ic %d op %d stack pushed %d\n", ic->key, ic->op, _G.stack.pushed);
+#endif
+
   switch (ic->op)
     {
     case '!':
