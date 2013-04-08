@@ -48,6 +48,7 @@ enum asminst
   A_CP,
   A_LD,
   A_MOV,
+  A_NEG,
   A_OR,
   A_RLC,
   A_RRC,
@@ -68,6 +69,7 @@ static const char *asminstnames[] =
   "cp",
   "ld",
   "mov",
+  "neg",
   "or",
   "rlc",
   "rrc",
@@ -397,6 +399,9 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
     break;
   case A_MOV:
     mov_cost (op1, op2);
+    break;
+  case A_NEG:
+    op_cost (op1, offset1);
     break;
   case A_OR:
     op8_cost (op2, offset2);
@@ -2478,6 +2483,8 @@ genCast (const iCode *ic)
   aopOp (right, ic);
   aopOp (result, ic);
 
+  // TODO: More efficient casts to _Bool especially for result in XL or YL.
+
   if (result->aop->size <= right->aop->size && (!IS_BOOL (operandType (result)) || IS_BOOL (operandType (right))))
     {
       freeAsmop (right);
@@ -2485,7 +2492,71 @@ genCast (const iCode *ic)
       genAssign (ic);
       return;
     }
-  else if (!IS_BOOL (operandType (result)))
+  else if (IS_BOOL (operandType (result)) && right->aop->size == 1 &&
+    (aopInReg (right->aop, 0, A_IDX) || (right->aop->type != AOP_REG && right->aop->type != AOP_REGSTK) || !right->aop->aopu.bytes[0].in_reg))
+    {
+      if (!regDead (A_IDX, ic))
+        push (ASMOP_A, 0, 1);
+
+      if (aopInReg(right->aop, 0, A_IDX))
+        {
+          emit3 (A_NEG, ASMOP_A, 0);
+          emit3 (A_CLR, ASMOP_A, 0);
+        }
+      else
+        {
+          emit3 (A_CLR, ASMOP_A, 0);
+          emit3 (A_CP, ASMOP_A, right->aop);
+        }
+      emit3 (A_RLC, ASMOP_A, 0);
+      cheapMove (result->aop, 0, ASMOP_A, 0, FALSE);
+
+      if (!regDead (A_IDX, ic))
+        pop (ASMOP_A, 0, 1);
+    }
+  else if (IS_BOOL (operandType (result)) && right->aop->size == 2 &&
+    (aopInReg (right->aop, 0, X_IDX) && regDead (X_IDX, ic) || aopInReg (right->aop, 0, Y_IDX) && regDead (Y_IDX, ic)))
+    {
+      if (!regDead (A_IDX, ic))
+        push (ASMOP_A, 0, 1);
+      
+      emitcode ("negw", aopInReg (right->aop, 0, X_IDX) ? "x" : "y");
+      cost (aopInReg (right->aop, 0, X_IDX) ? 1 : 2, 2);
+      emit3 (A_CLR, ASMOP_A, 0);
+      emit3 (A_RLC, ASMOP_A, 0);
+      cheapMove (result->aop, 0, ASMOP_A, 0, FALSE);
+
+      if (!regDead (A_IDX, ic))
+        pop (ASMOP_A, 0, 1);
+    }
+  else if (IS_BOOL (operandType (result)))
+    {
+      if (!regDead (A_IDX, ic))
+        push (ASMOP_A, 0, 1);
+
+      size = right->aop->size;
+      offset = 0;
+
+      cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
+      emit3 (A_CLR, ASMOP_A, 0);
+      for(offset = 0; offset < size; offset++)
+        {
+          if ((right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK) && right->aop->aopu.bytes[0].in_reg)
+            {
+              if (!regalloc_dry_run)
+                wassertl (0, "Unimplemented operand for cast to _Bool.");
+              cost (80, 80);
+              continue;
+            }
+          emit3_o(offset ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, offset);
+        }
+      emit3 (A_RLC, ASMOP_A, 0);
+      cheapMove (result->aop, 0, ASMOP_A, 0, FALSE);
+
+      if (!regDead (A_IDX, ic))
+        pop (ASMOP_A, 0, 1);
+    }
+  else
     {
       // TODO: Take care handling A.
 
@@ -2515,8 +2586,6 @@ genCast (const iCode *ic)
             cheapMove (result->aop, offset++, ASMOP_A, 0, TRUE); // TODO: Relax restriction on A.
         }
     }
-  else
-    wassertl (0, "Unimplemented cast to _Bool.");
 
   freeAsmop (right);
   freeAsmop (result);
