@@ -2433,9 +2433,9 @@ genLeftShiftLiteral (operand *left, operand *right, operand *result, const iCode
                   emit3_o (i ? A_RLC : A_SLL, result->aop, i, 0, 0);
                 else
                   {
-                    if (!regalloc_dry_run)
-                      wassertl (0, "Unimplemented left shift.");
-                    cost (80, 80);
+                    swap_to_a (swapidx);
+                    emit3 (i ? A_RLC : A_SLL, ASMOP_A, 0);
+                    swap_from_a (swapidx);
                   }
 
                 i++;
@@ -2537,9 +2537,9 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
                   emit3_o ((i != size - 1) ? A_RRC : A_SRL, result->aop, i, 0, 0);
                 else
                   {
-                    if (!regalloc_dry_run)
-                      wassertl (0, "Unimplemented left shift.");
-                    cost (80, 80);
+                    swap_to_a (swapidx);
+                    emit3 ((i != size - 1) ? A_RRC : A_SRL, ASMOP_A, 0);
+                    swap_from_a (swapidx);
                   }
 
                 i--;
