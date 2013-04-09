@@ -1,7 +1,7 @@
 2013-04-09 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Fix for GET_VALUE_AT_ADDRESS, fixes for shift by literal.
+	  STM8: Fix for GET_VALUE_AT_ADDRESS, fixes for shift by literal, implement call by pointer.
 
 2013-04-08 Philipp Klaus Krause <pkk AT spth.de>
 

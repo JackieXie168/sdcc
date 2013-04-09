@@ -1478,7 +1478,17 @@ emitCall (const iCode *ic, bool ispcall)
         }
       else
         {
-          wassertl (0, "Unimplemented call through pointer.");
+          // TODO: What if a parameter is passed in X? Use Y? Who saves Y?
+          if (aopRS (left->aop))
+            genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+          else
+            {
+              cheapMove (ASMOP_X, 0, left->aop, 0, TRUE);
+              cheapMove (ASMOP_X, 1, left->aop, 1, FALSE);
+            }
+          
+          emitcode ("call", "(x)");
+          cost (1, 4);
         }
       freeAsmop (left);
     }
@@ -1916,7 +1926,7 @@ genCmp (iCode *ic)
   size = max (left->aop->size, right->aop->size);
 
   if (size == 1 &&
-    right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK &&
+    (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK) &&
     aopInReg (left->aop, 0, A_IDX))
     emit3 (A_CP, ASMOP_A, right->aop);
   else if (size == 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
@@ -1958,6 +1968,14 @@ genCmp (iCode *ic)
 
       for (i = 0; i < size; i++)
         {
+          if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
+            {
+              if (!regalloc_dry_run)
+                wassertl (0, "Unimplemented comparison operand.");
+              cost (80, 80);
+              continue;
+            }
+
           cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
           emit3_o (i ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, i);
         }
