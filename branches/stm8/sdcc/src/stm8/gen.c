@@ -2602,7 +2602,13 @@ genPointerGet (const iCode *ic)
 
   // TODO: Use Y when X is not available (or save X on stack), use ldw, etc.
 
-  genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  if (aopRS (left->aop))
+    genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  else
+    {
+      cheapMove (ASMOP_X, 0, left->aop, 0, TRUE);
+      cheapMove (ASMOP_X, 1, left->aop, 1, regDead (A_IDX, ic));
+    }
 
   // TODO: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
