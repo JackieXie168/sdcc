@@ -1479,13 +1479,7 @@ emitCall (const iCode *ic, bool ispcall)
       else
         {
           // TODO: What if a parameter is passed in X? Use Y? Who saves Y?
-          if (aopRS (left->aop))
-            genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
-          else
-            {
-              cheapMove (ASMOP_X, 0, left->aop, 0, TRUE);
-              cheapMove (ASMOP_X, 1, left->aop, 1, FALSE);
-            }
+          genMove (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
           
           emitcode ("call", "(x)");
           cost (1, 4);
@@ -1734,7 +1728,17 @@ genPlus (const iCode *ic)
   size = result->aop->size;
   for(i = 0, started = FALSE; i < size;)
     {
-      if (!started &&
+      if (!started && i == size - 2 && // We can use inc only for the only non-zero word, since it neither takes into account an existing carry nor does it update the carry.
+        (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX)) &&
+        right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
+        {
+          bool x = aopInReg (result->aop, i, X_IDX);
+          emitcode ("incw", x ? "x" : "y");
+          cost (x ? 1 : 2, 1);
+          started = TRUE;
+          i += 2;
+        }
+      else if (!started &&
         (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX)) &&
         (right->aop->type == AOP_LIT || right->aop->type == AOP_IMMD || aopOnStack (right->aop, i, 2)))
         {
@@ -1746,16 +1750,6 @@ genPlus (const iCode *ic)
               cost ((x || aopOnStack (right->aop, 0, 2)) ? 3 : 4, 2);
               started = TRUE;
             }
-          i += 2;
-        }
-      else if (!started && i == size - 2 && // We can use inc only for the only non-zero word, since it neither takes into account an existing carry nor does it update the carry.
-        (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX)) &&
-        right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
-        {
-          bool x = aopInReg (result->aop, i, X_IDX);
-          emitcode ("incw", x ? "x" : "y");
-          cost (x ? 1 : 2, 1);
-          started = TRUE;
           i += 2;
         }
       else if (right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK && !aopOnStack (right->aop, i, 1))
@@ -2620,13 +2614,7 @@ genPointerGet (const iCode *ic)
 
   // TODO: Use Y when X is not available (or save X on stack), use ldw, etc.
 
-  if (aopRS (left->aop))
-    genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
-  else
-    {
-      cheapMove (ASMOP_X, 0, left->aop, 0, TRUE);
-      cheapMove (ASMOP_X, 1, left->aop, 1, regDead (A_IDX, ic));
-    }
+  genMove (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   // TODO: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
