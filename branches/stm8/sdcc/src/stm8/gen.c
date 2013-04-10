@@ -1246,10 +1246,26 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
       return;
     }
 
-  // TODO: Efficient handling of more special cases.
   for (i = 0; i < size;)
     {
-      if (aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT))
+      if (aopInReg (result, roffset + i, X_IDX) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i) && !byteOfVal (source->aopu.aop_lit, soffset + i + 1))
+        {
+          emitcode ("clrw", "x");
+          cost (1, 1);
+          i += 2;
+        }
+      else if (aopInReg (result, roffset + i, Y_IDX) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i) && !byteOfVal (source->aopu.aop_lit, soffset + i + 1))
+        {
+          emitcode ("clrw", "y");
+          cost (2, 1);
+          i += 2;
+        }
+      else if ((!aopRS (result) || aopOnStack(result, roffset + i, 1) || aopInReg (result, roffset + i, A_IDX)) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i))
+        {
+          emit3_o (A_CLR, result, roffset + i, 0, 0);
+          i++;
+        }
+      else if (aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT))
         {
           emitcode ("ldw", "x, %s", aopGet (source, soffset + i));
           cost (3, 2);
