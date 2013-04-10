@@ -1788,8 +1788,7 @@ genPlus (const iCode *ic)
             }
           else
             {
-              
-              emit3_o (started ? A_ADC : A_ADD, ASMOP_A, 0, right->aop, i);
+              emit3_o (started ? A_ADC : A_ADD, ASMOP_A, 0, i < right->aop->size ? right->aop : ASMOP_ZERO, i);
               started = TRUE;
             }
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
