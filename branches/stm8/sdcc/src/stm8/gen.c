@@ -1586,12 +1586,6 @@ genEndFunction (iCode *ic)
 
   wassert (!regalloc_dry_run);
 
-  /* adjust the stack for the function */
-  if (sym->stack)
-    adjustStack (sym->stack);
-
-  wassertl (!_G.stack.pushed, "Unbalanced stack.");
-
   if (IFFUNC_ISNAKED(sym->type))
   {
       D (emitcode (";", "naked function: no epilogue."));
@@ -1600,8 +1594,11 @@ genEndFunction (iCode *ic)
       return;
   }
 
+  /* adjust the stack for the function */
   if (sym->stack)
     adjustStack (sym->stack);
+
+  wassertl (!_G.stack.pushed, "Unbalanced stack.");
 
   if (IFFUNC_ISISR (sym->type))
     {
