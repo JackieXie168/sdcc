@@ -820,6 +820,8 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
     result->aopu.bytes[roffset].in_reg && source->aopu.bytes[soffset].in_reg &&
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
     return;
+  else if ((!aopRS (result) || aopInReg (result, roffset, A_IDX) || aopOnStack (result, roffset, 1)) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
+    emit3_o (A_CLR, result, roffset, 0, 0);
   else if (aopInReg (result, roffset, A_IDX) || aopInReg (source, soffset, A_IDX))
     emit3_o (A_LD, result, roffset, source, soffset);
   else if (result->type == AOP_DIR && (source->type == AOP_DIR || source->type == AOP_LIT))
