@@ -1533,7 +1533,9 @@ emitCall (const iCode *ic, bool ispcall)
     {
       aopOp (IC_RESULT (ic), ic);
 
-      // TODO: Implement this!
+      wassert (getSize (ftype->next) == 1 || getSize (ftype->next) == 2);
+
+      genMove (IC_RESULT (ic)->aop, getSize (ftype->next) == 1 ? ASMOP_A : ASMOP_X, TRUE, TRUE, TRUE);
 
       freeAsmop (IC_RESULT (ic));
     }

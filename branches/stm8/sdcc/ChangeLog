@@ -1,7 +1,7 @@
 2013-04-10 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: END_FUNCTION stack adjustment fix, more efficient zeroing, addition fix.
+	  STM8: END_FUNCTION stack adjustment fix, more efficient zeroing, addition fix, return value use.
 
 2013-04-09 Philipp Klaus Krause <pkk AT spth.de>
 
