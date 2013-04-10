@@ -268,12 +268,13 @@ op_cost (const asmop *op1, int offset1)
       cost (4, 1);
       return;
     case AOP_REG:
-      if (r1Idx != A_IDX)
-        goto error;
-      cost (1, 1);
-      return;
     case AOP_REGSTK:
     case AOP_STK:
+      if (r1Idx == A_IDX)
+        {
+          cost (1, 1);
+          return;
+        }
       if (r1Idx != -1)
         goto error;
       cost (2, 1);
