@@ -1,3 +1,8 @@
+2013-04-11 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Implement basic pointer writes, fix handling of 16-bit literals.
+
 2013-04-10 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:

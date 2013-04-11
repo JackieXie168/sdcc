@@ -188,7 +188,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_LIT)
     {
-      snprintf (buffer, 256, "#0x%x", byteOfVal (aop->aopu.aop_lit, offset));
+      snprintf (buffer, 256, "#0x%02x", byteOfVal (aop->aopu.aop_lit, offset));
       return (buffer);
     }
 
@@ -204,7 +204,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_IMMD)
     {
-      snprintf (buffer, 256, "%s+%d", aop->aopu.aop_immd, offset);
+      snprintf (buffer, 256, "#%s+%d", aop->aopu.aop_immd, offset);
       return (buffer);
     }
 
@@ -216,6 +216,22 @@ aopGet(const asmop *aop, int offset)
 
   wassert (0);
   return ("dummy");
+}
+
+static const char *
+aopGet2(const asmop *aop, int offset)
+{
+  static char buffer[256];
+
+  wassert (aop->type == AOP_LIT || aopOnStack (aop, offset, 2) || aop->type == AOP_IMMD || aop->type == AOP_DIR);
+
+  if (aop->type == AOP_LIT)
+    {
+      snprintf (buffer, 256, "#0x%02x%02x", byteOfVal (aop->aopu.aop_lit, offset + 1), byteOfVal (aop->aopu.aop_lit, offset));
+      return (buffer);
+    }
+
+  return (aopGet (aop, offset));
 }
 
 /* For operantions that always have the accumulator as left operand. */
@@ -867,7 +883,7 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
               emitcode ("ldw", "x, %s", aopGet (source, i));
               emitcode ("ldw", "%s, x", aopGet (result, i));
             }
-          cost (4, 4);   
+          cost (4, 4);  
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
           (*size) -= 2;
@@ -1243,6 +1259,9 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
 {
   int i;
 
+  wassertl (result->type != AOP_LIT, "Trying to write to literal.");
+  wassertl (result->type != AOP_IMMD, "Trying to write to immediate.");
+
   if (aopRS (result) && aopRS (source))
     {
       genCopy (result, source, a_dead, x_dead, y_dead);
@@ -1268,27 +1287,27 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           emit3_o (A_CLR, result, roffset + i, 0, 0);
           i++;
         }
-      else if (aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT))
+      else if (aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
         {
-          emitcode ("ldw", "x, %s", aopGet (source, soffset + i));
+          emitcode ("ldw", "x, %s", aopGet2 (source, soffset + i));
           cost (3, 2);
           i += 2;
         }
-      else if (aopInReg (result, roffset + i, Y_IDX) && (source->type == AOP_DIR || source->type == AOP_IMMD || source->type == AOP_LIT))
+      else if (aopInReg (result, roffset + i, Y_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
         {
-          emitcode ("ldw", "y, %s", aopGet (source, soffset + i));
+          emitcode ("ldw", "y, %s", aopGet2 (source, soffset + i));
           cost (4, 2);
           i += 2;
         }
-      else if (result->type == AOP_DIR && aopInReg (source, soffset + i, X_IDX))
+      else if ((aopOnStack (result, roffset + i, 2) || result->type == AOP_DIR) && aopInReg (source, soffset + i, X_IDX))
         {
-          emitcode ("ldw", "%s, x", aopGet (result, roffset + i));
+          emitcode ("ldw", "%s, x", aopGet2 (result, roffset + i));
           cost (3, 2);
           i += 2;
         }
-      else if (result->type == AOP_DIR && aopInReg (source, soffset + i, Y_IDX))
+      else if ((aopOnStack (result, roffset + i, 2) || result->type == AOP_DIR) && aopInReg (source, soffset + i, Y_IDX))
         {
-          emitcode ("ldw", "%s, y", aopGet (result, roffset + i));
+          emitcode ("ldw", "%s, y", aopGet2 (result, roffset + i));
           cost (4, 2);
           i += 2;
         }
@@ -1492,7 +1511,7 @@ emitCall (const iCode *ic, bool ispcall)
 
       if (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD)
         {
-          emitcode ("call", "%s", aopGet (left->aop, 0));
+          emitcode ("call", "%s", aopGet2 (left->aop, 0));
           cost (3, 4);
         }
       else
@@ -1764,7 +1783,7 @@ genPlus (const iCode *ic)
           genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x); // TODO: Allow use of a sometimes.
           if (right->aop->type != AOP_LIT || byteOfVal (right->aop->aopu.aop_lit, i) || byteOfVal (right->aop->aopu.aop_lit, i + 1))
             {
-              emitcode ("addw", x ? "x, %s" : "y, %s", aopGet (right->aop, i));
+              emitcode ("addw", x ? "x, %s" : "y, %s", aopGet2 (right->aop, i));
               cost ((x || aopOnStack (right->aop, 0, 2)) ? 3 : 4, 2);
               started = TRUE;
             }
@@ -1947,13 +1966,13 @@ genCmp (iCode *ic)
           if (regDead (X_IDX, ic) && regDead (Y_IDX, ic))
             {
               emitcode ("ldw", "x, y");
-              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              emitcode ("cpw", "x, %s", aopGet2 (right->aop, 0));
               cost (3, 3);
             }
           else
             {
               emitcode ("exgw", "x, y");
-              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              emitcode ("cpw", "x, %s", aopGet2 (right->aop, 0));
               emitcode ("exgw", "x, y");
               cost (4, 4);
             }
@@ -1965,7 +1984,7 @@ genCmp (iCode *ic)
 
           genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
 
-          emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet (right->aop, 0));
+          emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, 0));
           cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
 
           if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
@@ -2072,13 +2091,13 @@ genCmpEQorNE (iCode *ic)
           if (regDead (X_IDX, ic) && regDead (Y_IDX, ic))
             {
               emitcode ("ldw", "x, y");
-              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              emitcode ("cpw", "x, %s", aopGet2 (right->aop, 0));
               cost (3, 3);
             }
           else
             {
               emitcode ("exgw", "x, y");
-              emitcode ("cpw", "x, %s", aopGet (right->aop, 0));
+              emitcode ("cpw", "x, %s", aopGet2 (right->aop, 0));
               emitcode ("exgw", "x, y");
               cost (4, 4);
             }
@@ -2090,7 +2109,7 @@ genCmpEQorNE (iCode *ic)
 
           genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
 
-          emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet (right->aop, 0));
+          emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, 0));
           cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
 
           if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
@@ -2639,7 +2658,7 @@ genPointerGet (const iCode *ic)
   size = result->aop->size;
   for (i = 0; i < size; i++)
     {
-      if (offset == 0)
+      if (!offset)
         {
           emitcode ("ld", "a, (x)");
           cost (1, 1);
@@ -2675,6 +2694,48 @@ genAssign (const iCode *ic)
   aopOp (result, ic);
 
   genMove(result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  freeAsmop (right);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genPointerSet - stores the value into a pointer location        */
+/*-----------------------------------------------------------------*/
+static void
+genPointerSet (iCode * ic)
+{
+  operand *right, *result;
+  int size, i;
+
+  D (emitcode ("; genPointerSet", ""));
+
+  right = IC_RIGHT (ic);
+  result = IC_RESULT (ic);
+
+  aopOp (result, ic);
+  aopOp (right, ic);
+
+  // TODO: Use Y when X is not available (or save X on stack), use ldw, etc.
+
+  genMove (ASMOP_X, result->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  size = right->aop->size;
+  for (i = 0; i < size; i++)
+    {
+      cheapMove (ASMOP_A, 0, right->aop, i, FALSE);
+
+      if (!i)
+        {
+          emitcode ("ld", "(x), a");
+          cost (1, 1);
+        }
+      else
+        {
+          emitcode ("ld", "(0x%x, x), a", i);
+          cost (2, 1);
+        }
+    }
 
   freeAsmop (right);
   freeAsmop (result);
@@ -3075,7 +3136,10 @@ genSTM8iCode (iCode *ic)
       break;
 
     case '=':
-      genAssign (ic);
+      if (!POINTER_SET (ic))
+        genAssign (ic);
+      else
+        genPointerSet (ic);
       break;
 
     case IFX:
@@ -3154,11 +3218,19 @@ genSTM8Code (iCode *lic)
 #endif
 
   iCode *ic;
+  int cln = 0;
   regalloc_dry_run = FALSE;
 
   for (ic = lic; ic; ic = ic->next)
     {
       initGenLineElement ();
+
+      if (ic->lineno && cln != ic->lineno)
+        {
+          if (!options.noCcodeInAsm)
+            emitcode (";", "%s: %d: %s", ic->filename, ic->lineno, printCLine (ic->filename, ic->lineno));
+          cln = ic->lineno;
+        }
 
       regalloc_dry_run_cost_bytes = 0;
       regalloc_dry_run_cost_cycles = 0;
