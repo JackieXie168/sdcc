@@ -162,7 +162,7 @@ createStackSpil (symbol * sym)
 /* spillThis - spils a specific operand                            */
 /*-----------------------------------------------------------------*/
 static void
-spillThis (symbol *sym)
+spillThis (symbol *sym, bool force_spill)
 {
   int i;
 
@@ -179,11 +179,12 @@ spillThis (symbol *sym)
   /* mark it has spilt & put it in the spilt set */
   sym->isspilt = sym->spillA = 1;
 
-  for (i = 0; i < sym->nRegs; i++)
-    {
-      if (sym->regs[i])
-        sym->regs[i] = 0;
-    }
+  if (force_spill)
+    for (i = 0; i < sym->nRegs; i++)
+      {
+        if (sym->regs[i])
+          sym->regs[i] = 0;
+      }
 
   if (sym->usl.spillLoc && !sym->remat)
     {
@@ -320,7 +321,7 @@ serialRegMark (eBBlock ** ebbs, int count)
                 }
               else if (!sym->for_newralloc)
                 {
-                  spillThis (sym);
+                  spillThis (sym, TRUE);
                   printf ("Spilt %s due to byte limit.\n", sym->name);
                 }
             }
@@ -330,7 +331,7 @@ serialRegMark (eBBlock ** ebbs, int count)
 
 /*------------------------------------------------------------------*/
 /* verifyRegsAssigned - make sure an iTemp is properly initialized; */
-/* it should either have registers or have beed spilled. Otherwise, */
+/* it should either have registers or have been spilled. Otherwise, */
 /* there was an uninitialized variable, so just spill this to get   */
 /* the operand in a valid state.                                    */
 /*------------------------------------------------------------------*/
@@ -356,7 +357,7 @@ verifyRegsAssigned (operand * op, iCode * ic)
   if (completly_in_regs)
     return;
 
-  spillThis (sym);
+  spillThis (sym, FALSE);
 }
 
 static void
@@ -429,7 +430,7 @@ stm8_assignRegisters (ebbIndex * ebbi)
   /* Invoke optimal register allocator */
   ic = stm8_ralloc2_cc (ebbi);
 
-  /* Get spilllocs for all variables that have not been placed compeltly in regs */
+  /* Get spilllocs for all variables that have not been placed completly in regs */
   RegFix (ebbs, count);
 
   if (options.dump_rassgn)

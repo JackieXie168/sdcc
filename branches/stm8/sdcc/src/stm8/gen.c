@@ -645,8 +645,11 @@ aopOp (operand *op, const iCode *ic)
         else if (sym->usl.spillLoc || sym->nRegs && regalloc_dry_run)
           {
             completly_in_regs = FALSE;
-            aop->aopu.bytes[i].byteu.stk = sym->stack + i;
-            wassertl (sym->stack + i < 200, "Unimplemented EXSTK.");
+            if (!regalloc_dry_run)
+              {
+                aop->aopu.bytes[i].byteu.stk = sym->usl.spillLoc->stack + i;
+                wassertl (sym->usl.spillLoc->stack + i < 200, "Unimplemented EXSTK.");
+              }
           }
         else
           wassertl (0, "Unimplemented dummy aop.");
