@@ -75,7 +75,6 @@ stm8_setDefaultOptions (void)
 {
   options.nopeep = 0;
   options.stackAuto = 1;
-  options.mainreturn = 1;
   options.intlong_rent = 1;
   options.float_rent = 1;
   options.noRegParams = 0;

@@ -1,5 +1,16 @@
 2013-04-13 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCCglobl.h,
+	  src/SDCCglue.c,
+	  src/SDCCmain.c,
+	  src/pic16/glue.c,
+	  src/z80/main.c,
+	  doc/sdccman.lyx,
+	  src/stm8/main.c:
+	  Remove option --main-return, make the behaviour previously invoked by --main-return the default.
+
+2013-04-13 Philipp Klaus Krause <pkk AT spth.de>
+
 	* sdas/asstm8/stm8.h,
 	  sdas/asstm8/stm8mch.c,
 	  sdas/asstm8/stm8pst.c,
