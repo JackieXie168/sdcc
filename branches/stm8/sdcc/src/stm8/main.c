@@ -1,7 +1,8 @@
 /*-------------------------------------------------------------------------
   main.c - STM8 specific definitions.
 
-  Philipp Klaus Krause <pkk@spth.de> 2012
+  Philipp Klaus Krause <pkk@spth.de> 2012-2013
+  Valentin Dudouyt <valentin.dudouyt@gmail.com> 2013
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -38,6 +39,14 @@ static char *stm8_keywords[] = {
 };
 
 static void
+stm8_init (void)
+{
+  fprintf(stderr, "stm8_init\n");
+  asm_addTree (&asm_asxxxx_mapping);
+}
+
+
+static void
 stm8_reset_regparm (void)
 {
 }
@@ -69,7 +78,8 @@ stm8_setDefaultOptions (void)
   options.mainreturn = 1;
   options.intlong_rent = 1;
   options.float_rent = 1;
-  options.noRegParams = 1;
+  options.noRegParams = 0;
+  options.noOptsdccInAsm = 1;
 
   options.out_fmt = 'i';        /* Default output format is ihx */
 }
@@ -80,6 +90,20 @@ stm8_getRegName (const struct reg_info *reg)
   if (reg)
     return reg->name;
   return "err";
+}
+
+void
+stm8_genInitStartup(FILE * of)
+{
+  return;
+}
+
+int
+stm8_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
+{
+  fprintf(stderr, "stm8_genIVT\n");
+  emitcode("stm8_genIVT", "");
+  return TRUE;
 }
 
 /* Indicate which extended bit operations this port supports */
@@ -115,7 +139,7 @@ PORT stm8_port = {
   NULL,                         /* Processor name */
   {
    glue,
-   FALSE,
+   TRUE,                        /* We want stm8_genIVT to be triggered */
    NO_MODEL,
    NO_MODEL,
    NULL,                        /* model == target */
@@ -196,7 +220,7 @@ PORT stm8_port = {
    3,                           /* sizeofDispatch */
    },
   "_",
-  NULL,
+  stm8_init,
   stm8_parseOptions,
   NULL,
   NULL,
@@ -207,9 +231,9 @@ PORT stm8_port = {
   stm8_keywords,
   0,                            /* no assembler preamble */
   NULL,                         /* no genAssemblerEnd */
-  0,                            /* no local IVT generation code */
+  stm8_genIVT,
   0,                            /* no genXINIT code */
-  NULL,                         /* genInitStartup */
+  stm8_genInitStartup,                         /* genInitStartup */
   stm8_reset_regparm,
   stm8_reg_parm,
   NULL,                         /* process_pragma */

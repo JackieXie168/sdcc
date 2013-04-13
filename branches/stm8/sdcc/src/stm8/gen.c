@@ -2021,9 +2021,9 @@ genCmp (iCode *ic)
     symbol *tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
     symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
-    emitcode (branchInstCmp (opcode, sign), "%05d$", labelKey2num (tlbl1));
+    emitcode (branchInstCmp (opcode, sign), "%05d$", labelKey2num (tlbl1->key));
     cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-    emitcode ("jp", "%05d$", labelKey2num (tlbl2));
+    emitcode ("jp", "%05d$", labelKey2num (tlbl2->key));
     cost (3, 1);
     if (!regalloc_dry_run)
       emitLabel (tlbl1);
@@ -2138,12 +2138,12 @@ genCmpEQorNE (iCode *ic)
       {
         if (!tlbl_EQ && !regalloc_dry_run)
           tlbl_EQ = newiTempLabel (NULL);
-        emitcode ("jreq", "%05d$", labelKey2num (tlbl_EQ));
+        emitcode ("jreq", "%05d$", labelKey2num (tlbl_EQ->key));
         cost (2, 0);
         if (tlbl_NE)
           emitLabel (tlbl_NE);
         cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-        emitcode ("jra", "%05d$", labelKey2num (tlbl));
+        emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
         cost (2, 0);
         if (!regalloc_dry_run)
           emitLabel (tlbl_EQ);
@@ -2153,10 +2153,10 @@ genCmpEQorNE (iCode *ic)
       {
         if (!tlbl_NE && !regalloc_dry_run)
           tlbl_NE = newiTempLabel (NULL);
-        emitcode ("jne", "%05d$", labelKey2num (tlbl_NE));
+        emitcode ("jne", "%05d$", labelKey2num (tlbl_NE->key));
         cost (2, 0);
         cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-        emitcode ("jra", "%05d$", labelKey2num (tlbl));
+        emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
         cost (2, 0);
         if (!regalloc_dry_run)
           emitLabel (tlbl_NE);
@@ -2761,14 +2761,14 @@ genIfx (const iCode *ic)
   if (IS_BOOL (operandType (cond)) && cond->aop->type == AOP_DIR)
     {
       if (tlbl)
-        emitcode (IC_FALSE (ic) ? "btjt" : "btjf", "%s, #0, !tlabel", aopGet (cond->aop, 0), labelKey2num (tlbl));
+        emitcode (IC_FALSE (ic) ? "btjt" : "btjf", "%s, #0, !tlabel", aopGet (cond->aop, 0), labelKey2num (tlbl->key));
       cost (5, 0);
     }
   else if (aopInReg (cond->aop, 0, C_IDX))
     {
       wassertl (IS_BOOL (operandType (cond)), "Variable of type other than _Bool in carry bit.");
       if (tlbl)
-        emitcode (IC_FALSE (ic) ? "jrc" : "jrnc", "!tlabel", labelKey2num (tlbl));
+        emitcode (IC_FALSE (ic) ? "jrc" : "jrnc", "!tlabel", labelKey2num (tlbl->key));
       cost (2, 0);
     }
   else if (cond->aop->size == 2 &&
@@ -2780,7 +2780,7 @@ genIfx (const iCode *ic)
       emitcode ("tnzw", in_x ? "x" : "y");
       cost (in_x ? 1 : 2, 1);
       if (tlbl)
-        emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
+        emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl->key));
       cost (2, 0);
     }
   else if (cond->aop->size == 1 && (aopRS (cond->aop) || cond->aop->type == AOP_DIR))
@@ -2803,7 +2803,7 @@ genIfx (const iCode *ic)
             swap_from_a (swapidx);
 
           if (tlbl)
-            emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl));
+            emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl->key));
           cost (2, 0);
         }
     }

@@ -1426,11 +1426,7 @@ struct mne *mp;
 	case S_RWA:
 		t1 = addr(&e1);
 		v1 = rcode;
-		comma(1);
-		t2 = addr(&e2);
-		v2 = rcode;
-		if ((t1 != S_REG) ||
-		    (t2 != S_REG) || (v2 != A)) {
+		if(t1 != S_REG) {
 			opcy_aerr();
 			break;
 		}
