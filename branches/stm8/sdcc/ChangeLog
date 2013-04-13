@@ -1,6 +1,8 @@
 2013-04-13 Philipp Klaus Krause <pkk AT spth.de>
 
-	* sdas/asstm8/stm8mch.c,
+	* sdas/asstm8/stm8.h,
+	  sdas/asstm8/stm8mch.c,
+	  sdas/asstm8/stm8pst.c,
 	  src/SDCCglue.c,
 	  src/stm8/gen.c,
 	  src/stm8/main.c:

@@ -122,6 +122,7 @@
 #define	S_INH72		85
 #define	S_MLDV		86
 #define	S_DIVW		87
+#define	S_INT		88
 
 /*
  * Extended Addressing Modes

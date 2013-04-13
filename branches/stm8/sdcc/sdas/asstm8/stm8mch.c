@@ -1767,6 +1767,14 @@ struct mne *mp;
 		outab(op);
 		break;
 
+	case S_INT:
+		t1 = addr(&e1);
+		if(t1 != S_LONG)
+			opcy_aerr();
+		outab(0x82);
+		outr3b(&e1, R_USGN);
+		break;
+
 	default:
 		opcycles = OPCY_ERR;
 		err('o');
