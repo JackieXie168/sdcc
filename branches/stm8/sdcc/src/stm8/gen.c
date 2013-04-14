@@ -797,21 +797,34 @@ adjustStack (int n)
 {
   while (n)
     {
-      // TODO: For small n, adjust stack by using pop/push a and pushw/popw x where these are dead.
+      // TODO: Once we know what addw (once called add) sp, #byte and sub sp, #byte really do we can make this more efficient.
+      // The manual is ambigious (not even documenting if the #byte is signed), but it seems operands of -127 to 127 are safe for addw sp, #byte.
+      // It also seems weird that the manual states that addw sp, #byte takes two cycles, while sub sp, #byte only takes one.
+      // TODO: For small n, adjust stack by using pop/push where these are dead.
       // TODO: For big n, use addition in X or Y when free. Need to fix calling convention before that though.
-      if (n > 255)
+      if (n > 127)
         {
-          emitcode ("addw","sp, #255");
+          emitcode ("addw","sp, #127");
           cost (2, 1);
-          n -= 255;
-          _G.stack.pushed -= 255;
+          n -= 127;
+          _G.stack.pushed -= 127;
         }
-      else if (n < -255)
+      else if (n < -127)
         {
-          emitcode ("subw","sp, #255");
+          emitcode ("addw","sp, #-127");
           cost (2, 1);
-          n += 255;
-          _G.stack.pushed += 255;
+          n += 127;
+          _G.stack.pushed += 127;
+        }
+      else if (n == -2)
+        {
+          push (ASMOP_X, 0, 2); // 1 Byte, 1 cycle - cheaper than addw sp, #byte.
+          n += 2;
+        }
+      else if (n == -1)
+        {
+          push (ASMOP_A, 0, 1); // 1 Byte, 2 cycles - cheaper than addw sp, #byte.
+          n++;
         }
       else if (n > 0)
         {
@@ -822,7 +835,7 @@ adjustStack (int n)
         }
 	  else 
 	    {
-		  emitcode ("subw", "sp, #%d", -n);
+		  emitcode ("addw", "sp, #-%d", -n);
           cost (2, 1);
           _G.stack.pushed += -n;
           return;

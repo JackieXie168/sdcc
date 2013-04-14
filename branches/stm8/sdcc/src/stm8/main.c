@@ -79,6 +79,7 @@ stm8_setDefaultOptions (void)
   options.float_rent = 1;
   options.noRegParams = 0;
   options.noOptsdccInAsm = 1;
+  options.code_loc = 0x8000;
 
   options.out_fmt = 'i';        /* Default output format is ihx */
 }
