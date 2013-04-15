@@ -817,14 +817,14 @@ adjustStack (int n)
           n += 255;
           _G.stack.pushed += 255;
         }
-      else if (n == -2)
+      else if (n == -2  && optimize.codeSize)
         {
-          push (ASMOP_X, 0, 2); // 1 Byte, 1 cycle - cheaper than addw sp, #byte.
+          push (ASMOP_X, 0, 2); // 1 Byte, 2 cycles - cheaper than addw sp, #byte when optimizing for code size.
           n += 2;
         }
       else if (n == -1 && optimize.codeSize)
         {
-          push (ASMOP_A, 0, 1); // 1 Byte, 2 cycles - cheaper than addw sp, #byte when optimizing for code size.
+          push (ASMOP_A, 0, 1); // 1 Byte, 1 cycle - cheaper than addw sp, #byte.
           n++;
         }
       else if (n > 0)
@@ -2655,6 +2655,7 @@ genPointerGet (const iCode *ic)
   operand *right = IC_RIGHT (ic);
   int size, i;
   unsigned offset;
+  bool use_y;
 
   D (emitcode ("; genPointerGet", ""));
 
@@ -2665,9 +2666,17 @@ genPointerGet (const iCode *ic)
   wassertl (right, "GET_VALUE_AT_ADDRESS without right operand");
   wassertl (IS_OP_LITERAL (IC_RIGHT (ic)), "GET_VALUE_AT_ADDRESS with non-literal right operand");
 
-  // TODO: Use Y when X is not available (or save X on stack), use ldw, etc.
+  // TODO: Handle this more gracefully, save x instead of using y, when doing so is more efficient, use ldw, etc.
+  use_y = !regDead (X_IDX, ic);
+  if (use_y && !regDead (Y_IDX, ic))
+    {
+      if (!regalloc_dry_run)
+        wassertl (0, "No free reg for pointer.");
+      cost (80, 80);
+      return;
+    }
 
-  genMove (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  genMove (use_y ? ASMOP_Y : ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   // TODO: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
@@ -2677,12 +2686,12 @@ genPointerGet (const iCode *ic)
     {
       if (!offset)
         {
-          emitcode ("ld", "a, (x)");
+          emitcode ("ld", use_y ? "a, (y)" : "a, (x)");
           cost (1, 1);
         }
       else
         {
-          emitcode ("ld", "a, (0x%x, x)", offset);
+          emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", offset);
           cost (offset < 256 ? 2 : 3, 1);
         }
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
@@ -2724,6 +2733,7 @@ genPointerSet (iCode * ic)
 {
   operand *right, *result;
   int size, i;
+  bool use_y;
 
   D (emitcode ("; genPointerSet", ""));
 
@@ -2733,9 +2743,17 @@ genPointerSet (iCode * ic)
   aopOp (result, ic);
   aopOp (right, ic);
 
-  // TODO: Use Y when X is not available (or save X on stack), use ldw, etc.
+  // TODO: Handle this more gracefully, save x instead of using y, when doing so is more efficient, use ldw, etc.
+  use_y = !regDead (X_IDX, ic);
+  if (use_y && !regDead (Y_IDX, ic))
+    {
+      if (!regalloc_dry_run)
+        wassertl (0, "No free reg for pointer.");
+      cost (80, 80);
+      return;
+    }
 
-  genMove (ASMOP_X, result->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  genMove (use_y ? ASMOP_Y : ASMOP_X, result->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   size = right->aop->size;
   for (i = 0; i < size; i++)
@@ -2744,12 +2762,12 @@ genPointerSet (iCode * ic)
 
       if (!i)
         {
-          emitcode ("ld", "(x), a");
+          emitcode ("ld", use_y ? "(y), a" : "(x), a");
           cost (1, 1);
         }
       else
         {
-          emitcode ("ld", "(0x%x, x), a", i);
+          emitcode ("ld", use_y ? "(0x%x, y), a" : "(0x%x, x), a", i);
           cost (2, 1);
         }
     }
@@ -2797,7 +2815,7 @@ genIfx (const iCode *ic)
         emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl->key));
       cost (2, 0);
     }
-  else if (cond->aop->size == 1 && (aopRS (cond->aop) || cond->aop->type == AOP_DIR))
+  else if (aopRS (cond->aop) || cond->aop->type == AOP_DIR)
     {
       int i;
 
@@ -2805,8 +2823,8 @@ genIfx (const iCode *ic)
         {
           // Need to swap when operand is in part of x or y.
           int swapidx = -1;
-          if (aopRS (cond->aop) && !aopInReg (cond->aop, 0, A_IDX) && cond->aop->aopu.bytes[0].in_reg)
-            swapidx = cond->aop->aopu.bytes[0].byteu.reg->rIdx;
+          if (aopRS (cond->aop) && !aopInReg (cond->aop, i, A_IDX) && cond->aop->aopu.bytes[i].in_reg)
+            swapidx = cond->aop->aopu.bytes[i].byteu.reg->rIdx;
 
           if (swapidx != -1)
             swap_to_a (swapidx);
@@ -2820,6 +2838,15 @@ genIfx (const iCode *ic)
             emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl->key));
           cost (2, 0);
         }
+    }
+  else
+    {
+      if (!regalloc_dry_run)
+        {
+          printf ("cond aop type %d, size %d\n", cond->aop->type, cond->aop->size);
+          wassertl (0, "Unimplemented conditional jump.");
+        }
+      cost (80, 80);
     }
 
   if (tlbl)

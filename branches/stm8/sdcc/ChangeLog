@@ -1,4 +1,9 @@
-2013-04-14 Philipp Klaus Krause <pkk AT spth.de>
+2013-04-15 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fixes for reading / writing through pointer, implement more IFX.
+
+2013-04-15 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
 	  STM8: Now that we know more about sp-manipulation, we can do it smarter.
