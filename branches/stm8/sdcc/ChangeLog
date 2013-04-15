@@ -1,7 +1,7 @@
 2013-04-15 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Fixes for reading / writing through pointer, implement more IFX.
+	  STM8: Fixes for reading / writing through pointer, implement more IFX, fix wide subtraction and compariosn.
 
 2013-04-15 Philipp Klaus Krause <pkk AT spth.de>
 

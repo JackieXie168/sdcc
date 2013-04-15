@@ -1365,6 +1365,7 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 {
   int size, i;
   bool started;
+  bool delayedstore = FALSE;
 
   size = result_aop->size;
   for(i = 0, started = FALSE; i < size;)
@@ -1390,10 +1391,19 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
               emit3_o (started ? A_SBC : A_SUB, ASMOP_A, 0, right_aop, i);
               started = TRUE;
             }
-          cheapMove (result_aop, i, ASMOP_A, 0, FALSE);
+          if (aopInReg (result_aop, i, A_IDX) && i + 1 < size)
+            {
+              push (ASMOP_A, 0, 1);
+              delayedstore = TRUE;
+            }
+          else
+            cheapMove (result_aop, i, ASMOP_A, 0, FALSE);
           i++;
         }
     }
+
+  if (delayedstore)
+    pop (ASMOP_A, 0, 1);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1996,15 +2006,17 @@ genCmp (iCode *ic)
         }
       else
         {
-          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+          bool save_x = !regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX) && !aopInReg (left->aop, 0, Y_IDX);
+          if (save_x)
             push (ASMOP_X, 0, 2);
 
-          genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
+          if (!aopInReg (left->aop, 0, Y_IDX))
+            genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
 
           emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, 0));
           cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
 
-          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+          if (save_x)
             pop (ASMOP_X, 0, 2);
         }
     }
