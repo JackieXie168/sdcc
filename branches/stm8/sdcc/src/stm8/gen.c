@@ -2783,9 +2783,10 @@ static void
 genIfx (const iCode *ic)
 {
   // TODO: This function currently reports code size costs only, other costs will depend on profiler information.
-
+  bool inv = FALSE;
   operand *const cond = IC_COND (ic);
   symbol *const tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  symbol *tlbl2 = NULL;
   aopOp (cond, ic);
 
   D (emitcode ("; genIfx", ""));
@@ -2819,6 +2820,12 @@ genIfx (const iCode *ic)
     {
       int i;
 
+      if(cond->aop->size > 1)
+        {
+          tlbl2 = newiTempLabel (NULL);
+          inv = true;
+        }
+
       for (i = 0; i < cond->aop->size; i++)
         {
           // Need to swap when operand is in part of x or y.
@@ -2829,13 +2836,13 @@ genIfx (const iCode *ic)
           if (swapidx != -1)
             swap_to_a (swapidx);
 
-          emit3 (A_TNZ, swapidx == -1 ? cond->aop : ASMOP_A, 0);
+          emit3_o (A_TNZ, swapidx == -1 ? cond->aop : ASMOP_A, swapidx == -1 ? i : 0, 0, 0);
 
           if (swapidx != -1)
             swap_from_a (swapidx);
 
           if (tlbl)
-            emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl->key));
+            emitcode ((!!IC_FALSE (ic) ^ (inv && i != cond->aop->size - 1)) ? "jrne" : "jreq", "!tlabel", labelKey2num ((inv && i == cond->aop->size - 1) ? tlbl2->key : tlbl->key));
           cost (2, 0);
         }
     }
@@ -2849,7 +2856,14 @@ genIfx (const iCode *ic)
       cost (80, 80);
     }
 
-  if (tlbl)
+  if (tlbl && inv)
+    {
+      emitLabel (tlbl);
+      emitcode ("jp", "!tlabel", labelKey2num ((IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key));
+      cost (3, 0);
+      emitLabel (tlbl2);
+    }
+  else if (tlbl)
     {
       emitcode ("jp", "!tlabel", labelKey2num ((IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key));
       cost (3, 0);
