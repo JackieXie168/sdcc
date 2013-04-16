@@ -1625,7 +1625,7 @@ genFunction (iCode *ic)
   emitcode (";", " function %s", sym->name);
   emitcode (";", "-----------------------------------------");
 
-  D (emitcode (";", stm8_assignment_optimal ? "Register assignment is optimal." : "; Register assignment might be sub-optimal."));
+  D (emitcode (";", stm8_assignment_optimal ? "Register assignment is optimal." : "Register assignment might be sub-optimal."));
   D (emitcode (";", "Stack space usage: %d bytes.", sym->stack));
 
   emitcode ("", "%s:", sym->rname);
@@ -1797,6 +1797,7 @@ genPlus (const iCode *ic)
         right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
         {
           bool x = aopInReg (result->aop, i, X_IDX);
+          genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x);
           emitcode ("incw", x ? "x" : "y");
           cost (x ? 1 : 2, 1);
           started = TRUE;
