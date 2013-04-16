@@ -1217,9 +1217,9 @@ skip_byte:
       else if ((aopInReg (result, i, XH_IDX) || aopInReg (result, i, YH_IDX)) && !source->aopu.bytes[i].in_reg)
         {
           bool y = aopInReg (result, i, YH_IDX);
-          emitcode ("rlwa", y ? "y, a" : "x, a");
+          emitcode ("rlwa", y ? "y" : "x");
           emitcode ("ld", "a, %s", aopGet (source, i));
-          emitcode ("rrwa", y ? "y, a" : "x, a");
+          emitcode ("rrwa", y ? "y" : "x");
           cost (4, 3 + y * 2);
           assigned[i] = TRUE;
           regsize--;
