@@ -2806,6 +2806,9 @@ genLeftShift (const iCode *ic)
   size = result->aop->size;
 
   save_a = !regDead (A_IDX, ic);
+  for(i = 0; i < size; i++)
+    if (aopInReg (result->aop, i, A_IDX))
+      save_a = TRUE;
   if (save_a);
     push (ASMOP_A, 0, 1);
 
@@ -2831,12 +2834,10 @@ genLeftShift (const iCode *ic)
 
         if (aopInReg (result->aop, i, A_IDX))
           {
-            if (!regalloc_dry_run)
-              {
-                fprintf (stderr, "size %d at %d in reg %d\n", result->aop->size, i, result->aop->aopu.bytes[i].byteu.reg->rIdx);
-                wassertl (0, "Unimplemented shift result operand.");
-              }
-            cost (80, 80);
+            emitcode (i ? "rlc" : "sll", "(0, sp)");
+            cost (2, 1);
+            i++;
+            continue;
           }
 
         if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg)
@@ -2907,9 +2908,9 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
       while (shCount--)
         for(i = size - 1; i >= 0;)
           {
-            if (aopInReg (result->aop, i - 1, X_IDX) || aopInReg (result->aop, i - 1, Y_IDX))
+            if (i > 0 && (aopInReg (result->aop, i - 1, X_IDX) || aopInReg (result->aop, i - 1, Y_IDX)))
               {
-                emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i, 0, 0);
+                emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i - 1, 0, 0);
                 i -= 2;
               }
             else
@@ -2973,6 +2974,9 @@ genRightShift (const iCode *ic)
   size = result->aop->size;
 
   save_a = !regDead (A_IDX, ic);
+  for(i = 0; i < size; i++)
+    if (aopInReg (result->aop, i, A_IDX))
+      save_a = TRUE;
   if (save_a);
     push (ASMOP_A, 0, 1);
 
@@ -2989,21 +2993,18 @@ genRightShift (const iCode *ic)
      {
         int swapidx = -1;
 
-        if (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX))
+        if (i > 0 && (aopInReg (result->aop, i - 1, X_IDX) || aopInReg (result->aop, i - 1, Y_IDX)))
           {
-            emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i, 0, 0);
+            emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i - 1, 0, 0);
             i -= 2;
             continue;
           }
-
-        if (aopInReg (result->aop, i, A_IDX))
+        else if (aopInReg (result->aop, i, A_IDX))
           {
-            if (!regalloc_dry_run)
-              {
-                fprintf (stderr, "size %d at %d in reg %d\n", result->aop->size, i, result->aop->aopu.bytes[i].byteu.reg->rIdx);
-                wassertl (0, "Unimplemented shift result operand.");
-              }
-            cost (80, 80);
+            emitcode ((i != size - 1) ? "rrc" : (sign ? "sra" : "srl"), "(0, sp)");
+            cost (2, 1);
+            i--;
+            continue;
           }
 
         if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg)
