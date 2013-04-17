@@ -52,6 +52,7 @@ enum asminst
   A_LD,
   A_MOV,
   A_NEG,
+  A_NEGW,
   A_OR,
   A_RLC,
   A_RLCW,
@@ -82,6 +83,7 @@ static const char *asminstnames[] =
   "ld",
   "mov",
   "neg",
+  "negw",
   "or",
   "rlc",
   "rlcw",
@@ -525,6 +527,7 @@ emit3wcost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
 {
   switch (inst)
   {
+  case A_NEGW:
   case A_RLCW:
   case A_RRCW:
   case A_SLLW:
@@ -2826,7 +2829,7 @@ genLeftShift (const iCode *ic)
             continue;
           }
 
-        if (aopRS (result->aop) && !aopOnStack (result->aop, i, 1))
+        if (aopInReg (result->aop, i, A_IDX))
           {
             if (!regalloc_dry_run)
               {
@@ -2993,7 +2996,7 @@ genRightShift (const iCode *ic)
             continue;
           }
 
-        if (aopRS (result->aop) && !aopOnStack (result->aop, i, 1))
+        if (aopInReg (result->aop, i, A_IDX))
           {
             if (!regalloc_dry_run)
               {
@@ -3196,8 +3199,7 @@ genIfx (const iCode *ic)
     {
       bool in_x = (aopInReg (cond->aop, 0, X_IDX) || cond->aop->aopu.bytes[0].byteu.reg->rIdx == XH_IDX && cond->aop->aopu.bytes[1].byteu.reg->rIdx == XL_IDX);
 
-      emitcode ("tnzw", in_x ? "x" : "y");
-      cost (in_x ? 1 : 2, 1);
+      emit3w (A_TNZW, in_x ? ASMOP_X : ASMOP_Y, 0);
       if (tlbl)
         emitcode (IC_FALSE (ic) ? "jrne" : "jreq", "!tlabel", labelKey2num (tlbl->key));
       cost (2, 0);
@@ -3374,7 +3376,7 @@ genCast (const iCode *ic)
       if (!regDead (A_IDX, ic))
         push (ASMOP_A, 0, 1);
       
-      emitcode ("negw", aopInReg (right->aop, 0, X_IDX) ? "x" : "y");
+      emit3w (A_NEGW, right->aop, 0);
       cost (aopInReg (right->aop, 0, X_IDX) ? 1 : 2, 2);
       emit3 (A_CLR, ASMOP_A, 0);
       emit3 (A_RLC, ASMOP_A, 0);
