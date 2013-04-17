@@ -1,7 +1,7 @@
 2013-04-17 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Implement more shifts.
+	  STM8: Implement more shifts, unary minus for float.
 
 2013-04-16 Philipp Klaus Krause <pkk AT spth.de>
 

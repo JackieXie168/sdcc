@@ -1418,14 +1418,45 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 }
 
 /*-----------------------------------------------------------------*/
-/* genSub - generates code for subtraction                         */
+/* genUminus - generates code for unary minus                      */
+/*-----------------------------------------------------------------*/
+static void
+genUminusFloat (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+
+  D (emitcode ("; genUminusFloat", ""));
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+
+  // TODO: Omit moving topmost byte.
+  genMove (result->aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  // TODO: Use bcpl, rlcw with ccf, only save A when necessary
+  push (ASMOP_A, 0, 1);
+
+  cheapMove (ASMOP_A, 0, left->aop, result->aop->size - 1, FALSE);
+  emitcode ("xor", "a, #0x80");
+  cost (2, 1);
+  cheapMove (result->aop, result->aop->size - 1, ASMOP_A, 0, FALSE);
+
+  pop (ASMOP_A, 0, 1);
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genUminus - generates code for unary minus                      */
 /*-----------------------------------------------------------------*/
 static void
 genUminus (const iCode *ic)
 {
   if (IS_FLOAT (operandType (IC_LEFT (ic))))
     {
-      wassertl (0, "Unimplemented float unary minus.");
+      genUminusFloat (ic);
       return;
     }
 
