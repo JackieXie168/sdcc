@@ -54,13 +54,19 @@ enum asminst
   A_NEG,
   A_OR,
   A_RLC,
+  A_RLCW,
   A_RRC,
+  A_RRCW,
   A_SBC,
   A_SLL,
+  A_SLLW,
   A_SRA,
+  A_SRAW,
   A_SRL,
+  A_SRLW,
   A_SUB,
   A_TNZ,
+  A_TNZW,
   A_XOR
 };
 
@@ -78,13 +84,19 @@ static const char *asminstnames[] =
   "neg",
   "or",
   "rlc",
+  "rlcw",
   "rrc",
+  "rrwc",
   "sbc",
   "sll",
+  "sllw",
   "sra",
+  "sraw",
   "srl",
+  "srlw",
   "sub",
   "tnz",
+  "tnzw",
   "xor"
 };
 
@@ -242,6 +254,11 @@ aopGet2(const asmop *aop, int offset)
 {
   static char buffer[256];
 
+  if (aopInReg (aop, offset, X_IDX))
+    return("x");
+  if (aopInReg (aop, offset, Y_IDX))
+    return("y");
+
   wassert (aop->type == AOP_LIT || aopOnStack (aop, offset, 2) || aop->type == AOP_IMMD || aop->type == AOP_DIR);
 
   if (aop->type == AOP_LIT)
@@ -285,7 +302,7 @@ error:
   cost (8, 4 * 8);
 }
 
-/* For operations that have only one operand, i.e. tnz */
+/* For 8-bit operations that have only one operand, i.e. tnz */
 static void
 op_cost (const asmop *op1, int offset1)
 {
@@ -319,6 +336,27 @@ op_cost (const asmop *op1, int offset1)
     }
 error:
   fprintf(stderr, "op1 type: %d, offset %d, rIdx %d\n", op1type, offset1, r1Idx);
+  wassert (0);
+  cost (8, 4 * 8);
+}
+
+/* For 16-bit operations that have only one operand, i.e. tnzw */
+static void
+opw_cost (const asmop *op1, int offset1)
+{
+  wassert (op1);
+
+  if (aopInReg (op1, offset1, X_IDX))
+    {
+      cost (1, 1);
+      return;
+    }
+  else if (aopInReg (op1, offset1, Y_IDX))
+    {
+      cost (2, 1);
+      return;
+    }
+
   wassert (0);
   cost (8, 4 * 8);
 }
@@ -478,7 +516,25 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
     op8_cost (op2, offset2);
     break;
   default:
-    wassertl (0, "Tried to get cost for unknown instruction");
+    wassertl (0, "Tried to get cost for unknown 8-bit instruction");
+  }
+}
+
+static void
+emit3wcost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, int offset2)
+{
+  switch (inst)
+  {
+  case A_RLCW:
+  case A_RRCW:
+  case A_SLLW:
+  case A_SRAW:
+  case A_SRLW:
+  case A_TNZW:
+    opw_cost (op1, offset1);
+    break;
+  default:
+    wassertl (0, "Tried to get cost for unknown 16-bit instruction");
   }
 }
 
@@ -500,9 +556,32 @@ emit3_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
 }
 
 static void
+emit3w_o (enum asminst inst, asmop *op1, int offset1, asmop *op2, int offset2)
+{
+  emit3wcost (inst, op1, offset1, op2, offset2);
+  if (regalloc_dry_run)
+    return;
+
+  if (op2)
+    {
+      char *l = Safe_strdup (aopGet2 (op1, offset1));
+      emitcode (asminstnames[inst], "%s, %s", l, aopGet2 (op2, offset2));
+      Safe_free (l);
+    }
+  else
+    emitcode (asminstnames[inst], "%s", aopGet2 (op1, offset1));
+}
+
+static void
 emit3 (enum asminst inst, asmop *op1, asmop *op2)
 {
   emit3_o (inst, op1, 0, op2, 0);
+}
+
+static void
+emit3w (enum asminst inst, asmop *op1, asmop *op2)
+{
+  emit3w_o (inst, op1, 0, op2, 0);
 }
 
 static bool
@@ -2661,16 +2740,9 @@ genLeftShiftLiteral (operand *left, operand *right, operand *result, const iCode
       while (shCount--)
         for(i = 0; i < size;)
           {
-            if (aopInReg (result->aop, i, X_IDX))
+            if (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX))
               {
-                emitcode ("sllw", "x");
-                cost (1, 2);
-                i += 2;
-              }
-            else if (aopInReg (result->aop, i, Y_IDX))
-              {
-                emitcode ("sllw", "y");
-                cost (2, 2);
+                emit3w (i ? A_RLCW : A_SLLW, result->aop, 0);
                 i += 2;
               }
             else
@@ -2742,15 +2814,25 @@ genLeftShift (const iCode *ic)
   emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
-  // TODO: Shift in left if free and cheaper, use sllw.
-  for (i = 0; i < size; i++)
+  // TODO: Shift in left if dead and cheaper?
+  for (i = 0; i < size;)
      {
         int swapidx = -1;
 
-        if (aopInReg (result->aop, i, A_IDX))
+        if (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX))
+          {
+            emit3w_o (i ? A_RLCW : A_SLLW, result->aop, i, 0, 0);
+            i += 2;
+            continue;
+          }
+
+        if (aopRS (result->aop) && !aopOnStack (result->aop, i, 1))
           {
             if (!regalloc_dry_run)
-              wassertl (0, "Unimplemented shift result operand.");
+              {
+                fprintf (stderr, "size %d at %d in reg %d\n", result->aop->size, i, result->aop->aopu.bytes[i].byteu.reg->rIdx);
+                wassertl (0, "Unimplemented shift result operand.");
+              }
             cost (80, 80);
           }
 
@@ -2765,6 +2847,7 @@ genLeftShift (const iCode *ic)
             emit3 (i ? A_RLC : A_SLL, ASMOP_A, 0);
             swap_from_a (swapidx);
           }
+        i++;
      }
 
   emit3 (A_DEC, ASMOP_A, 0);
@@ -2821,16 +2904,9 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
       while (shCount--)
         for(i = size - 1; i >= 0;)
           {
-            if (i > 0 && i == size - 1 && aopInReg (result->aop, i - 1, X_IDX))
+            if (aopInReg (result->aop, i - 1, X_IDX) || aopInReg (result->aop, i - 1, Y_IDX))
               {
-                emitcode (sign ? "sraw" : "srlw", "x");
-                cost (1, 2);
-                i -= 2;
-              }
-            else if (i > 0 && i == size - 1 && aopInReg (result->aop, i - 1, Y_IDX))
-              {
-                emitcode (sign ? "sraw" : "srlw", "y");
-                cost (2, 2);
+                emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i, 0, 0);
                 i -= 2;
               }
             else
@@ -2906,14 +2982,24 @@ genRightShift (const iCode *ic)
   cost (2, 0);
 
   // TODO: Shift in left if free and cheaper, use sllw.
-  for (i = size - 1; i >= 0; i--)
+  for (i = size - 1; i >= 0;)
      {
         int swapidx = -1;
 
-        if (aopInReg (result->aop, i, A_IDX))
+        if (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX))
+          {
+            emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i, 0, 0);
+            i -= 2;
+            continue;
+          }
+
+        if (aopRS (result->aop) && !aopOnStack (result->aop, i, 1))
           {
             if (!regalloc_dry_run)
-              wassertl (0, "Unimplemented shift result operand.");
+              {
+                fprintf (stderr, "size %d at %d in reg %d\n", result->aop->size, i, result->aop->aopu.bytes[i].byteu.reg->rIdx);
+                wassertl (0, "Unimplemented shift result operand.");
+              }
             cost (80, 80);
           }
 
@@ -2928,6 +3014,7 @@ genRightShift (const iCode *ic)
             emit3 ((i != size - 1) ? A_RRC : (sign ? A_SRA : A_SRL), ASMOP_A, 0);
             swap_from_a (swapidx);
           }
+        i--;
      }
 
   emit3 (A_DEC, ASMOP_A, 0);
@@ -3304,14 +3391,16 @@ genCast (const iCode *ic)
       size = right->aop->size;
       offset = 0;
 
-      cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
       emit3 (A_CLR, ASMOP_A, 0);
       for(offset = 0; offset < size; offset++)
         {
           if ((right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK) && right->aop->aopu.bytes[0].in_reg)
             {
               if (!regalloc_dry_run)
-                wassertl (0, "Unimplemented operand for cast to _Bool.");
+                {
+                  fprintf (stderr, "type %d size %d idx at %d : %d\n", right->aop->type, right->aop->size, offset, right->aop->aopu.bytes[offset].byteu.reg->rIdx);
+                  wassertl (0, "Unimplemented operand for cast to _Bool.");
+                }
               cost (80, 80);
               continue;
             }
