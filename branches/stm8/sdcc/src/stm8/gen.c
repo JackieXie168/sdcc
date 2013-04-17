@@ -907,6 +907,14 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
 
   for (i = 0; i < n;)
     {
+      // Same location.
+      if (!assigned[i] && !result->aopu.bytes[i].in_reg && !source->aopu.bytes[i].in_reg &&
+        result->aopu.bytes[i].byteu.stk == source->aopu.bytes[i].byteu.stk)
+        {
+          assigned[i] = TRUE;
+          (*size)--;
+          i++;
+        }
       // Could transfer two bytes at a time now.
       if (i + 1 < n &&
         !assigned[i] && !assigned[i + 1] &&
@@ -972,6 +980,15 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   size = n;
   for (i = 0, regsize = 0; i < n; i++)
     regsize += source->aopu.bytes[i].in_reg;
+
+  // Do nothing for coalesced bytes.
+  for (i = 0; i < n; i++)
+    if (result->aopu.bytes[i].in_reg && source->aopu.bytes[i].in_reg && result->aopu.bytes[i].byteu.reg == source->aopu.bytes[i].byteu.reg)
+      {
+        assigned[i] = TRUE;
+        regsize--;
+        size--;
+      }
 
   // Copy (stack-to-stack) what we can with whatever free regs we have.
   a_free = !a_dead;
@@ -1661,16 +1678,16 @@ emitCall (const iCode *ic, bool ispcall)
         }
     }
 
-  // Restore regs
-  if (!regDead (Y_IDX, ic))
-    pop (ASMOP_Y, 0, 2);
-
   SomethingReturned = (IS_ITEMP (IC_RESULT (ic)) &&
                        (OP_SYMBOL (IC_RESULT (ic))->nRegs || OP_SYMBOL (IC_RESULT (ic))->spildir))
                        || IS_TRUE_SYMOP (IC_RESULT (ic));
 
   if (ic->parmBytes || bigreturn)
     adjustStack (ic->parmBytes + bigreturn * 2);
+
+  // Restore regs
+  if (!regDead (Y_IDX, ic))
+    pop (ASMOP_Y, 0, 2);
 
   /* if we need assign a result value */
   if (SomethingReturned && !bigreturn)
@@ -1687,13 +1704,22 @@ emitCall (const iCode *ic, bool ispcall)
   // Restore more regs.
   if (!regDead (X_IDX, ic))
     {
-      if (regDead (XL_IDX, ic) || regDead (XH_IDX, ic))
+      if (!regDead (XL_IDX, ic))
         {
-          if (!regalloc_dry_run)
-            wassertl (0, "Unimplemented partially-dead x at call site.");
-          cost (80, 80);
+          adjustStack (1);
+          swap_to_a (XL_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(XL_IDX);
         }
-      pop (ASMOP_X, 0, 2);
+      else if (!regDead (XH_IDX, ic))
+        {
+          swap_to_a (XH_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(XH_IDX);
+          adjustStack (1);
+        }
+      else
+        pop (ASMOP_X, 0, 2);
     }
 
   if (!regDead (A_IDX, ic))
