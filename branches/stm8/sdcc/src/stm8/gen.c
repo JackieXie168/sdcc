@@ -46,6 +46,8 @@ enum asminst
   A_AND,
   A_CLR,
   A_CP,
+  A_DEC,
+  A_INC,
   A_LD,
   A_MOV,
   A_NEG,
@@ -54,6 +56,7 @@ enum asminst
   A_RRC,
   A_SBC,
   A_SLL,
+  A_SRA,
   A_SRL,
   A_SUB,
   A_TNZ,
@@ -67,6 +70,8 @@ static const char *asminstnames[] =
   "and",
   "clr",
   "cp",
+  "dec",
+  "inc",
   "ld",
   "mov",
   "neg",
@@ -75,6 +80,7 @@ static const char *asminstnames[] =
   "rrc",
   "sbc",
   "sll",
+  "sra",
   "srl",
   "sub",
   "tnz",
@@ -421,6 +427,10 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
   case A_CP:
     op8_cost (op2, offset2);
     break;
+  case A_INC:
+  case A_DEC:
+    op_cost (op1, offset1);
+    break;
   case A_LD:
     ld_cost (op1, offset1, op2, offset2);
     break;
@@ -441,6 +451,7 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
     op8_cost (op2, offset2);
     break;
   case A_SLL:
+  case A_SRA:
   case A_SRL:
     op_cost (op1, offset1);
     break;
@@ -2532,6 +2543,9 @@ static void
 genLeftShift (const iCode *ic)
 {
   operand *left, *right, *result;
+  int i, size;
+  bool save_a;
+  symbol *tlbl1, *tlbl2;
 
   right = IC_RIGHT (ic);
   left = IC_LEFT (ic);
@@ -2548,8 +2562,60 @@ genLeftShift (const iCode *ic)
       return;
     }
 
-  wassertl (0, "Unimplemented left shift by non-literal.");
+  aopOp (result, ic);
+  aopOp (left, ic);
 
+  genMove (result->aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  size = result->aop->size;
+
+  save_a = !regDead (A_IDX, ic);
+  if (save_a);
+    push (ASMOP_A, 0, 1);
+
+  tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  emitLabel (tlbl1);
+  cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
+  emit3 (A_TNZ, ASMOP_A, 0);
+  emitcode ("jrnq", "!tlabel", labelKey2num (tlbl2->key));
+  cost (2, 0);
+
+  // TODO: Shift in left if free and cheaper, use sllw.
+  for (i = 0; i < size; i++)
+     {
+        int swapidx = -1;
+
+        if (aopInReg (result->aop, i, A_IDX))
+          {
+            if (!regalloc_dry_run)
+              wassertl (0, "Unimplemented shift result oeprand.");
+            cost (80, 80);
+          }
+
+        if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg)
+          swapidx = result->aop->aopu.bytes[i].byteu.reg->rIdx;
+
+        if (swapidx == -1)
+          emit3_o (i ? A_RLC : A_SLL, result->aop, i, 0, 0);
+        else
+          {
+            swap_to_a (swapidx);
+            emit3 (i ? A_RLC : A_SLL, ASMOP_A, 0);
+            swap_from_a (swapidx);
+          }
+     }
+
+  emit3 (A_DEC, ASMOP_A, 0);
+  emitcode ("jrne", "!tlabel", labelKey2num (tlbl1->key));
+  cost (2, 0);
+  emitLabel (tlbl2);
+
+  if (save_a);
+    pop (ASMOP_A, 0, 1);
+
+  freeAsmop (left);
+  freeAsmop (result);
   freeAsmop (right);
 }
 
@@ -2561,12 +2627,13 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
 {
   int shCount = (int) ulFromVal (right->aop->aopu.aop_lit);
   int size;
+  bool sign;
 
   D (emitcode ("; genRightShiftLiteral", ""));
 
   size = getSize (operandType (result));
 
-  wassertl (SPEC_USIGN (getSpec (operandType (left))), "Unimplemented signed right shift.");
+  sign =  !SPEC_USIGN (getSpec (operandType (left)));
 
   /* I suppose that the left size >= result size */
   wassert (getSize (operandType (left)) >= size);
@@ -2595,13 +2662,13 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
           {
             if (i > 0 && i == size - 1 && aopInReg (result->aop, i - 1, X_IDX))
               {
-                emitcode ("srlw", "x");
+                emitcode (sign ? "sraw" : "srlw", "x");
                 cost (1, 2);
                 i -= 2;
               }
             else if (i > 0 && i == size - 1 && aopInReg (result->aop, i - 1, Y_IDX))
               {
-                emitcode ("srlw", "y");
+                emitcode (sign ? "sraw" : "srlw", "y");
                 cost (2, 2);
                 i -= 2;
               }
@@ -2612,11 +2679,11 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
                   swapidx = result->aop->aopu.bytes[i].byteu.reg->rIdx;
 
                 if (swapidx == -1)
-                  emit3_o ((i != size - 1) ? A_RRC : A_SRL, result->aop, i, 0, 0);
+                  emit3_o ((i != size - 1) ? A_RRC : (sign ? A_SRA : A_SRL), result->aop, i, 0, 0);
                 else
                   {
                     swap_to_a (swapidx);
-                    emit3 ((i != size - 1) ? A_RRC : A_SRL, ASMOP_A, 0);
+                    emit3 ((i != size - 1) ? A_RRC : (sign ? A_SRA : A_SRL), ASMOP_A, 0);
                     swap_from_a (swapidx);
                   }
 
@@ -2636,6 +2703,10 @@ static void
 genRightShift (const iCode *ic)
 {
   operand *left, *right, *result;
+  int i, size;
+  bool save_a;
+  symbol *tlbl1, *tlbl2;
+  bool sign;
 
   right = IC_RIGHT (ic);
   left = IC_LEFT (ic);
@@ -2652,8 +2723,62 @@ genRightShift (const iCode *ic)
       return;
     }
 
-  wassertl (0, "Unimplemented right shift by non-literal.");
+  sign =  !SPEC_USIGN (getSpec (operandType (left)));
 
+  aopOp (result, ic);
+  aopOp (left, ic);
+
+  genMove (result->aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  size = result->aop->size;
+
+  save_a = !regDead (A_IDX, ic);
+  if (save_a);
+    push (ASMOP_A, 0, 1);
+
+  tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  emitLabel (tlbl1);
+  cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
+  emit3 (A_TNZ, ASMOP_A, 0);
+  emitcode ("jrnq", "!tlabel", labelKey2num (tlbl2->key));
+  cost (2, 0);
+
+  // TODO: Shift in left if free and cheaper, use sllw.
+  for (i = size - 1; i >= 0; i--)
+     {
+        int swapidx = -1;
+
+        if (aopInReg (result->aop, i, A_IDX))
+          {
+            if (!regalloc_dry_run)
+              wassertl (0, "Unimplemented shift result oeprand.");
+            cost (80, 80);
+          }
+
+        if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg)
+          swapidx = result->aop->aopu.bytes[i].byteu.reg->rIdx;
+
+        if (swapidx == -1)
+          emit3_o ((i != size - 1) ? A_RRC : (sign ? A_SRA : A_SRL), result->aop, i, 0, 0);
+        else
+          {
+            swap_to_a (swapidx);
+            emit3 ((i != size - 1) ? A_RRC : (sign ? A_SRA : A_SRL), ASMOP_A, 0);
+            swap_from_a (swapidx);
+          }
+     }
+
+  emit3 (A_DEC, ASMOP_A, 0);
+  emitcode ("jrne", "!tlabel", labelKey2num (tlbl1->key));
+  cost (2, 0);
+  emitLabel (tlbl2);
+
+  if (save_a);
+    pop (ASMOP_A, 0, 1);
+
+  freeAsmop (left);
+  freeAsmop (result);
   freeAsmop (right);
 }
 
