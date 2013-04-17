@@ -36,6 +36,7 @@ static struct
     {
       int pushed;
     } stack;
+  bool saved;
 }
 _G;
 
@@ -1486,6 +1487,27 @@ genUminus (const iCode *ic)
   freeAsmop (result);
 }
 
+static void
+saveRegsForCall (const iCode * ic)
+{
+  if (_G.saved)
+    return;
+
+  //if (!regDead (C_IDX, ic))
+  //  push (ASMOP_C, 0, 1);
+
+  if (!regDead (A_IDX, ic))
+    push (ASMOP_A, 0, 1);
+
+  if (!regDead (X_IDX, ic))
+    push (ASMOP_X, 0, 2);
+
+  if (!regDead (Y_IDX, ic))
+    push (ASMOP_Y, 0, 2);
+
+  _G.saved = TRUE;
+}
+
 /*-----------------------------------------------------------------*/
 /* genIpush - genrate code for pushing this gets a little complex  */
 /*-----------------------------------------------------------------*/
@@ -1504,24 +1526,18 @@ genIpush (const iCode * ic)
       return;
     }
 
-#if 0
-  if (_G.saves.saved == FALSE && !regalloc_dry_run /* Cost is counted at CALL or PCALL instead */ )
+  if (!_G.saved  && !regalloc_dry_run /* Cost is counted at CALL or PCALL instead */ )
     {
       /* Caller saves, and this is the first iPush. */
       /* Scan ahead until we find the function that we are pushing parameters to.
          Count the number of addSets on the way to figure out what registers
          are used in the send set.
        */
-      int nAddSets = 0;
       iCode *walk = ic->next;
 
       while (walk)
         {
-          if (walk->op == SEND)
-            {
-              nAddSets++;
-            }
-          else if (walk->op == CALL || walk->op == PCALL)
+          if (walk->op == CALL || walk->op == PCALL)
             {
               /* Found it. */
               break;
@@ -1532,9 +1548,8 @@ genIpush (const iCode * ic)
             }
           walk = walk->next;
         }
-      _saveRegsForCall (walk, nAddSets, FALSE);
+      saveRegsForCall (walk);
     }
-#endif
 
   /* then do the push */
   aopOp (IC_LEFT (ic), ic);
@@ -1542,6 +1557,7 @@ genIpush (const iCode * ic)
   for (size = IC_LEFT (ic)->aop->size, offset = 0; size;)
     {
       // TODO: For AOP_IMMD, if X is free, when optimizing for code size, ldw x, m  pushw x is better than push m push m+1.
+      // TODO: Use x (or even y) when free for stack operands.
 
       if (aopInReg (IC_LEFT (ic)->aop, offset, X_IDX) || aopInReg (IC_LEFT (ic)->aop, offset, Y_IDX))
         {
@@ -1575,7 +1591,7 @@ emitCall (const iCode *ic, bool ispcall)
   sym_link *etype = getSpec (dtype);
   sym_link *ftype = IS_FUNCPTR (dtype) ? dtype->next : dtype;
 
-  // TODO: Parameters.
+  saveRegsForCall (ic);
 
   /* Return value of big type or returning struct or union. */
   bigreturn = (getSize (ftype->next) > 4);
@@ -1645,6 +1661,10 @@ emitCall (const iCode *ic, bool ispcall)
         }
     }
 
+  // Restore regs
+  if (!regDead (Y_IDX, ic))
+    pop (ASMOP_Y, 0, 2);
+
   SomethingReturned = (IS_ITEMP (IC_RESULT (ic)) &&
                        (OP_SYMBOL (IC_RESULT (ic))->nRegs || OP_SYMBOL (IC_RESULT (ic))->spildir))
                        || IS_TRUE_SYMOP (IC_RESULT (ic));
@@ -1663,6 +1683,25 @@ emitCall (const iCode *ic, bool ispcall)
 
       freeAsmop (IC_RESULT (ic));
     }
+
+  // Restore more regs.
+  if (!regDead (X_IDX, ic))
+    {
+      if (regDead (XL_IDX, ic) || regDead (XH_IDX, ic))
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Unimplemented partially-dead x at call site.");
+          cost (80, 80);
+        }
+      pop (ASMOP_X, 0, 2);
+    }
+
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
+  //if (!regDead (C_IDX, ic))
+  //  pop (ASMOP_C, 0, 1);
+
+  _G.saved = FALSE;
 }
 
 /*-----------------------------------------------------------------*/
