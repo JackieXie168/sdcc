@@ -3394,10 +3394,13 @@ genCast (const iCode *ic)
       size = right->aop->size;
       offset = 0;
 
-      emit3 (A_CLR, ASMOP_A, 0);
       for(offset = 0; offset < size; offset++)
         {
-          if ((right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK) && right->aop->aopu.bytes[0].in_reg)
+          asmop *right_stacked = NULL;
+          int right_offset;
+
+          emit3 (A_CLR, ASMOP_A, 0);
+          if (aopInReg (right->aop, offset, A_IDX))
             {
               if (!regalloc_dry_run)
                 {
@@ -3407,7 +3410,41 @@ genCast (const iCode *ic)
               cost (80, 80);
               continue;
             }
-          emit3_o(offset ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, offset);
+
+          if (aopRS (right->aop) && !aopOnStack (right->aop, offset, 1))
+            {
+              if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == XL_IDX)
+                {
+                  right_stacked = ASMOP_X;
+                  right_offset = 1;
+                }
+              else if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == XH_IDX)
+                {
+                  right_stacked = ASMOP_X;
+                  right_offset = 0;
+                }
+              else if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == YL_IDX)
+                {
+                  right_stacked = ASMOP_Y;
+                  right_offset = 1;
+                }
+              else if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == YH_IDX)
+                {
+                  right_stacked = ASMOP_Y;
+                  right_offset = 0;
+                }
+              else
+                wassert (0);
+              push (right_stacked, 0, 2);
+            }
+
+          if (!right_stacked)
+            emit3_o(offset ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, offset);
+          else
+            {
+              emitcode (offset ? "sbc" : "sub", "a, (%d, sp)", right_offset);
+              pop (right_stacked, 0, 2);
+            }
         }
       emit3 (A_RLC, ASMOP_A, 0);
       cheapMove (result->aop, 0, ASMOP_A, 0, FALSE);

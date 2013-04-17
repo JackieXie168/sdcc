@@ -1,6 +1,11 @@
 2013-04-17 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
+	  STM8: Fix for cast to bool.
+
+2013-04-17 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
 	  STM8: Implement more shifts, unary minus for float, implement large return values, save regs over calls, coalescing.
 
 2013-04-16 Philipp Klaus Krause <pkk AT spth.de>
