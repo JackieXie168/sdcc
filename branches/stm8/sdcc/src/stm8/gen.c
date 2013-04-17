@@ -87,10 +87,11 @@ static const char *asminstnames[] =
   "xor"
 };
 
-static struct asmop asmop_a, asmop_x, asmop_y, asmop_zero, asmop_one;
+static struct asmop asmop_a, asmop_x, asmop_y, asmop_xy, asmop_zero, asmop_one;
 static struct asmop *const ASMOP_A = &asmop_a;
 static struct asmop *const ASMOP_X = &asmop_x;
 static struct asmop *const ASMOP_Y = &asmop_y;
+static struct asmop *const ASMOP_XY = &asmop_xy;
 static struct asmop *const ASMOP_ZERO = &asmop_zero;
 static struct asmop *const ASMOP_ONE = &asmop_one;
 
@@ -115,6 +116,17 @@ stm8_init_asmops (void)
   asmop_y.aopu.bytes[0].byteu.reg = stm8_regs + YL_IDX;
   asmop_y.aopu.bytes[1].in_reg = TRUE;
   asmop_y.aopu.bytes[1].byteu.reg = stm8_regs + YH_IDX;
+
+  asmop_xy.type = AOP_REG;
+  asmop_xy.size = 2;
+  asmop_xy.aopu.bytes[0].in_reg = TRUE;
+  asmop_xy.aopu.bytes[0].byteu.reg = stm8_regs + XL_IDX;
+  asmop_xy.aopu.bytes[1].in_reg = TRUE;
+  asmop_xy.aopu.bytes[1].byteu.reg = stm8_regs + XH_IDX;
+  asmop_xy.aopu.bytes[2].in_reg = TRUE;
+  asmop_xy.aopu.bytes[2].byteu.reg = stm8_regs + YL_IDX;
+  asmop_xy.aopu.bytes[3].in_reg = TRUE;
+  asmop_xy.aopu.bytes[3].byteu.reg = stm8_regs + YH_IDX;
 
   asmop_zero.type = AOP_LIT;
   asmop_zero.size = 1;
@@ -1566,10 +1578,34 @@ emitCall (const iCode *ic, bool ispcall)
   // TODO: Parameters.
 
   /* Return value of big type or returning struct or union. */
-  bigreturn = (getSize (ftype->next) > 2);
+  bigreturn = (getSize (ftype->next) > 4);
   if (bigreturn)
     {
-      wassertl (0, "Unimplemented return value size.");
+      symbol *sym;
+
+      wassertl (IC_RESULT (ic), "Unused return value in call to function returning large type.");
+
+      sym = OP_SYMBOL (IC_RESULT (ic));
+      aopOp (IC_RESULT (ic), ic);
+
+      if (IC_RESULT (ic)->aop->type != AOP_STK)
+        {
+          if (!regalloc_dry_run)
+            {
+              fprintf (stderr, "Type %d\n", IC_RESULT (ic)->aop->type);
+              wassertl (0, "Unimplemented return value size / type combination.");
+            }
+          cost (80, 80);
+        }
+
+      // TODO: Use x where free.
+
+      emitcode ("ldw", "y, sp");
+      emitcode ("addw", "y, #%d", sym->stack + _G.stack.pushed);
+      cost (2 + 4, 1 + 2);
+      push (ASMOP_Y, 0, 2);
+
+      freeAsmop (IC_RESULT (ic));
     }
 
   if (ispcall)
@@ -1621,9 +1657,9 @@ emitCall (const iCode *ic, bool ispcall)
     {
       aopOp (IC_RESULT (ic), ic);
 
-      wassert (getSize (ftype->next) == 1 || getSize (ftype->next) == 2);
+      wassert (getSize (ftype->next) == 1 || getSize (ftype->next) == 2 || getSize (ftype->next) == 4);
 
-      genMove (IC_RESULT (ic)->aop, getSize (ftype->next) == 1 ? ASMOP_A : ASMOP_X, TRUE, TRUE, TRUE);
+      genMove (IC_RESULT (ic)->aop, getSize (ftype->next) == 1 ? ASMOP_A : (getSize (ftype->next) == 2 ? ASMOP_X : ASMOP_XY), TRUE, TRUE, TRUE);
 
       freeAsmop (IC_RESULT (ic));
     }
@@ -1738,7 +1774,7 @@ static void
 genReturn (const iCode *ic)
 {
   operand *left = IC_LEFT (ic);
-  int size;
+  int size, i;
 
   D (emitcode ("; genReturn", ""));
 
@@ -1760,8 +1796,37 @@ genReturn (const iCode *ic)
     case 2:
       genMove (ASMOP_X, left->aop, TRUE, TRUE, TRUE);
       break;
+    case 4:
+      genMove (ASMOP_XY, left->aop, TRUE, TRUE, TRUE);
+      break;
     default:
-      wassertl (0, "Return not implemented for return value of this size.");
+      wassertl (size > 4, "Return not implemented for return value of this size.");
+
+      emitcode ("ldw", "x, sp");
+      cost (1, 1);
+      emitcode ("addw", "x, #0x%04x", _G.stack.pushed);
+      cost (3, 2);
+
+      for(i = 0; i < size;)
+        {
+          if (aopInReg (left->aop, i, Y_IDX))
+            {
+              emitcode ("ldw", "(#%d, x), y", i += 2);
+              cost (2, 2);
+            }
+          else if (left->aop->type == AOP_REGSTK && !aopInReg (left->aop, i, A_IDX) && !aopOnStack (left->aop, i, 1) || i != 0 && aopInReg (left->aop, i, A_IDX))
+            {
+              if (!regalloc_dry_run)
+                wassertl (0, "Unimplemented return operand.");
+              cost (80, 80);
+              i++;
+            }
+          else
+            {
+              cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+              emitcode ("ld", "(#%d, x), a", i++);
+            }
+        }
     }
 
   freeAsmop (left);
@@ -2609,7 +2674,7 @@ genLeftShift (const iCode *ic)
   emitLabel (tlbl1);
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
   emit3 (A_TNZ, ASMOP_A, 0);
-  emitcode ("jrnq", "!tlabel", labelKey2num (tlbl2->key));
+  emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
   // TODO: Shift in left if free and cheaper, use sllw.
@@ -2620,7 +2685,7 @@ genLeftShift (const iCode *ic)
         if (aopInReg (result->aop, i, A_IDX))
           {
             if (!regalloc_dry_run)
-              wassertl (0, "Unimplemented shift result oeprand.");
+              wassertl (0, "Unimplemented shift result operand.");
             cost (80, 80);
           }
 
@@ -2772,7 +2837,7 @@ genRightShift (const iCode *ic)
   emitLabel (tlbl1);
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
   emit3 (A_TNZ, ASMOP_A, 0);
-  emitcode ("jrnq", "!tlabel", labelKey2num (tlbl2->key));
+  emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
   // TODO: Shift in left if free and cheaper, use sllw.
@@ -2783,7 +2848,7 @@ genRightShift (const iCode *ic)
         if (aopInReg (result->aop, i, A_IDX))
           {
             if (!regalloc_dry_run)
-              wassertl (0, "Unimplemented shift result oeprand.");
+              wassertl (0, "Unimplemented shift result operand.");
             cost (80, 80);
           }
 
