@@ -1,7 +1,7 @@
 2013-04-18 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Endianness fixes, implement dummy pointer reads, implement '!', implement more operands in logic ops, implement more return operands, implement more operands for cast to _Bool.
+	  STM8: Endianness fixes, implement dummy pointer reads, implement '!', implement more operands in logic ops, implement more return operands, implement more operands for cast to _Bool, implement more operands for subtraction.
 
 2013-04-18 Borut Razem <borut.razem AT gmail.com>
 

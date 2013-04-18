@@ -1597,22 +1597,28 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 {
   int size, i;
   bool started;
-  bool delayedstore = FALSE;
+  bool pushed_a = FALSE;
 
   size = result_aop->size;
   for(i = 0, started = FALSE; i < size;)
     {
       if (0) // TODO: Use subw where it provides an advantage.
         ;
-      else if (right_aop->type == AOP_REG || right_aop->type == AOP_REGSTK && !aopOnStack (right_aop, i, 1))
+      else if (aopInReg (right_aop, i, A_IDX))
         {
           if (!regalloc_dry_run)
             wassertl (0, "Unimplemented subtraction operand.");
           cost (80, 80);
           i++;
         }
-      else // TODO: Take care of A. TODO: Handling of right operands that can't be directly subtracted from a.
+      else // TODO: Handle left and right operands in a correctly!
         {
+          if (!regDead (A_IDX, ic) && !pushed_a)
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+            }
+
           cheapMove (ASMOP_A, 0, left_aop, i, FALSE);
           if (!started && right_aop->type == AOP_LIT && !byteOfVal (right_aop->aopu.aop_lit, i))
             {
@@ -1620,13 +1626,28 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
             }
           else
             {
-              emit3_o (started ? A_SBC : A_SUB, ASMOP_A, 0, right_aop, i);
+              const asmop *right_stacked = NULL;
+              int right_offset;
+
+              right_stacked = stack_aop (right_aop, i, &right_offset);
+
+              if (!right_stacked)
+                emit3_o (started ? A_SBC : A_SUB, ASMOP_A, 0, right_aop, i);
+              else
+                {
+                  emitcode (started ? "sbc" : "sub", "a, (#%d, sp)", right_offset);
+                  cost (2, 1);
+                }
+
+              if (right_stacked)
+                pop (right_stacked, 0, 2);
+
               started = TRUE;
             }
           if (aopInReg (result_aop, i, A_IDX) && i + 1 < size)
             {
               push (ASMOP_A, 0, 1);
-              delayedstore = TRUE;
+              pushed_a = TRUE;
             }
           else
             cheapMove (result_aop, i, ASMOP_A, 0, FALSE);
@@ -1634,7 +1655,7 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
         }
     }
 
-  if (delayedstore)
+  if (pushed_a)
     pop (ASMOP_A, 0, 1);
 }
 
