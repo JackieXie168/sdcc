@@ -898,6 +898,44 @@ void swap_from_a(int idx)
     }
 }
 
+/*-----------------------------------------------------------------*/
+/* stackAop - put xl, xh, yl, yh aop on stack                      */
+/*-----------------------------------------------------------------*/
+static
+const asmop *stack_aop (const asmop *aop, int i, int *offset)
+{
+  asmop *stacked = NULL;
+
+  if (aopRS (aop) && !aopOnStack (aop, i, 1) && !aopInReg (aop, i, A_IDX))
+    {
+      if (aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
+        {
+          stacked = ASMOP_X;
+          *offset = 1;
+        }
+      else if (aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
+        {
+          stacked = ASMOP_X;
+          *offset = 0;
+        }
+      else if (aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
+        {
+          stacked = ASMOP_Y;
+          *offset = 1;
+        }
+      else if (aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
+        {
+          stacked = ASMOP_Y;
+          *offset = 0;
+        }
+      else
+        wassert (0);
+      push (stacked, 0, 2);
+    }
+
+  return(stacked);
+}
+
 /*--------------------------------------------------------------------------*/
 /* adjustStack - Adjust the stack pointer by n bytes.                       */
 /*--------------------------------------------------------------------------*/
@@ -1993,6 +2031,7 @@ genReturn (const iCode *ic)
 {
   operand *left = IC_LEFT (ic);
   int size, i;
+  bool stacked = FALSE;
 
   D (emitcode ("; genReturn", ""));
 
@@ -2020,10 +2059,27 @@ genReturn (const iCode *ic)
     default:
       wassertl (size > 4, "Return not implemented for return value of this size.");
 
+      for(i = 0; i < size; i++)
+        if (aopInReg (left->aop, i, XL_IDX) || aopInReg (left->aop, i, XH_IDX))
+          {
+            push (ASMOP_X, 0, 2);
+            stacked = TRUE;
+            break;
+          }
+
       emitcode ("ldw", "x, sp");
       cost (1, 1);
       emitcode ("addw", "x, #0x%04x", _G.stack.pushed);
       cost (3, 2);
+
+      // Clear a first.
+      for(i = 0; i < size; i++)
+        if (aopInReg (left->aop, i, A_IDX))
+          {
+            emitcode ("ld", "(#%d, x), a", size - 1 - i);
+            cost (2, 1);
+            break;
+          }
 
       for(i = 0; i < size;)
         {
@@ -2033,20 +2089,24 @@ genReturn (const iCode *ic)
               cost (2, 2);
               i += 2;
             }
-          else if (left->aop->type == AOP_REGSTK && !aopInReg (left->aop, i, A_IDX) && !aopOnStack (left->aop, i, 1) || i != 0 && aopInReg (left->aop, i, A_IDX))
+          else if (aopInReg (left->aop, i, XL_IDX) || aopInReg (left->aop, i, XH_IDX))
             {
-              if (!regalloc_dry_run)
-                wassertl (0, "Unimplemented return operand.");
-              cost (80, 80);
+              emitcode ("ld", "a, (#%d, sp)", aopInReg (left->aop, i, XL_IDX));
+              emitcode ("ld", "(#%d, x), a", size - 1 - i);
+              cost (4, 2);
               i++;
             }
-          else
+          else if (!aopInReg (left->aop, i, A_IDX))
             {
               cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
               emitcode ("ld", "(#%d, x), a", size - 1 - i);
+              cost (2, 1);
               i++;
             }
         }
+
+      if (stacked)
+        adjustStack (2);
     }
 
   freeAsmop (left);
@@ -2524,44 +2584,6 @@ genCmpEQorNE (iCode *ic)
   freeAsmop (right);
   freeAsmop (left);
   freeAsmop (result);
-}
-
-/*-----------------------------------------------------------------*/
-/* stackAop - put xl, xh, yl, yh aop on stack                      */
-/*-----------------------------------------------------------------*/
-static
-const asmop *stack_aop (const asmop *aop, int i, int *offset)
-{
-  asmop *stacked = NULL;
-
-  if (aopRS (aop) && !aopOnStack (aop, i, 1) && !aopInReg (aop, i, A_IDX))
-    {
-      if (aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
-        {
-          stacked = ASMOP_X;
-          *offset = 1;
-        }
-      else if (aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
-        {
-          stacked = ASMOP_X;
-          *offset = 0;
-        }
-      else if (aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
-        {
-          stacked = ASMOP_Y;
-          *offset = 1;
-        }
-      else if (aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
-        {
-          stacked = ASMOP_Y;
-          *offset = 0;
-        }
-      else
-        wassert (0);
-      push (stacked, 0, 2);
-    }
-
-  return(stacked);
 }
 
 /*-----------------------------------------------------------------*/
