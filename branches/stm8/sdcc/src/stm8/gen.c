@@ -3618,62 +3618,52 @@ genCast (const iCode *ic)
     }
   else if (IS_BOOL (operandType (result)))
     {
-      if (!regDead (A_IDX, ic))
-        push (ASMOP_A, 0, 1);
-
+      bool pushed_a = FALSE;
       size = right->aop->size;
-      offset = 0;
+
+      for(offset = 1; offset < size; offset++)
+        if (aopInReg (right->aop, offset, A_IDX))
+          {
+            push (ASMOP_A, 0, 1);
+            pushed_a = TRUE;
+            break;
+          }
+
+      if (!regDead (A_IDX, ic) && !pushed_a)
+        {
+          push (ASMOP_A, 0, 1);
+          pushed_a = TRUE;
+        }
 
       for(offset = 0; offset < size; offset++)
         {
-          asmop *right_stacked = NULL;
+          const asmop *right_stacked = NULL;
           int right_offset;
 
-          emit3 (A_CLR, ASMOP_A, 0);
-          if (aopInReg (right->aop, offset, A_IDX))
-            {
-              if (!regalloc_dry_run)
-                {
-                  fprintf (stderr, "type %d size %d idx at %d : %d\n", right->aop->type, right->aop->size, offset, right->aop->aopu.bytes[offset].byteu.reg->rIdx);
-                  wassertl (0, "Unimplemented operand for cast to _Bool.");
-                }
-              cost (80, 80);
-              continue;
-            }
+          right_stacked = stack_aop (right->aop, offset, &right_offset);
 
-          if (aopRS (right->aop) && !aopOnStack (right->aop, offset, 1))
+          if (offset && aopInReg (right->aop, offset, A_IDX))
             {
-              if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == XL_IDX)
-                {
-                  right_stacked = ASMOP_X;
-                  right_offset = 1;
-                }
-              else if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == XH_IDX)
-                {
-                  right_stacked = ASMOP_X;
-                  right_offset = 0;
-                }
-              else if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == YL_IDX)
-                {
-                  right_stacked = ASMOP_Y;
-                  right_offset = 1;
-                }
-              else if (right->aop->aopu.bytes[offset].byteu.reg->rIdx == YH_IDX)
-                {
-                  right_stacked = ASMOP_Y;
-                  right_offset = 0;
-                }
-              else
-                wassert (0);
-              push (right_stacked, 0, 2);
-            }
+              right_stacked = ASMOP_A;
+              right_offset = 0;
+            }   
 
-          if (!right_stacked)
-            emit3_o(offset ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, offset);
+          if (!offset && aopInReg (right->aop, offset, A_IDX))
+            {
+              emit3 (A_NEG, ASMOP_A, 0);
+              emit3 (A_CLR, ASMOP_A, 0);
+            }
+          else if (!right_stacked)
+            {
+              emit3 (A_CLR, ASMOP_A, 0);
+              emit3_o(offset ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, offset);
+            }
           else
             {
+              emit3 (A_CLR, ASMOP_A, 0);
               emitcode (offset ? "sbc" : "sub", "a, (%d, sp)", right_offset);
-              pop (right_stacked, 0, 2);
+              if (!aopInReg (right->aop, offset, A_IDX))
+                pop (right_stacked, 0, 2);
             }
         }
       emit3 (A_RLC, ASMOP_A, 0);
@@ -3681,6 +3671,8 @@ genCast (const iCode *ic)
 
       if (!regDead (A_IDX, ic))
         pop (ASMOP_A, 0, 1);
+      else if (pushed_a)
+        adjustStack (1);
     }
   else
     {
