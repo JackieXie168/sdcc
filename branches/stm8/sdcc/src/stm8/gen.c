@@ -88,7 +88,7 @@ static const char *asminstnames[] =
   "rlc",
   "rlcw",
   "rrc",
-  "rrwc",
+  "rrcw",
   "sbc",
   "sll",
   "sllw",
@@ -2527,97 +2527,52 @@ genCmpEQorNE (iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* genXor- code for xor                                            */
+/* stackAop - put xl, xh, yl, yh aop on stack                      */
+/*-----------------------------------------------------------------*/
+static
+const asmop *stack_aop (const asmop *aop, int i, int *offset)
+{
+  asmop *stacked = NULL;
+
+  if (aopRS (aop) && !aopOnStack (aop, i, 1) && !aopInReg (aop, i, A_IDX))
+    {
+      if (aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
+        {
+          stacked = ASMOP_X;
+          *offset = 1;
+        }
+      else if (aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
+        {
+          stacked = ASMOP_X;
+          *offset = 0;
+        }
+      else if (aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
+        {
+          stacked = ASMOP_Y;
+          *offset = 1;
+        }
+      else if (aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
+        {
+          stacked = ASMOP_Y;
+          *offset = 0;
+        }
+      else
+        wassert (0);
+      push (stacked, 0, 2);
+    }
+
+  return(stacked);
+}
+
+/*-----------------------------------------------------------------*/
+/* genXor - code for or                                            */
 /*-----------------------------------------------------------------*/
 static void
 genXor (const iCode *ic)
 {
   operand *left, *right, *result;
-  int size, i;
-
-  D (emitcode ("; genXor", ""));
-
-  aopOp ((left = IC_LEFT (ic)), ic);
-  aopOp ((right = IC_RIGHT (ic)), ic);
-  aopOp ((result = IC_RESULT (ic)), ic);
-
-  size = getSize (operandType (result));
-
-  /* Prefer literal operand on right */
-  if (left->aop->type == AOP_LIT ||
-    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
-    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
-    {
-      operand *temp = left;
-      left = right;
-      right = temp;
-    }
-
-  // TODO: Take care of operands partially in A. TODO: Use bit complement instructions where it is faster.
-  if (!regDead (A_IDX, ic))
-    push (ASMOP_A, 0, 1);
-  for (i = 0; i < size; i++)
-    {
-      asmop *right_stacked = NULL;
-      int right_offset;
-
-      if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
-        {
-          if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
-            {
-              right_stacked = ASMOP_X;
-              right_offset = 1;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
-            {
-              right_stacked = ASMOP_X;
-              right_offset = 0;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
-            {
-              right_stacked = ASMOP_Y;
-              right_offset = 1;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
-            {
-              right_stacked = ASMOP_Y;
-              right_offset = 0;
-            }
-          else
-            wassert (0);
-          push (right_stacked, 0, 2);
-        }
-
-      cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-      if (!right_stacked)
-        emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
-      else
-        {
-          emitcode ("xor", "a, (%d, sp)", right_offset);
-          cost (2, 1);
-        }
-
-      if (right_stacked)
-        pop (right_stacked, 0, 2);
-
-      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
-    }
-  if (!regDead (A_IDX, ic))
-    pop (ASMOP_A, 0, 1);
-
-  freeAsmop (left);
-  freeAsmop (right);
-  freeAsmop (result);
-}
-
-/*-----------------------------------------------------------------*/
-/* genOr - code for or                                             */
-/*-----------------------------------------------------------------*/
-static void
-genOr (const iCode *ic)
-{
-  operand *left, *right, *result;
-  int size, i;
+  int size, i, omitbyte = -1;
+  bool pushed_a = FALSE;
 
   D (emitcode ("; genOr", ""));
 
@@ -2637,43 +2592,165 @@ genOr (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Take care of operands partially in A. TODO: Use bit set instructions where it is faster.
+  // TODO: Handle result partially in a! Use bit set instructions where it is faster.
   if (!regDead (A_IDX, ic))
-    push (ASMOP_A, 0, 1);
+    {
+      push (ASMOP_A, 0, 1);
+      pushed_a = TRUE;
+    }
+
+  // Byte in a needs to be handled first.
+  for (i = 1; i < size; i++)
+    if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
+      {
+        const asmop *other_stacked = NULL;
+        int other_offset;
+        asmop *other = (aopInReg (left->aop, i, A_IDX) ? right : left)->aop;
+
+        other_stacked = stack_aop (other, i, &other_offset);
+
+        if (!other_stacked)
+          emit3_o (A_XOR, ASMOP_A, 0, other, i);
+        else
+          {
+            emitcode ("xor", "a, (%d, sp)", other_offset);
+            cost (2, 1);
+          }
+        omitbyte = i;
+
+        if (other_stacked)
+          pop (other_stacked, 0, 2);
+
+        if (!aopInReg (result->aop, i, A_IDX))
+          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+        else
+          {
+            push (ASMOP_A, 0, 1);
+            pushed_a = TRUE;
+          }
+        break;
+      }
+
   for (i = 0; i < size; i++)
     {
-      asmop *right_stacked = NULL;
+      const asmop *right_stacked = NULL;
       int right_offset;
 
-      if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
-        {
-          if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
-            {
-              right_stacked = ASMOP_X;
-              right_offset = 1;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
-            {
-              right_stacked = ASMOP_X;
-              right_offset = 0;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
-            {
-              right_stacked = ASMOP_Y;
-              right_offset = 1;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
-            {
-              right_stacked = ASMOP_Y;
-              right_offset = 0;
-            }
-          else
-            wassert (0);
-          push (right_stacked, 0, 2);
-        }
+      if (omitbyte == i)
+        continue;
+
+      right_stacked = stack_aop (right->aop, i, &right_offset);
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-      if (!right_stacked)
+
+      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
+        emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
+      else
+        {
+          emitcode ("xor", "a, (%d, sp)", right_offset);
+          cost (2, 1);
+        }
+
+      if (right_stacked)
+        pop (right_stacked, 0, 2);
+
+      if (!aopInReg (result->aop, i, A_IDX) || i == size - 1)
+        cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+      else
+        {
+          push (ASMOP_A, 0, 1);
+          pushed_a = TRUE;
+        }
+    }
+
+  if (pushed_a)
+    pop (ASMOP_A, 0, 1);
+
+  freeAsmop (left);
+  freeAsmop (right);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genOr - code for or                                             */
+/*-----------------------------------------------------------------*/
+static void
+genOr (const iCode *ic)
+{
+  operand *left, *right, *result;
+  int size, i, omitbyte = -1;
+  bool pushed_a = FALSE;
+
+  D (emitcode ("; genOr", ""));
+
+  aopOp ((left = IC_LEFT (ic)), ic);
+  aopOp ((right = IC_RIGHT (ic)), ic);
+  aopOp ((result = IC_RESULT (ic)), ic);
+
+  size = getSize (operandType (result));
+
+  /* Prefer literal operand on right */
+  if (left->aop->type == AOP_LIT ||
+    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
+    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
+    {
+      operand *temp = left;
+      left = right;
+      right = temp;
+    }
+
+  // TODO: Handle result partially in a! Use bit complement instructions where it is faster.
+  if (!regDead (A_IDX, ic))
+    {
+      push (ASMOP_A, 0, 1);
+      pushed_a = TRUE;
+    }
+
+  // Byte in a needs to be handled first.
+  for (i = 1; i < size; i++)
+    if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
+      {
+        const asmop *other_stacked = NULL;
+        int other_offset;
+        asmop *other = (aopInReg (left->aop, i, A_IDX) ? right : left)->aop;
+
+        other_stacked = stack_aop (other, i, &other_offset);
+
+        if (!other_stacked)
+          emit3_o (A_OR, ASMOP_A, 0, other, i);
+        else
+          {
+            emitcode ("or", "a, (%d, sp)", other_offset);
+            cost (2, 1);
+          }
+        omitbyte = i;
+
+        if (other_stacked)
+          pop (other_stacked, 0, 2);
+
+        if (!aopInReg (result->aop, i, A_IDX))
+          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+        else
+          {
+            push (ASMOP_A, 0, 1);
+            pushed_a = TRUE;
+          }
+        break;
+      }
+
+  for (i = 0; i < size; i++)
+    {
+      const asmop *right_stacked = NULL;
+      int right_offset;
+
+      if (omitbyte == i)
+        continue;
+
+      right_stacked = stack_aop (right->aop, i, &right_offset);
+
+      cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+
+      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
       else
         {
@@ -2684,9 +2761,16 @@ genOr (const iCode *ic)
       if (right_stacked)
         pop (right_stacked, 0, 2);
 
-      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+      if (!aopInReg (result->aop, i, A_IDX) || i == size - 1)
+        cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+      else
+        {
+          push (ASMOP_A, 0, 1);
+          pushed_a = TRUE;
+        }
     }
-  if (!regDead (A_IDX, ic))
+
+  if (pushed_a)
     pop (ASMOP_A, 0, 1);
 
   freeAsmop (left);
@@ -2701,7 +2785,8 @@ static void
 genAnd (const iCode *ic)
 {
   operand *left, *right, *result;
-  int size, i;
+  int size, i, omitbyte = -1;
+  bool pushed_a = FALSE;
 
   D (emitcode ("; genAnd", ""));
 
@@ -2721,43 +2806,58 @@ genAnd (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Take care of operands partially in A. TODO: Handling of right operands that can't be directly anded with a. TODO: Use bit reset instructions where it is faster.
+  // TODO: Handle result partially in a! Use bit reset instructions where it is faster.
   if (!regDead (A_IDX, ic))
-    push (ASMOP_A, 0, 1);
+    {
+      push (ASMOP_A, 0, 1);
+      pushed_a = TRUE;
+    }
+
+  // Byte in a needs to be handled first.
+  for (i = 1; i < size; i++)
+    if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
+      {
+        const asmop *other_stacked = NULL;
+        int other_offset;
+        asmop *other = (aopInReg (left->aop, i, A_IDX) ? right : left)->aop;
+
+        other_stacked = stack_aop (other, i, &other_offset);
+
+        if (!other_stacked)
+          emit3_o (A_AND, ASMOP_A, 0, other, i);
+        else
+          {
+            emitcode ("and", "a, (%d, sp)", other_offset);
+            cost (2, 1);
+          }
+        omitbyte = i;
+
+        if (other_stacked)
+          pop (other_stacked, 0, 2);
+
+        if (!aopInReg (result->aop, i, A_IDX))
+          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+        else
+          {
+            push (ASMOP_A, 0, 1);
+            pushed_a = TRUE;
+          }
+        break;
+      }
+
   for (i = 0; i < size; i++)
     {
-      asmop *right_stacked = NULL;
+      const asmop *right_stacked = NULL;
       int right_offset;
 
-      if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
-        {
-          if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
-            {
-              right_stacked = ASMOP_X;
-              right_offset = 1;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
-            {
-              right_stacked = ASMOP_X;
-              right_offset = 0;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
-            {
-              right_stacked = ASMOP_Y;
-              right_offset = 1;
-            }
-          else if (right->aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
-            {
-              right_stacked = ASMOP_Y;
-              right_offset = 0;
-            }
-          else
-            wassert (0);
-          push (right_stacked, 0, 2);
-        }
+      if (omitbyte == i)
+        continue;
+
+      right_stacked = stack_aop (right->aop, i, &right_offset);
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-      if (!right_stacked)
+
+      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
       else
         {
@@ -2768,9 +2868,16 @@ genAnd (const iCode *ic)
       if (right_stacked)
         pop (right_stacked, 0, 2);
 
-      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+      if (!aopInReg (result->aop, i, A_IDX) || i == size - 1)
+        cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+      else
+        {
+          push (ASMOP_A, 0, 1);
+          pushed_a = TRUE;
+        }
     }
-  if (!regDead (A_IDX, ic))
+
+  if (pushed_a)
     pop (ASMOP_A, 0, 1);
 
   freeAsmop (left);
