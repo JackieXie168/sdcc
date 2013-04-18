@@ -741,6 +741,7 @@ aopOp (operand *op, const iCode *ic)
     asmop *aop = newAsmop (AOP_REGSTK);
 
     aop->size = getSize (operandType (op));
+    op->aop = aop;
 
     for (i = 0; i < getSize (operandType (op)); i++)
       {
@@ -759,8 +760,11 @@ aopOp (operand *op, const iCode *ic)
                 wassertl (sym->usl.spillLoc->stack + i < 200, "Unimplemented EXSTK.");
               }
           }
-        else
-          wassertl (0, "Unimplemented dummy aop.");
+        else // Dummy iTemp.
+          {
+            aop->type = AOP_DUMMY;
+            return;
+          }
       }
 
     if (completly_in_regs)
@@ -768,7 +772,6 @@ aopOp (operand *op, const iCode *ic)
     else if (completly_on_stack)
       aop->type = AOP_STK;
 
-    op->aop = aop;
     return;
   }
 }
@@ -956,6 +959,9 @@ adjustStack (int n)
 static void
 cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 {
+  wassert (result->type != AOP_DUMMY);
+  wassert (source->type != AOP_DUMMY);
+
   if (aopRS (result) && aopRS (source) &&
     result->aopu.bytes[roffset].in_reg && source->aopu.bytes[soffset].in_reg &&
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
@@ -1048,7 +1054,7 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
 static void
 genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 {
-  int i, regsize, size, n = result->size;
+  int i, regsize, size, n = result->size < source->size ? result->size : source->size;
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
   int ex[4];
   bool a_free, x_free, y_free;
@@ -1378,14 +1384,19 @@ skip_byte:
       pop (ASMOP_A, 0, 1);
     }
 
+  // Place leading zeroes.
+  for (i = source->size; i < result->size; i++) 
+    cheapMove (result, i, ASMOP_ZERO, 0, FALSE); // TODO: Allow use of a where safe.
+
   if (size)
     {
       if (!regalloc_dry_run)
         {
           wassertl (0, "genCopy failed to completly copy operands.");
-          printf ("%d bytes left.\n", size);
+          fprintf (stderr, "%d bytes left.\n", size);
+          fprintf (stderr, "left type %d size %d source type %d size %d\n", result->type, result->size, source->type, source->size);
           for (i = 0; i < n ; i++)
-            printf ("Byte %d, result in reg %d, source in reg %d. %s assigned.\n", i, result->aopu.bytes[i].in_reg ? result->aopu.bytes[i].byteu.reg->rIdx : -1, source->aopu.bytes[i].in_reg ? source->aopu.bytes[i].byteu.reg->rIdx : -1, assigned[i] ? "" : "not");
+            fprintf (stderr, "Byte %d, result in reg %d, source in reg %d. %s assigned.\n", i, result->aopu.bytes[i].in_reg ? result->aopu.bytes[i].byteu.reg->rIdx : -1, source->aopu.bytes[i].in_reg ? source->aopu.bytes[i].byteu.reg->rIdx : -1, assigned[i] ? "" : "not");
         }
       cost (80, 80);
     }
@@ -3055,6 +3066,9 @@ genPointerGet (const iCode *ic)
   aopOp (IC_RIGHT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
 
+  if (result->aop->type == AOP_DUMMY)
+    D (emitcode ("; Dummy read", ""));
+
   wassertl (right, "GET_VALUE_AT_ADDRESS without right operand");
   wassertl (IS_OP_LITERAL (IC_RIGHT (ic)), "GET_VALUE_AT_ADDRESS with non-literal right operand");
 
@@ -3068,7 +3082,10 @@ genPointerGet (const iCode *ic)
       return;
     }
 
-  genMove (use_y ? ASMOP_Y : ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  if (!regDead (A_IDX, ic))
+    push (ASMOP_A, 0, 1);
+
+  genMove (use_y ? ASMOP_Y : ASMOP_X, left->aop, TRUE, regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   // TODO: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
@@ -3086,8 +3103,12 @@ genPointerGet (const iCode *ic)
           emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i + offset);
           cost (offset < 256 ? 2 : 3, 1);
         }
-      cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+      if (result->aop->type != AOP_DUMMY)
+        cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
     }
+
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
 
   freeAsmop (right);
   freeAsmop (left);
@@ -3110,7 +3131,26 @@ genAssign (const iCode *ic)
   aopOp (right, ic);
   aopOp (result, ic);
 
-  genMove(result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  wassert (result->aop->type != AOP_DUMMY || right->aop->type != AOP_DUMMY);
+
+  if (right->aop->type == AOP_DUMMY)
+    {
+      int i;
+      D (emitcode ("; Dummy write", ""));
+      for (i = 0; i < result->aop->size; i++)
+        cheapMove (result->aop, i, ASMOP_A, 0, TRUE);
+    }
+  else if (result->aop->type == AOP_DUMMY)
+    {
+      int i;
+      D (emitcode ("; Dummy read", ""));
+      push (ASMOP_A, 0, 1);
+      for (i = 0; i < right->aop->size; i++)
+        cheapMove (ASMOP_A, 0, right->aop, i, FALSE);
+      pop (ASMOP_A, 0, 1);
+    }
+  else
+    genMove(result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   freeAsmop (right);
   freeAsmop (result);
