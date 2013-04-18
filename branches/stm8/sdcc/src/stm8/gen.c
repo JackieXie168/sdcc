@@ -1492,6 +1492,66 @@ stm8_emitDebuggerSymbol (const char *debugSym)
 }
 
 /*-----------------------------------------------------------------*/
+/* genNot - generates code for !                                   */
+/*-----------------------------------------------------------------*/
+static void
+genNot (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  int i;
+  int pushed_a = FALSE;
+
+  D (emitcode ("; genNot", ""));
+
+  aopOp (left, ic);
+  aopOp (result, ic);
+
+  for (i = 1; i < left->aop->size; i++)
+    if (aopInReg (left->aop, i, A_IDX))
+      {
+        push (ASMOP_A, 0, 1);
+        pushed_a = TRUE;
+        break;
+      }
+
+  if (!regDead (A_IDX, ic) && !pushed_a)
+    push (ASMOP_A, 0, 1);
+
+  for (i = 0; i < left->aop->size; i++)
+    {
+      if (i && aopInReg (left->aop, i, A_IDX))
+        {
+          emitcode ("sbc", "a, (0, sp)");
+          cost (2, 1);
+          continue;
+        }
+
+      cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+      if(!i)
+        emit3 (A_SUB, ASMOP_A, ASMOP_ONE);
+      else
+        emit3 (A_SBC, ASMOP_A, ASMOP_ZERO);
+    }
+
+  emit3 (A_CLR, ASMOP_A, 0);
+  emit3 (A_RLC, ASMOP_A, 0);
+
+  cheapMove (result->aop, 0, ASMOP_A, 0, FALSE);
+
+  for (i = 1; i < result->aop->size; i++)
+    cheapMove (result->aop, 0, ASMOP_ZERO, 0, TRUE);
+
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
+  else if (pushed_a)
+    adjustStack (1);
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
 /* genSub - generates code for subtraction                         */
 /*-----------------------------------------------------------------*/
 static void
@@ -3543,7 +3603,7 @@ genSTM8iCode (iCode *ic)
   switch (ic->op)
     {
     case '!':
-      wassertl (0, "Unimplemented iCode");
+      genNot (ic);
       break;
 
     case '~':
