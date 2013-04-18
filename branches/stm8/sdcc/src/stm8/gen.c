@@ -237,13 +237,13 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_IMMD)
     {
-      snprintf (buffer, 256, "#%s+%d", aop->aopu.aop_immd, offset);
+      snprintf (buffer, 256, "#%s+%d", aop->aopu.aop_immd, aop->size - 1 - offset);
       return (buffer);
     }
 
   if (aop->type == AOP_DIR)
     {
-      snprintf (buffer, 256, "%s+%d", aop->aopu.aop_dir, offset);
+      snprintf (buffer, 256, "%s+%d", aop->aopu.aop_dir, aop->size - 1 - offset);
       return (buffer);
     }
 
@@ -269,7 +269,7 @@ aopGet2(const asmop *aop, int offset)
       return (buffer);
     }
 
-  return (aopGet (aop, offset));
+  return (aopGet (aop, offset + 1));
 }
 
 /* For operantions that always have the accumulator as left operand. */
@@ -681,7 +681,7 @@ aopForSym (const iCode *ic, symbol *sym)
       aop->size = getSize (sym->type);
       
       for(offset = 0; offset < aop->size; offset++)
-        aop->aopu.bytes[offset].byteu.stk = sym->stack + offset;
+        aop->aopu.bytes[offset].byteu.stk = sym->stack + aop->size - 1 - offset;
     }
   else
     {
@@ -740,6 +740,8 @@ aopOp (operand *op, const iCode *ic)
     bool completly_on_stack = TRUE;
     asmop *aop = newAsmop (AOP_REGSTK);
 
+    aop->size = getSize (operandType (op));
+
     for (i = 0; i < getSize (operandType (op)); i++)
       {
         aop->aopu.bytes[i].in_reg = !!sym->regs[i];
@@ -753,7 +755,7 @@ aopOp (operand *op, const iCode *ic)
             completly_in_regs = FALSE;
             if (!regalloc_dry_run)
               {
-                aop->aopu.bytes[i].byteu.stk = sym->usl.spillLoc->stack + i;
+                aop->aopu.bytes[i].byteu.stk = sym->usl.spillLoc->stack + aop->size - 1 - i;
                 wassertl (sym->usl.spillLoc->stack + i < 200, "Unimplemented EXSTK.");
               }
           }
@@ -765,8 +767,6 @@ aopOp (operand *op, const iCode *ic)
       aop->type = AOP_REG;
     else if (completly_on_stack)
       aop->type = AOP_STK;
-
-    aop->size = getSize (operandType (op));
 
     op->aop = aop;
     return;
@@ -1958,8 +1958,9 @@ genReturn (const iCode *ic)
         {
           if (aopInReg (left->aop, i, Y_IDX))
             {
-              emitcode ("ldw", "(#%d, x), y", i += 2);
+              emitcode ("ldw", "(#%d, x), y", size - 2 - i);
               cost (2, 2);
+              i += 2;
             }
           else if (left->aop->type == AOP_REGSTK && !aopInReg (left->aop, i, A_IDX) && !aopOnStack (left->aop, i, 1) || i != 0 && aopInReg (left->aop, i, A_IDX))
             {
@@ -1971,7 +1972,8 @@ genReturn (const iCode *ic)
           else
             {
               cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-              emitcode ("ld", "(#%d, x), a", i++);
+              emitcode ("ld", "(#%d, x), a", size - 1 - i);
+              i++;
             }
         }
     }
@@ -3074,18 +3076,17 @@ genPointerGet (const iCode *ic)
   size = result->aop->size;
   for (i = 0; i < size; i++)
     {
-      if (!offset)
+      if (!(size - 1 - i + offset))
         {
           emitcode ("ld", use_y ? "a, (y)" : "a, (x)");
           cost (1, 1);
         }
       else
         {
-          emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", offset);
+          emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i + offset);
           cost (offset < 256 ? 2 : 3, 1);
         }
       cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
-      offset++;
     }
 
   freeAsmop (right);
@@ -3150,14 +3151,14 @@ genPointerSet (iCode * ic)
     {
       cheapMove (ASMOP_A, 0, right->aop, i, FALSE);
 
-      if (!i)
+      if (!(size - 1 - i))
         {
           emitcode ("ld", use_y ? "(y), a" : "(x), a");
           cost (1, 1);
         }
       else
         {
-          emitcode ("ld", use_y ? "(0x%x, y), a" : "(0x%x, x), a", i);
+          emitcode ("ld", use_y ? "(0x%x, y), a" : "(0x%x, x), a", size - 1 - i);
           cost (2, 1);
         }
     }
