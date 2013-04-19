@@ -2431,25 +2431,55 @@ genCmp (iCode *ic)
     }
   else
     {
-      if (!regDead (A_IDX, ic))
+      bool pushed_a = FALSE;
+
+      for (i = 0; i < size; i++)
+        if (i && aopInReg (left->aop, 0, A_IDX) || aopInReg (right->aop, 0, A_IDX))
+          {
+            push (ASMOP_A, 0, 1);
+            pushed_a = TRUE;
+            break;
+          }
+
+      if (!regDead (A_IDX, ic) && !pushed_a)
         push (ASMOP_A, 0, 1);
 
       for (i = 0; i < size; i++)
         {
-          if (aopRS (right->aop) && !aopOnStack (right->aop, i, 1))
-            {
-              if (!regalloc_dry_run)
-                wassertl (0, "Unimplemented comparison operand.");
-              cost (80, 80);
-              continue;
-            }
+          const asmop *right_stacked = NULL;
+          int right_offset;
 
-          cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
-          emit3_o (i ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, i);
+          right_stacked = stack_aop (right->aop, i, &right_offset);
+
+          if (i && aopInReg (left->aop, 0, A_IDX) && regDead (A_IDX, ic))
+            {
+              pop (ASMOP_A, 0, 1);
+              pushed_a = FALSE;
+            }
+          if (i && aopInReg (left->aop, 0, A_IDX))
+            {
+              emitcode ("ld", "a, (0, sp)");
+              cost (2, 1);
+            }
+          else
+            cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+          
+          if (right_stacked || aopInReg (right->aop, 0, A_IDX))
+            {
+              emitcode (i ? "sbc" : "sub", "a, (0, sp)");
+              cost (2, 1);
+            }
+          else
+            emit3_o (i ? A_SBC : A_SUB, ASMOP_A, 0, right->aop, i);
+
+          if (right_stacked)
+            pop (right_stacked, 0, 2);
         }
 
       if (!regDead (A_IDX, ic))
         pop (ASMOP_A, 0, 1);
+      else if (pushed_a)
+        adjustStack (1);
     }
 
   {
