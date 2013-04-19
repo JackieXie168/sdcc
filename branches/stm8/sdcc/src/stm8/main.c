@@ -41,7 +41,7 @@ static char *stm8_keywords[] = {
 static void
 stm8_init (void)
 {
-  fprintf(stderr, "stm8_init\n");
+  // fprintf(stderr, "stm8_init\n");
   asm_addTree (&asm_asxxxx_mapping);
 }
 

@@ -1,5 +1,14 @@
 2013-04-19 Philipp Klaus Krause <pkk AT spth.de>
 
+	* device/lib/stm8/Makefile.in:
+	  STM8: Disable building some library files.
+	* src/stm8/gen.c:
+	  STM8: Fix comparison.
+	* src/stm8/main.c:
+	  STM8: Disable some annoying debug output.
+
+2013-04-19 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/stm8/main.c,
 	  sdas/asstm8/stm8mch.c:
 	  STM8: Applied patch from Valentin Dudouyt to support addw sp, #byte.

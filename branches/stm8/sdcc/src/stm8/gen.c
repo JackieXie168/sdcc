@@ -2547,7 +2547,6 @@ genCmpEQorNE (iCode *ic)
           operand *temp = left;
           left = right;
           right = temp;
-          opcode = exchangedCmp (opcode);
         }
 
       if (i < size - 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 2)))
@@ -2611,12 +2610,12 @@ genCmpEQorNE (iCode *ic)
 
   wassertl (result->aop->size == 1, "Unimplemented result size.");
 
-  cheapMove (result->aop, 0, opcode == EQ_OP ? ASMOP_ONE : ASMOP_ZERO, 1, !regDead (A_IDX, ic));
+  cheapMove (result->aop, 0, opcode == EQ_OP ? ASMOP_ONE : ASMOP_ZERO, 0, !regDead (A_IDX, ic));
   if (tlbl)
     emitcode ("jp", "%05d$", labelKey2num (tlbl->key));
   cost (3, 0);
   emitLabel (tlbl_NE);
-  cheapMove (result->aop, 0, opcode == NE_OP ? ASMOP_ONE : ASMOP_ZERO, 1, !regDead (A_IDX, ic));
+  cheapMove (result->aop, 0, opcode == NE_OP ? ASMOP_ONE : ASMOP_ZERO, 0, !regDead (A_IDX, ic));
   emitLabel (tlbl);
 
   freeAsmop (right);
