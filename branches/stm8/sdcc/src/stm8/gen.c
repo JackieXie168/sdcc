@@ -2126,6 +2126,8 @@ genReturn (const iCode *ic)
               cost (2, 1);
               i++;
             }
+          else
+            i++;
         }
 
       if (stacked)
@@ -2466,7 +2468,7 @@ genCmp (iCode *ic)
           else
             cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
           
-          if (right_stacked || aopInReg (right->aop, 0, A_IDX))
+          if (right_stacked || aopInReg (right->aop, i, A_IDX))
             {
               emitcode (i ? "sbc" : "sub", "a, (0, sp)");
               cost (2, 1);

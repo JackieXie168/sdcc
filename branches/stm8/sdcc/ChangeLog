@@ -1,4 +1,4 @@
-2013-04-18 Philipp Klaus Krause <pkk AT spth.de>
+2013-04-19 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/main.c,
 	  sdas/asstm8/stm8mch.c:
@@ -6,7 +6,7 @@
 	* src/stm8/ralloc2.cc:
 	  STM8: Enabled cost function for more iCodes.
 	* src/stm8/gen.c:
-	  STM8: Fixes for logic ops.
+	  STM8: Fixes for logic ops, RETURN, '-'.
 
 2013-04-18 Philipp Klaus Krause <pkk AT spth.de>
 

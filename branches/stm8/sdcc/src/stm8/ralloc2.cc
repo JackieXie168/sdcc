@@ -197,14 +197,14 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case RETURN:
     /*case '*':
     case '/':
-    case '%':
+    case '%':*/
     case '>':
     case '<':
     case LE_OP:
     case GE_OP:
     case EQ_OP:
     case NE_OP:
-    case AND_OP:
+    /*case AND_OP:
     case OR_OP:
     case GETHBIT:
     case GETABIT:
