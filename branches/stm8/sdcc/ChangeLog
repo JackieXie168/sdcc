@@ -1,5 +1,15 @@
 2013-04-18 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/stm8/main.c,
+	  sdas/asstm8/stm8mch.c:
+	  STM8: Applied patch from Valentin Dudouyt to support addw sp, #byte.
+	* src/stm8/ralloc2.cc:
+	  STM8: Enabled cost function for more iCodes.
+	* src/stm8/gen.c:
+	  STM8: Fixes for logic ops.
+
+2013-04-18 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/stm8/main.c:
 	  STM8: Disable generation of jump tables.
 	* src/stm8/gen.c:

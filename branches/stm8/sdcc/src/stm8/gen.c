@@ -2006,6 +2006,8 @@ genEndFunction (iCode *ic)
 {
   symbol *sym = OP_SYMBOL (IC_LEFT (ic));
 
+  D (emitcode ("; genEndFunction", ""));
+
   wassert (!regalloc_dry_run);
 
   if (IFFUNC_ISNAKED(sym->type))
@@ -2040,7 +2042,7 @@ genEndFunction (iCode *ic)
         debugFile->writeEndFunction (currFunc, ic, 1);
 
       emitcode ("ret", "");
-      cost (1, 11);
+      cost (1, 4);
     }
 }
 
@@ -2486,15 +2488,15 @@ genCmp (iCode *ic)
     symbol *tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
     symbol *tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
 
-    emitcode (branchInstCmp (opcode, sign), "%05d$", labelKey2num (tlbl1->key));
+    if (tlbl1)
+      emitcode (branchInstCmp (opcode, sign), "%05d$", labelKey2num (tlbl1->key));
     cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-    emitcode ("jp", "%05d$", labelKey2num (tlbl2->key));
+    if (tlbl2)
+      emitcode ("jp", "%05d$", labelKey2num (tlbl2->key));
     cost (3, 1);
-    if (!regalloc_dry_run)
-      emitLabel (tlbl1);
+    emitLabel (tlbl1);
     cheapMove (result->aop, 0, ASMOP_ONE, 0, !regDead (A_IDX, ic));
-    if (!regalloc_dry_run)
-      emitLabel (tlbl2);
+    emitLabel (tlbl2);
   }
 
   freeAsmop (right);
@@ -2603,33 +2605,33 @@ genCmpEQorNE (iCode *ic)
       {
         if (!tlbl_EQ && !regalloc_dry_run)
           tlbl_EQ = newiTempLabel (NULL);
-        emitcode ("jreq", "%05d$", labelKey2num (tlbl_EQ->key));
+        if (tlbl_EQ)
+          emitcode ("jreq", "%05d$", labelKey2num (tlbl_EQ->key));
         cost (2, 0);
-        if (tlbl_NE)
-          emitLabel (tlbl_NE);
+        emitLabel (tlbl_NE);
         cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-        emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
+        if (tlbl)
+          emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
         cost (2, 0);
-        if (!regalloc_dry_run)
-          emitLabel (tlbl_EQ);
+        emitLabel (tlbl_EQ);
         cheapMove (result->aop, 0, ASMOP_ZERO, 1, !regDead (A_IDX, ic));
       }
     else
       {
         if (!tlbl_NE && !regalloc_dry_run)
           tlbl_NE = newiTempLabel (NULL);
-        emitcode ("jne", "%05d$", labelKey2num (tlbl_NE->key));
+        if (tlbl_NE)
+          emitcode ("jne", "%05d$", labelKey2num (tlbl_NE->key));
         cost (2, 0);
         cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-        emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
+        if (tlbl)
+          emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
         cost (2, 0);
-        if (!regalloc_dry_run)
-          emitLabel (tlbl_NE);
+        emitLabel (tlbl_NE);
         cheapMove (result->aop, 0, ASMOP_ZERO, 1, !regDead (A_IDX, ic));
       }
 
-    if (!regalloc_dry_run)
-      emitLabel (tlbl);
+    emitLabel (tlbl);
   }
 
   freeAsmop (right);
@@ -2672,8 +2674,8 @@ genXor (const iCode *ic)
       pushed_a = TRUE;
     }
 
-  // Byte in a needs to be handled first.
-  for (i = 1; i < size; i++)
+  // Byte in a needs to be handled first. TODO: Ensure we are not overwriting an operand.
+  for (i = 0; i < size; i++)
     if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
       {
         const asmop *other_stacked = NULL;
@@ -2779,8 +2781,8 @@ genOr (const iCode *ic)
       pushed_a = TRUE;
     }
 
-  // Byte in a needs to be handled first.
-  for (i = 1; i < size; i++)
+  // Byte in a needs to be handled first. TODO: Ensure we are not overwriting an operand.
+  for (i = 0; i < size; i++)
     if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
       {
         const asmop *other_stacked = NULL;
@@ -2886,8 +2888,8 @@ genAnd (const iCode *ic)
       pushed_a = TRUE;
     }
 
-  // Byte in a needs to be handled first.
-  for (i = 1; i < size; i++)
+  // Byte in a needs to be handled first. TODO: Ensure we are not overwriting an operand.
+  for (i = 0; i < size; i++)
     if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
       {
         const asmop *other_stacked = NULL;
@@ -3070,7 +3072,8 @@ genLeftShift (const iCode *ic)
   emitLabel (tlbl1);
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
   emit3 (A_TNZ, ASMOP_A, 0);
-  emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
+  if (tlbl2)
+    emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
   // TODO: Shift in left if dead and cheaper?
@@ -3108,7 +3111,8 @@ genLeftShift (const iCode *ic)
      }
 
   emit3 (A_DEC, ASMOP_A, 0);
-  emitcode ("jrne", "!tlabel", labelKey2num (tlbl1->key));
+  if (tlbl1)
+    emitcode ("jrne", "!tlabel", labelKey2num (tlbl1->key));
   cost (2, 0);
   emitLabel (tlbl2);
 
@@ -3238,7 +3242,8 @@ genRightShift (const iCode *ic)
   emitLabel (tlbl1);
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
   emit3 (A_TNZ, ASMOP_A, 0);
-  emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
+  if (tlbl2)
+    emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
   // TODO: Shift in left if free and cheaper, use sllw.
@@ -3275,7 +3280,8 @@ genRightShift (const iCode *ic)
      }
 
   emit3 (A_DEC, ASMOP_A, 0);
-  emitcode ("jrne", "!tlabel", labelKey2num (tlbl1->key));
+  if (tlbl1)
+    emitcode ("jrne", "!tlabel", labelKey2num (tlbl1->key));
   cost (2, 0);
   emitLabel (tlbl2);
 
@@ -3526,14 +3532,14 @@ genIfx (const iCode *ic)
       cost (80, 80);
     }
 
-  if (tlbl && inv)
+  if (inv)
     {
       emitLabel (tlbl);
       emitcode ("jp", "!tlabel", labelKey2num ((IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key));
       cost (3, 0);
       emitLabel (tlbl2);
     }
-  else if (tlbl)
+  else
     {
       emitcode ("jp", "!tlabel", labelKey2num ((IC_TRUE (ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key));
       cost (3, 0);
@@ -3954,28 +3960,12 @@ drySTM8iCode (iCode *ic)
   return (regalloc_dry_run_cost_bytes);
 }
 
-#ifdef DEBUG_DRY_COST
-static void
-drySTM8Code (iCode * lic)
-{
-  iCode *ic;
-
-  for (ic = lic; ic; ic = ic->next)
-    if (ic->op != FUNCTION && ic->op != ENDFUNCTION && ic->op != LABEL && ic->op != GOTO && ic->op != INLINEASM)
-      printf ("; iCode %d total cost: %d\n", ic->key, (int) (drySTM8iCode (ic)));
-}
-#endif
-
 /*---------------------------------------------------------------------*/
 /* genSTM8Code - generate code for STM8 for a block of intructions     */
 /*---------------------------------------------------------------------*/
 void
 genSTM8Code (iCode *lic)
 {
-#ifdef DEBUG_DRY_COST
-  drySTM8Code (lic);
-#endif
-
   iCode *ic;
   int cln = 0;
   regalloc_dry_run = FALSE;
@@ -4002,6 +3992,10 @@ genSTM8Code (iCode *lic)
         }
 
       genSTM8iCode(ic);
+
+#if 1
+      D (emitcode (";", "Cost for generated ic %d : (%d, %d)", ic->key, regalloc_dry_run_cost_bytes, regalloc_dry_run_cost_cycles));
+#endif
     }
 
   /* now we are ready to call the

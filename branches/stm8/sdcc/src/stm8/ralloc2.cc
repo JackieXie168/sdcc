@@ -163,7 +163,12 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 #endif
 
   if(ic->generated)
-    return(0.0f);
+    {
+#if 0
+  std::cout << "Skipping, already generated.\n";
+#endif
+      return(0.0f);
+    }
 
   switch(ic->op)
     {
@@ -173,21 +178,24 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case LABEL:
     case GOTO:
     case INLINEASM:
+#if 0
+  std::cout << "Skipping, indepent from assignment.\n";
+#endif
       return(0.0f);
-    /*case '!':
-    case '~':
-    case UNARYMINUS:*/
+    case '!':
+    /*case '~':*/
+    case UNARYMINUS:
     case '+':
     case '-':
-    /*case '^':
+    case '^':
     case '|':
     case BITWISEAND:
-    case IPUSH:
+    /*case IPUSH:*/
     //case IPOP:
-    case CALL:
-    case PCALL:
+    /*case CALL:
+    case PCALL:*/
     case RETURN:
-    case '*':
+    /*case '*':
     case '/':
     case '%':
     case '>':
@@ -201,16 +209,16 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case GETHBIT:
     case GETABIT:
     case GETBYTE:
-    case GETWORD:
+    case GETWORD:*/
     case LEFT_OP:
-    case RIGHT_OP:*/
+    case RIGHT_OP:
     case GET_VALUE_AT_ADDRESS:
     case '=':
-    /*case IFX:
+    case IFX:
     case ADDRESS_OF:
-    case JUMPTABLE:
+    /*case JUMPTABLE:*/
     case CAST:
-    case RECEIVE:
+    /*case RECEIVE:
     case SEND:
     case DUMMY_READ_VOLATILE:
     case CRITICAL:

@@ -101,8 +101,12 @@ stm8_genInitStartup(FILE * of)
 int
 stm8_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
 {
-  fprintf(stderr, "stm8_genIVT\n");
-  emitcode("stm8_genIVT", "");
+  int i;
+  dbuf_tprintf (oBuf, "\tint _main ;int0\n"); // int0 (Reset)
+  for(i = 1; i < 32; i++)
+  {
+    dbuf_tprintf (oBuf, "\tint 0x0000 ;int%d\n", i); // int<n>
+  }
   return TRUE;
 }
 

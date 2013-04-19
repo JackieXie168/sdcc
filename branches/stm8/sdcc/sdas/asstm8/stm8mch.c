@@ -325,7 +325,7 @@ struct mne *mp;
 		comma(1);
 		t1 = addr(&e1);
 		v1 = rcode;
-		if ((t2 != S_REG) || ((v2 != X) && (v2 != Y))) {
+		if ((t2 != S_REG) || ((v2 != X) && (v2 != Y) && (v2 != SP))) {
 			opcy_aerr();
 			break;
 		}
@@ -336,6 +336,7 @@ struct mne *mp;
 			switch(v2) {
 			case X:		outab(0xBB);	break;
 			case Y:		outab(0xB9);	break;
+			case SP:	opcy_aerr();	break;
 			default:			break;
 			}
 			outrb(&e1, R_USGN);
@@ -345,9 +346,11 @@ struct mne *mp;
 			case X:		outab(0x1C);	break;
 			case Y:		outab(0x72);
 					outab(0xA9);	break;
+			case SP:	outab(0x5B);	break;
 			default:			break;
 			}
-			outrw(&e1, R_NORM);
+			if(v2 == SP)	outab(e1.e_addr); // byte
+			else		outrw(&e1, R_NORM); // word
 			break;
 		case S_IXE:	/* (offset,R).e, R = SP */
 		case S_IXW:	/* (offset,R).w, R = SP */
