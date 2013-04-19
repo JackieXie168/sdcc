@@ -1048,7 +1048,7 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
         !source->aopu.bytes[i].in_reg && !source->aopu.bytes[i + 1].in_reg)
         {
           wassert(*size >= 2);
-          if (y_free)
+          if (y_free) // Unlike with other operations, loading between y and stk is as efficient as for x, so we try y first here.
             {
               emitcode ("ldw", "y, %s", aopGet (source, i));
               emitcode ("ldw", "%s, y", aopGet (result, i));
@@ -1071,12 +1071,12 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
   for (i = 0; i < n;)
     {
       // Just one byte to transfer.
-      if (a_free && !assigned[i] &&
+      if ((a_free || really_do_it_now) && !assigned[i] &&
         (i + 1 >= n || assigned[i + 1] || really_do_it_now) &&
         !result->aopu.bytes[i].in_reg && !source->aopu.bytes[i].in_reg)
         {
           wassert(*size >= 1);
-          cheapMove (result, i, source, i, FALSE);
+          cheapMove (result, i, source, i, !a_free);
           assigned[i] = TRUE;
           (*size)--;
           i++;

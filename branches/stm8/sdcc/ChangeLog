@@ -3,7 +3,7 @@
 	* src/stm8/main.c:
 	  STM8: Disable generation of jump tables.
 	* src/stm8/gen.c:
-	  STM8: Implement more comparison operands.
+	  STM8: Implement more comparison operands, fix for stack-to-stack temporary assignment.
 
 2013-04-18 Philipp Klaus Krause <pkk AT spth.de>
 
