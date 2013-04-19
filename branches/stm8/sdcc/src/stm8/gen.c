@@ -2517,9 +2517,10 @@ genCmpEQorNE (iCode *ic)
 {
   operand *left, *right, *result;
   int opcode;
-  int size;
-  symbol *tlbl_NE = NULL;
-  symbol *tlbl_EQ = NULL;
+  int size, i;
+  symbol *tlbl_NE = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  bool pushed_a = FALSE;
 
   D (emitcode ("; genCmpEQorNE", ""));
 
@@ -2534,110 +2535,89 @@ genCmpEQorNE (iCode *ic)
   aopOp (right, ic);
   aopOp (result, ic);
 
-  /* Prefer literal operand on right */
-  if (left->aop->type == AOP_LIT ||
-    right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
-    (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
-    {
-      operand *temp = left;
-      left = right;
-      right = temp;
-      opcode = exchangedCmp (opcode);
-    }
-
   size = max (left->aop->size, right->aop->size);
 
-  if (size == 1 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
+  for (i = 0; i < size; i++)
     {
-      if (!regDead (A_IDX, ic) && !aopInReg (left->aop, 0, A_IDX))
-        push (ASMOP_A, 0, 1);
-
-      cheapMove (ASMOP_A, 0, left->aop, 0, FALSE);
-      emit3 (A_CP, ASMOP_A, right->aop);
-
-      if (!regDead (A_IDX, ic) && !aopInReg (left->aop, 0, A_IDX))
-        pop (ASMOP_A, 0, 1);
-    }
-    
-  else if (size == 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
-    {
-      if (aopInReg (left->aop, 0, Y_IDX) && right->aop->type == AOP_STK)
+      /* Prefer literal operand on right */
+      if (left->aop->type == AOP_LIT ||
+        right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
+        (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && aopOnStack (right->aop, i, 1))
         {
-          if (regDead (X_IDX, ic) && regDead (Y_IDX, ic))
+          operand *temp = left;
+          left = right;
+          right = temp;
+          opcode = exchangedCmp (opcode);
+        }
+
+      if (i < size - 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 2)))
+        {
+          if (aopInReg (left->aop, i, Y_IDX) && aopOnStack (right->aop, i, 2))
             {
-              emitcode ("ldw", "x, y");
-              emitcode ("cpw", "x, %s", aopGet2 (right->aop, 0));
-              cost (3, 3);
+              if (regDead (X_IDX, ic))
+                {
+                  emitcode ("ldw", "x, y");
+                  emitcode ("cpw", "x, %s", aopGet2 (right->aop, i));
+                  cost (3, 3);
+                }
+              else
+                {
+                  emitcode ("exgw", "x, y");
+                  emitcode ("cpw", "x, %s", aopGet2 (right->aop, i));
+                  emitcode ("exgw", "x, y");
+                  cost (4, 4);
+                }
             }
           else
             {
-              emitcode ("exgw", "x, y");
-              emitcode ("cpw", "x, %s", aopGet2 (right->aop, 0));
-              emitcode ("exgw", "x, y");
-              cost (4, 4);
+              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+                push (ASMOP_X, 0, 2);
+
+              genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
+
+              emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, i));
+              cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
+
+              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+                pop (ASMOP_X, 0, 2);
             }
+        }
+      else if (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 1))
+        {
+          if (!regDead (A_IDX, ic) && !aopInReg (left->aop, i, A_IDX))
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+            }
+
+          cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+          emit3_o (A_CP, ASMOP_A, 0, right->aop, i);
         }
       else
         {
-          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
-            push (ASMOP_X, 0, 2);
-
-          genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
-
-          emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, 0));
-          cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
-
-          if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
-            pop (ASMOP_X, 0, 2);
+          if (!regalloc_dry_run)
+            {
+              fprintf(stderr, "ltype %d, lsize %d, rtype %d, rsize %d\n", left->aop->type, left->aop->size, right->aop->type, right->aop->size);
+              wassertl (0, "Unimplemented comparison operands.");
+            }
+          cost (80, 80);
         }
-    }
-  else
-    {
-      if (!regalloc_dry_run)
-        {
-          fprintf(stderr, "ltype %d, lsize %d, rtype %d, rsize %d\n", left->aop->type, left->aop->size, right->aop->type, right->aop->size);
-          wassertl (0, "Unimplemented comparison operands.");
-        }
-      cost (80, 80);
+      if (tlbl_NE)
+        emitcode ("jrne", "%05d$", labelKey2num (tlbl_NE->key));
     }
 
-  {
-    symbol *tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
+  if (pushed_a)
+    pop (ASMOP_A, 0 ,1);
 
-    wassertl (result->aop->size == 1, "Unimplemented result size.");
+  wassertl (result->aop->size == 1, "Unimplemented result size.");
 
-    if (opcode == EQ_OP)
-      {
-        if (!tlbl_EQ && !regalloc_dry_run)
-          tlbl_EQ = newiTempLabel (NULL);
-        if (tlbl_EQ)
-          emitcode ("jreq", "%05d$", labelKey2num (tlbl_EQ->key));
-        cost (2, 0);
-        emitLabel (tlbl_NE);
-        cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-        if (tlbl)
-          emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
-        cost (2, 0);
-        emitLabel (tlbl_EQ);
-        cheapMove (result->aop, 0, ASMOP_ZERO, 1, !regDead (A_IDX, ic));
-      }
-    else
-      {
-        if (!tlbl_NE && !regalloc_dry_run)
-          tlbl_NE = newiTempLabel (NULL);
-        if (tlbl_NE)
-          emitcode ("jne", "%05d$", labelKey2num (tlbl_NE->key));
-        cost (2, 0);
-        cheapMove (result->aop, 0, ASMOP_ZERO, 0, !regDead (A_IDX, ic));
-        if (tlbl)
-          emitcode ("jra", "%05d$", labelKey2num (tlbl->key));
-        cost (2, 0);
-        emitLabel (tlbl_NE);
-        cheapMove (result->aop, 0, ASMOP_ZERO, 1, !regDead (A_IDX, ic));
-      }
-
-    emitLabel (tlbl);
-  }
+  cheapMove (result->aop, 0, opcode == EQ_OP ? ASMOP_ONE : ASMOP_ZERO, 1, !regDead (A_IDX, ic));
+  if (tlbl)
+    emitcode ("jp", "%05d$", labelKey2num (tlbl->key));
+  cost (3, 0);
+  emitLabel (tlbl_NE);
+  cheapMove (result->aop, 0, opcode == NE_OP ? ASMOP_ONE : ASMOP_ZERO, 1, !regDead (A_IDX, ic));
+  emitLabel (tlbl);
 
   freeAsmop (right);
   freeAsmop (left);
