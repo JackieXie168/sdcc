@@ -1029,7 +1029,7 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 static void
 genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_free, bool x_free, bool y_free, bool really_do_it_now)
 {
-  int i, n = result->size;
+  int i, n = result->size < source->size ? result->size : source->size;
 
   for (i = 0; i < n;)
     {
@@ -1116,21 +1116,6 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         size--;
       }
 
-  // Copy (stack-to-stack) what we can with whatever free regs we have.
-  a_free = !a_dead;
-  x_free = !x_dead;
-  y_free = !y_dead;
-  for (i = 0; i < n; i++)
-    {
-      if (aopInReg (source, i, A_IDX))
-        a_free = FALSE;
-      else if (aopInReg (source, i, XL_IDX) || aopInReg (source, i, XH_IDX))
-        x_free = FALSE;
-      else if (aopInReg (source, i, YL_IDX) || aopInReg (source, i, YH_IDX))
-        y_free = FALSE;
-    }
-  genCopyStack (result, source, assigned, &size, a_free, x_free, y_free, FALSE);
-
   // Move everything that can be easily moved from registers to the stack.
   for (i = 0; i < n;)
     {
@@ -1166,6 +1151,24 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
       else
         i++;
     }
+
+  // Copy (stack-to-stack) what we can with whatever free regs we have.
+  a_free = !a_dead;
+  x_free = !x_dead;
+  y_free = !y_dead;
+  for (i = 0; i < n; i++)
+    {
+      if (assigned[i])
+        continue;
+
+      if (aopInReg (source, i, A_IDX))
+        a_free = FALSE;
+      else if (aopInReg (source, i, XL_IDX) || aopInReg (source, i, XH_IDX))
+        x_free = FALSE;
+      else if (aopInReg (source, i, YL_IDX) || aopInReg (source, i, YH_IDX))
+        y_free = FALSE;
+    }
+  genCopyStack (result, source, assigned, &size, a_free, x_free, y_free, FALSE);
 
   // Now do the register shuffling.
 
@@ -1719,7 +1722,7 @@ genUminus (const iCode *ic)
 static void
 saveRegsForCall (const iCode * ic)
 {
-  if (_G.saved)
+  if (_G.saved && !regalloc_dry_run)
     return;
 
   //if (!regDead (C_IDX, ic))

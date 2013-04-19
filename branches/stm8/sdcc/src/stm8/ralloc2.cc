@@ -190,10 +190,10 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case '^':
     case '|':
     case BITWISEAND:
-    /*case IPUSH:*/
+    case IPUSH:
     //case IPOP:
-    /*case CALL:
-    case PCALL:*/
+    case CALL:
+    case PCALL:
     case RETURN:
     /*case '*':
     case '/':
