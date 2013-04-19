@@ -2698,7 +2698,7 @@ genXor (const iCode *ic)
         if (other_stacked)
           pop (other_stacked, 0, 2);
 
-        if (!aopInReg (result->aop, i, A_IDX))
+        if (!aopInReg (result->aop, i, A_IDX) || size == 1)
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
         else
           {
@@ -2805,7 +2805,7 @@ genOr (const iCode *ic)
         if (other_stacked)
           pop (other_stacked, 0, 2);
 
-        if (!aopInReg (result->aop, i, A_IDX))
+        if (!aopInReg (result->aop, i, A_IDX)|| size == 1)
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
         else
           {
@@ -2912,7 +2912,7 @@ genAnd (const iCode *ic)
         if (other_stacked)
           pop (other_stacked, 0, 2);
 
-        if (!aopInReg (result->aop, i, A_IDX))
+        if (!aopInReg (result->aop, i, A_IDX) || size == 1)
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
         else
           {
