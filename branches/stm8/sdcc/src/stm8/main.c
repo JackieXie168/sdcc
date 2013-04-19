@@ -210,7 +210,7 @@ PORT stm8_port = {
   {
    stm8_emitDebuggerSymbol},
   {
-   255,                         /* maxCount */
+   0,                           /* maxCount */
    3,                           /* sizeofElement */
    /* The rest of these costs are bogus. They approximate */
    /* the behavior of src/SDCCicode.c 1.207 and earlier.  */
