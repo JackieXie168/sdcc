@@ -1967,6 +1967,24 @@ genPCall (const iCode *ic)
   emitCall (ic, TRUE);
 }
 
+/*---------------------------------------------------------------------*/
+/* genCritical - mask interrupts until important block completes       */
+/*---------------------------------------------------------------------*/
+
+static void
+genCritical (iCode * ic)
+{
+  emitcode("sim", "");
+  cost (1, 1);
+}
+
+static void
+genEndCritical (iCode * ic)
+{
+  emitcode("rim", "");
+  cost (1, 1);
+}
+
 /*-----------------------------------------------------------------*/
 /* genFunction - generated code for function entry                 */
 /*-----------------------------------------------------------------*/
@@ -1995,6 +2013,9 @@ genFunction (iCode *ic)
       emitcode(";", "naked function: no prologue.");
       return;
   }
+
+  if (IFFUNC_ISCRITICAL (ftype))
+      genCritical (NULL);
 
   /* adjust the stack for the function */
   if (sym->stack)
@@ -2026,6 +2047,9 @@ genEndFunction (iCode *ic)
     adjustStack (sym->stack);
 
   wassertl (!_G.stack.pushed, "Unbalanced stack.");
+
+  if (IFFUNC_ISCRITICAL (sym->type))
+      genEndCritical (NULL);
 
   if (IFFUNC_ISISR (sym->type))
     {
@@ -3917,8 +3941,11 @@ genSTM8iCode (iCode *ic)
       break;
 
     case CRITICAL:
+      genCritical(ic);
+      break;
+
     case ENDCRITICAL:
-      wassertl (0, "Unimplemented iCode");
+      genEndCritical(ic);
       break;
 
     default:

@@ -35,6 +35,7 @@ static char stm8_defaultRules[] = {
 
 static char *stm8_keywords[] = {
   "at",
+  "critical",
   NULL
 };
 
