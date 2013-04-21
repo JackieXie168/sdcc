@@ -1,5 +1,13 @@
 2013-04-21 Philipp Klaus Krause <pkk AT spth.de>
 
+	* support/regression/Makefile.in,
+	  support/regression/ports/stm8/spec.mk,
+	  support/regression/ports/stm8/support.c,
+	  support/regression/ports/stm8/uCsim.cmd:
+	  STM8: Basic infrastructure for regression tests, partially from a patch by Valentin Dudouyt.
+
+2013-04-21 Philipp Klaus Krause <pkk AT spth.de>
+
 	* device/lib/Makefile.in:
 	  STM8: Enable building standard library.
 
