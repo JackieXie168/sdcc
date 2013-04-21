@@ -3880,7 +3880,7 @@ genSTM8iCode (iCode *ic)
       break;
 
     case INLINEASM:
-      wassertl (0, "Unimplemented iCode");
+      genInline (ic);
       break;
 
     case RRC:

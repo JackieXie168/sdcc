@@ -1,5 +1,12 @@
 2013-04-21 Philipp Klaus Krause <pkk AT spth.de>
 
+	* device/lib/stm8/Makefile.in:
+	  STM8: Add missing integer support functions.
+	* src/stm8/gen.c:
+	  STM8: Enable inline asm.
+
+2013-04-21 Philipp Klaus Krause <pkk AT spth.de>
+
 	* support/regression/Makefile.in,
 	  support/regression/ports/stm8/spec.mk,
 	  support/regression/ports/stm8/support.c,
