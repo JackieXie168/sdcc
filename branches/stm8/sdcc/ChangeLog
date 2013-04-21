@@ -5,6 +5,8 @@
 	  support/regression/ports/stm8/support.c,
 	  support/regression/ports/stm8/uCsim.cmd:
 	  STM8: Basic infrastructure for regression tests, partially from a patch by Valentin Dudouyt.
+	* src/stm8/gen.c:
+	  STM8: Name mangling for address generation.
 
 2013-04-21 Philipp Klaus Krause <pkk AT spth.de>
 

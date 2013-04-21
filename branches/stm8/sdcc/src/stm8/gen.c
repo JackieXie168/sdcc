@@ -3585,7 +3585,7 @@ genAddrOf (const iCode *ic)
       if (!sym->onStack)
         {
           wassert (sym->name);
-          emitcode ("ldw", "y, #%s", sym->name);
+          emitcode ("ldw", "y, #%s", sym->rname);
           cost (4, 2);
         }
       else
@@ -3601,7 +3601,7 @@ genAddrOf (const iCode *ic)
       if (!sym->onStack)
         {
           wassert (sym->name);
-          emitcode ("ldw", "x, #%s", sym->name);
+          emitcode ("ldw", "x, #%s", sym->rname);
           cost (3, 2);
         }
       else
