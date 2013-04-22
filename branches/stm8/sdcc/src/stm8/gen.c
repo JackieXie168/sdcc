@@ -133,7 +133,7 @@ stm8_init_asmops (void)
   asmop_y.aopu.bytes[1].byteu.reg = stm8_regs + YH_IDX;
 
   asmop_xy.type = AOP_REG;
-  asmop_xy.size = 2;
+  asmop_xy.size = 4;
   asmop_xy.aopu.bytes[0].in_reg = TRUE;
   asmop_xy.aopu.bytes[0].byteu.reg = stm8_regs + XL_IDX;
   asmop_xy.aopu.bytes[1].in_reg = TRUE;
