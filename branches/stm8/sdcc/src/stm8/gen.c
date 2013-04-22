@@ -1911,17 +1911,17 @@ emitCall (const iCode *ic, bool ispcall)
 
       freeAsmop (IC_RESULT (ic));
     }
-emitcode (";", "%d %d", regDead (YL_IDX, ic), regDead (YH_IDX, ic));
+
   // Restore regs.
   if (!regDead (Y_IDX, ic))
-    if (!regDead (YL_IDX, ic))
+    if (regDead (YH_IDX, ic))
         {
           adjustStack (1);
           swap_to_a (YL_IDX);
           pop (ASMOP_A, 0, 1);
           swap_from_a(YL_IDX);
         }
-      else if (!regDead (YH_IDX, ic))
+      else if (regDead (YL_IDX, ic))
         {
           swap_to_a (YH_IDX);
           pop (ASMOP_A, 0, 1);
@@ -1933,14 +1933,14 @@ emitcode (";", "%d %d", regDead (YL_IDX, ic), regDead (YH_IDX, ic));
 
   if (!regDead (X_IDX, ic))
     {
-      if (!regDead (XL_IDX, ic))
+      if (regDead (XH_IDX, ic))
         {
           adjustStack (1);
           swap_to_a (XL_IDX);
           pop (ASMOP_A, 0, 1);
           swap_from_a(XL_IDX);
         }
-      else if (!regDead (XH_IDX, ic))
+      else if (regDead (XL_IDX, ic))
         {
           swap_to_a (XH_IDX);
           pop (ASMOP_A, 0, 1);
