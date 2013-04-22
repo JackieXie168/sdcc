@@ -1,7 +1,7 @@
 2013-04-22 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Fix returning 4-byte values.
+	  STM8: Fix returning 4-byte values, fix saving of y over call.
 
 2013-04-21 Molnar Karoly <molnarkaroly AT users.sf.net>
 

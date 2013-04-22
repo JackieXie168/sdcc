@@ -853,7 +853,7 @@ void swap_to_a(int idx)
   switch (idx)
     {
     case XL_IDX:
-      emitcode ("exg", "a, yl");
+      emitcode ("exg", "a, xl");
       cost (1, 1);
       break;
     case XH_IDX:
@@ -878,7 +878,7 @@ void swap_from_a(int idx)
   switch (idx)
     {
     case XL_IDX:
-      emitcode ("exg", "a, yl");
+      emitcode ("exg", "a, xl");
       cost (1, 1);
       break;
     case XH_IDX:
@@ -1900,10 +1900,6 @@ emitCall (const iCode *ic, bool ispcall)
   if (ic->parmBytes || bigreturn)
     adjustStack (ic->parmBytes + bigreturn * 2);
 
-  // Restore regs
-  if (!regDead (Y_IDX, ic))
-    pop (ASMOP_Y, 0, 2);
-
   /* if we need assign a result value */
   if (SomethingReturned && !bigreturn)
     {
@@ -1915,8 +1911,26 @@ emitCall (const iCode *ic, bool ispcall)
 
       freeAsmop (IC_RESULT (ic));
     }
+emitcode (";", "%d %d", regDead (YL_IDX, ic), regDead (YH_IDX, ic));
+  // Restore regs.
+  if (!regDead (Y_IDX, ic))
+    if (!regDead (YL_IDX, ic))
+        {
+          adjustStack (1);
+          swap_to_a (YL_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(YL_IDX);
+        }
+      else if (!regDead (YH_IDX, ic))
+        {
+          swap_to_a (YH_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(YH_IDX);
+          adjustStack (1);
+        }
+      else
+        pop (ASMOP_Y, 0, 2);
 
-  // Restore more regs.
   if (!regDead (X_IDX, ic))
     {
       if (!regDead (XL_IDX, ic))
@@ -1939,6 +1953,7 @@ emitCall (const iCode *ic, bool ispcall)
 
   if (!regDead (A_IDX, ic))
     pop (ASMOP_A, 0, 1);
+
   //if (!regDead (C_IDX, ic))
   //  pop (ASMOP_C, 0, 1);
 
