@@ -1031,6 +1031,8 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
 {
   int i, n = result->size < source->size ? result->size : source->size;
 
+  // D (emitcode("; genCopyStack", "%d %d %d", a_free, x_free, y_free));
+
   for (i = 0; i < n;)
     {
       // Same location.
@@ -1097,7 +1099,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   int ex[4];
   bool a_free, x_free, y_free;
 
-  D (emitcode("; genCopy", ""));
+  D (emitcode("; genCopy", "%d %d %d", a_dead, x_dead, y_dead));
 
   wassertl (n <= 8, "Invalid size for genCopy().");
   wassertl (aopRS (source), "Invalid source type.");
@@ -1153,9 +1155,9 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
     }
 
   // Copy (stack-to-stack) what we can with whatever free regs we have.
-  a_free = !a_dead;
-  x_free = !x_dead;
-  y_free = !y_dead;
+  a_free = a_dead;
+  x_free = x_dead;
+  y_free = y_dead;
   for (i = 0; i < n; i++)
     {
       if (assigned[i])
@@ -1403,9 +1405,9 @@ skip_byte:
   wassertl (size >= 0, "genCopy() copied more than there is to be copied.");
 
   // Copy (stack-to-stack) what we can with whatever free regs we have now.
-  a_free = !a_dead;
-  x_free = !x_dead;
-  y_free = !y_dead;
+  a_free = a_dead;
+  x_free = x_dead;
+  y_free = y_dead;
   for (i = 0; i < n; i++)
     {
       if (aopInReg (result, i, A_IDX))
