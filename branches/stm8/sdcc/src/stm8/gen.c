@@ -1803,13 +1803,12 @@ genUminusFloat (const iCode *ic)
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
 
-  // TODO: Omit moving topmost byte.
-  genMove (result->aop, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  genMove_o (result->aop, 0, left->aop, 0, result->aop->size - 1, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   // TODO: Use bcpl, rlcw with ccf, only save A when necessary
   push (ASMOP_A, 0, 1);
 
-  cheapMove (ASMOP_A, 0, left->aop, result->aop->size - 1, FALSE);
+  cheapMove (ASMOP_A, 0, left->aop, left->aop->size - 1, FALSE);
   emitcode ("xor", "a, #0x80");
   cost (2, 1);
   cheapMove (result->aop, result->aop->size - 1, ASMOP_A, 0, FALSE);
@@ -1956,12 +1955,10 @@ emitCall (const iCode *ic, bool ispcall)
           cost (80, 80);
         }
 
-      // TODO: Use x where free.
-
-      emitcode ("ldw", "y, sp");
-      emitcode ("addw", "y, #%d", sym->stack + _G.stack.pushed);
+      emitcode ("ldw", "x, sp");
+      emitcode ("addw", "x, #%d", sym->stack + _G.stack.pushed);
       cost (2 + 4, 1 + 2);
-      push (ASMOP_Y, 0, 2);
+      push (ASMOP_X, 0, 2);
 
       freeAsmop (IC_RESULT (ic));
     }
@@ -1979,7 +1976,6 @@ emitCall (const iCode *ic, bool ispcall)
         }
       else
         {
-          // TODO: What if a parameter is passed in X? Use Y? Who saves Y?
           genMove (ASMOP_X, left->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
           
           emitcode ("call", "(x)");
@@ -3491,6 +3487,7 @@ genPointerGet (const iCode *ic)
   // TODO: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
 
+  // TODO: Handle result partially in a correctly!
   size = result->aop->size;
   for (i = 0; i < size; i++)
     {
@@ -3782,7 +3779,7 @@ genAddrOf (const iCode *ic)
         }
       genMove (result->aop, ASMOP_Y, regDead (A_IDX, ic), FALSE, regDead (X_IDX, ic));
     }
-  else // TODO: Handle case of both X and Y alive; TODO: Use mov when destination is a global variable.
+  else if (regDead (X_IDX, ic))
     {
       if (!sym->onStack)
         {
@@ -3797,6 +3794,12 @@ genAddrOf (const iCode *ic)
           cost (4, 3);
         }
       genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
+    }
+  else // TODO: Handle case of both X and Y alive; TODO: Use mov when destination is a global variable.
+    {
+      if (!regalloc_dry_run)
+        wassertl (0, "Unimplemented GET_VALUE_AT_ADDRESS deadness");
+      cost (80, 80);
     }
 
   freeAsmop (result);
