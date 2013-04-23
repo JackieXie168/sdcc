@@ -48,7 +48,9 @@ enum asminst
   A_CLR,
   A_CP,
   A_DEC,
+  A_DECW,
   A_INC,
+  A_INCW,
   A_LD,
   A_MOV,
   A_NEG,
@@ -79,7 +81,9 @@ static const char *asminstnames[] =
   "clr",
   "cp",
   "dec",
+  "decw",
   "inc",
+  "incw",
   "ld",
   "mov",
   "neg",
@@ -342,7 +346,7 @@ error:
   cost (8, 4 * 8);
 }
 
-/* For 16-bit operations that have only one operand, i.e. tnzw */
+/* For cheap 16-bit operations that have only one operand, i.e. incw */
 static void
 opw_cost (const asmop *op1, int offset1)
 {
@@ -356,6 +360,27 @@ opw_cost (const asmop *op1, int offset1)
   else if (aopInReg (op1, offset1, Y_IDX))
     {
       cost (2, 1);
+      return;
+    }
+
+  wassert (0);
+  cost (8, 4 * 8);
+}
+
+/* For 16-bit operations that have only one operand, i.e. tnzw */
+static void
+opw_cost2 (const asmop *op1, int offset1)
+{
+  wassert (op1);
+
+  if (aopInReg (op1, offset1, X_IDX))
+    {
+      cost (1, 2);
+      return;
+    }
+  else if (aopInReg (op1, offset1, Y_IDX))
+    {
+      cost (2, 2);
       return;
     }
 
@@ -527,6 +552,10 @@ emit3wcost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
 {
   switch (inst)
   {
+  case A_DECW:
+  case A_INCW:
+    opw_cost (op1, offset1);
+    break;
   case A_NEGW:
   case A_RLCW:
   case A_RRCW:
@@ -534,7 +563,7 @@ emit3wcost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
   case A_SRAW:
   case A_SRLW:
   case A_TNZW:
-    opw_cost (op1, offset1);
+    opw_cost2 (op1, offset1);
     break;
   default:
     wassertl (0, "Tried to get cost for unknown 16-bit instruction");
@@ -1590,6 +1619,98 @@ genNot (const iCode *ic)
     cheapMove (result->aop, 0, ASMOP_ZERO, 0, TRUE);
 
   if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
+  else if (pushed_a)
+    adjustStack (1);
+
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genCpl - generate code for complement                           */
+/*-----------------------------------------------------------------*/
+static void
+genCpl (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  int left_in_a = 0;
+  bool result_in_a = FALSE;
+  bool destroyed_a = FALSE;
+  bool pushed_a = FALSE;
+  bool result_pushed = FALSE;
+  int i, size;
+
+  D (emitcode ("; genCpl", ""));
+
+  aopOp (left, ic);
+  aopOp (result, ic);
+
+  size = result->aop->size;
+
+  for (i = 1; i < left->aop->size; i++)
+    if (aopInReg (left->aop, i, A_IDX))
+      {
+        left_in_a = i;
+        break;
+      }
+
+  for (i = 0; i < size;)
+    {
+      // TODO: Complement in source where dead and more efficient.
+      if (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX))
+        {
+          genMove_o (result->aop, i, left->aop, i, 2, (regDead (A_IDX, ic) || pushed_a) && !result_in_a && !(left_in_a > i), regFree (X_IDX, ic), regFree (Y_IDX, ic)); // TODO: More aggressively report state of X and Y.
+
+          emit3w_o (A_NEGW, result->aop, i, 0, 0);
+          emit3w_o (A_DECW, result->aop, i, 0, 0);
+
+          i += 2;
+        }
+      else
+        {
+          bool pushed_left = destroyed_a && aopInReg (left->aop, i, A_IDX);
+
+          if (left_in_a > i || !regDead (A_IDX, ic) || result_in_a)
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+              if (result_in_a)
+                {
+                  result_in_a = FALSE;
+                  result_pushed = TRUE;
+                }
+            }
+
+          if (pushed_left && !regDead (A_IDX, ic))
+            {
+              pop (ASMOP_A, 0, 1);
+              pushed_a = FALSE;
+            }
+          else if (pushed_left)
+            {
+              emitcode ("ld", "a, (0, sp)");
+              cost (2, 1);
+            }
+          else
+            cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+
+          destroyed_a = TRUE;
+
+          emitcode ("xor", "a, #0xff");
+          cost (2, 1);
+
+          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+
+          if (aopInReg (result->aop, i, A_IDX))
+            result_in_a = TRUE;
+
+          i++;
+        }
+    }
+
+  if (pushed_a && !regDead (A_IDX, ic) || result_pushed)
     pop (ASMOP_A, 0, 1);
   else if (pushed_a)
     adjustStack (1);
@@ -3858,7 +3979,7 @@ genSTM8iCode (iCode *ic)
       break;
 
     case '~':
-      wassertl (0, "Unimplemented iCode");
+      genCpl (ic);
       break;
 
     case UNARYMINUS:
