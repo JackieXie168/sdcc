@@ -1031,7 +1031,9 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
 {
   int i, n = result->size < source->size ? result->size : source->size;
 
-  // D (emitcode("; genCopyStack", "%d %d %d", a_free, x_free, y_free));
+#if 0
+  D (emitcode("; genCopyStack", "%d %d %d", a_free, x_free, y_free));
+#endif
 
   for (i = 0; i < n;)
     {
@@ -1099,7 +1101,9 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   int ex[4];
   bool a_free, x_free, y_free;
 
+#if 0
   D (emitcode(";  genCopy", "%d %d %d", a_dead, x_dead, y_dead));
+#endif
 
   wassertl (n <= 8, "Invalid size for genCopy().");
   wassertl (aopRS (source), "Invalid source type.");
@@ -2578,7 +2582,7 @@ genCmpEQorNE (iCode *ic)
 
   size = max (left->aop->size, right->aop->size);
 
-  for (i = 0; i < size; i++)
+  for (i = 0; i < size;)
     {
       /* Prefer literal operand on right */
       if (left->aop->type == AOP_LIT ||
@@ -2590,7 +2594,7 @@ genCmpEQorNE (iCode *ic)
           right = temp;
         }
 
-      if (i < size - 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 2)))
+      if (i <= size - 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 2)))
         {
           if (aopInReg (left->aop, i, Y_IDX) && aopOnStack (right->aop, i, 2))
             {
@@ -2621,6 +2625,8 @@ genCmpEQorNE (iCode *ic)
               if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
                 pop (ASMOP_X, 0, 2);
             }
+
+          i += 2;
         }
       else if (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 1))
         {
@@ -2632,6 +2638,8 @@ genCmpEQorNE (iCode *ic)
 
           cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
           emit3_o (A_CP, ASMOP_A, 0, right->aop, i);
+
+          i++;
         }
       else
         {
@@ -2641,6 +2649,8 @@ genCmpEQorNE (iCode *ic)
               wassertl (0, "Unimplemented comparison operands.");
             }
           cost (80, 80);
+
+          i++;
         }
       if (tlbl_NE)
         emitcode ("jrne", "%05d$", labelKey2num (tlbl_NE->key));
@@ -4045,7 +4055,7 @@ genSTM8Code (iCode *lic)
 
       genSTM8iCode(ic);
 
-#if 1
+#if 0
       D (emitcode (";", "Cost for generated ic %d : (%d, %d)", ic->key, regalloc_dry_run_cost_bytes, regalloc_dry_run_cost_cycles));
 #endif
     }
