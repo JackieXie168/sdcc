@@ -1753,41 +1753,24 @@ static void
 genIpush (const iCode * ic)
 {
   int size, offset = 0;
+  iCode *walk;
 
   D (emitcode ("; genIPush", ""));
 
-  /* if this is not a parm push : ie. it is spill push
-     and spill push is always done on the local stack */
   if (!ic->parmPush)
     {
       wassertl (0, "Encountered an unsupported spill push.");
       return;
     }
 
+  /* Caller saves, and this is the first iPush. */
+  /* Scan ahead until we find the function that we are pushing parameters to.
+     Count the number of addSets on the way to figure out what registers
+     are used in the send set.
+   */
+  for (walk = ic->next; walk->op != CALL && walk->op != PCALL; walk = walk->next);
   if (!_G.saved  && !regalloc_dry_run /* Cost is counted at CALL or PCALL instead */ )
-    {
-      /* Caller saves, and this is the first iPush. */
-      /* Scan ahead until we find the function that we are pushing parameters to.
-         Count the number of addSets on the way to figure out what registers
-         are used in the send set.
-       */
-      iCode *walk = ic->next;
-
-      while (walk)
-        {
-          if (walk->op == CALL || walk->op == PCALL)
-            {
-              /* Found it. */
-              break;
-            }
-          else
-            {
-              /* Keep looking. */
-            }
-          walk = walk->next;
-        }
-      saveRegsForCall (walk);
-    }
+    saveRegsForCall (walk);
 
   /* then do the push */
   aopOp (IC_LEFT (ic), ic);
@@ -3456,6 +3439,8 @@ genPointerSet (iCode * ic)
   aopOp (result, ic);
   aopOp (right, ic);
 
+  size = right->aop->size;
+
   // TODO: Handle this more gracefully, save x instead of using y, when doing so is more efficient, use ldw, etc.
   use_y = !regDead (X_IDX, ic);
   if (use_y && !regDead (Y_IDX, ic))
@@ -3482,7 +3467,6 @@ genPointerSet (iCode * ic)
 
   genMove (use_y ? ASMOP_Y : ASMOP_X, result->aop, !aopInReg (right->aop, 0, A_IDX), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
-  size = right->aop->size;
   for (i = 0; i < size; i++)
     {
       if (i && aopInReg (right->aop, i, A_IDX))

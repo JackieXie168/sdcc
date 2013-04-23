@@ -31,6 +31,9 @@ extern "C"
   bool stm8_assignment_optimal;
 };
 
+#define REG_A 0
+#define REG_C 5
+
 template <class I_t>
 static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
 {
@@ -73,6 +76,53 @@ static void add_operand_conflicts_in_node(const cfg_node &n, I_t &I)
           if(I[rvar].byte < I[ovar].byte)
             boost::add_edge(rvar, ovar, I);
         }
+}
+
+// Return true, iff the operand is placed (partially) in r.
+template <class G_t>
+static bool operand_in_reg(const operand *o, reg_t r, const i_assignment_t &ia, unsigned short int i, const G_t &G)
+{
+  if(!o || !IS_SYMOP(o))
+    return(false);
+
+  if(r >= port->num_regs)
+    return(false);
+
+  operand_map_t::const_iterator oi, oi_end;
+  for(boost::tie(oi, oi_end) = G[i].operands.equal_range(OP_SYMBOL_CONST(o)->key); oi != oi_end; ++oi)
+    if(oi->second == ia.registers[r][1] || oi->second == ia.registers[r][0])
+      return(true);
+
+  return(false);
+}
+
+template <class G_t, class I_t>
+static bool Ainst_ok(const assignment &a, unsigned short int i, const G_t &G, const I_t &I)
+{
+  const iCode *ic = G[i].ic;
+  const operand *const left = IC_LEFT(ic);
+
+  const i_assignment_t &ia = a.i_assignment;
+
+  if(ia.registers[REG_A][1] < 0)
+    return(true);	// Register A not in use.
+
+  if(ic->op == IPUSH)
+    {
+      // push a does not disturb a.
+      if (getSize(operandType(IC_LEFT(ic))) <= 1 && operand_in_reg(left, REG_A, ia, i, G))
+        return(true);
+
+      // push #byte does not disturb a.
+      if (IS_OP_LITERAL(left))
+        return(true);
+
+      // TODO: Allow push longmem, allow any combination of push a, pushw x, pushw y.
+
+      return(false);
+    }
+
+  return(true);
 }
 
 template <class G_t, class I_t>
@@ -169,6 +219,9 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
 #endif
       return(0.0f);
     }
+
+  if(!Ainst_ok(a, i, G, I))
+    return(std::numeric_limits<float>::infinity());
 
   switch(ic->op)
     {
