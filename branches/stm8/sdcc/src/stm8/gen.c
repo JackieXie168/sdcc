@@ -2674,7 +2674,7 @@ genXor (const iCode *ic)
   int size, i, omitbyte = -1;
   bool pushed_a = FALSE;
 
-  D (emitcode ("; genOr", ""));
+  D (emitcode ("; genXor", ""));
 
   aopOp ((left = IC_LEFT (ic)), ic);
   aopOp ((right = IC_RIGHT (ic)), ic);
@@ -3436,6 +3436,7 @@ genPointerSet (iCode * ic)
   operand *right, *result;
   int size, i;
   bool use_y;
+  bool pushed_a = FALSE;
 
   D (emitcode ("; genPointerSet", ""));
 
@@ -3455,12 +3456,32 @@ genPointerSet (iCode * ic)
       return;
     }
 
-  genMove (use_y ? ASMOP_Y : ASMOP_X, result->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+  for(i = 1; i < size; i++)
+    if (aopInReg (right->aop, i, A_IDX))
+      {
+        push (ASMOP_A, 0, 1);
+        pushed_a = TRUE;
+        break;
+      }
+
+  if (!regDead (A_IDX, ic) && !pushed_a)
+    {
+      push (ASMOP_A, 0, 1);
+      pushed_a = TRUE;
+    }
+
+  genMove (use_y ? ASMOP_Y : ASMOP_X, result->aop, !aopInReg (right->aop, 0, A_IDX), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   size = right->aop->size;
   for (i = 0; i < size; i++)
     {
-      cheapMove (ASMOP_A, 0, right->aop, i, FALSE);
+      if (i && aopInReg (right->aop, i, A_IDX))
+        {
+          emitcode ("ld", "a, (0, sp)");
+          cost (2, 1);
+        }
+      else
+        cheapMove (ASMOP_A, 0, right->aop, i, FALSE);
 
       if (!(size - 1 - i))
         {
@@ -3473,6 +3494,9 @@ genPointerSet (iCode * ic)
           cost (2, 1);
         }
     }
+
+  if (pushed_a)
+    pop (ASMOP_A, 0, 1);
 
   freeAsmop (right);
   freeAsmop (result);
