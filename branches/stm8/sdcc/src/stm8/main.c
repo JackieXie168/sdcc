@@ -208,7 +208,7 @@ PORT stm8_port = {
    },
   {NULL, NULL},
   {
-   -1, 0, 0, 4, 0, 2},
+   -1, 0, 7, 2, 0, 2},          /* stack information */
   /* no native mul/div support for now. */
   {
    0, -1},

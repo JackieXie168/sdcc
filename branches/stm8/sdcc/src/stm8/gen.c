@@ -1099,7 +1099,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   int ex[4];
   bool a_free, x_free, y_free;
 
-  D (emitcode("; genCopy", "%d %d %d", a_dead, x_dead, y_dead));
+  D (emitcode(";  genCopy", "%d %d %d", a_dead, x_dead, y_dead));
 
   wassertl (n <= 8, "Invalid size for genCopy().");
   wassertl (aopRS (source), "Invalid source type.");
@@ -1743,7 +1743,7 @@ saveRegsForCall (const iCode * ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* genIpush - genrate code for pushing this gets a little complex  */
+/* genIpush - generate code for pushing this gets a little complex */
 /*-----------------------------------------------------------------*/
 static void
 genIpush (const iCode * ic)
