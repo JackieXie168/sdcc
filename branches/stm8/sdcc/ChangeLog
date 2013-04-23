@@ -1,3 +1,8 @@
+2013-04-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fix parameter stack offset.
+
 2013-04-22 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
