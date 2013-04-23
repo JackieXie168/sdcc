@@ -3312,6 +3312,16 @@ genRightShift (const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* genUnpackBits - bit-field read                                  */
+/*-----------------------------------------------------------------*/
+static void
+genUnpackBits (const iCode *ic)
+{
+  if (!regalloc_dry_run)
+    wassertl (0, "Unimplemented bit-field");
+}
+
+/*-----------------------------------------------------------------*/
 /* genPointerGet - generate code for pointer get                   */
 /*-----------------------------------------------------------------*/
 static void
@@ -3323,6 +3333,12 @@ genPointerGet (const iCode *ic)
   int size, i;
   unsigned offset;
   bool use_y;
+
+  if (IS_BITVAR (getSpec (operandType (result))))
+    {
+      genUnpackBits (ic);
+      return;
+    }
 
   D (emitcode ("; genPointerGet", ""));
 
@@ -3421,20 +3437,34 @@ genAssign (const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* genPackBits - bit-field write                                   */
+/*-----------------------------------------------------------------*/
+static void
+genPackBits (const iCode *ic)
+{
+  if (!regalloc_dry_run)
+    wassertl (0, "Unimplemented bit-field");
+}
+
+/*-----------------------------------------------------------------*/
 /* genPointerSet - stores the value into a pointer location        */
 /*-----------------------------------------------------------------*/
 static void
 genPointerSet (iCode * ic)
 {
-  operand *right, *result;
+  operand *result = IC_RESULT (ic);
+  operand *right = IC_RIGHT (ic);
   int size, i;
   bool use_y;
   bool pushed_a = FALSE;
 
-  D (emitcode ("; genPointerSet", ""));
+  if (IS_BITVAR (getSpec (operandType (right))) || IS_BITVAR (getSpec (operandType (result))))
+    {
+      genPackBits (ic);
+      return;
+    }
 
-  right = IC_RIGHT (ic);
-  result = IC_RESULT (ic);
+  D (emitcode ("; genPointerSet", ""));
 
   aopOp (result, ic);
   aopOp (right, ic);
