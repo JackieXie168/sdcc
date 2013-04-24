@@ -1,3 +1,8 @@
+2013-04-24 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fix handling of a in signed cast.
+
 2013-04-23 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:

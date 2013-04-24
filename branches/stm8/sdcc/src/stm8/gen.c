@@ -3930,33 +3930,56 @@ genCast (const iCode *ic)
     }
   else
     {
-      // TODO: Take care handling A.
+      bool result_in_a = FALSE;
+      bool result_in_x = FALSE;
+      bool result_in_y = FALSE;
+      int i;
 
-      size = right->aop->size;
-      offset = 0;
-      while (size--)
-        {
-          cheapMove (result->aop, offset, right->aop, offset, TRUE); // TODO: Relax restriction on A.
-          offset++;
-        }
+      genMove_o (result->aop, 0, right->aop, 0, right->aop->size, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+      for (i = 0; i < right->aop->size; i++)
+        if (aopInReg (right->aop, i, A_IDX))
+          result_in_a = TRUE;
+        else if (aopInReg (right->aop, i, XL_IDX) || aopInReg (right->aop, i, XH_IDX))
+          result_in_x = TRUE;
+        else if (aopInReg (right->aop, i, YL_IDX) || aopInReg (right->aop, i, YH_IDX))
+          result_in_y = TRUE;
 
       /* now depending on the sign of the destination */
       size = result->aop->size - right->aop->size;
+      offset = right->aop->size;
 
       /* Unsigned or not an integral type - right fill with zeros */
       if (!IS_SPEC (rtype) || SPEC_USIGN (rtype))
-        {
-          while (size--)
-            cheapMove (result->aop, offset++, ASMOP_ZERO, 0, TRUE); // TODO: Relax restriction on A.
-        }
+        genMove_o (result->aop, offset, ASMOP_ZERO, 0, size, regDead (A_IDX, ic) && !result_in_a, regDead (X_IDX, ic) && !result_in_x, regDead (Y_IDX, ic) && !result_in_y);
       else
         {
-          cheapMove (ASMOP_A, 0, right->aop, right->aop->size - 1, TRUE); // TODO: Relax restriction on A.
+          bool result_pushed = FALSE;
+
+          if (result_in_a)
+            {
+              push (ASMOP_A, 0, 1);
+              result_pushed = TRUE;
+            }
+
+          cheapMove (ASMOP_A, 0, result->aop, right->aop->size - 1, FALSE);
           emit3 (A_RLC, ASMOP_A, 0);
           emit3 (A_CLR, ASMOP_A, 0);
           emit3 (A_RRC, ASMOP_A, 0);
           while (size--)
-            cheapMove (result->aop, offset++, ASMOP_A, 0, TRUE); // TODO: Relax restriction on A.
+            {
+              if (size && aopInReg (result->aop, offset, A_IDX))
+                {
+                  push (ASMOP_A, 0, 1);
+                  result_pushed = TRUE;
+                }
+              else
+                cheapMove (result->aop, offset, ASMOP_A, 0, FALSE);
+              offset++;
+            }
+
+          if (result_pushed)
+            pop (ASMOP_A, 0, 1);
         }
     }
 
