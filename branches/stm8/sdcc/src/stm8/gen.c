@@ -1453,6 +1453,8 @@ skip_byte:
   y_free = y_dead;
   for (i = 0; i < n; i++)
     {
+      if (!assigned[i])
+        continue;
       if (aopInReg (result, i, A_IDX))
         a_free = FALSE;
       else if (aopInReg (result, i, XL_IDX) || aopInReg (result, i, XH_IDX))
@@ -1471,8 +1473,12 @@ skip_byte:
     }
 
   // Place leading zeroes.
-  for (i = source->size; i < result->size; i++) 
-    cheapMove (result, i, ASMOP_ZERO, 0, FALSE); // TODO: Allow use of a where safe.
+  for (i = source->size; i < result->size; i++)
+    {
+      cheapMove (result, i, ASMOP_ZERO, 0, !a_free);
+      if (aopInReg (result, i, A_IDX))
+        a_free = FALSE;
+    }
 
   if (size)
     {
