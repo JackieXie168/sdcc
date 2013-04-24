@@ -26,8 +26,8 @@
 #define D(x) do if (options.verboseAsm) { x; } while (0)
 
 static bool regalloc_dry_run;
-static unsigned char regalloc_dry_run_cost_bytes;
-static unsigned char regalloc_dry_run_cost_cycles;
+static unsigned int regalloc_dry_run_cost_bytes;
+static unsigned int regalloc_dry_run_cost_cycles;
 
 static struct
 {
@@ -47,6 +47,8 @@ enum asminst
   A_AND,
   A_CLR,
   A_CP,
+  A_CPL,
+  A_CPLW,
   A_DEC,
   A_DECW,
   A_INC,
@@ -80,6 +82,8 @@ static const char *asminstnames[] =
   "and",
   "clr",
   "cp",
+  "cpl",
+  "cplw",
   "dec",
   "decw",
   "inc",
@@ -276,7 +280,7 @@ aopGet2(const asmop *aop, int offset)
   return (aopGet (aop, offset + 1));
 }
 
-/* For operantions that always have the accumulator as left operand. */
+/* For operations that always have the accumulator as left operand. */
 static void
 op8_cost (const asmop *op2, int offset2)
 {
@@ -505,6 +509,9 @@ emit3cost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, i
   case A_CP:
     op8_cost (op2, offset2);
     break;
+  case A_CPL:
+    op_cost (op1, offset1);
+    break;
   case A_INC:
   case A_DEC:
     op_cost (op1, offset1);
@@ -552,6 +559,9 @@ emit3wcost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
 {
   switch (inst)
   {
+  case A_CPLW:
+    opw_cost2 (op1, offset1);
+    break;
   case A_DECW:
   case A_INCW:
     opw_cost (op1, offset1);
@@ -1668,8 +1678,7 @@ genCpl (const iCode *ic)
         {
           genMove_o (result->aop, i, left->aop, i, 2, (regDead (A_IDX, ic) || pushed_a) && !result_in_a && !(left_in_a > i), regFree (X_IDX, ic), regFree (Y_IDX, ic)); // TODO: More aggressively report state of X and Y.
 
-          emit3w_o (A_NEGW, result->aop, i, 0, 0);
-          emit3w_o (A_DECW, result->aop, i, 0, 0);
+          emit3w_o (A_CPLW, result->aop, i, 0, 0);
 
           i += 2;
         }
@@ -1703,8 +1712,7 @@ genCpl (const iCode *ic)
 
           destroyed_a = TRUE;
 
-          emitcode ("xor", "a, #0xff");
-          cost (2, 1);
+          emit3 (A_CPL, ASMOP_A, 0);
 
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
 
@@ -2801,7 +2809,7 @@ static void
 genXor (const iCode *ic)
 {
   operand *left, *right, *result;
-  int size, i, omitbyte = -1;
+  int size, i, j, omitbyte = -1;
   bool pushed_a = FALSE;
 
   D (emitcode ("; genXor", ""));
@@ -2822,14 +2830,14 @@ genXor (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Use bit set instructions where it is faster.
+  // TODO: Use bit complement instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
       pushed_a = TRUE;
     }
 
-  // Byte in a needs to be handled first. TODO: Ensure we are not overwriting an operand.
+  // Byte in a needs to be handled first.
   for (i = 0; i < size; i++)
     if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
       {
@@ -2841,6 +2849,8 @@ genXor (const iCode *ic)
 
         if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
           ;
+        else if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
+          emit3 (A_CPL, ASMOP_A, 0);
         else if (!other_stacked)
           emit3_o (A_XOR, ASMOP_A, 0, other, i);
         else
@@ -2853,12 +2863,31 @@ genXor (const iCode *ic)
         if (other_stacked)
           pop (other_stacked, 0, 2);
 
-        if (!aopInReg (result->aop, i, A_IDX) || size == 1)
-          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
-        else
+        if (aopInReg (result->aop, i, A_IDX) && size > 1)
           {
             push (ASMOP_A, 0, 1);
             pushed_a = TRUE;
+          }
+        else
+          {
+            // Avoid overwriting operand.
+            if (aopRS (result->aop) && !aopOnStack (result->aop, i, 1))
+              for (j = 0; j < size; j++)
+                {
+                  if (i == j)
+                    continue;
+                  if (j < left->aop->size && aopRS (left->aop) && !aopOnStack (left->aop, j, 1) &&
+                    left->aop->aopu.bytes[j].byteu.reg->rIdx == result->aop->aopu.bytes[i].byteu.reg->rIdx ||
+                    j < right->aop->size && aopRS (right->aop) && !aopOnStack (right->aop, j, 1) &&
+                    right->aop->aopu.bytes[j].byteu.reg->rIdx == result->aop->aopu.bytes[i].byteu.reg->rIdx)
+                    {
+                      if (!regalloc_dry_run)
+                        wassertl (0, "Unimplemented xor operand.");
+                      cost (80, 80);
+                    }
+                }
+
+            cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
           }
         break;
       }
@@ -2877,6 +2906,8 @@ genXor (const iCode *ic)
 
       if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
         ;
+      else if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
+        emit3 (A_CPL, ASMOP_A, 0);
       else if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
       else
@@ -2912,7 +2943,7 @@ static void
 genOr (const iCode *ic)
 {
   operand *left, *right, *result;
-  int size, i, omitbyte = -1;
+  int size, i, j, omitbyte = -1;
   bool pushed_a = FALSE;
 
   D (emitcode ("; genOr", ""));
@@ -2933,14 +2964,14 @@ genOr (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Use bit complement instructions where it is faster.
+  // TODO: Use bit set instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
       pushed_a = TRUE;
     }
 
-  // Byte in a needs to be handled first. TODO: Ensure we are not overwriting an operand.
+  // Byte in a needs to be handled first.
   for (i = 0; i < size; i++)
     if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
       {
@@ -2964,13 +2995,33 @@ genOr (const iCode *ic)
         if (other_stacked)
           pop (other_stacked, 0, 2);
 
-        if (!aopInReg (result->aop, i, A_IDX)|| size == 1)
-          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
-        else
+        if (aopInReg (result->aop, i, A_IDX) && size > 1)
           {
             push (ASMOP_A, 0, 1);
             pushed_a = TRUE;
           }
+        else
+          {
+            // Avoid overwriting operand.
+            if (aopRS (result->aop) && !aopOnStack (result->aop, i, 1))
+              for (j = 0; j < size; j++)
+                {
+                  if (i == j)
+                    continue;
+                  if (j < left->aop->size && aopRS (left->aop) && !aopOnStack (left->aop, j, 1) &&
+                    left->aop->aopu.bytes[j].byteu.reg->rIdx == result->aop->aopu.bytes[i].byteu.reg->rIdx ||
+                    j < right->aop->size && aopRS (right->aop) && !aopOnStack (right->aop, j, 1) &&
+                    right->aop->aopu.bytes[j].byteu.reg->rIdx == result->aop->aopu.bytes[i].byteu.reg->rIdx)
+                    {
+                      if (!regalloc_dry_run)
+                        wassertl (0, "Unimplemented or operand.");
+                      cost (80, 80);
+                    }
+                }
+
+            cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+          }
+
         break;
       }
 
@@ -3023,7 +3074,7 @@ static void
 genAnd (const iCode *ic)
 {
   operand *left, *right, *result;
-  int size, i, omitbyte = -1;
+  int size, i, j, omitbyte = -1;
   bool pushed_a = FALSE;
 
   D (emitcode ("; genAnd", ""));
@@ -3051,7 +3102,7 @@ genAnd (const iCode *ic)
       pushed_a = TRUE;
     }
 
-  // Byte in a needs to be handled first. TODO: Ensure we are not overwriting an operand.
+  // Byte in a needs to be handled first.
   for (i = 0; i < size; i++)
     if (aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
       {
@@ -3075,13 +3126,33 @@ genAnd (const iCode *ic)
         if (other_stacked)
           pop (other_stacked, 0, 2);
 
-        if (!aopInReg (result->aop, i, A_IDX) || size == 1)
-          cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
-        else
+       if (aopInReg (result->aop, i, A_IDX) && size > 1)
           {
             push (ASMOP_A, 0, 1);
             pushed_a = TRUE;
           }
+        else
+          {
+            // Avoid overwriting operand.
+            if (aopRS (result->aop) && !aopOnStack (result->aop, i, 1))
+              for (j = 0; j < size; j++)
+                {
+                  if (i == j)
+                    continue;
+                  if (j < left->aop->size && aopRS (left->aop) && !aopOnStack (left->aop, j, 1) &&
+                    left->aop->aopu.bytes[j].byteu.reg->rIdx == result->aop->aopu.bytes[i].byteu.reg->rIdx ||
+                    j < right->aop->size && aopRS (right->aop) && !aopOnStack (right->aop, j, 1) &&
+                    right->aop->aopu.bytes[j].byteu.reg->rIdx == result->aop->aopu.bytes[i].byteu.reg->rIdx)
+                    {
+                      if (!regalloc_dry_run)
+                        wassertl (0, "Unimplemented and operand.");
+                      cost (80, 80);
+                    }
+                }
+
+            cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+          }
+
         break;
       }
 
@@ -3536,11 +3607,18 @@ genPointerGet (const iCode *ic)
           emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i + offset);
           cost (offset < 256 ? 2 : 3, 1);
         }
+
       if (result->aop->type == AOP_DUMMY)
         continue;
 
-      if (i < size - 1 && aopInReg (result->aop, i, A_IDX))
+      if (aopInReg (result->aop, i, A_IDX) && !regDead (A_IDX, ic))
+        emitcode (";", "WTF? Result in a, but a not dead.");
+
+      else if (i < size - 1 && aopInReg (result->aop, i, A_IDX))
         {
+          if (!regDead (A_IDX, ic)) // Handle WTF above.
+            adjustStack (1);
+
           push (ASMOP_A, 0, 1);
           pushed_a = TRUE;
         }
