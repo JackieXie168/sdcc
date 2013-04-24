@@ -1485,6 +1485,7 @@ static void
 genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, bool a_dead, bool x_dead, bool y_dead)
 {
   int i;
+  bool a_still_dead = a_dead;
 
   wassertl (result->type != AOP_LIT, "Trying to write to literal.");
   wassertl (result->type != AOP_IMMD, "Trying to write to immediate.");
@@ -1512,6 +1513,8 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
       else if ((!aopRS (result) || aopOnStack(result, roffset + i, 1) || aopInReg (result, roffset + i, A_IDX)) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i))
         {
           emit3_o (A_CLR, result, roffset + i, 0, 0);
+          if (aopInReg (result, roffset + i, A_IDX))
+            a_still_dead = FALSE;
           i++;
         }
       else if (aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
@@ -1540,7 +1543,9 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
         }
       else
         {
-          cheapMove (result, roffset + i, source, soffset + i, TRUE); // TODO: Relax requirement on saving a.
+          cheapMove (result, roffset + i, source, soffset + i, !a_still_dead);
+          if (aopInReg (result, roffset + i, A_IDX))
+            a_still_dead = FALSE;
           i++;
         }
     }
@@ -1730,7 +1735,8 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
   bool pushed_a = FALSE;
 
   size = result_aop->size;
-  for(i = 0, started = FALSE; i < size;)
+
+  for (i = 0, started = FALSE; i < size;)
     {
       if (0) // TODO: Use subw where it provides an advantage.
         ;
@@ -2347,19 +2353,29 @@ genPlus (const iCode *ic)
       right = left;
       left = t;
     }
-
   
   size = result->aop->size;
   for(i = 0, started = FALSE; i < size;)
     {
-      if (!started && i == size - 2 && // We can use inc only for the only non-zero word, since it neither takes into account an existing carry nor does it update the carry.
+      // We can use incw / decw only for the only, top non-zero word, since it neither takes into account an existing carry nor does it update the carry.
+      if (!started && i == size - 2 &&
         (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX)) &&
         right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
         {
           bool x = aopInReg (result->aop, i, X_IDX);
           genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x);
-          emitcode ("incw", x ? "x" : "y");
+          emit3w (A_INCW, x ? ASMOP_X : ASMOP_Y, 0);
           cost (x ? 1 : 2, 1);
+          started = TRUE;
+          i += 2;
+        }
+      else if (!started && i == size - 2 &&
+        (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX)) &&
+        right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
+        {
+          bool x = aopInReg (result->aop, i, X_IDX);
+          genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x);
+          emit3w (A_DECW, x ? ASMOP_X : ASMOP_Y, 0);
           started = TRUE;
           i += 2;
         }
@@ -2391,11 +2407,15 @@ genPlus (const iCode *ic)
             {
               // Skip over this byte.
             }
-          // We can use inc only for the only non-zero byte, since it neither takes into account an existing carry nor does it update the carry.
+          // We can use inc / dec only for the only, top non-zero byte, since it neither takes into account an existing carry nor does it update the carry.
           else if (!started && i == size - 1 && right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1)
             {
-              emitcode ("inc", "a");
-              cost (1, 1);
+              emit3 (A_INC, ASMOP_A, 0);
+              started = TRUE;
+            }
+          else if (!started && i == size - 1 && right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 255)
+            {
+              emit3 (A_DEC, ASMOP_A, 0);
               started = TRUE;
             }
           else
@@ -2802,7 +2822,7 @@ genXor (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Handle result partially in a! Use bit set instructions where it is faster.
+  // TODO: Use bit set instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
@@ -2819,7 +2839,9 @@ genXor (const iCode *ic)
 
         other_stacked = stack_aop (other, i, &other_offset);
 
-        if (!other_stacked)
+        if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+          ;
+        else if (!other_stacked)
           emit3_o (A_XOR, ASMOP_A, 0, other, i);
         else
           {
@@ -2853,7 +2875,9 @@ genXor (const iCode *ic)
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
-      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
+      if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+        ;
+      else if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
       else
         {
@@ -2909,7 +2933,7 @@ genOr (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Handle result partially in a! Use bit complement instructions where it is faster.
+  // TODO: Use bit complement instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
@@ -2926,7 +2950,9 @@ genOr (const iCode *ic)
 
         other_stacked = stack_aop (other, i, &other_offset);
 
-        if (!other_stacked)
+        if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+          ;
+        else if (!other_stacked)
           emit3_o (A_OR, ASMOP_A, 0, other, i);
         else
           {
@@ -2960,7 +2986,9 @@ genOr (const iCode *ic)
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
-      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
+      if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+        ;
+      else if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
       else
         {
@@ -3016,7 +3044,7 @@ genAnd (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Handle result partially in a! Use bit reset instructions where it is faster.
+  // TODO: Use bit reset instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
@@ -3033,7 +3061,9 @@ genAnd (const iCode *ic)
 
         other_stacked = stack_aop (other, i, &other_offset);
 
-        if (!other_stacked)
+        if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
+          ;
+        else if (!other_stacked)
           emit3_o (A_AND, ASMOP_A, 0, other, i);
         else
           {
@@ -3067,7 +3097,9 @@ genAnd (const iCode *ic)
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
-      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
+      if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
+          ;
+      else if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
       else
         {
@@ -3450,6 +3482,7 @@ genPointerGet (const iCode *ic)
   int size, i;
   unsigned offset;
   bool use_y;
+  bool pushed_a = FALSE;
 
   if (IS_BITVAR (getSpec (operandType (result))))
     {
@@ -3480,14 +3513,16 @@ genPointerGet (const iCode *ic)
     }
 
   if (!regDead (A_IDX, ic))
-    push (ASMOP_A, 0, 1);
+    {
+      push (ASMOP_A, 0, 1);
+      pushed_a = TRUE;
+    }
 
   genMove (use_y ? ASMOP_Y : ASMOP_X, left->aop, TRUE, regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
   // TODO: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
 
-  // TODO: Handle result partially in a correctly!
   size = result->aop->size;
   for (i = 0; i < size; i++)
     {
@@ -3501,11 +3536,19 @@ genPointerGet (const iCode *ic)
           emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i + offset);
           cost (offset < 256 ? 2 : 3, 1);
         }
-      if (result->aop->type != AOP_DUMMY)
+      if (result->aop->type == AOP_DUMMY)
+        continue;
+
+      if (i < size - 1 && aopInReg (result->aop, i, A_IDX))
+        {
+          push (ASMOP_A, 0, 1);
+          pushed_a = TRUE;
+        }
+      else
         cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
     }
 
-  if (!regDead (A_IDX, ic))
+  if (pushed_a)
     pop (ASMOP_A, 0, 1);
 
   freeAsmop (right);
