@@ -987,8 +987,8 @@ adjustStack (int n)
       // seems addw sp, byte has a signed operand, while sub sp, #byte has an unsigned operand, also, in contrast to what the
       // manual states, addw sp, #byte only takes 1 cycle.
 
-      // TODO: For small n, adjust stack by using pop where these are dead.
-      // TODO: For big n, use addition in X or Y when free. Need to fix calling convention before that though.
+      // todo: For small n, adjust stack by using pop where these are dead.
+      // todo: For big n, use addition in X or Y when free. Need to fix calling convention before that though.
       if (n > 127)
         {
           emitcode ("addw","sp, #127");
@@ -1217,7 +1217,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 
   // Now do the register shuffling.
 
-  // TODO: Try to use rlwa and rrwa.
+  // todo: Try to use rlwa and rrwa.
 
   // Try to use exgw
   ex[0] = -1;
@@ -1417,7 +1417,7 @@ skip_byte:
           size--;
           i++;
         }
-      // TODO: Use ldw to load xl, xh, yl, yh when the other half is not in use.
+      // todo: Use ldw to load xl, xh, yl, yh when the other half is not in use.
       else if ((aopInReg (result, i, XL_IDX) || aopInReg (result, i, YL_IDX)) && !source->aopu.bytes[i].in_reg)
         {
           emitcode ("exg", "a, %s", aopGet (result, i));
@@ -1679,10 +1679,10 @@ genCpl (const iCode *ic)
 
   for (i = 0; i < size;)
     {
-      // TODO: Complement in source where dead and more efficient.
+      // todo: Complement in source where dead and more efficient.
       if (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX))
         {
-          genMove_o (result->aop, i, left->aop, i, 2, (regDead (A_IDX, ic) || pushed_a) && !result_in_a && !(left_in_a > i), regFree (X_IDX, ic), regFree (Y_IDX, ic)); // TODO: More aggressively report state of X and Y.
+          genMove_o (result->aop, i, left->aop, i, 2, (regDead (A_IDX, ic) || pushed_a) && !result_in_a && !(left_in_a > i), regFree (X_IDX, ic), regFree (Y_IDX, ic)); // todo: More aggressively report state of X and Y.
 
           emit3w_o (A_CPLW, result->aop, i, 0, 0);
 
@@ -1752,7 +1752,7 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 
   for (i = 0, started = FALSE; i < size;)
     {
-      if (0) // TODO: Use subw where it provides an advantage.
+      if (0) // todo: Use subw where it provides an advantage.
         ;
       else if (aopInReg (right_aop, i, A_IDX))
         {
@@ -1825,7 +1825,7 @@ genUminusFloat (const iCode *ic)
 
   genMove_o (result->aop, 0, left->aop, 0, result->aop->size - 1, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
-  // TODO: Use bcpl, rlcw with ccf, only save A when necessary
+  // todo: Use bcpl, rlcw with ccf, only save A when necessary
   push (ASMOP_A, 0, 1);
 
   cheapMove (ASMOP_A, 0, left->aop, left->aop->size - 1, FALSE);
@@ -1917,8 +1917,8 @@ genIpush (const iCode * ic)
 
   for (size = IC_LEFT (ic)->aop->size, offset = 0; size;)
     {
-      // TODO: For AOP_IMMD, if X is free, when optimizing for code size, ldw x, m  pushw x is better than push m push m+1.
-      // TODO: Use x (or even y) when free for stack operands.
+      // todo: For AOP_IMMD, if X is free, when optimizing for code size, ldw x, m  pushw x is better than push m push m+1.
+      // todo: Use x (or even y) when free for stack operands.
 
       if (aopInReg (IC_LEFT (ic)->aop, offset, X_IDX) || aopInReg (IC_LEFT (ic)->aop, offset, Y_IDX))
         {
@@ -2398,7 +2398,7 @@ genPlus (const iCode *ic)
         (right->aop->type == AOP_LIT || right->aop->type == AOP_IMMD || aopOnStack (right->aop, i, 2)))
         {
           bool x = aopInReg (result->aop, i, X_IDX);
-          genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x); // TODO: Allow use of a sometimes.
+          genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x); // todo: Allow use of a sometimes.
           if (right->aop->type != AOP_LIT || byteOfVal (right->aop->aopu.aop_lit, i) || byteOfVal (right->aop->aopu.aop_lit, i + 1))
             {
               emitcode ("addw", x ? "x, %s" : "y, %s", aopGet2 (right->aop, i));
@@ -2836,7 +2836,7 @@ genXor (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Use bit complement instructions where it is faster.
+  // todo: Use bit complement instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
@@ -2970,7 +2970,7 @@ genOr (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Use bit set instructions where it is faster.
+  // todo: Use bit set instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
@@ -3101,7 +3101,7 @@ genAnd (const iCode *ic)
       right = temp;
     }
 
-  // TODO: Use bit reset instructions where it is faster.
+  // todo: Use bit reset instructions where it is faster.
   if (!regDead (A_IDX, ic))
     {
       push (ASMOP_A, 0, 1);
@@ -3320,7 +3320,7 @@ genLeftShift (const iCode *ic)
     emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
-  // TODO: Shift in left if dead and cheaper?
+  // todo: Shift in left if dead and cheaper?
   for (i = 0; i < size;)
      {
         int swapidx = -1;
@@ -3490,7 +3490,7 @@ genRightShift (const iCode *ic)
     emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
-  // TODO: Shift in left if free and cheaper, use sllw.
+  // todo: Shift in left if free and cheaper, use sllw.
   for (i = size - 1; i >= 0;)
      {
         int swapidx = -1;
@@ -3579,7 +3579,7 @@ genPointerGet (const iCode *ic)
   wassertl (right, "GET_VALUE_AT_ADDRESS without right operand");
   wassertl (IS_OP_LITERAL (IC_RIGHT (ic)), "GET_VALUE_AT_ADDRESS with non-literal right operand");
 
-  // TODO: Handle this more gracefully, save x instead of using y, when doing so is more efficient, use ldw, etc.
+  // todo: Handle this more gracefully, save x instead of using y, when doing so is more efficient, use ldw, etc.
   use_y = !regDead (X_IDX, ic);
   if (use_y && !regDead (Y_IDX, ic))
     {
@@ -3597,7 +3597,7 @@ genPointerGet (const iCode *ic)
 
   genMove (use_y ? ASMOP_Y : ASMOP_X, left->aop, TRUE, regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
-  // TODO: What if right operand is negative?
+  // todo: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
 
   size = result->aop->size;
@@ -3716,7 +3716,7 @@ genPointerSet (iCode * ic)
 
   size = right->aop->size;
 
-  // TODO: Handle this more gracefully, save x instead of using y, when doing so is more efficient, use ldw, etc.
+  // todo: Handle this more gracefully, save x instead of using y, when doing so is more efficient, use ldw, etc.
   use_y = !regDead (X_IDX, ic);
   if (use_y && !regDead (Y_IDX, ic))
     {
@@ -3777,7 +3777,7 @@ genPointerSet (iCode * ic)
 static void
 genIfx (const iCode *ic)
 {
-  // TODO: This function currently reports code size costs only, other costs will depend on profiler information.
+  // todo: This function currently reports code size costs only, other costs will depend on profiler information.
   bool inv = FALSE;
   operand *const cond = IC_COND (ic);
   symbol *const tlbl = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
@@ -3889,7 +3889,7 @@ genAddrOf (const iCode *ic)
 
   aopOp (result, ic);
 
-  // TODO: When optimizing for size, putting on-stack address into y when y is free is cheaper calculating in x, then using exgw.
+  // todo: When optimizing for size, putting on-stack address into y when y is free is cheaper calculating in x, then using exgw.
   if (aopInReg (result->aop, 0, Y_IDX) || regDead (Y_IDX, ic) && !regDead (X_IDX, ic))
     {
       if (!sym->onStack)
@@ -3922,7 +3922,7 @@ genAddrOf (const iCode *ic)
         }
       genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
     }
-  else // TODO: Handle case of both X and Y alive; TODO: Use mov when destination is a global variable.
+  else // todo: Handle case of both X and Y alive; todo: Use mov when destination is a global variable.
     {
       if (!regalloc_dry_run)
         wassertl (0, "Unimplemented GET_VALUE_AT_ADDRESS deadness");
@@ -3951,7 +3951,7 @@ genCast (const iCode *ic)
   aopOp (right, ic);
   aopOp (result, ic);
 
-  // TODO: More efficient casts to _Bool especially for result in XL or YL.
+  // todo: More efficient casts to _Bool especially for result in XL or YL.
 
   if (result->aop->size <= right->aop->size && (!IS_BOOL (operandType (result)) || IS_BOOL (operandType (right))))
     {
