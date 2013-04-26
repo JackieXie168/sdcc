@@ -1,7 +1,7 @@
 2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Fix in handling of result in a in addition.
+	  STM8: Fix in handling of result in a in addition, minor improvements.
 
 2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
 

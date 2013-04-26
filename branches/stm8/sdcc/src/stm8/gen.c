@@ -1512,14 +1512,6 @@ skip_byte:
     }
   genCopyStack (result, source, assigned, &size, a_free, x_free, y_free, FALSE);
 
-  // Free a reg to copy (stack-to-stack) whatever is left.
-  if (size)
-    {
-      push (ASMOP_A, 0, 1);
-      genCopyStack (result, source, assigned, &size, TRUE, x_free, y_free, TRUE);
-      pop (ASMOP_A, 0, 1);
-    }
-
   // Last, move everything from stack to registers.
   for (i = 0; i < n;)
     {
@@ -1529,7 +1521,6 @@ skip_byte:
           cost (2, 2);
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
-          regsize -= 2;
           size -= 2;
           i += 2;
         }
@@ -1539,7 +1530,6 @@ skip_byte:
           cost (2, 2);
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
-          regsize -= 2;
           size -= 2;
           i += 2;
         }
@@ -1551,12 +1541,19 @@ skip_byte:
           emit3_o (A_LD, ASMOP_A, 0, source, i);
           if (!aopInReg (result, i, A_IDX))
             swap_from_a (result->aopu.bytes[i].byteu.reg->rIdx);
-          regsize--;
           size--;
           i++;
         }
       else // This byte is not a stack-to-register copy.
         i++;
+    }
+
+  // Free a reg to copy (stack-to-stack) whatever is left.
+  if (size)
+    {
+      push (ASMOP_A, 0, 1);
+      genCopyStack (result, source, assigned, &size, TRUE, x_free, y_free, TRUE);
+      pop (ASMOP_A, 0, 1);
     }
 
   // Place leading zeroes.
