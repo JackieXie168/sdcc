@@ -2574,7 +2574,7 @@ genPlus (const iCode *ic)
             }
 
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
-          if (aopInReg (left->aop, i, A_IDX))
+          if (aopInReg (result->aop, i, A_IDX))
             result_in_a = TRUE;
 
           i++;
@@ -3802,6 +3802,13 @@ genPointerGet (const iCode *ic)
         }
       else
         cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+
+      if (i < size - 1 && (use_y ? aopInReg (result->aop, i, YL_IDX) || aopInReg (result->aop, i, YH_IDX) : aopInReg (result->aop, i, XL_IDX) || aopInReg (result->aop, i, XH_IDX)))
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Overwriting pointer");
+          cost (80, 80);
+        }
     }
 
   if (pushed_a)

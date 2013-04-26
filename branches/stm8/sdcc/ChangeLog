@@ -1,11 +1,17 @@
 2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
 
-	* STM8: Fix stack handling in signed cast, fix wide right shift, minor refactoring.
+	* src/stm8/gen.c:
+	  STM8: Fix in handling of result in a in addition.
 
 2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  Fix handling of a in addition, subtraction and negation, more flexible copy, fix comparison.
+	  STM8: Fix stack handling in signed cast, fix wide right shift, minor refactoring.
+
+2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fix handling of a in addition, subtraction and negation, more flexible copy, fix comparison.
 
 2013-04-25 Philipp Klaus Krause <pkk AT spth.de>
 
