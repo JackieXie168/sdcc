@@ -1137,7 +1137,6 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 {
   int i, regsize, size, n = result->size < source->size ? result->size : source->size;
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
-  int ex[4];
   bool a_free, x_free, y_free;
 
 #if 0
@@ -1161,7 +1160,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         size--;
       }
 
-  // Move everything that can be easily moved from registers to the stack.
+  // Move everything from registers to the stack.
   for (i = 0; i < n;)
     {
       if (aopInReg (source, i, X_IDX) && aopOnStack (result, i, 2))
@@ -1184,16 +1183,19 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
           size -= 2;
           i += 2;
         }
-      else if (aopInReg (source, i, A_IDX) && aopOnStack (result, i, 1))
+      else if (aopRS (source) && !aopOnStack (source, i, 1) && aopOnStack (result, i, 1))
         {
-          emitcode ("ld", "%s, a", aopGet (result, i));
-          cost (2, 1);
+          if (!aopInReg (source, i, A_IDX))
+            swap_to_a (source->aopu.bytes[i].byteu.reg->rIdx);
+          emit3_o (A_LD, result, i, ASMOP_A, 0);
+          if (!aopInReg (source, i, A_IDX))
+            swap_from_a (source->aopu.bytes[i].byteu.reg->rIdx);
           assigned[i] = TRUE;
           regsize--;
           size--;
           i++;
         }
-      else
+      else // This byte is not a register-to-stack copy.
         i++;
     }
 
@@ -1217,29 +1219,23 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 
   // Now do the register shuffling.
 
-  // todo: Try to use rlwa and rrwa.
-
-  // Try to use exgw
-  ex[0] = -1;
-  ex[1] = -1;
-  ex[2] = -1;
-  ex[3] = -1;
+  // Try to use exgw x, y.
   if (regsize >= 4)
     {
-      // Find XL and check that it is exchanged with YL.
+      int ex[4] = {-1, -1, -1, -1};
+
+      // Find XL and check that it is exchanged with YL, find XH and check that it is exchanged with YH.
       for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, YL_IDX))
-          ex[0] = i;
-      for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, XL_IDX))
-          ex[1] = i;
-      // Find XH and check that it is exchanged with YH.
-      for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, YH_IDX))
-          ex[2] = i;
-      for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, XH_IDX))
-          ex[3] = i;
+        {
+          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, YL_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, XL_IDX))
+            ex[1] = i;
+          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, YH_IDX))
+            ex[2] = i;
+          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, XH_IDX))
+            ex[3] = i;
+        }
       if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0 && ex[3] >= 0)
         {
           emitcode ("exgw", "x, y");
@@ -1253,18 +1249,123 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
     }
 
-  // Try to use exg a, xl
-  ex[0] = -1;
-  ex[1] = -1;
+  // Try to use rlwa x.
+  if (regsize >= 3)
+    {
+      int ex[3] = {-1, -1};
+
+      for (i = 0; i < n; i++)
+        {
+          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, A_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, XL_IDX))
+            ex[1] = i;
+          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XH_IDX))
+            ex[2] = i;
+        }
+     if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
+        {
+          emitcode ("rlwa", "x");
+          cost (1, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          assigned[ex[2]] = TRUE;
+          regsize -= 3;
+          size -= 3;
+        }
+    }
+
+  // Try to use rrwa x.
+  if (regsize >= 3)
+    {
+      int ex[3] = {-1, -1};
+
+      for (i = 0; i < n; i++)
+        {
+          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, XH_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, A_IDX))
+            ex[1] = i;
+          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XL_IDX))
+            ex[2] = i;
+        }
+     if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
+        {
+          emitcode ("rrwa", "x");
+          cost (1, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          assigned[ex[2]] = TRUE;
+          regsize -= 3;
+          size -= 3;
+        }
+    }
+
+  // Try to use rlwa y.
+  if (regsize >= 3)
+    {
+      int ex[3] = {-1, -1};
+
+      for (i = 0; i < n; i++)
+        {
+          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, A_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, YL_IDX))
+            ex[1] = i;
+          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YH_IDX))
+            ex[2] = i;
+        }
+     if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
+        {
+          emitcode ("rlwa", "y");
+          cost (2, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          assigned[ex[2]] = TRUE;
+          regsize -= 3;
+          size -= 3;
+        }
+    }
+
+  // Try to use rrwa y.
+  if (regsize >= 3)
+    {
+      int ex[3] = {-1, -1};
+
+      for (i = 0; i < n; i++)
+        {
+          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, YH_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, A_IDX))
+            ex[1] = i;
+          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YL_IDX))
+            ex[2] = i;
+        }
+     if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
+        {
+          emitcode ("rrwa", "y");
+          cost (2, 1);
+          assigned[ex[0]] = TRUE;
+          assigned[ex[1]] = TRUE;
+          assigned[ex[2]] = TRUE;
+          regsize -= 3;
+          size -= 3;
+        }
+    }
+
+  // Try to use exg a, xl.
   if (regsize >= 2)
     {
+      int ex[2] = {-1, -1};
+
       // Find XL and check that it is exchanged with XH.
       for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XL_IDX))
-          ex[0] = i;
-      for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, A_IDX))
-          ex[1] = i;
+        {
+          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XL_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, A_IDX))
+            ex[1] = i;
+        }
       if (ex[0] >= 0 && ex[1] >= 0)
         {
           emitcode ("exg", "a, xl");
@@ -1276,18 +1377,19 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
     }
 
-  // Try to use exg a, yl
-  ex[0] = -1;
-  ex[1] = -1;
+  // Try to use exg a, yl.
   if (regsize >= 2)
     {
+      int ex[2] = {-1, -1};
+
       // Find XL and check that it is exchanged with XH.
       for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YL_IDX))
-          ex[0] = i;
-      for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, A_IDX))
-          ex[1] = i;
+        {
+          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YL_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, A_IDX))
+            ex[1] = i;
+        }
       if (ex[0] >= 0 && ex[1] >= 0)
         {
           emitcode ("exg", "a, yl");
@@ -1299,18 +1401,19 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
     }
 
-  // Try to use swapw x
-  ex[0] = -1;
-  ex[1] = -1;
+  // Try to use swapw x.
   if (regsize >= 2)
     {
+      int ex[2] = {-1, -1};
+
       // Find XL and check that it is exchanged with XH.
       for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, XH_IDX))
-          ex[0] = i;
-      for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, XL_IDX))
-          ex[1] = i;
+        {
+          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, XH_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, XL_IDX))
+            ex[1] = i;
+        }
       if (ex[0] >= 0 && ex[1] >= 0)
         {
           emitcode ("swapw", "x");
@@ -1322,18 +1425,19 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
     }
 
-  // Try to use swapw y
-  ex[0] = -1;
-  ex[1] = -1;
+  // Try to use swapw y.
   if (regsize >= 2)
     {
+      int ex[2] = {-1, -1};
+
       // Find YL and check that it is exchanged with YH.
       for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, YH_IDX))
-          ex[0] = i;
-      for (i = 0; i < n; i++)
-        if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, YL_IDX))
-          ex[1] = i;
+        {
+          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, YH_IDX))
+            ex[0] = i;
+          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, YL_IDX))
+            ex[1] = i;
+        }
       if (ex[0] >= 0 && ex[1] >= 0)
         {
           emitcode ("swapw", "y");
@@ -1371,81 +1475,19 @@ skip_byte:
 
       if (i < n)
         {
-          cheapMove (result, i, source, i, FALSE);       // We can safely assign a byte. TODO: Take care of A!
+          cheapMove (result, i, source, i, FALSE);       // We can safely assign a byte.
           regsize--;
           size--;
           assigned[i] = TRUE;
           continue;
         }
 
-      // No byte can be assigned safely (i.e. the assignment is a permutation). Cache one in the accumulator.
+      // No byte can be assigned safely (i.e. the assignment is a permutation).
       if (!regalloc_dry_run)
         wassertl (0, "Unimplemented.");
       cost (80, 80);
       return;
-    }
-
-  // Last, move everything that can be easily moved from stack to registers.
-  for (i = 0; i < n;)
-    {
-      if (aopInReg (result, i, X_IDX) && aopOnStack (source, i, 2))
-        {
-          emitcode ("ldw", "x, %s", aopGet (source, i));
-          cost (2, 2);
-          assigned[i] = TRUE;
-          assigned[i + 1] = TRUE;
-          regsize -= 2;
-          size -= 2;
-          i += 2;
-        }
-      else if (aopInReg (result, i, Y_IDX) && aopOnStack (source, i, 2))
-        {
-          emitcode ("ldw", "y, %s", aopGet (source, i));
-          cost (2, 2);
-          assigned[i] = TRUE;
-          assigned[i + 1] = TRUE;
-          regsize -= 2;
-          size -= 2;
-          i += 2;
-        }
-      else if (aopInReg (result, i, A_IDX) && aopOnStack (source, i, 1))
-        {
-          emitcode ("ld", "a, %s", aopGet (source, i));
-          cost (2, 1);
-          assigned[i] = TRUE;
-          regsize--;
-          size--;
-          i++;
-        }
-      // todo: Use ldw to load xl, xh, yl, yh when the other half is not in use.
-      else if ((aopInReg (result, i, XL_IDX) || aopInReg (result, i, YL_IDX)) && !source->aopu.bytes[i].in_reg)
-        {
-          emitcode ("exg", "a, %s", aopGet (result, i));
-          emitcode ("ld", "a, %s", aopGet (source, i));
-          emitcode ("exg", "a, %s", aopGet (result, i));
-          cost (4, 3);
-          assigned[i] = TRUE;
-          regsize--;
-          size--;
-          i++;
-        }
-      else if ((aopInReg (result, i, XH_IDX) || aopInReg (result, i, YH_IDX)) && !source->aopu.bytes[i].in_reg)
-        {
-          bool y = aopInReg (result, i, YH_IDX);
-          emitcode ("rlwa", y ? "y" : "x");
-          emitcode ("ld", "a, %s", aopGet (source, i));
-          emitcode ("rrwa", y ? "y" : "x");
-          cost (4, 3 + y * 2);
-          assigned[i] = TRUE;
-          regsize--;
-          size--;
-          i++;
-        }
-      else
-        i++;
-    }
-
-  wassertl (size >= 0, "genCopy() copied more than there is to be copied.");
+    }  
 
   // Copy (stack-to-stack) what we can with whatever free regs we have now.
   a_free = a_dead;
@@ -1472,6 +1514,45 @@ skip_byte:
       pop (ASMOP_A, 0, 1);
     }
 
+  // Last, move everything from stack to registers.
+  for (i = 0; i < n;)
+    {
+      if (aopInReg (result, i, X_IDX) && aopOnStack (source, i, 2))
+        {
+          emitcode ("ldw", "x, %s", aopGet (source, i));
+          cost (2, 2);
+          assigned[i] = TRUE;
+          assigned[i + 1] = TRUE;
+          regsize -= 2;
+          size -= 2;
+          i += 2;
+        }
+      else if (aopInReg (result, i, Y_IDX) && aopOnStack (source, i, 2))
+        {
+          emitcode ("ldw", "y, %s", aopGet (source, i));
+          cost (2, 2);
+          assigned[i] = TRUE;
+          assigned[i + 1] = TRUE;
+          regsize -= 2;
+          size -= 2;
+          i += 2;
+        }
+      // todo: Try to use ldw to load xl, xh, yl, yh when the other half is not in use.
+      else if (aopRS (result) && !aopOnStack (result, i, 1) && aopOnStack (source, i, 1))
+        {
+          if (!aopInReg (result, i, A_IDX))
+            swap_to_a (result->aopu.bytes[i].byteu.reg->rIdx);
+          emit3_o (A_LD, ASMOP_A, 0, source, i);
+          if (!aopInReg (result, i, A_IDX))
+            swap_from_a (result->aopu.bytes[i].byteu.reg->rIdx);
+          regsize--;
+          size--;
+          i++;
+        }
+      else // This byte is not a stack-to-register copy.
+        i++;
+    }
+
   // Place leading zeroes.
   for (i = source->size; i < result->size; i++)
     {
@@ -1479,6 +1560,8 @@ skip_byte:
       if (aopInReg (result, i, A_IDX))
         a_free = FALSE;
     }
+
+  wassertl (size >= 0, "genCopy() copied more than there is to be copied.");
 
   if (size)
     {
@@ -1747,34 +1830,51 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
   int size, i;
   bool started;
   bool pushed_a = FALSE;
+  int left_in_a = -1;
+  bool result_in_a = FALSE;
 
   size = result_aop->size;
 
+  for (i = 0; i < size; i++)
+    if (aopInReg (left_aop, i, A_IDX))
+      {
+        left_in_a = i;
+        break;
+      }
+
   for (i = 0, started = FALSE; i < size;)
     {
-      if (0) // todo: Use subw where it provides an advantage.
+      if (0) // todo: Use subw, incw, decw where it provides an advantage.
         ;
-      else if (aopInReg (right_aop, i, A_IDX))
+      else if (aopInReg (right_aop, i, A_IDX)) // todo: Be more flexible and handle this.
         {
           if (!regalloc_dry_run)
             wassertl (0, "Unimplemented subtraction operand.");
           cost (80, 80);
           i++;
         }
-      else // TODO: Handle left and right operands in a correctly!
+      else
         {
-          if (!regDead (A_IDX, ic) && !pushed_a)
+          if ((!regDead (A_IDX, ic) || left_in_a > i || result_in_a) && !pushed_a)
             {
               push (ASMOP_A, 0, 1);
               pushed_a = TRUE;
+              result_in_a = FALSE;
             }
 
-          cheapMove (ASMOP_A, 0, left_aop, i, FALSE);
+          if (left_in_a == i && pushed_a)
+            {
+              emitcode ("ld", "a, (0, sp)");
+              cost (2, 1);
+            }
+          else
+            cheapMove (ASMOP_A, 0, left_aop, i, FALSE);
+
           if (!started && right_aop->type == AOP_LIT && !byteOfVal (right_aop->aopu.aop_lit, i))
             {
               // Skip over this byte.
             }
-          else
+          else // todo: Use dec / inc.
             {
               const asmop *right_stacked = NULL;
               int right_offset;
@@ -1794,19 +1894,20 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 
               started = TRUE;
             }
-          if (aopInReg (result_aop, i, A_IDX) && i + 1 < size)
-            {
-              push (ASMOP_A, 0, 1);
-              pushed_a = TRUE;
-            }
-          else
-            cheapMove (result_aop, i, ASMOP_A, 0, FALSE);
+
+          cheapMove (result_aop, i, ASMOP_A, 0, FALSE);
+
+          if (aopInReg (result_aop, i, A_IDX))
+            result_in_a = TRUE;
+            
           i++;
         }
     }
 
-  if (pushed_a)
+  if (pushed_a && !result_in_a)
     pop (ASMOP_A, 0, 1);
+  else if (pushed_a)
+    adjustStack (1);
 }
 
 /*-----------------------------------------------------------------*/
@@ -2353,6 +2454,9 @@ genPlus (const iCode *ic)
   operand *right = IC_RIGHT (ic);
   int size, i;
   bool started;
+  bool pushed_a = FALSE;
+  int left_in_a = -1;
+  bool result_in_a = FALSE;
 
   D (emitcode ("; genPlus", ""));
 
@@ -2360,15 +2464,23 @@ genPlus (const iCode *ic)
   aopOp (IC_RIGHT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
 
+  size = result->aop->size;
+
   /* Swap if left is literal or right is in A. */
-  if (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || right->aop->size == 1 && aopInReg (right->aop, 1, A_IDX))
+  if (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || aopInReg (right->aop, 0, A_IDX)) // todo: Swap in more cases when right in reg, left not.
     {
       operand *t = right;
       right = left;
       left = t;
     }
+
+  for (i = 0; i < size; i++)
+    if (aopInReg (left->aop, i, A_IDX))
+      {
+        left_in_a = i;
+        break;
+      }
   
-  size = result->aop->size;
   for(i = 0, started = FALSE; i < size;)
     {
       // We can use incw / decw only for the only, top non-zero word, since it neither takes into account an existing carry nor does it update the carry.
@@ -2377,7 +2489,8 @@ genPlus (const iCode *ic)
         right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
         {
           bool x = aopInReg (result->aop, i, X_IDX);
-          genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x);
+          genMove (x ? ASMOP_X : ASMOP_Y, left->aop,
+            pushed_a || regDead (A_IDX, ic) && left_in_a <= i && !result_in_a, x, !x);
           emit3w (A_INCW, x ? ASMOP_X : ASMOP_Y, 0);
           cost (x ? 1 : 2, 1);
           started = TRUE;
@@ -2388,7 +2501,8 @@ genPlus (const iCode *ic)
         right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
         {
           bool x = aopInReg (result->aop, i, X_IDX);
-          genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x);
+          genMove (x ? ASMOP_X : ASMOP_Y, left->aop,
+            pushed_a || regDead (A_IDX, ic) && left_in_a <= i && !result_in_a, x, !x);
           emit3w (A_DECW, x ? ASMOP_X : ASMOP_Y, 0);
           started = TRUE;
           i += 2;
@@ -2398,7 +2512,8 @@ genPlus (const iCode *ic)
         (right->aop->type == AOP_LIT || right->aop->type == AOP_IMMD || aopOnStack (right->aop, i, 2)))
         {
           bool x = aopInReg (result->aop, i, X_IDX);
-          genMove (x ? ASMOP_X : ASMOP_Y, left->aop, FALSE, x, !x); // todo: Allow use of a sometimes.
+          genMove (x ? ASMOP_X : ASMOP_Y, left->aop,
+            pushed_a || regDead (A_IDX, ic) && left_in_a <= i && !result_in_a, x, !x);
           if (right->aop->type != AOP_LIT || byteOfVal (right->aop->aopu.aop_lit, i) || byteOfVal (right->aop->aopu.aop_lit, i + 1))
             {
               emitcode ("addw", x ? "x, %s" : "y, %s", aopGet2 (right->aop, i));
@@ -2407,16 +2522,30 @@ genPlus (const iCode *ic)
             }
           i += 2;
         }
-      else if (right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK && !aopOnStack (right->aop, i, 1))
+      else if (right->aop->type == AOP_REG || right->aop->type == AOP_REGSTK && !aopOnStack (right->aop, i, 1)) //todo: Implement handling of right operands that can't be directly added to a.
         {
           if (!regalloc_dry_run)
             wassertl (0, "Unimplemented addition operand.");
           cost (80, 80);
           i++;
         }
-      else // TODO: Take care of A. TODO: Handling of right operands that can't be directly added to a.
+      else
         {
-          cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+          if ((!regDead (A_IDX, ic) || left_in_a > i || result_in_a) && !pushed_a)
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+              result_in_a = FALSE;
+            }
+
+          if (left_in_a == i && pushed_a)
+            {
+              emitcode ("ld", "a, (0, sp)");
+              cost (2, 1);
+            }
+          else
+            cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+
           if (!started && right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
             {
               // Skip over this byte.
@@ -2437,10 +2566,19 @@ genPlus (const iCode *ic)
               emit3_o (started ? A_ADC : A_ADD, ASMOP_A, 0, i < right->aop->size ? right->aop : ASMOP_ZERO, i);
               started = TRUE;
             }
+
           cheapMove (result->aop, i, ASMOP_A, 0, FALSE);
+          if (aopInReg (left->aop, i, A_IDX))
+            result_in_a = TRUE;
+
           i++;
         }
     }
+
+  if (pushed_a && !result_in_a)
+    pop (ASMOP_A, 0, 1);
+  else if (pushed_a)
+    adjustStack (1);
 
   freeAsmop (right);
   freeAsmop (left);
@@ -2753,8 +2891,8 @@ genCmpEQorNE (iCode *ic)
 
               genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
 
-              emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, i));
-              cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
+              emitcode ("cpw", aopInReg (left->aop, i, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, i));
+              cost (3 + aopInReg (left->aop, i, Y_IDX), 2);
 
               if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
                 pop (ASMOP_X, 0, 2);
