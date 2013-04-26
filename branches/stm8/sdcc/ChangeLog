@@ -1,6 +1,6 @@
 2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
 
-	* STM8: Fix stack handling in signed cast, fix wide right shift.
+	* STM8: Fix stack handling in signed cast, fix wide right shift, minor refactoring.
 
 2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
 

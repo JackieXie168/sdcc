@@ -60,8 +60,10 @@ enum asminst
   A_OR,
   A_RLC,
   A_RLCW,
+  A_RLWA,
   A_RRC,
   A_RRCW,
+  A_RRWA,
   A_SBC,
   A_SLL,
   A_SLLW,
@@ -95,8 +97,10 @@ static const char *asminstnames[] =
   "or",
   "rlc",
   "rlcw",
+  "rlwa",
   "rrc",
   "rrcw",
+  "rrwa",
   "sbc",
   "sll",
   "sllw",
@@ -568,7 +572,17 @@ emit3wcost (enum asminst inst, const asmop *op1, int offset1, const asmop *op2, 
     break;
   case A_NEGW:
   case A_RLCW:
+    opw_cost2 (op1, offset1);
+    break;
+  case A_RLWA:
+    opw_cost (op1, offset1);
+    break;
   case A_RRCW:
+    opw_cost2 (op1, offset1);
+    break;
+  case A_RRWA:
+    opw_cost (op1, offset1);
+    break;
   case A_SLLW:
   case A_SRAW:
   case A_SRLW:
@@ -896,16 +910,14 @@ void swap_to_a(int idx)
       cost (1, 1);
       break;
     case XH_IDX:
-      emitcode ("rlwa", "x");
-      cost (1, 1);
+      emit3w (A_RLWA, ASMOP_X, 0);
       break;
     case YL_IDX:
       emitcode ("exg", "a, yl");
       cost (1, 1);
       break;
     case YH_IDX:
-      emitcode ("rlwa", "y");
-      cost (2, 1);
+      emit3w (A_RLWA, ASMOP_Y, 0);
       break;
     default:
       wassert (0);
@@ -921,16 +933,14 @@ void swap_from_a(int idx)
       cost (1, 1);
       break;
     case XH_IDX:
-      emitcode ("rrwa", "x");
-      cost (1, 1);
+      emit3w (A_RRWA, ASMOP_X, 0);
       break;
     case YL_IDX:
       emitcode ("exg", "a, yl");
       cost (1, 1);
       break;
     case YH_IDX:
-      emitcode ("rrwa", "y");
-      cost (2, 1);
+      emit3w (A_RRWA, ASMOP_Y, 0);
       break;
     default:
       wassert (0);
@@ -1265,8 +1275,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
         {
-          emitcode ("rlwa", "x");
-          cost (1, 1);
+          emit3w (A_RLWA, ASMOP_X, 0);
           assigned[ex[0]] = TRUE;
           assigned[ex[1]] = TRUE;
           assigned[ex[2]] = TRUE;
@@ -1291,8 +1300,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
         {
-          emitcode ("rrwa", "x");
-          cost (1, 1);
+          emit3w (A_RRWA, ASMOP_X, 0);
           assigned[ex[0]] = TRUE;
           assigned[ex[1]] = TRUE;
           assigned[ex[2]] = TRUE;
@@ -1317,8 +1325,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
         {
-          emitcode ("rlwa", "y");
-          cost (2, 1);
+          emit3w (A_RLWA, ASMOP_Y, 0);
           assigned[ex[0]] = TRUE;
           assigned[ex[1]] = TRUE;
           assigned[ex[2]] = TRUE;
@@ -1343,8 +1350,7 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
         {
-          emitcode ("rrwa", "y");
-          cost (2, 1);
+          emit3w (A_RRWA, ASMOP_Y, 0);
           assigned[ex[0]] = TRUE;
           assigned[ex[1]] = TRUE;
           assigned[ex[2]] = TRUE;
@@ -3681,6 +3687,34 @@ genRightShift (const iCode *ic)
 static void
 genUnpackBits (const iCode *ic)
 {
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+  bool use_y;
+  bool pushed_a = FALSE;
+
+  D (emitcode ("; genUnpackBits", ""));
+
+  use_y = !regDead (X_IDX, ic);
+  if (use_y && !regDead (Y_IDX, ic))
+    {
+      if (!regalloc_dry_run)
+        wassertl (0, "No free reg for pointer.");
+      cost (80, 80);
+      return;
+    }
+
+  if (!regDead (A_IDX, ic))
+    {
+      push (ASMOP_A, 0, 1);
+      pushed_a = TRUE;
+    }
+
+  genMove (use_y ? ASMOP_Y : ASMOP_X, left->aop, TRUE, regDead (X_IDX, ic), regDead (Y_IDX, ic));
+
+  if (pushed_a)
+    pop (ASMOP_A, 0, 1);
+
   if (!regalloc_dry_run)
     wassertl (0, "Unimplemented bit-field");
 }
