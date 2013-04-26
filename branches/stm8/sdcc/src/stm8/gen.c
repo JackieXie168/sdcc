@@ -3549,7 +3549,7 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
           {
             if (i > 0 && (aopInReg (result->aop, i - 1, X_IDX) || aopInReg (result->aop, i - 1, Y_IDX)))
               {
-                emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i - 1, 0, 0);
+                emit3w_o ((i != size - 1) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i - 1, 0, 0);
                 i -= 2;
               }
             else
@@ -3635,7 +3635,7 @@ genRightShift (const iCode *ic)
 
         if (i > 0 && (aopInReg (result->aop, i - 1, X_IDX) || aopInReg (result->aop, i - 1, Y_IDX)))
           {
-            emit3w_o ((i != size - 2) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i - 1, 0, 0);
+            emit3w_o ((i != size - 1) ? A_RRCW : (sign ? A_SRAW : A_SRLW), result->aop, i - 1, 0, 0);
             i -= 2;
             continue;
           }
@@ -4203,11 +4203,11 @@ genCast (const iCode *ic)
       genMove_o (result->aop, 0, right->aop, 0, right->aop->size, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
       for (i = 0; i < right->aop->size; i++)
-        if (aopInReg (right->aop, i, A_IDX))
+        if (aopInReg (result->aop, i, A_IDX))
           result_in_a = TRUE;
-        else if (aopInReg (right->aop, i, XL_IDX) || aopInReg (right->aop, i, XH_IDX))
+        else if (aopInReg (result->aop, i, XL_IDX) || aopInReg (result->aop, i, XH_IDX))
           result_in_x = TRUE;
-        else if (aopInReg (right->aop, i, YL_IDX) || aopInReg (right->aop, i, YH_IDX))
+        else if (aopInReg (result->aop, i, YL_IDX) || aopInReg (result->aop, i, YH_IDX))
           result_in_y = TRUE;
 
       /* now depending on the sign of the destination */
