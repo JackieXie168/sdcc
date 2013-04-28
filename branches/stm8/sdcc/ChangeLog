@@ -2,6 +2,9 @@
 
 	* src/stm8/gen.c:
 	  STM8: Fix unsigned cast, implement read from unsigned bit-field.
+	* support/regression/tests/0fail.c,
+	  support/regression/tests/0pass.c:
+	  Dummy tests for debugging regression testing.
 
 2013-04-26 Philipp Klaus Krause <pkk AT spth.de>
 
