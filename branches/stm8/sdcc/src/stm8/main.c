@@ -111,6 +111,20 @@ stm8_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
   return TRUE;
 }
 
+static bool
+_hasNativeMulFor (iCode * ic, sym_link * left, sym_link * right)
+{
+  sym_link *test = NULL;
+  int result_size = IS_SYMOP(IC_RESULT(ic)) ? getSize(OP_SYM_TYPE(IC_RESULT(ic))) : 4;
+
+  if (ic->op != '*')
+    {
+      return FALSE;
+    }
+
+  return (result_size == 1 || IS_CHAR (left) && IS_CHAR (right) && result_size == 2);
+}
+
 /* Indicate which extended bit operations this port supports */
 static bool
 hasExtBitOp (int op, int size)
@@ -209,7 +223,7 @@ PORT stm8_port = {
   {NULL, NULL},
   {
    -1, 0, 7, 2, 0, 2},          /* stack information */
-  /* no native mul/div support for now. */
+  /* Use more fine-grained control for multiplication / division. */
   {
    0, -1},
   {
@@ -243,7 +257,7 @@ PORT stm8_port = {
   stm8_reg_parm,
   NULL,                         /* process_pragma */
   NULL,                         /* getMangledFunctionName */
-  NULL,                         /* hasNativeMulFor */
+  _hasNativeMulFor,             /* hasNativeMulFor */
   hasExtBitOp,                  /* hasExtBitOp */
   NULL,                         /* oclsExpense */
   TRUE,

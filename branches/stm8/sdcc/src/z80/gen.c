@@ -6092,9 +6092,7 @@ genMult (iCode * ic)
   byteResult = (AOP_SIZE (IC_RESULT (ic)) == 1);
 
   if (AOP_SIZE (IC_LEFT (ic)) > 2 || AOP_SIZE (IC_RIGHT (ic)) > 2 || AOP_SIZE (IC_RESULT (ic)) > 2)
-    {
-      wassertl (0, "Multiplication is handled through support function calls.");
-    }
+    wassertl (0, "Large multiplication is handled through support function calls.");
 
   /* Swap left and right such that right is a literal */
   if (AOP_TYPE (IC_LEFT (ic)) == AOP_LIT)

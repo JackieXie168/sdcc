@@ -2571,6 +2571,73 @@ genPlus (const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
+/* genMult - generates code for multiplication                     */
+/*-----------------------------------------------------------------*/
+static void
+genMult (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+  bool use_y;
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RIGHT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+
+  if (left->aop->size > 1 || right->aop->size > 1 || result->aop->size > 2)
+    wassertl (0, "Large multiplication is handled through support function calls.");
+
+  /* Swap if left is literal or right is in A. */
+  if (aopInReg (left->aop, 0, A_IDX) || aopInReg (right->aop, 0, XL_IDX) || aopInReg (right->aop, 0, YL_IDX) && !aopInReg (result->aop, 0, X_IDX)) // todo: Swap in more cases when right in reg, left not.
+    {
+      operand *t = right;
+      right = left;
+      left = t;
+    }
+
+  use_y = aopInReg (result->aop, 0, Y_IDX) || aopInReg (left->aop, 0, YL_IDX) && !aopInReg (result->aop, 0, X_IDX);
+
+  if (!regDead (use_y ? Y_IDX : X_IDX, ic))
+    push (use_y ? ASMOP_Y : ASMOP_X, 0, 2);
+  if (!regDead (A_IDX, ic))
+    push (ASMOP_A, 0, 1);
+
+  cheapMove (use_y ? ASMOP_Y : ASMOP_X, 0, left->aop, 0, FALSE); // todo: Allow use of a.
+  cheapMove (ASMOP_A, 0, left->aop, 0, FALSE); // todo: Allow use of a.
+
+  emitcode ("mul", use_y ? "y, a" : "x, a");
+  cost (1 + use_y, 4);
+
+  genMove (result->aop, use_y ? ASMOP_Y : ASMOP_X,  TRUE, !use_y || regDead (X_IDX, ic), use_y || regDead (Y_IDX, ic)); // todo: Allow use of x, y.
+
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
+  if (!regDead (use_y ? Y_IDX : X_IDX, ic))
+    {
+      if (regDead (XH_IDX, ic))
+        {
+          adjustStack (1);
+          swap_to_a (XL_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(XL_IDX);
+        }
+      else if (regDead (XL_IDX, ic))
+        {
+          swap_to_a (XH_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(XH_IDX);
+          adjustStack (1);
+        }
+      pop (use_y ? ASMOP_Y : ASMOP_X, 0, 2);
+    }
+
+  freeAsmop (right);
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
 /* genMinus - generates code for minus                             */
 /*-----------------------------------------------------------------*/
 static void
@@ -4328,6 +4395,9 @@ genSTM8iCode (iCode *ic)
       break;
 
     case '*':
+      genMult (ic);
+      break;
+
     case '/':
     case '%':
       wassertl (0, "Unimplemented iCode");
