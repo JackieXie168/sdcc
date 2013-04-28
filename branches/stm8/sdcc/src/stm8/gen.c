@@ -692,13 +692,8 @@ freeAsmop (operand *op)
   Safe_free (aop);
 
   op->aop = NULL;
-  if (IS_SYMOP (op))
-    {
-      OP_SYMBOL (op)->aop = NULL;
-      /* if the symbol has a spill */
-      if (SPIL_LOC (op))
-        SPIL_LOC (op)->aop = NULL;
-    }
+  if (IS_SYMOP (op) && SPIL_LOC (op))
+    SPIL_LOC (op)->aop = NULL;
 }
 
 /*-----------------------------------------------------------------*/
@@ -713,15 +708,11 @@ aopForSym (const iCode *ic, symbol *sym)
   wassert (sym);
   wassert (sym->etype);
 
-  /* if already has one */
-  if (sym->aop)
-    {
-      return sym->aop;
-    }
+  // Unlike other ports we really free asmops; to avoid a double-free, we need to support multiple asmops for the same symbol.
 
   if (IS_FUNC (sym->type))
     {
-      sym->aop = aop = newAsmop (AOP_IMMD);
+      aop = newAsmop (AOP_IMMD);
       aop->aopu.aop_immd = sym->rname;
       aop->size = 2;
     }
@@ -730,7 +721,7 @@ aopForSym (const iCode *ic, symbol *sym)
     {
       int offset;
 
-      sym->aop = aop = newAsmop (AOP_STK);
+      aop = newAsmop (AOP_STK);
       aop->size = getSize (sym->type);
       
       for(offset = 0; offset < aop->size; offset++)
@@ -742,8 +733,6 @@ aopForSym (const iCode *ic, symbol *sym)
       aop->aopu.aop_dir = sym->rname;
       aop->size = getSize (sym->type);
     }
-
-  sym->aop = aop;
 
   return aop;
 }
@@ -982,7 +971,7 @@ const asmop *stack_aop (const asmop *aop, int i, int *offset)
       push (stacked, 0, 2);
     }
 
-  return(stacked);
+  return (stacked);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1145,11 +1134,10 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
 }
 
 /*-----------------------------------------------------------------*/
-/* genCopy_o - Copy the value from one reg/stk asmop to another    */
+/* genCopy - Copy the value from one reg/stk asmop to another      */
 /*-----------------------------------------------------------------*/
-// TODO: Implement roffset, soffset, size!
 static void
-genCopy_o (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool a_dead, bool x_dead, bool y_dead)
+genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool a_dead, bool x_dead, bool y_dead)
 {
   int i, regsize, size, n = (sizex < source->size - soffset) ? sizex : (source->size - soffset);
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
@@ -1575,15 +1563,6 @@ skip_byte:
 }
 
 /*-----------------------------------------------------------------*/
-/* genCopy - Copy the value from one reg/stk asmop to another      */
-/*-----------------------------------------------------------------*/
-static void
-genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
-{
-  genCopy_o(result, 0, source, 0, result->size, a_dead, x_dead, y_dead);
-}
-
-/*-----------------------------------------------------------------*/
 /* genMove_o - Copy part of one asmop to another                   */
 /*-----------------------------------------------------------------*/
 static void
@@ -1597,7 +1576,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
 
   if (aopRS (result) && aopRS (source))
     {
-      genCopy_o (result, roffset, source, soffset, size, a_dead, x_dead, y_dead);
+      genCopy (result, roffset, source, soffset, size, a_dead, x_dead, y_dead);
       return;
     }
 
@@ -2750,7 +2729,7 @@ genCmp (iCode *ic)
             push (ASMOP_X, 0, 2);
 
           if (!aopInReg (left->aop, 0, Y_IDX))
-            genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
+            genMove (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
 
           emitcode ("cpw", aopInReg (left->aop, 0, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, 0));
           cost (3 + aopInReg (left->aop, 0, Y_IDX), 2);
@@ -2892,10 +2871,10 @@ genCmpEQorNE (iCode *ic)
             }
           else
             {
-              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, i, X_IDX))
                 push (ASMOP_X, 0, 2);
 
-              genCopy (ASMOP_X, left->aop, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
+              genMove_o (ASMOP_X, 0, left->aop, i, 2, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
 
               emitcode ("cpw", aopInReg (left->aop, i, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, i));
               cost (3 + aopInReg (left->aop, i, Y_IDX), 2);
@@ -3694,10 +3673,11 @@ genPointerGet (const iCode *ic)
   unsigned offset;
   bool use_y;
   bool pushed_a = FALSE;
-  int blen;
+  int blen, bstr;
   bool bit_field = IS_BITVAR (getSpec (operandType (result)));
   
   blen = bit_field ? SPEC_BLEN (getSpec (operandType (result))) : 0;
+  bstr = bit_field ? SPEC_BSTR (getSpec (operandType (result))) : 0;
 
   wassertl (!bit_field || SPEC_USIGN (getSpec (operandType (result))), "Unimplemented read from signed bit-field");
 
@@ -3720,7 +3700,7 @@ genPointerGet (const iCode *ic)
       if (!regalloc_dry_run)
         wassertl (0, "No free reg for pointer.");
       cost (80, 80);
-      return;
+      goto release;
     }
 
   if (!regDead (A_IDX, ic))
@@ -3741,17 +3721,20 @@ genPointerGet (const iCode *ic)
       if (!(size - 1 - i + offset))
         {
           emitcode ("ld", use_y ? "a, (y)" : "a, (x)");
-          cost (1, 1);
+          cost (1 + use_y, 1);
         }
       else
         {
           emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i + offset);
-          cost (offset < 256 ? 2 : 3, 1);
+          cost ((size - 1 - i + offset < 256 ? 2 : 3) + use_y, 1);
         }
 
-      if (bit_field && blen < 8) // The partial byte.
+      if (bit_field && blen < 8 && !i) // The only byte might need shifting.
+        while (bstr--)
+          emit3 (A_SRL, ASMOP_A, 0);
+      else if (bit_field && blen < 8) // The partial byte.
         {
-          emitcode ("and", "a, #0x%02x", ((unsigned char) - 1) >> (8 - blen));
+          emitcode ("and", "a, #0x%02x", 0xff >> (8 - blen));
           cost (2, 1);
         }
 
@@ -3786,6 +3769,7 @@ genPointerGet (const iCode *ic)
   if (bit_field && i < size)
     genMove_o (result->aop, i, ASMOP_ZERO, 0, size - i - 1, FALSE, FALSE, FALSE);
 
+release:
   freeAsmop (right);
   freeAsmop (left);
   freeAsmop (result);
@@ -3828,18 +3812,9 @@ genAssign (const iCode *ic)
   else
     genMove(result->aop, right->aop, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
+  wassert (result->aop != right->aop);
   freeAsmop (right);
   freeAsmop (result);
-}
-
-/*-----------------------------------------------------------------*/
-/* genPackBits - bit-field write                                   */
-/*-----------------------------------------------------------------*/
-static void
-genPackBits (const iCode *ic)
-{
-  if (!regalloc_dry_run)
-    wassertl (0, "Unimplemented bit-field");
 }
 
 /*-----------------------------------------------------------------*/
@@ -3853,12 +3828,11 @@ genPointerSet (iCode * ic)
   int size, i;
   bool use_y;
   bool pushed_a = FALSE;
-
-  if (IS_BITVAR (getSpec (operandType (right))) || IS_BITVAR (getSpec (operandType (result))))
-    {
-      genPackBits (ic);
-      return;
-    }
+  int blen, bstr;
+  bool bit_field = IS_BITVAR (getSpec (operandType (right))) || IS_BITVAR (getSpec (operandType (result)));
+  
+  blen = bit_field ? (SPEC_BLEN (getSpec (operandType (IS_BITVAR (getSpec (operandType (right))) ? right : result)))) : 0;
+  bstr = bit_field ? (SPEC_BSTR (getSpec (operandType (IS_BITVAR (getSpec (operandType (right))) ? right : result)))) : 0;
 
   D (emitcode ("; genPointerSet", ""));
 
@@ -3874,7 +3848,7 @@ genPointerSet (iCode * ic)
       if (!regalloc_dry_run)
         wassertl (0, "No free reg for pointer.");
       cost (80, 80);
-      return;
+      goto release;
     }
 
   for(i = 1; i < size; i++)
@@ -3893,7 +3867,7 @@ genPointerSet (iCode * ic)
 
   genMove (use_y ? ASMOP_Y : ASMOP_X, result->aop, !aopInReg (right->aop, 0, A_IDX), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
-  for (i = 0; i < size; i++)
+  for (i = 0; bit_field ? i < size : blen > 0; i++, blen -= 8)
     {
       if (i && aopInReg (right->aop, i, A_IDX))
         {
@@ -3903,21 +3877,40 @@ genPointerSet (iCode * ic)
       else
         cheapMove (ASMOP_A, 0, right->aop, i, FALSE);
 
+      if (bit_field && blen < 8)
+        {
+          emitcode ("and", "a, #0x%02x", 0xff >> (8 - blen));
+          cost (2, 1);
+          while (bstr--)
+            emit3 (A_SLL, ASMOP_A, 0);
+          if (!(size - 1 - i))
+            {
+              emitcode ("or", use_y ? "a, (y)" : "a, (x)", size - 1 - i);
+              cost (1 + use_y, 1);
+            }
+          else
+            {
+              emitcode ("or", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i);
+              cost ((size - 1 - i < 256 ? 2 : 3) + use_y, 1);
+            }
+        }
+
       if (!(size - 1 - i))
         {
           emitcode ("ld", use_y ? "(y), a" : "(x), a");
-          cost (1, 1);
+          cost (1 + use_y, 1);
         }
       else
         {
           emitcode ("ld", use_y ? "(0x%x, y), a" : "(0x%x, x), a", size - 1 - i);
-          cost (2, 1);
+          cost ((size - 1 - i < 256 ? 2 : 3) + use_y, 1);
         }
     }
 
   if (pushed_a)
     pop (ASMOP_A, 0, 1);
 
+release:
   freeAsmop (right);
   freeAsmop (result);
 }
@@ -4024,7 +4017,7 @@ genIfx (const iCode *ic)
 static void
 genAddrOf (const iCode *ic)
 {
-  symbol *sym;
+  const symbol *sym;
   operand *result, *left;
 
   D (emitcode ("; genAddrOf", ""));
@@ -4035,7 +4028,7 @@ genAddrOf (const iCode *ic)
   wassert (result);
   wassert (left);
   wassert (IS_TRUE_SYMOP (left));
-  sym = OP_SYMBOL (left);
+  sym = OP_SYMBOL_CONST (left);
   wassert (sym);
 
   aopOp (result, ic);

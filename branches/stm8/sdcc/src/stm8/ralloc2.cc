@@ -364,16 +364,13 @@ static bool tree_dec_ralloc(T_t &T, G_t &G, const I_t &I)
   for(unsigned int v = 0; v < boost::num_vertices(I); v++)
     {
       symbol *sym = (symbol *)(hTabItemWithKey(liveRanges, I[v].v));
+
       if(winner.global[v] >= 0)
-        { 
-          sym->regs[I[v].byte] = stm8_regs + winner.global[v];   
-          sym->nRegs = I[v].size;
-        }
+        sym->regs[I[v].byte] = stm8_regs + winner.global[v];   
       else
-        {
-          sym->regs[I[v].byte] = 0;
-          sym->nRegs = I[v].size;
-        }
+        sym->regs[I[v].byte] = 0;
+
+      sym->nRegs = I[v].size;
     }
 
   for(unsigned int i = 0; i < boost::num_vertices(G); i++)
