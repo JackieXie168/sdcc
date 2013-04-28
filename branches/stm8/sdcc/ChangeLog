@@ -1,5 +1,11 @@
 2013-04-28 Philipp Klaus Krause <pkk AT spth.de>
 
+	* sdas/asxxsrc/asout.c,
+	  src/stm8/main.c:
+	  STM8: Applied patched from Valentin Dudouyt to improve error checking in assembler, implement initialization of globals, __interrupt.
+
+2013-04-28 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/stm8/main.c,
 	  src/stm8/gen.c:
 	  STM8: Implement multiplication.
@@ -7,7 +13,7 @@
 2013-04-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Fix asmop freeing for GET_VALUE_AT_ADDRESS, do not share smybol aops to fix double free, fix large comparison, implement bit-field writes.
+	  STM8: Fix asmop freeing for GET_VALUE_AT_ADDRESS, do not share symbol aops to fix double free, fix large comparison, implement bit-field writes.
 
 2013-04-28 Philipp Klaus Krause <pkk AT spth.de>
 

@@ -27,6 +27,7 @@
 
 #include "ralloc.h"
 #include "gen.h"
+#include "dbuf_string.h"
 
 static char stm8_defaultRules[] = {
 #include "peeph.rul"
@@ -36,6 +37,7 @@ static char stm8_defaultRules[] = {
 static char *stm8_keywords[] = {
   "at",
   "critical",
+  "interrupt",
   NULL
 };
 
@@ -96,17 +98,43 @@ stm8_getRegName (const struct reg_info *reg)
 void
 stm8_genInitStartup(FILE * of)
 {
-  return;
+  fprintf (of, "\t.area GSINIT0\n");
+  fprintf (of, "__sdcc_gs_init_startup:\n");
+
+  /* Init static & global variables */
+  fprintf (of, "__sdcc_init_data:\n");
+  fprintf (of, "; stm8_genXINIT() start\n");
+  fprintf (of, "        ldw x, #0x0000\n");
+  fprintf (of, "00001$:\n");
+  fprintf (of, "        cpw x, #l_INITIALIZER\n");
+  fprintf (of, "        jreq  00002$\n");
+  fprintf (of, "        ld a, (s_INITIALIZER, x)\n");
+  fprintf (of, "        ld (s_INITIALIZED, x), a\n");
+  fprintf (of, "        incw x\n");
+  fprintf (of, "        jp  00001$\n");
+  fprintf (of, "00002$:\n");
+  fprintf (of, "; stm8_genXINIT() end\n");
+  fprintf (of, "\t.area GSFINAL\n");
+  fprintf (of, "\tjp\t__sdcc_program_startup\n\n");
+
+  fprintf (of, "\t.area CSEG\n");
+  fprintf (of, "__sdcc_program_startup:\n");
+  fprintf (of, "\tjp\t_main\n");
 }
 
 int
 stm8_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
 {
+  #define STM8_INTERRUPTS_COUNT 30
   int i;
-  dbuf_tprintf (oBuf, "\tint _main ;int0\n"); // int0 (Reset)
-  for(i = 1; i < 32; i++)
+  dbuf_tprintf (oBuf, "\tint __sdcc_gs_init_startup ;reset\n");
+  dbuf_tprintf (oBuf, "\tint 0x0000 ;trap\n");
+  for(i = 0; i < STM8_INTERRUPTS_COUNT; i++)
   {
-    dbuf_tprintf (oBuf, "\tint 0x0000 ;int%d\n", i); // int<n>
+      if (i < intCount && interrupts[i])
+        dbuf_printf (oBuf, "\tint %s ;int%d\n", interrupts[i]->rname, i);
+      else
+        dbuf_tprintf (oBuf, "\tint 0x0000 ;int%d\n", i); // int<n>
   }
   return TRUE;
 }
@@ -114,7 +142,6 @@ stm8_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
 static bool
 _hasNativeMulFor (iCode * ic, sym_link * left, sym_link * right)
 {
-  sym_link *test = NULL;
   int result_size = IS_SYMOP(IC_RESULT(ic)) ? getSize(OP_SYM_TYPE(IC_RESULT(ic))) : 4;
 
   if (ic->op != '*')
@@ -149,8 +176,6 @@ static const char *stm8AsmCmd[] =
   "sdasstm8", "$l", "$3", "\"$1.asm\"", NULL
 };
 
-static const char *const _crt[] = { "crt0.rel", NULL, };
-
 PORT stm8_port = {
   TARGET_ID_STM8,
   "stm8",
@@ -176,7 +201,7 @@ PORT stm8_port = {
    NULL,
    ".rel",
    1,
-   _crt,                        /* crt */
+   NULL,                        /* crt */
    NULL,                        /* libs */
    },
   {                             /* Peephole optimizer */
@@ -248,7 +273,7 @@ PORT stm8_port = {
   stm8_assignRegisters,
   stm8_getRegName,
   stm8_keywords,
-  0,                            /* no assembler preamble */
+  NULL,
   NULL,                         /* no genAssemblerEnd */
   stm8_genIVT,
   0,                            /* no genXINIT code */
