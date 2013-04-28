@@ -1076,9 +1076,9 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 /* genCopy - Copy the value - stack to stack only                  */
 /*-----------------------------------------------------------------*/
 static void
-genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_free, bool x_free, bool y_free, bool really_do_it_now)
+genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, bool *assigned, int *size, bool a_free, bool x_free, bool y_free, bool really_do_it_now)
 {
-  int i, n = result->size < source->size ? result->size : source->size;
+  int i;
 
 #if 0
   D (emitcode("; genCopyStack", "%d %d %d", a_free, x_free, y_free));
@@ -1087,9 +1087,11 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
   for (i = 0; i < n;)
     {
       // Same location.
-      if (!assigned[i] && !result->aopu.bytes[i].in_reg && !source->aopu.bytes[i].in_reg &&
-        result->aopu.bytes[i].byteu.stk == source->aopu.bytes[i].byteu.stk)
+      if (!assigned[i] && !result->aopu.bytes[roffset + i].in_reg && !source->aopu.bytes[soffset + i].in_reg &&
+        result->aopu.bytes[roffset + i].byteu.stk == source->aopu.bytes[soffset + i].byteu.stk)
         {
+          wassert (*size >= 1);
+
           assigned[i] = TRUE;
           (*size)--;
           i++;
@@ -1097,19 +1099,20 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
       // Could transfer two bytes at a time now.
       if (i + 1 < n &&
         !assigned[i] && !assigned[i + 1] &&
-        !result->aopu.bytes[i].in_reg && !result->aopu.bytes[i + 1].in_reg &&
-        !source->aopu.bytes[i].in_reg && !source->aopu.bytes[i + 1].in_reg)
+        !result->aopu.bytes[roffset + i].in_reg && !result->aopu.bytes[roffset + i + 1].in_reg &&
+        !source->aopu.bytes[soffset + i].in_reg && !source->aopu.bytes[soffset + i + 1].in_reg)
         {
           wassert(*size >= 2);
+
           if (y_free) // Unlike with other operations, loading between y and stk is as efficient as for x, so we try y first here.
             {
-              emitcode ("ldw", "y, %s", aopGet (source, i));
-              emitcode ("ldw", "%s, y", aopGet (result, i));
+              emitcode ("ldw", "y, %s", aopGet (source, soffset + i));
+              emitcode ("ldw", "%s, y", aopGet (result, roffset + i));
             }
           else if (x_free)
             {
-              emitcode ("ldw", "x, %s", aopGet (source, i));
-              emitcode ("ldw", "%s, x", aopGet (result, i));
+              emitcode ("ldw", "x, %s", aopGet (source, soffset + i));
+              emitcode ("ldw", "%s, x", aopGet (result, roffset + i));
             }
           cost (4, 4);  
           assigned[i] = TRUE;
@@ -1126,10 +1129,10 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
       // Just one byte to transfer.
       if ((a_free || really_do_it_now) && !assigned[i] &&
         (i + 1 >= n || assigned[i + 1] || really_do_it_now) &&
-        !result->aopu.bytes[i].in_reg && !source->aopu.bytes[i].in_reg)
+        !result->aopu.bytes[roffset + i].in_reg && !source->aopu.bytes[soffset + i].in_reg)
         {
           wassert(*size >= 1);
-          cheapMove (result, i, source, i, !a_free);
+          cheapMove (result, roffset + i, source, soffset + i, !a_free);
           assigned[i] = TRUE;
           (*size)--;
           i++;
@@ -1137,15 +1140,18 @@ genCopyStack (asmop *result, asmop *source, bool *assigned, int *size, bool a_fr
       else
         i++;
     }
+
+  wassertl (*size >= 0, "genCopyStack() copied more than there is to be copied.");
 }
 
 /*-----------------------------------------------------------------*/
-/* genCopy - Copy the value from one reg/stk asmop to another      */
+/* genCopy_o - Copy the value from one reg/stk asmop to another    */
 /*-----------------------------------------------------------------*/
+// TODO: Implement roffset, soffset, size!
 static void
-genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
+genCopy_o (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool a_dead, bool x_dead, bool y_dead)
 {
-  int i, regsize, size, n = result->size < source->size ? result->size : source->size;
+  int i, regsize, size, n = (sizex < source->size - soffset) ? sizex : (source->size - soffset);
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
   bool a_free, x_free, y_free;
 
@@ -1159,11 +1165,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 
   size = n;
   for (i = 0, regsize = 0; i < n; i++)
-    regsize += source->aopu.bytes[i].in_reg;
+    regsize += source->aopu.bytes[soffset + i].in_reg;
 
   // Do nothing for coalesced bytes.
   for (i = 0; i < n; i++)
-    if (result->aopu.bytes[i].in_reg && source->aopu.bytes[i].in_reg && result->aopu.bytes[i].byteu.reg == source->aopu.bytes[i].byteu.reg)
+    if (result->aopu.bytes[roffset + i].in_reg && source->aopu.bytes[soffset + i].in_reg && result->aopu.bytes[roffset + i].byteu.reg == source->aopu.bytes[soffset + i].byteu.reg)
       {
         assigned[i] = TRUE;
         regsize--;
@@ -1173,9 +1179,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
   // Move everything from registers to the stack.
   for (i = 0; i < n;)
     {
-      if (aopInReg (source, i, X_IDX) && aopOnStack (result, i, 2))
+      if (i < n - 1 && (aopInReg (source, soffset + i, X_IDX) || aopInReg (source, soffset + i, Y_IDX)) && aopOnStack (result, roffset + i, 2))
         {
-          emitcode ("ldw", "%s, x", aopGet (result, i));
+          wassert (size >= 2);
+
+          emitcode ("ldw", aopInReg (source, soffset + i, X_IDX) ? "%s, x" : "%s, y", aopGet (result, roffset + i));
           cost (2, 2);
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
@@ -1183,23 +1191,15 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
           size -= 2;
           i += 2;
         }
-      else if (aopInReg (source, i, Y_IDX) && aopOnStack (result, i, 2))
+      else if (aopRS (source) && !aopOnStack (source, soffset + i, 1) && aopOnStack (result, roffset + i, 1))
         {
-          emitcode ("ldw", "%s, y", aopGet (result, i));
-          cost (2, 2);
-          assigned[i] = TRUE;
-          assigned[i + 1] = TRUE;
-          regsize -= 2;
-          size -= 2;
-          i += 2;
-        }
-      else if (aopRS (source) && !aopOnStack (source, i, 1) && aopOnStack (result, i, 1))
-        {
-          if (!aopInReg (source, i, A_IDX))
-            swap_to_a (source->aopu.bytes[i].byteu.reg->rIdx);
-          emit3_o (A_LD, result, i, ASMOP_A, 0);
-          if (!aopInReg (source, i, A_IDX))
-            swap_from_a (source->aopu.bytes[i].byteu.reg->rIdx);
+          wassert (size >= 1);
+
+          if (!aopInReg (source, soffset + i, A_IDX))
+            swap_to_a (source->aopu.bytes[soffset + i].byteu.reg->rIdx);
+          emit3_o (A_LD, result, roffset + i, ASMOP_A, 0);
+          if (!aopInReg (source, soffset + i, A_IDX))
+            swap_from_a (source->aopu.bytes[soffset + i].byteu.reg->rIdx);
           assigned[i] = TRUE;
           regsize--;
           size--;
@@ -1218,14 +1218,14 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
       if (assigned[i])
         continue;
 
-      if (aopInReg (source, i, A_IDX))
+      if (aopInReg (source, soffset + i, A_IDX))
         a_free = FALSE;
-      else if (aopInReg (source, i, XL_IDX) || aopInReg (source, i, XH_IDX))
+      else if (aopInReg (source, soffset + i, XL_IDX) || aopInReg (source, soffset + i, XH_IDX))
         x_free = FALSE;
-      else if (aopInReg (source, i, YL_IDX) || aopInReg (source, i, YH_IDX))
+      else if (aopInReg (source, soffset + i, YL_IDX) || aopInReg (source, soffset + i, YH_IDX))
         y_free = FALSE;
     }
-  genCopyStack (result, source, assigned, &size, a_free, x_free, y_free, FALSE);
+  genCopyStack (result, roffset, source, soffset, n, assigned, &size, a_free, x_free, y_free, FALSE);
 
   // Now do the register shuffling.
 
@@ -1237,13 +1237,13 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
       // Find XL and check that it is exchanged with YL, find XH and check that it is exchanged with YH.
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, YL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XL_IDX) && aopInReg (source, soffset + i, YL_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, XL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YL_IDX) && aopInReg (source, soffset + i, XL_IDX))
             ex[1] = i;
-          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, YH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XH_IDX) && aopInReg (source, soffset + i, YH_IDX))
             ex[2] = i;
-          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, XH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YH_IDX) && aopInReg (source, soffset + i, XH_IDX))
             ex[3] = i;
         }
       if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0 && ex[3] >= 0)
@@ -1266,11 +1266,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, A_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XL_IDX) && aopInReg (source, soffset + i, A_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, XL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XH_IDX) && aopInReg (source, soffset + i, XL_IDX))
             ex[1] = i;
-          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, A_IDX) && aopInReg (source, soffset + i, XH_IDX))
             ex[2] = i;
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
@@ -1291,11 +1291,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, XH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XL_IDX) && aopInReg (source, soffset + i, XH_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, A_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XH_IDX) && aopInReg (source, soffset + i, A_IDX))
             ex[1] = i;
-          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, A_IDX) && aopInReg (source, soffset + i, XL_IDX))
             ex[2] = i;
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
@@ -1316,11 +1316,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, A_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YL_IDX) && aopInReg (source, soffset + i, A_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, YL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YH_IDX) && aopInReg (source, soffset + i, YL_IDX))
             ex[1] = i;
-          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, A_IDX) && aopInReg (source, soffset + i, YH_IDX))
             ex[2] = i;
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
@@ -1341,11 +1341,11 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
 
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, YH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YL_IDX) && aopInReg (source, soffset + i, YH_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, A_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YH_IDX) && aopInReg (source, soffset + i, A_IDX))
             ex[1] = i;
-          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, A_IDX) && aopInReg (source, soffset + i, YL_IDX))
             ex[2] = i;
         }
      if (ex[0] >= 0 && ex[1] >= 0 && ex[2] >= 0)
@@ -1367,9 +1367,9 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
       // Find XL and check that it is exchanged with XH.
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, XL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, A_IDX) && aopInReg (source, soffset + i, XL_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, A_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XL_IDX) && aopInReg (source, soffset + i, A_IDX))
             ex[1] = i;
         }
       if (ex[0] >= 0 && ex[1] >= 0)
@@ -1391,9 +1391,9 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
       // Find XL and check that it is exchanged with XH.
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, A_IDX) && aopInReg (source, i, YL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, A_IDX) && aopInReg (source, soffset + i, YL_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, A_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YL_IDX) && aopInReg (source, soffset + i, A_IDX))
             ex[1] = i;
         }
       if (ex[0] >= 0 && ex[1] >= 0)
@@ -1415,9 +1415,9 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
       // Find XL and check that it is exchanged with XH.
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, XL_IDX) && aopInReg (source, i, XH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XL_IDX) && aopInReg (source, soffset + i, XH_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, XH_IDX) && aopInReg (source, i, XL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, XH_IDX) && aopInReg (source, soffset + i, XL_IDX))
             ex[1] = i;
         }
       if (ex[0] >= 0 && ex[1] >= 0)
@@ -1439,9 +1439,9 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
       // Find YL and check that it is exchanged with YH.
       for (i = 0; i < n; i++)
         {
-          if (!assigned[i] && aopInReg (result, i, YL_IDX) && aopInReg (source, i, YH_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YL_IDX) && aopInReg (source, soffset + i, YH_IDX))
             ex[0] = i;
-          if (!assigned[i] && aopInReg (result, i, YH_IDX) && aopInReg (source, i, YL_IDX))
+          if (!assigned[i] && aopInReg (result, roffset + i, YH_IDX) && aopInReg (source, soffset + i, YL_IDX))
             ex[1] = i;
         }
       if (ex[0] >= 0 && ex[1] >= 0)
@@ -1462,14 +1462,14 @@ genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
         {
           size_t j;
 
-          if (assigned[i] || !source->aopu.bytes[i].in_reg)
+          if (assigned[i] || !source->aopu.bytes[soffset + i].in_reg)
             continue;
 
           for (j = 0; j < n; j++)
             {
-              if (!source->aopu.bytes[j].in_reg || !result->aopu.bytes[i].in_reg)
+              if (!source->aopu.bytes[soffset + j].in_reg || !result->aopu.bytes[roffset + i].in_reg)
                 continue;
-              if (!assigned[j] && i != j && result->aopu.bytes[i].byteu.reg == source->aopu.bytes[j].byteu.reg)
+              if (!assigned[j] && i != j && result->aopu.bytes[roffset + i].byteu.reg == source->aopu.bytes[soffset + j].byteu.reg)
                 goto skip_byte; // We can't write this one without overwriting the source.
             }
 
@@ -1481,7 +1481,7 @@ skip_byte:
 
       if (i < n)
         {
-          cheapMove (result, i, source, i, FALSE);       // We can safely assign a byte.
+          cheapMove (result, roffset + i, source, soffset + i, FALSE);       // We can safely assign a byte.
           regsize--;
           size--;
           assigned[i] = TRUE;
@@ -1503,30 +1503,22 @@ skip_byte:
     {
       if (!assigned[i])
         continue;
-      if (aopInReg (result, i, A_IDX))
+      if (aopInReg (result, roffset + i, A_IDX))
         a_free = FALSE;
-      else if (aopInReg (result, i, XL_IDX) || aopInReg (result, i, XH_IDX))
+      else if (aopInReg (result, roffset + i, XL_IDX) || aopInReg (result, roffset + i, XH_IDX))
         x_free = FALSE;
-      else if (aopInReg (result, i, YL_IDX) || aopInReg (result, i, YH_IDX))
+      else if (aopInReg (result, roffset + i, YL_IDX) || aopInReg (result, roffset + i, YH_IDX))
         y_free = FALSE;
     }
-  genCopyStack (result, source, assigned, &size, a_free, x_free, y_free, FALSE);
+  genCopyStack (result, roffset, source, soffset, n, assigned, &size, a_free, x_free, y_free, FALSE);
 
   // Last, move everything from stack to registers.
   for (i = 0; i < n;)
     {
-      if (aopInReg (result, i, X_IDX) && aopOnStack (source, i, 2))
+      if (i < n - 1 && (aopInReg (result, roffset + i, X_IDX) || aopInReg (result, roffset + i, Y_IDX)) && aopOnStack (source, soffset + i, 2))
         {
-          emitcode ("ldw", "x, %s", aopGet (source, i));
-          cost (2, 2);
-          assigned[i] = TRUE;
-          assigned[i + 1] = TRUE;
-          size -= 2;
-          i += 2;
-        }
-      else if (aopInReg (result, i, Y_IDX) && aopOnStack (source, i, 2))
-        {
-          emitcode ("ldw", "y, %s", aopGet (source, i));
+          wassert (size >= 2);
+          emitcode ("ldw", aopInReg (result, roffset + i, X_IDX) ? "x, %s" : "y, %s", aopGet (source, soffset + i));
           cost (2, 2);
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
@@ -1534,13 +1526,15 @@ skip_byte:
           i += 2;
         }
       // todo: Try to use ldw to load xl, xh, yl, yh when the other half is not in use.
-      else if (aopRS (result) && !aopOnStack (result, i, 1) && aopOnStack (source, i, 1))
+      else if (aopRS (result) && !aopOnStack (result, roffset + i, 1) && aopOnStack (source, soffset + i, 1))
         {
-          if (!aopInReg (result, i, A_IDX))
-            swap_to_a (result->aopu.bytes[i].byteu.reg->rIdx);
-          emit3_o (A_LD, ASMOP_A, 0, source, i);
-          if (!aopInReg (result, i, A_IDX))
-            swap_from_a (result->aopu.bytes[i].byteu.reg->rIdx);
+          wassert (size >= 1);
+          if (!aopInReg (result, roffset + i, A_IDX))
+            swap_to_a (result->aopu.bytes[roffset + i].byteu.reg->rIdx);
+          emit3_o (A_LD, ASMOP_A, 0, source, soffset + i);
+          if (!aopInReg (result, roffset + i, A_IDX))
+            swap_from_a (result->aopu.bytes[roffset + i].byteu.reg->rIdx);
+          assigned[i] = TRUE;
           size--;
           i++;
         }
@@ -1552,19 +1546,19 @@ skip_byte:
   if (size)
     {
       push (ASMOP_A, 0, 1);
-      genCopyStack (result, source, assigned, &size, TRUE, x_free, y_free, TRUE);
+      genCopyStack (result, roffset, source, soffset, n, assigned, &size, TRUE, x_free, y_free, TRUE);
       pop (ASMOP_A, 0, 1);
     }
 
+  wassertl (size >= 0, "genCopy() copied more than there is to be copied.");
+
   // Place leading zeroes.
-  for (i = source->size; i < result->size; i++)
+  for (i = source->size; i < sizex - soffset; i++)
     {
-      cheapMove (result, i, ASMOP_ZERO, 0, !a_free);
-      if (aopInReg (result, i, A_IDX))
+      cheapMove (result, roffset + i, ASMOP_ZERO, 0, !a_free);
+      if (aopInReg (result, roffset + i, A_IDX))
         a_free = FALSE;
     }
-
-  wassertl (size >= 0, "genCopy() copied more than there is to be copied.");
 
   if (size)
     {
@@ -1572,12 +1566,21 @@ skip_byte:
         {
           wassertl (0, "genCopy failed to completly copy operands.");
           fprintf (stderr, "%d bytes left.\n", size);
-          fprintf (stderr, "left type %d size %d source type %d size %d\n", result->type, result->size, source->type, source->size);
+          fprintf (stderr, "left type %d source type %d\n", result->type, source->type);
           for (i = 0; i < n ; i++)
-            fprintf (stderr, "Byte %d, result in reg %d, source in reg %d. %s assigned.\n", i, result->aopu.bytes[i].in_reg ? result->aopu.bytes[i].byteu.reg->rIdx : -1, source->aopu.bytes[i].in_reg ? source->aopu.bytes[i].byteu.reg->rIdx : -1, assigned[i] ? "" : "not");
+            fprintf (stderr, "Byte %d, result in reg %d, source in reg %d. %s assigned.\n", i, result->aopu.bytes[roffset + i].in_reg ? result->aopu.bytes[roffset + i].byteu.reg->rIdx : -1, source->aopu.bytes[soffset + i].in_reg ? source->aopu.bytes[soffset + i].byteu.reg->rIdx : -1, assigned[i] ? "" : "not");
         }
       cost (80, 80);
     }
+}
+
+/*-----------------------------------------------------------------*/
+/* genCopy - Copy the value from one reg/stk asmop to another      */
+/*-----------------------------------------------------------------*/
+static void
+genCopy (asmop *result, asmop *source, bool a_dead, bool x_dead, bool y_dead)
+{
+  genCopy_o(result, 0, source, 0, result->size, a_dead, x_dead, y_dead);
 }
 
 /*-----------------------------------------------------------------*/
@@ -1594,7 +1597,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
 
   if (aopRS (result) && aopRS (source))
     {
-      genCopy (result, source, a_dead, x_dead, y_dead);
+      genCopy_o (result, roffset, source, soffset, size, a_dead, x_dead, y_dead);
       return;
     }
 
@@ -3679,44 +3682,6 @@ genRightShift (const iCode *ic)
 }
 
 /*-----------------------------------------------------------------*/
-/* genUnpackBits - bit-field read                                  */
-/*-----------------------------------------------------------------*/
-static void
-genUnpackBits (const iCode *ic)
-{
-  operand *result = IC_RESULT (ic);
-  operand *left = IC_LEFT (ic);
-  operand *right = IC_RIGHT (ic);
-  bool use_y;
-  bool pushed_a = FALSE;
-
-  D (emitcode ("; genUnpackBits", ""));
-
-  use_y = !regDead (X_IDX, ic);
-  if (use_y && !regDead (Y_IDX, ic))
-    {
-      if (!regalloc_dry_run)
-        wassertl (0, "No free reg for pointer.");
-      cost (80, 80);
-      return;
-    }
-
-  if (!regDead (A_IDX, ic))
-    {
-      push (ASMOP_A, 0, 1);
-      pushed_a = TRUE;
-    }
-
-  genMove (use_y ? ASMOP_Y : ASMOP_X, left->aop, TRUE, regDead (X_IDX, ic), regDead (Y_IDX, ic));
-
-  if (pushed_a)
-    pop (ASMOP_A, 0, 1);
-
-  if (!regalloc_dry_run)
-    wassertl (0, "Unimplemented bit-field");
-}
-
-/*-----------------------------------------------------------------*/
 /* genPointerGet - generate code for pointer get                   */
 /*-----------------------------------------------------------------*/
 static void
@@ -3729,12 +3694,12 @@ genPointerGet (const iCode *ic)
   unsigned offset;
   bool use_y;
   bool pushed_a = FALSE;
+  int blen;
+  bool bit_field = IS_BITVAR (getSpec (operandType (result)));
+  
+  blen = bit_field ? SPEC_BLEN (getSpec (operandType (result))) : 0;
 
-  if (IS_BITVAR (getSpec (operandType (result))))
-    {
-      genUnpackBits (ic);
-      return;
-    }
+  wassertl (!bit_field || SPEC_USIGN (getSpec (operandType (result))), "Unimplemented read from signed bit-field");
 
   D (emitcode ("; genPointerGet", ""));
 
@@ -3769,8 +3734,9 @@ genPointerGet (const iCode *ic)
   // todo: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
 
+  // Get all the bytes.
   size = result->aop->size;
-  for (i = 0; i < size; i++)
+  for (i = 0; !bit_field ? i < size : blen > 0; i++, blen -= 8)
     {
       if (!(size - 1 - i + offset))
         {
@@ -3783,13 +3749,19 @@ genPointerGet (const iCode *ic)
           cost (offset < 256 ? 2 : 3, 1);
         }
 
+      if (bit_field && blen < 8) // The partial byte.
+        {
+          emitcode ("and", "a, #0x%02x", ((unsigned char) - 1) >> (8 - blen));
+          cost (2, 1);
+        }
+
       if (result->aop->type == AOP_DUMMY)
         continue;
 
       if (aopInReg (result->aop, i, A_IDX) && !regDead (A_IDX, ic))
         emitcode (";", "WTF? Result in a, but a not dead.");
 
-      else if (i < size - 1 && aopInReg (result->aop, i, A_IDX))
+      else if ((!bit_field ? i < size - 1 : blen > 8) && aopInReg (result->aop, i, A_IDX))
         {
           if (!regDead (A_IDX, ic)) // Handle WTF above.
             adjustStack (1);
@@ -3810,6 +3782,9 @@ genPointerGet (const iCode *ic)
 
   if (pushed_a)
     pop (ASMOP_A, 0, 1);
+
+  if (bit_field && i < size)
+    genMove_o (result->aop, i, ASMOP_ZERO, 0, size - i - 1, FALSE, FALSE, FALSE);
 
   freeAsmop (right);
   freeAsmop (left);
