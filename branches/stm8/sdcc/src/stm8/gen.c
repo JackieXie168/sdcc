@@ -2194,6 +2194,7 @@ genPCall (const iCode *ic)
   emitCall (ic, TRUE);
 }
 
+
 /*---------------------------------------------------------------------*/
 /* genCritical - mask interrupts until important block completes       */
 /*---------------------------------------------------------------------*/
@@ -4335,6 +4336,52 @@ genCast (const iCode *ic)
   freeAsmop (result);
 }
 
+/*-----------------------------------------------------------------*/
+/* genDummyRead - generate code for dummy read of volatiles        */
+/*-----------------------------------------------------------------*/
+static void
+genDummyRead (const iCode *ic)
+{
+  operand *op;
+  int i;
+
+  if ((op = IC_RIGHT (ic)) && IS_SYMOP (op))
+    {
+      aopOp (op, ic);
+
+      D (emitcode ("; genDummyRead", ""));
+
+      if (!regDead (A_IDX, ic))
+        push (ASMOP_A, 0 ,1);
+
+      for (i = 0; i < op->aop->size; i++)
+        cheapMove (ASMOP_A, 0, op->aop, i, FALSE);
+
+      if (!regDead (A_IDX, ic))
+        pop (ASMOP_A, 0, 1);
+
+      freeAsmop (op);
+    }
+
+  if ((op = IC_LEFT (ic)) && IS_SYMOP (op))
+    {
+      aopOp (op, ic);
+
+      D (emitcode ("; genDummyRead", ""));
+
+      if (!regDead (A_IDX, ic))
+        push (ASMOP_A, 0 ,1);
+
+      for (i = 0; i < op->aop->size; i++)
+        cheapMove (ASMOP_A, 0, op->aop, i, FALSE);
+
+      if (!regDead (A_IDX, ic))
+        pop (ASMOP_A, 0, 1);
+
+      freeAsmop (op);
+    }
+}
+
 /*---------------------------------------------------------------------*/
 /* genSTM8Code - generate code for STM8 for a single iCode instruction */
 /*---------------------------------------------------------------------*/
@@ -4500,15 +4547,15 @@ genSTM8iCode (iCode *ic)
       break;
 
     case DUMMY_READ_VOLATILE:
-      wassertl (0, "Unimplemented iCode");
+      genDummyRead (ic);
       break;
 
     case CRITICAL:
-      genCritical(ic);
+      genCritical (ic);
       break;
 
     case ENDCRITICAL:
-      genEndCritical(ic);
+      genEndCritical (ic);
       break;
 
     default:

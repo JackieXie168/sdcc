@@ -248,8 +248,8 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case CALL:
     case PCALL:
     case RETURN:
-    /*case '*':
-    case '/':
+    case '*':
+    /*case '/':
     case '%':*/
     case '>':
     case '<':
@@ -272,9 +272,9 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     /*case JUMPTABLE:*/
     case CAST:
     /*case RECEIVE:
-    case SEND:
+    case SEND:*/
     case DUMMY_READ_VOLATILE:
-    case CRITICAL:
+    /*case CRITICAL:
     case ENDCRITICAL:
     case SWAP:*/
       assign_operands_for_cost(a, i, G, I);
