@@ -3742,11 +3742,10 @@ genPointerGet (const iCode *ic)
   bool pushed_a = FALSE;
   int blen, bstr;
   bool bit_field = IS_BITVAR (getSpec (operandType (result)));
+  symbol *const tlbl = ((regalloc_dry_run || !bit_field) ? 0 : newiTempLabel (NULL));
   
   blen = bit_field ? SPEC_BLEN (getSpec (operandType (result))) : 0;
   bstr = bit_field ? SPEC_BSTR (getSpec (operandType (result))) : 0;
-
-  wassertl (!bit_field || SPEC_USIGN (getSpec (operandType (result))), "Unimplemented read from signed bit-field");
 
   D (emitcode ("; genPointerGet", ""));
 
@@ -3805,17 +3804,23 @@ genPointerGet (const iCode *ic)
           cost (2, 1);
         }
 
+      if (bit_field && blen <= 8 && !SPEC_USIGN (getSpec (operandType (result)))) // Sign extension for partial byte of signed bit-field
+        {   
+          push (ASMOP_A, 0, 1);
+          emitcode ("and", "a, #0x%02x", 0x80 >> (8 - blen));
+          pop (ASMOP_A, 0, 1);
+          if (tlbl)
+            emitcode ("jreq", "!tlabel", labelKey2num (tlbl->key));
+          cost (2, 0);
+          emitcode ("or", "a, #0x%02x", (0xff00 >> (8 - blen)) & 0xff);
+          emitLabel (tlbl);
+        }
+
       if (result->aop->type == AOP_DUMMY)
         continue;
 
-      if (aopInReg (result->aop, i, A_IDX) && !regDead (A_IDX, ic))
-        emitcode (";", "WTF? Result in a, but a not dead.");
-
       else if ((!bit_field ? i < size - 1 : blen > 8) && aopInReg (result->aop, i, A_IDX))
         {
-          if (!regDead (A_IDX, ic)) // Handle WTF above.
-            adjustStack (1);
-
           push (ASMOP_A, 0, 1);
           pushed_a = TRUE;
         }
@@ -3834,7 +3839,12 @@ genPointerGet (const iCode *ic)
     pop (ASMOP_A, 0, 1);
 
   if (bit_field && i < size)
-    genMove_o (result->aop, i, ASMOP_ZERO, 0, size - i - 1, FALSE, FALSE, FALSE);
+    {
+      if (SPEC_USIGN (getSpec (operandType (result))))
+        genMove_o (result->aop, i, ASMOP_ZERO, 0, size - i - 1, FALSE, FALSE, FALSE);
+      else
+        wassertl (0, "Unimplemented multibyte sign extension for bit-field.");
+    }
 
 release:
   freeAsmop (right);
