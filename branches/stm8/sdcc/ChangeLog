@@ -1,6 +1,11 @@
 2013-04-29 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
+	  STM8: Fix stack handling in equality comparison, handle dead code, fix shift to zero.
+
+2013-04-29 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
 	  STM8: Implement DUMMY_READ_VOLATILE.
 
 2013-04-29 Philipp Klaus Krause <pkk AT spth.de>

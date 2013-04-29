@@ -1035,16 +1035,15 @@ adjustStack (int n)
 static void
 cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
 {
-  wassert (result->type != AOP_DUMMY);
-  wassert (source->type != AOP_DUMMY);
+  bool dummy = (result->type == AOP_DUMMY || source->type == AOP_DUMMY);
 
   if (aopRS (result) && aopRS (source) &&
     result->aopu.bytes[roffset].in_reg && source->aopu.bytes[soffset].in_reg &&
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
     return;
-  else if ((!aopRS (result) || aopInReg (result, roffset, A_IDX) || aopOnStack (result, roffset, 1)) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
+  else if (!dummy && (!aopRS (result) || aopInReg (result, roffset, A_IDX) || aopOnStack (result, roffset, 1)) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
     emit3_o (A_CLR, result, roffset, 0, 0);
-  else if (aopInReg (result, roffset, A_IDX) || aopInReg (source, soffset, A_IDX))
+  else if (!dummy && (aopInReg (result, roffset, A_IDX) || aopInReg (source, soffset, A_IDX)))
     emit3_o (A_LD, result, roffset, source, soffset);
   else if (result->type == AOP_DIR && (source->type == AOP_DIR || source->type == AOP_LIT))
     emit3_o (A_MOV, result, roffset, source, soffset);
@@ -1052,9 +1051,9 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
     {
       if (save_a)
         push (ASMOP_A, 0, 1);
-      if (!aopInReg (source, soffset, A_IDX))
+      if (!aopInReg (source, soffset, A_IDX) && source->type != AOP_DUMMY)
         emit3_o (A_LD, ASMOP_A, 0, source, soffset);
-      if (!aopInReg (result, roffset, A_IDX))
+      if (!aopInReg (result, roffset, A_IDX) && result->type != AOP_DUMMY)
         emit3_o (A_LD, result, roffset, ASMOP_A, 0);
       if (save_a)
         pop (ASMOP_A, 0, 1);
@@ -2947,7 +2946,7 @@ genCmpEQorNE (iCode *ic)
               emitcode ("cpw", aopInReg (left->aop, i, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, i));
               cost (3 + aopInReg (left->aop, i, Y_IDX), 2);
 
-              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, 0, X_IDX))
+              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, i, X_IDX))
                 pop (ASMOP_X, 0, 2);
             }
 
@@ -2955,7 +2954,7 @@ genCmpEQorNE (iCode *ic)
         }
       else if (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 1))
         {
-          if (!regDead (A_IDX, ic) && !aopInReg (left->aop, i, A_IDX))
+          if (!regDead (A_IDX, ic) && !aopInReg (left->aop, i, A_IDX) && !pushed_a)
             {
               push (ASMOP_A, 0, 1);
               pushed_a = TRUE;
@@ -3583,8 +3582,7 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
       aopOp (left, ic);
       aopOp (result, ic);
 
-      while (size--)
-        emit3_o (A_CLR, result->aop, size, 0, 0);
+      genMove(result->aop, ASMOP_ZERO, regDead (A_IDX, ic), regDead (X_IDX, ic), regDead (Y_IDX, ic));
     }
   else
     {
