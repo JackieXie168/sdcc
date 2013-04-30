@@ -243,6 +243,14 @@ aopGet(const asmop *aop, int offset)
   if (aopRS (aop) && !aop->aopu.bytes[offset].in_reg)
     {
       int soffset = aop->aopu.bytes[offset].byteu.stk + _G.stack.pushed;
+
+      if (soffset < 0 || soffset > 255)
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Unimplemented extended stack access.");
+          cost (80, 80);
+        }
+
       snprintf (buffer, 256, "(0x%02x, sp)", soffset);
       return (buffer);
     }
@@ -2368,7 +2376,7 @@ genReturn (const iCode *ic)
             }
           else if (aopInReg (left->aop, i, XL_IDX) || aopInReg (left->aop, i, XH_IDX))
             {
-              emitcode ("ld", "a, (#%d, sp)", aopInReg (left->aop, i, XL_IDX));
+              emitcode ("ld", "a, (#%d, sp)", (int)(aopInReg (left->aop, i, XL_IDX)));
               emitcode ("ld", "(#%d, x), a", size - 1 - i);
               cost (4, 2);
               i++;

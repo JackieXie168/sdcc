@@ -42,7 +42,7 @@
 #define LOOP(INDEX) result##INDEX += *ptr##INDEX, ptr##INDEX += inc##INDEX
 #define COPYOUT(INDEX) results[INDEX] = result##INDEX
 
-#ifndef __SDCC_mcs51
+#if !defined(__SDCC_mcs51) && !defined (__SDCC_stm8)
 float *ptrs[NVARS];
 float results[NVARS];
 int incs[NVARS];

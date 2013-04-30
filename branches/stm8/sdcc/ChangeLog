@@ -6,8 +6,16 @@
 	  support/regression/tests/gcc-torture-execute-20010129-1.c,
 	  support/regression/tests/gcc-torture-execute-20021120-1.c,
 	  support/regression/tests/gcc-torture-execute-20030916-1.c,
-	  support/regression/tests/gcc-torture-execute-pr28982a.c:
+	  support/regression/tests/gcc-torture-execute-pr28982a.c,
+	  support/regression/tests/gcc-torture-execute-20031012-1.c,
+	  support/regression/tests/gcc-torture-execute-20071030-1.c,
+	  support/regression/tests/gcc-torture-execute-930614-2.c,
+	  support/regression/tests/gcc-torture-execute-930628-1.c,
+	  support/regression/tests/gcc-torture-execute-980707-1.c,
+	  support/regression/tests/gcc-torture-execute-990513-1.c,
 	  STM8: Disable some regression tests that need support for extended stack operands.
+	* src/stm8/gen.c:
+	  STM8: Improve error reporting for unimplemented extended stack operands.
 
 2013-04-29 Philipp Klaus Krause <pkk AT spth.de>
 

@@ -50,7 +50,7 @@ typedef struct client_s
         client_frame_t frames[64];
 } client_t;
 
-#ifndef __SDCC_mcs51
+#if !defined(__SDCC_mcs51) && !defined (__SDCC_stm8)
 int CalcPing (client_t *cl)
 {
         float ping;

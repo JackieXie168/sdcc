@@ -15,7 +15,7 @@
 char **
 buildargv (char *input)
 {
-#ifndef __SDCC_mcs51
+#if !defined(__SDCC_mcs51) && !defined (__SDCC_stm8)
   static char *arglist[256];
 #else
   static char *arglist[8];
