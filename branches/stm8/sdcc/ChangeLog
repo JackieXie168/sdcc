@@ -1,5 +1,16 @@
 2013-04-29 Philipp Klaus Krause <pkk AT spth.de>
 
+	* support/regression/tests/bp.c,
+	  support/regression/tests/bug2094505.c,
+	  support/regression/tests/bug3475630.c,
+	  support/regression/tests/gcc-torture-execute-20010129-1.c,
+	  support/regression/tests/gcc-torture-execute-20021120-1.c,
+	  support/regression/tests/gcc-torture-execute-20030916-1.c,
+	  support/regression/tests/gcc-torture-execute-pr28982a.c:
+	  STM8: Disable some regression tests that need support for extended stack operands.
+
+2013-04-29 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/stm8/gen.c:
 	  STM8: Fix stack handling in equality comparison, handle dead code, fix shift to zero.
 
