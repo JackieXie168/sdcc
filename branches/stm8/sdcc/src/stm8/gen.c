@@ -1774,7 +1774,7 @@ genCpl (const iCode *ic)
         {
           bool pushed_left = destroyed_a && aopInReg (left->aop, i, A_IDX);
 
-          if (left_in_a > i || !regDead (A_IDX, ic) || result_in_a)
+          if ((left_in_a > i || !regDead (A_IDX, ic) || result_in_a) && !pushed_a)
             {
               push (ASMOP_A, 0, 1);
               pushed_a = TRUE;
