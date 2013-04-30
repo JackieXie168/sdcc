@@ -1,5 +1,10 @@
 2013-04-30 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/stm8/gen.c:
+	  STM8: Fix memory leak in conditional jump.
+
+2013-04-30 Philipp Klaus Krause <pkk AT spth.de>
+
 	* support/regression/tests/gcc-torture-execute-20000314-3.c:
 	  STM8: Removed regression test, since it tests for non-standard gcc behaviour.
 	* src/stm8/gen.c:
