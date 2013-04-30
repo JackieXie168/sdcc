@@ -33,3 +33,15 @@ _modschar (signed char x, signed char y)
   return (_modsint (x, y));
 }
 
+signed char
+_moduschar (unsigned char x, unsigned char y)
+{
+  return (_modsint (x, y));
+}
+
+unsigned char
+_modsuchar (signed char x, signed char y)
+{
+  return (_modsint (x, y));
+}
+

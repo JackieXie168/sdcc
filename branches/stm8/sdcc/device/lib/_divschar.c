@@ -33,3 +33,15 @@ _divschar (signed char x, signed char y)
   return (_divsint (x, y));
 }
 
+signed char
+_divuschar (unsigned char x, unsigned char y)
+{
+  return (_divsint (x, y));
+}
+
+unsigned char
+_divsuchar (signed char x, signed char y)
+{
+  return (_divsint (x, y));
+}
+
