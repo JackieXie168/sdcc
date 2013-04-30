@@ -244,7 +244,7 @@ aopGet(const asmop *aop, int offset)
     {
       int soffset = aop->aopu.bytes[offset].byteu.stk + _G.stack.pushed;
 
-      if (soffset < 0 || soffset > 255)
+      if (soffset > 255)
         {
           if (!regalloc_dry_run)
             wassertl (0, "Unimplemented extended stack access.");
@@ -814,6 +814,13 @@ aopOp (operand *op, const iCode *ic)
           {
             aop->type = AOP_DUMMY;
             return;
+          }
+
+        if (!completly_in_regs && (!currFunc || GcurMemmap == statsg))
+          {
+            if (!regalloc_dry_run)
+              wassertl (0, "Stack asmop outside of function.");
+            cost (80, 80);
           }
       }
 
@@ -3951,7 +3958,7 @@ genPointerSet (iCode * ic)
 
   genMove (use_y ? ASMOP_Y : ASMOP_X, result->aop, !aopInReg (right->aop, 0, A_IDX), regDead (X_IDX, ic), regDead (Y_IDX, ic));
 
-  for (i = 0; bit_field ? i < size : blen > 0; i++, blen -= 8)
+  for (i = 0; !bit_field ? i < size : blen > 0; i++, blen -= 8)
     {
       if (i && aopInReg (right->aop, i, A_IDX))
         {

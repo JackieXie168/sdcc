@@ -77,7 +77,7 @@ int CalcPing (client_t *cl)
 
 void testTortureExecute(void)
 {
-#ifndef __SDCC_mcs51
+#if !defined(__SDCC_mcs51) && !defined (__SDCC_stm8)
    client_t cl;
 
    memset(&cl, 0, sizeof(cl));

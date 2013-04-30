@@ -1,4 +1,4 @@
-2013-04-29 Philipp Klaus Krause <pkk AT spth.de>
+2013-04-30 Philipp Klaus Krause <pkk AT spth.de>
 
 	* support/regression/tests/bp.c,
 	  support/regression/tests/bug2094505.c,
@@ -15,7 +15,11 @@
 	  support/regression/tests/gcc-torture-execute-990513-1.c,
 	  STM8: Disable some regression tests that need support for extended stack operands.
 	* src/stm8/gen.c:
-	  STM8: Improve error reporting for unimplemented extended stack operands.
+	  STM8: Improve error reporting for unimplemented extended stack operands, fix pointer write.
+	* device/lib/_divschar.c,
+	  device/lib/_modschar.c,
+	  device/lib/stm8/Makefile.in:
+	  STM8: Support routines for signed char divide and modulo.
 
 2013-04-29 Philipp Klaus Krause <pkk AT spth.de>
 
