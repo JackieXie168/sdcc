@@ -2596,6 +2596,8 @@ genMult (const iCode *ic)
   operand *right = IC_RIGHT (ic);
   bool use_y;
 
+  D (emitcode ("; genMult", ""));
+
   aopOp (IC_LEFT (ic), ic);
   aopOp (IC_RIGHT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
@@ -2619,7 +2621,7 @@ genMult (const iCode *ic)
     push (ASMOP_A, 0, 1);
 
   cheapMove (use_y ? ASMOP_Y : ASMOP_X, 0, left->aop, 0, FALSE); // todo: Allow use of a.
-  cheapMove (ASMOP_A, 0, left->aop, 0, FALSE); // todo: Allow use of a.
+  cheapMove (ASMOP_A, 0, right->aop, 0, TRUE);
 
   emitcode ("mul", use_y ? "y, a" : "x, a");
   cost (1 + use_y, 4);
@@ -2646,6 +2648,95 @@ genMult (const iCode *ic)
         }
       pop (use_y ? ASMOP_Y : ASMOP_X, 0, 2);
     }
+
+  freeAsmop (right);
+  freeAsmop (left);
+  freeAsmop (result);
+}
+
+/*-----------------------------------------------------------------*/
+/* genDivMod2 - generates code for unsigned division               */
+/* any operands and results of up to 2 bytes                       */
+/*-----------------------------------------------------------------*/
+static void
+genDivMod2 (const iCode *ic)
+{
+  D (emitcode ("; genDivMod2", ""));
+
+  wassertl (0, "Unimplemented");
+}
+
+/*-----------------------------------------------------------------*/
+/* genDivMod1 - generates code for unsigned division               */
+/* left operand up to 2 bytes                                      */
+/* right operand 1 byte                                            */
+/* result up to 2 bytes for division, 1 byte for modulo            */
+/*-----------------------------------------------------------------*/
+static void
+genDivMod1 (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+  bool use_y;
+
+  use_y = ic->op == '/' && aopInReg (result->aop, 0, Y_IDX) || aopInReg (left->aop, 0, YL_IDX) && !(ic->op == '/' && aopInReg (result->aop, 0, X_IDX));
+
+  if (!regDead (use_y ? Y_IDX : X_IDX, ic))
+    push (use_y ? ASMOP_Y : ASMOP_X, 0, 2);
+  if (!regDead (A_IDX, ic))
+    push (ASMOP_A, 0, 1);
+
+  genMove_o (use_y ? ASMOP_Y : ASMOP_X, 0, right->aop, 0, 2, FALSE, FALSE, FALSE); // todo: Allow more.
+  cheapMove (ASMOP_A, 0, right->aop, 0, TRUE);
+
+  emitcode ("div", use_y ? "y, a" : "x, a");
+  cost (1 + use_y, 17);
+
+  genMove_o (result->aop, 0, ic->op == '/' ? (use_y ? ASMOP_Y : ASMOP_X) : ASMOP_A, 0, result->aop->size, TRUE, FALSE, FALSE); // todo: Allow more.
+
+  if (!regDead (A_IDX, ic))
+    pop (ASMOP_A, 0, 1);
+  if (!regDead (use_y ? Y_IDX : X_IDX, ic))
+    {
+      if (regDead (XH_IDX, ic))
+        {
+          adjustStack (1);
+          swap_to_a (XL_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(XL_IDX);
+        }
+      else if (regDead (XL_IDX, ic))
+        {
+          swap_to_a (XH_IDX);
+          pop (ASMOP_A, 0, 1);
+          swap_from_a(XH_IDX);
+          adjustStack (1);
+        }
+      pop (use_y ? ASMOP_Y : ASMOP_X, 0, 2);
+    }
+}
+
+/*-----------------------------------------------------------------*/
+/* genDivMod - generates code for unsigned division                */
+/*-----------------------------------------------------------------*/
+static void
+genDivMod (const iCode *ic)
+{
+  operand *result = IC_RESULT (ic);
+  operand *left = IC_LEFT (ic);
+  operand *right = IC_RIGHT (ic);
+
+  D (emitcode ("; genDivMod", ""));
+
+  aopOp (IC_LEFT (ic), ic);
+  aopOp (IC_RIGHT (ic), ic);
+  aopOp (IC_RESULT (ic), ic);
+
+  if (result->aop->size <= (ic->op == '/' ? 2 : 1) && left->aop->size <= 2 && right->aop->size <= 1)
+    genDivMod1(ic);
+  else
+    genDivMod2(ic);
 
   freeAsmop (right);
   freeAsmop (left);
@@ -4470,7 +4561,7 @@ genSTM8iCode (iCode *ic)
 
     case '/':
     case '%':
-      wassertl (0, "Unimplemented iCode");
+      genDivMod (ic);
       break;
 
     case '>':

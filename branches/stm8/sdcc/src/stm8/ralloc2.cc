@@ -249,8 +249,8 @@ static float instruction_cost(const assignment &a, unsigned short int i, const G
     case PCALL:
     case RETURN:
     case '*':
-    /*case '/':
-    case '%':*/
+    case '/':
+    case '%':
     case '>':
     case '<':
     case LE_OP:

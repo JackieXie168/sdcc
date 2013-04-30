@@ -140,16 +140,20 @@ stm8_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
 }
 
 static bool
-_hasNativeMulFor (iCode * ic, sym_link * left, sym_link * right)
+_hasNativeMulFor (iCode *ic, sym_link *left, sym_link *right)
 {
-  int result_size = IS_SYMOP(IC_RESULT(ic)) ? getSize(OP_SYM_TYPE(IC_RESULT(ic))) : 4;
+  int result_size = IS_SYMOP (IC_RESULT (ic)) ? getSize (OP_SYM_TYPE (IC_RESULT(ic))) : 4;
 
-  if (ic->op != '*')
+  switch (ic->op)
     {
+    case '/':
+    case '%':
+      return (result_size <= 1 && getSize (left) <= 1 && IS_UNSIGNED (left) && getSize (right) <= 1 && IS_UNSIGNED (right));
+    case '*':
+      return (result_size == 1 || getSize (left) <= 1 && getSize (right) <= 1 && result_size == 2);
+    default:
       return FALSE;
     }
-
-  return (result_size == 1 || IS_CHAR (left) && IS_CHAR (right) && result_size == 2);
 }
 
 /* Indicate which extended bit operations this port supports */
