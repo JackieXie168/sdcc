@@ -2,6 +2,9 @@
 
 	* src/z80/peep.c:
 	  More accurately model behaviour of xor for peepholes.
+	* sdas/asstm8/stm8mch.c,
+	  sdas/asxxsrc/asout.c:
+	  Applied patch from Valentin Dudouyt to make range check stm8-specific.
 
 2013-05-01 Philipp Klaus Krause <pkk AT spth.de>
 

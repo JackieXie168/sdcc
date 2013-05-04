@@ -241,6 +241,7 @@ struct mne *mp;
 				case X:		outab(op | 0xD0);
 						outrw(&e1, R_USGN);	break;
 				case SP:	if (t1 == S_IXW) { aerr(); }
+						if (e1.e_addr & ~0xFF) { aerr(); }
 						outab(op | 0x10);
 						outrb(&e1, R_USGN);	break;
 				default:	opcy_aerr();		break;

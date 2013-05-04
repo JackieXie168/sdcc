@@ -488,9 +488,6 @@ outrxb(int i, struct expr *esp, int r)
                         case 4: m = (a_uint) ~0x7FFFFFFF;       n = (a_uint) ~0xFFFFFFFF;       break;  /* 4 bytes */
                         }
 #endif
-                        /* Range check */
-                        if(esp->e_addr & n)
-                                err('a');
 
                         /*
                          * Page0 Range Check
