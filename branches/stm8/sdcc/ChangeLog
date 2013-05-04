@@ -1,3 +1,8 @@
+2013-05-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/z80/peep.c:
+	  More accurately model behaviour of xor for peepholes.
+
 2013-05-01 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/peeph-z80.def,
