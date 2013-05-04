@@ -806,7 +806,7 @@ aopOp (operand *op, const iCode *ic)
             completly_in_regs = FALSE;
             if (!regalloc_dry_run)
               {
-                aop->aopu.bytes[i].byteu.stk = sym->usl.spillLoc->stack + aop->size - 1 - i;
+                aop->aopu.bytes[i].byteu.stk = sym->usl.spillLoc->stack + aop->size - i;
                 wassertl (sym->usl.spillLoc->stack + i < 200, "Unimplemented EXSTK.");
               }
           }
