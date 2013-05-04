@@ -733,7 +733,7 @@ aopForSym (const iCode *ic, symbol *sym)
       aop->size = getSize (sym->type);
       
       for(offset = 0; offset < aop->size; offset++)
-        aop->aopu.bytes[offset].byteu.stk = sym->stack + aop->size - 1 - offset;
+        aop->aopu.bytes[offset].byteu.stk = sym->stack + aop->size - offset;
     }
   else
     {
