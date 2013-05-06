@@ -1185,7 +1185,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
         {
           wassert (size >= 2);
 
-          emitcode ("ldw", aopInReg (source, soffset + i, X_IDX) ? "%s, x" : "%s, y", aopGet (result, roffset + i));
+          emitcode ("ldw", aopInReg (source, soffset + i, X_IDX) ? "%s, x" : "%s, y", aopGet2 (result, roffset + i));
           cost (2, 2);
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
@@ -1520,7 +1520,7 @@ skip_byte:
       if (i < n - 1 && (aopInReg (result, roffset + i, X_IDX) || aopInReg (result, roffset + i, Y_IDX)) && aopOnStack (source, soffset + i, 2))
         {
           wassert (size >= 2);
-          emitcode ("ldw", aopInReg (result, roffset + i, X_IDX) ? "x, %s" : "y, %s", aopGet (source, soffset + i));
+          emitcode ("ldw", aopInReg (result, roffset + i, X_IDX) ? "x, %s" : "y, %s", aopGet2 (source, soffset + i));
           cost (2, 2);
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;

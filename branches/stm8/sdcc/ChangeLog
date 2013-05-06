@@ -1,3 +1,8 @@
+2013-05-05 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fix endianness in register / stack copy.
+
 2013-05-04 Maarten Brock <sourceforge.brock AT dse.nl>
 
 	* .version,
