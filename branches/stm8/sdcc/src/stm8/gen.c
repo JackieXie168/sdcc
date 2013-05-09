@@ -4140,7 +4140,7 @@ genIfx (const iCode *ic)
     {
       int i;
 
-      if(cond->aop->size > 1)
+      if(cond->aop->size > 1 && !IC_FALSE (ic))
         {
           tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
           inv = true;
