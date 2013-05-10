@@ -1,3 +1,8 @@
+2013-05-10 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fix endianness in stack / stack copy.
+
 2013-05-09 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:

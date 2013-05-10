@@ -1109,13 +1109,13 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
 
           if (y_free) // Unlike with other operations, loading between y and stk is as efficient as for x, so we try y first here.
             {
-              emitcode ("ldw", "y, %s", aopGet (source, soffset + i));
-              emitcode ("ldw", "%s, y", aopGet (result, roffset + i));
+              emitcode ("ldw", "y, %s", aopGet2 (source, soffset + i));
+              emitcode ("ldw", "%s, y", aopGet2 (result, roffset + i));
             }
           else if (x_free)
             {
-              emitcode ("ldw", "x, %s", aopGet (source, soffset + i));
-              emitcode ("ldw", "%s, x", aopGet (result, roffset + i));
+              emitcode ("ldw", "x, %s", aopGet2 (source, soffset + i));
+              emitcode ("ldw", "%s, x", aopGet2 (result, roffset + i));
             }
           cost (4, 4);  
           assigned[i] = TRUE;
