@@ -10,7 +10,7 @@
 	  support/regression/tests/0pass.c:
 	  Removed dummy tests.
 	* src/stm8/gen.c:
-	  STM8: Fix handling of large operands partially in x in comparison for equality.
+	  STM8: Fix handling of large operands partially in x in comparison for equality, be more carfuel in partial move for cast.
 
 2013-05-10 Maarten Brock <sourceforge.brock AT dse.nl>
 

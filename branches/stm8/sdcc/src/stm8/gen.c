@@ -1604,13 +1604,13 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
 
   for (i = 0; i < size;)
     {
-      if (aopInReg (result, roffset + i, X_IDX) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i) && !byteOfVal (source->aopu.aop_lit, soffset + i + 1))
+      if (i + 1 < size && aopInReg (result, roffset + i, X_IDX) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i) && !byteOfVal (source->aopu.aop_lit, soffset + i + 1))
         {
           emitcode ("clrw", "x");
           cost (1, 1);
           i += 2;
         }
-      else if (aopInReg (result, roffset + i, Y_IDX) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i) && !byteOfVal (source->aopu.aop_lit, soffset + i + 1))
+      else if (i + 1 < size && aopInReg (result, roffset + i, Y_IDX) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i) && !byteOfVal (source->aopu.aop_lit, soffset + i + 1))
         {
           emitcode ("clrw", "y");
           cost (2, 1);
@@ -1623,25 +1623,25 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
             a_still_dead = FALSE;
           i++;
         }
-      else if (aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
+      else if (i + 1 < size && aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
         {
           emitcode ("ldw", "x, %s", aopGet2 (source, soffset + i));
           cost (3, 2);
           i += 2;
         }
-      else if (aopInReg (result, roffset + i, Y_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
+      else if (i + 1 < size && aopInReg (result, roffset + i, Y_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
         {
           emitcode ("ldw", "y, %s", aopGet2 (source, soffset + i));
           cost (4, 2);
           i += 2;
         }
-      else if ((aopOnStack (result, roffset + i, 2) || result->type == AOP_DIR) && aopInReg (source, soffset + i, X_IDX))
+      else if (i + 1 < size && (aopOnStack (result, roffset + i, 2) || result->type == AOP_DIR) && aopInReg (source, soffset + i, X_IDX))
         {
           emitcode ("ldw", "%s, x", aopGet2 (result, roffset + i));
           cost (3, 2);
           i += 2;
         }
-      else if ((aopOnStack (result, roffset + i, 2) || result->type == AOP_DIR) && aopInReg (source, soffset + i, Y_IDX))
+      else if (i + 1 < size && (aopOnStack (result, roffset + i, 2) || result->type == AOP_DIR) && aopInReg (source, soffset + i, Y_IDX))
         {
           emitcode ("ldw", "%s, y", aopGet2 (result, roffset + i));
           cost (4, 2);
