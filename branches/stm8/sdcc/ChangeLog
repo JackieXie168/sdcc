@@ -6,6 +6,9 @@
 	  sim/ucsim/stm8.src/stm8mac.h,
 	  support/regression/ports/stm8/support.c:
 	  STM8: Patches by Valentin Dudouyt: The last bits to enable regression testing.
+	* support/regression/tests/0fail.c,
+	  support/regression/tests/0pass.c:
+	  Removed dummy tests.
 
 2013-05-10 Maarten Brock <sourceforge.brock AT dse.nl>
 
