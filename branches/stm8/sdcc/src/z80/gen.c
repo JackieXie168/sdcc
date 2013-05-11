@@ -10655,7 +10655,7 @@ genCast (const iCode * ic)
   /* now depending on the sign of the destination */
   size = AOP_SIZE (result) - AOP_SIZE (right);
   /* Unsigned or not an integral type - right fill with zeros */
-  if (!IS_SPEC (rtype) || SPEC_USIGN (rtype) || AOP_TYPE (right) == AOP_CRY)
+  if (IS_BOOL (rtype) || !IS_SPEC (rtype) || SPEC_USIGN (rtype) || AOP_TYPE (right) == AOP_CRY)
     {
       while (size--)
         aopPut3 (AOP (result), offset++, ASMOP_ZERO, 0);

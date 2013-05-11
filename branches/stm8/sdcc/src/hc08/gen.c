@@ -10055,7 +10055,7 @@ genCast (iCode * ic)
       goto release;
     }
 
-  signExtend = AOP_SIZE (result) > AOP_SIZE (right) && IS_SPEC (rtype) && !SPEC_USIGN (rtype);
+  signExtend = AOP_SIZE (result) > AOP_SIZE (right) && !IS_BOOL (rtype) && IS_SPEC (rtype) && !SPEC_USIGN (rtype);
 
   /* If the result is 2 bytes and in registers, we have to be careful */
   /* to make sure the registers are not overwritten prematurely. */

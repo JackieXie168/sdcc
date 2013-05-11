@@ -4411,8 +4411,8 @@ genCast (const iCode *ic)
       size = result->aop->size - right->aop->size;
       offset = right->aop->size;
 
-      /* Unsigned or not an integral type - right fill with zeros */
-      if (!IS_SPEC (rtype) || SPEC_USIGN (rtype))
+      /* Unsigned or not an integral type - fill with zeros */
+      if (IS_BOOL (rtype) || !IS_SPEC (rtype) || SPEC_USIGN (rtype))
         genMove_o (result->aop, offset, ASMOP_ZERO, 0, size, regDead (A_IDX, ic) && !result_in_a, regDead (X_IDX, ic) && !result_in_x, regDead (Y_IDX, ic) && !result_in_y);
       else
         {
@@ -4427,7 +4427,7 @@ genCast (const iCode *ic)
           cheapMove (ASMOP_A, 0, result->aop, right->aop->size - 1, FALSE);
           emit3 (A_RLC, ASMOP_A, 0);
           emit3 (A_CLR, ASMOP_A, 0);
-          emit3 (A_RRC, ASMOP_A, 0);
+          emit3 (A_SBC, ASMOP_A, ASMOP_ZERO);
           while (size--)
             {
               if (size && aopInReg (result->aop, offset, A_IDX))
