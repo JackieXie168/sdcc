@@ -251,7 +251,7 @@ cl_stm8::inst_addw(t_mem code, unsigned char prefix)
   int result, operand1, operand2;
   short unsigned int *dest_ptr;
 
-  dest_ptr = code & 0x0f == 0x09 ? &regs.Y : &regs.X;
+  dest_ptr = (code & 0x0f) == 0x09 ? &regs.Y : &regs.X;
   operand1 = *dest_ptr;
 
   switch((code & 0xf0) >> 4)
