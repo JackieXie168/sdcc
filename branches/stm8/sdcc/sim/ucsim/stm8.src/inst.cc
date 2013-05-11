@@ -2,6 +2,7 @@
  * Simulator of microcontrollers (inst.cc)
  *
  * stm8 code base from Vaclav Peroutka vaclavpe@users.sourceforge.net
+ * and Valentin Dudouyt valentin.dudouyt@gmail.com
  *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
  * 
@@ -231,6 +232,59 @@ cl_stm8::inst_add(t_mem code, unsigned char prefix)
 }
 
 int
+cl_stm8::fetch_sp_indexed2()
+{
+    int addr = (unsigned char)fetch()+regs.SP;  // SP indexed
+    return(get2(addr));
+}
+
+int
+cl_stm8::fetch_long2()
+{
+    int addr = fetch2(); // Long addr
+    return(get2(addr));
+}
+
+int
+cl_stm8::inst_addw(t_mem code, unsigned char prefix)
+{
+  int result, operand1, operand2;
+  short unsigned int *dest_ptr;
+
+  dest_ptr = code & 0x0f == 0x09 ? &regs.Y : &regs.X;
+  operand1 = *dest_ptr;
+
+  switch((code & 0xf0) >> 4)
+  {
+    case 0x1:
+    case 0xa: operand2 = fetch2(); break;
+    case 0xb: operand2 = fetch_long2(); break;
+    case 0xf: operand2 = fetch_sp_indexed2(); break;
+    default: return(resHALT);
+  }
+
+  switch(code & 0xf) {
+    case 0x0:
+    case 0xd: operand2 = -operand2;
+    case 0xb:
+    case 0xc: dest_ptr = &regs.X; break;
+    case 0x2: operand2 = -operand2;
+    case 0x9: dest_ptr = &regs.Y; break;
+    default: return(resHALT);
+  }
+
+  result = operand1 + operand2;
+
+  FLAG_NZ (result);
+  FLAG_ASSIGN (BIT_V, 0x8000 & (operand1 ^ operand2 ^ result ^ (result >>1)));
+  FLAG_ASSIGN (BIT_C, 0x10000 & result);
+  FLAG_ASSIGN (BIT_H, 0x40 & (operand1 ^ operand2 ^ result));
+
+  *dest_ptr = result & 0xffff;
+  return(resGO);
+}
+
+int
 cl_stm8::inst_and(t_mem code, unsigned char prefix)
 {
   int result, operand1, operand2;
@@ -386,15 +440,17 @@ cl_stm8::inst_cpw(t_mem code, unsigned char prefix)
 {
   long int operand1, operand2, result;
 
-  operand2 = OPERANDW(code, prefix);
+  operand1 = prefix == 0x90 ? regs.Y : regs.X;
 
-   if ((prefix == 0x90) || (prefix == 0x91)) {
-     operand1 = regs.Y;
-   } else {
-     operand1 = regs.X;
-   }
+  switch((code & 0xf0) >> 4)
+  {
+    case 0x1: operand2 = fetch_sp_indexed2(); break;
+    case 0xa: operand2 = fetch2(); break;
+    case 0xc: operand2 = fetch_long2(); break;
+    default: return(resHALT);
+  }
    
-   result = operand1 = operand2;
+  result = operand1 - operand2;
    
   FLAG_ASSIGN (BIT_Z, (result & 0xffff) == 0);
   FLAG_ASSIGN (BIT_C, 0x10000 & result);
@@ -625,6 +681,7 @@ cl_stm8::inst_jr(t_mem code, unsigned char prefix)
       case 7: // JRSGE - N xor V = 0
         maskedP = regs.CC & (BIT_N | BIT_V);
         taken = !maskedP || (maskedP == (BIT_N | BIT_V));
+        break;
       default:
         return(resHALT);
     } 
@@ -670,12 +727,22 @@ cl_stm8::inst_lda(t_mem code, unsigned char prefix)
   return(resGO);
 }
 
+int cl_stm8::operandw(t_mem code, unsigned char prefix) {
+	if(EA_IMM(code)) {
+		return(fetch2());
+	} else {
+		int addr = fetchea(code,prefix);
+		int result = get2(addr);
+		return(result);
+	}
+}
+
 int
 cl_stm8::inst_ldxy(t_mem code, unsigned char prefix)
 {
   int operand;
 
-  operand = OPERANDW(code, prefix);
+  operand = operandw(code, prefix);
 
 //  FLAG_ASSIGN (BIT_Z, (result & 0xff) == 0);
 //  FLAG_ASSIGN (BIT_C, 0x100 & result);
@@ -1049,6 +1116,7 @@ cl_stm8::inst_sub(t_mem code, unsigned char prefix)
 
   operand1 = regs.A;
   operand2 = OPERAND(code, prefix);
+
   result = operand1 - operand2;
   FLAG_NZ (result);
   FLAG_ASSIGN (BIT_V, 0x80 & (operand1 ^ operand2 ^ result ^ (result >>1)));

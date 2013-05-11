@@ -2,6 +2,7 @@
  * Simulator of microcontrollers (stm8.cc)
  *
  * some stm8 code base from Karl Bongers karl@turbobit.com
+ * and Valentin Dudouyt valentin.dudouyt@gmail.com
  *
  * Copyright (C) 1999,99 Drotos Daniel, Talker Bt.
  *
@@ -492,8 +493,7 @@ cl_stm8::exec_inst(void)
 		cprefix = 0x00;
 		break;
   }
-	
-   printf("********************  switch; pc=0x%x, prefix = 0x%x, code = 0x%x\n",PC, cprefix, code);
+
    // exceptions
    if((cprefix==0x90)&&((code&0xf0)==0x10)) {
       return ( inst_bccmbcpl( code, cprefix));
@@ -508,21 +508,21 @@ cl_stm8::exec_inst(void)
       return ( inst_jr( code, cprefix));
    }
    if (cprefix == 0x72) {
-      int opaddr;
-      switch (code) { //addw, subw
-         case 0xa9 : regs.Y += fetch2();
-			case 0xb9 : opaddr = fetch2(); regs.Y += get2(opaddr);
-			case 0xbb : opaddr = fetch2(); regs.X += get2(opaddr);
-			case 0xf9 : opaddr = fetch(); regs.Y += get2(opaddr + regs.SP);
-			case 0xfb : opaddr = fetch(); regs.X += get2(opaddr + regs.SP);
-         case 0xa2 : regs.Y -= fetch2();
-			case 0xb2 : opaddr = fetch2(); regs.Y -= get2(opaddr);
-			case 0xb0 : opaddr = fetch2(); regs.X -= get2(opaddr);
-			case 0xf2 : opaddr = fetch(); regs.Y -= get2(opaddr + regs.SP);
-			case 0xf0 : opaddr = fetch(); regs.X -= get2(opaddr + regs.SP);
-            printf("************* ToDo set correct flags !!!!\n");
-            return(resGO);
-            break;
+      switch (code) {
+      	 // addw
+         case 0xa9:
+	 case 0xb9:
+	 case 0xbb:
+	 case 0xf9:
+	 case 0xfb:
+            return( inst_addw( code, cprefix));
+	 // subw
+	 case 0xa2:
+	 case 0xb2:
+	 case 0xb0:
+	 case 0xf2:
+	 case 0xf0:
+            return( inst_addw( code, cprefix));
 			//default is processing in the next switch statement
          default:
             break;
@@ -608,6 +608,15 @@ cl_stm8::exec_inst(void)
                regs.Y = (regs.Y &0xff00) | regs.A;
                regs.A = tempi & 0xff;
                return(resGO);
+            case 0x70: // special opcodes
+               code = fetch();
+               switch(code) {
+                  case 0xEC: return(resHALT);
+                  case 0xED: putchar(regs.A); fflush(stdout); return(resGO);
+                  default:
+                     printf("************* bad code !!!!\n");
+                     return(resHALT);
+               }
             case 0x80: // ret
                pop2( PC);
                return(resGO);
@@ -843,7 +852,7 @@ cl_stm8::exec_inst(void)
                return( inst_rrc( code, cprefix));
                break;
             case 0x10:       
-               regs.Y = OPERANDW(code, cprefix);
+               regs.Y = operandw(code, cprefix);
                return(resGO);
                break;
             case 0x80: 
@@ -1075,9 +1084,7 @@ cl_stm8::exec_inst(void)
                return( inst_inc( code, cprefix));
                break;
             case 0x10: // ADDW X,#word
-               regs.X += fetch2();
-               printf("************* ToDo set correct flags !!!!\n");
-               return( resGO);
+               return( inst_addw( code, cprefix));
                break;
             case 0x80: // CCF
                regs.CC ^= BIT_C;
@@ -1127,9 +1134,7 @@ cl_stm8::exec_inst(void)
                return( inst_tnz( code, cprefix));
                break;
             case 0x10: // SUBW X,#word
-               regs.X -= fetch2();
-               printf("************* ToDo set correct flags !!!!\n");
-               return( resGO);
+               return( inst_addw( code, cprefix));
                break;
             case 0x80: // CALLF
                opaddr = fetch2();
@@ -1210,6 +1215,9 @@ cl_stm8::exec_inst(void)
          break;
       case 0xf:
          switch ( code & 0xf0) {
+            case 0x10:
+               // ldw   (offset,SP),X
+               return( inst_ldxydst( code, cprefix ) );
             case 0x00: 
             case 0x30:
             case 0x40:
@@ -1229,6 +1237,7 @@ cl_stm8::exec_inst(void)
                } else {
                   return(resHALT);
                }
+               return(resGO);
             case 0xA0: // LDF
                opaddr = fetch2();
                if (cprefix == 0x92) {
@@ -1242,7 +1251,6 @@ cl_stm8::exec_inst(void)
                }
                FLAG_NZ (regs.A);
                return(resGO);
-               break;
             case 0xB0:
             case 0xC0:
             case 0xD0:
