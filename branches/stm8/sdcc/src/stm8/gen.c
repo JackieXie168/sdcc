@@ -679,6 +679,13 @@ newAsmop (short type)
   aop = Safe_calloc (1, sizeof (asmop));
   aop->type = type;
 
+  aop->regs[A_IDX] = -1;
+  aop->regs[XL_IDX] = -1;
+  aop->regs[XH_IDX] = -1;
+  aop->regs[YL_IDX] = -1;
+  aop->regs[YH_IDX] = -1;
+  aop->regs[C_IDX] = -1;
+
   return aop;
 }
 
@@ -800,6 +807,7 @@ aopOp (operand *op, const iCode *ic)
           {
             completly_on_stack = FALSE;
             aop->aopu.bytes[i].byteu.reg = sym->regs[i];
+            aop->regs[sym->regs[i]->rIdx] = i;
           }
         else if (sym->usl.spillLoc || sym->nRegs && regalloc_dry_run)
           {
@@ -1483,7 +1491,7 @@ skip_byte:
 
       if (i < n)
         {
-          cheapMove (result, roffset + i, source, soffset + i, FALSE);       // We can safely assign a byte.
+          cheapMove (result, roffset + i, source, soffset + i, TRUE);       // We can safely assign a byte.
           regsize--;
           size--;
           assigned[i] = TRUE;
@@ -3026,9 +3034,10 @@ genCmpEQorNE (iCode *ic)
 
       if (i <= size - 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || aopOnStack (right->aop, i, 2)))
         {
+          bool x_dead = regDead (X_IDX, ic) && left->aop->regs[XL_IDX] <= i + 1 && left->aop->regs[XH_IDX] <= i + 1 && right->aop->regs[XL_IDX] <= i + 1 && right->aop->regs[XH_IDX] <= i + 1;
           if (aopInReg (left->aop, i, Y_IDX) && aopOnStack (right->aop, i, 2))
             {
-              if (regDead (X_IDX, ic))
+              if (x_dead)
                 {
                   emitcode ("ldw", "x, y");
                   emitcode ("cpw", "x, %s", aopGet2 (right->aop, i));
@@ -3044,7 +3053,7 @@ genCmpEQorNE (iCode *ic)
             }
           else
             {
-              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, i, X_IDX))
+              if (!x_dead && !aopInReg (left->aop, i, X_IDX))
                 push (ASMOP_X, 0, 2);
 
               genMove_o (ASMOP_X, 0, left->aop, i, 2, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
@@ -3052,7 +3061,7 @@ genCmpEQorNE (iCode *ic)
               emitcode ("cpw", aopInReg (left->aop, i, Y_IDX) ? "y, %s" : "x, %s", aopGet2 (right->aop, i));
               cost (3 + aopInReg (left->aop, i, Y_IDX), 2);
 
-              if (!regDead (X_IDX, ic) && !aopInReg (left->aop, i, X_IDX))
+              if (!x_dead && !aopInReg (left->aop, i, X_IDX))
                 pop (ASMOP_X, 0, 2);
             }
 
