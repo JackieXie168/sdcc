@@ -389,35 +389,31 @@ cl_stm8::inst_call(t_mem code, unsigned char prefix)
 int
 cl_stm8::inst_clr(t_mem code, unsigned char prefix)
 {
-  int operand;
   unsigned int opaddr;// = 0xffff;
 
-   if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
-      operand = regs.A;
-   } else if (((code&0xf0)==0x50) &&(prefix == 0x00)) {
-      operand = regs.X;
-   } else if (((code&0xf0)==0x50) &&(prefix == 0x90)) {
-      operand = regs.Y;
-   } else {
-      opaddr = get_dest(code,prefix);
-   }
-   
-   operand = 0;
+  FLAG_SET (BIT_Z);
+  FLAG_CLEAR (BIT_N);
   
-   FLAG_SET (BIT_Z);
-   FLAG_CLEAR (BIT_N);
+  switch(((code & 0xf0) | (prefix << 8)) >> 4) {
+    /* clr */
+    case 0x4: regs.A = 0; return(resGO);
+    case 0x3: opaddr = fetch(); break;
+    case 0x725: opaddr = fetch2(); break;
+    case 0x7: opaddr = regs.X; break;
+    case 0x6: opaddr = regs.X + fetch(); break;
+    case 0x724: opaddr = regs.X + fetch2(); break;
+    case 0x907: opaddr = regs.Y; break;
+    case 0x906: opaddr = regs.Y + fetch(); break;
+    case 0x904: opaddr = regs.Y + fetch2(); break;
+    case 0x0: opaddr = regs.SP + fetch(); break;
+    /* clrw */
+    case 0x5: regs.X = 0; return(resGO);
+    case 0x905: regs.Y = 0; return(resGO);
+    default: return(resHALT);
+  }
 
-   if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
-      regs.A = operand;
-   } else if (((code&0xf0)==0x50) &&(prefix == 0x00)) {
-      regs.X = operand;
-   } else if (((code&0xf0)==0x50) &&(prefix == 0x90)) {
-      regs.Y = operand;
-   } else {
-      store1(opaddr, operand);
-   }
-  
-   return(resGO);
+  store1(opaddr, 0);
+  return(resGO);
 }
 
 int
@@ -1169,7 +1165,7 @@ cl_stm8::inst_swap(t_mem code, unsigned char prefix)
 int
 cl_stm8::inst_tnz(t_mem code, unsigned char prefix)
 {
-  long int operand, resval;
+  long int resval;
   unsigned int opaddr;// = 0xffff;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
