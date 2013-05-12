@@ -1,3 +1,8 @@
+2013-05-12 Philipp Klaus Krause <pkk AT spth.de>
+
+	* sim/ucsim/stm8.src/inst.cc:
+	  STM8: Patch by Valentin Dudouyt to fix ldw.
+
 2013-05-11 Philipp Klaus Krause <pkk AT spth.de>
 
 	* sim/ucsim/stm8.src/inst.cc,
@@ -10,7 +15,7 @@
 	  support/regression/tests/0pass.c:
 	  Removed dummy tests.
 	* src/stm8/gen.c:
-	  STM8: Fix handling of large operands partially in x in comparison for equality, be more carfuel in partial move for cast, fix signed cast.
+	  STM8: Fix handling of large operands partially in x in comparison for equality, be more careful in partial move for cast, fix signed cast.
 	* src/hc08/gen.c,
 	  src/z80/gen.c:
 	  More efficient cast from _Bool.

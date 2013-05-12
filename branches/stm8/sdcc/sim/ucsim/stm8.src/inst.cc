@@ -776,23 +776,27 @@ cl_stm8::inst_lddst(t_mem code, unsigned char prefix)
 int
 cl_stm8::inst_ldxydst(t_mem code, unsigned char prefix)
 {
-  unsigned int opaddr;
+  /* ldw dst, REG */
+  unsigned int opaddr, operand;
+  operand = prefix == 0x90 ? regs.Y : regs.X;
+  if(code == 0x17) operand = regs.Y;
 
-   opaddr = fetchea(code,prefix);
+  switch((code & 0xf0) >> 4) {
+    case 0x1: opaddr = regs.SP + fetch(); break;
+    case 0xb: opaddr = fetch(); break;
+    case 0xc: opaddr = fetch2(); break;
+    case 0xf: opaddr = regs.X; break;
+    case 0xe: opaddr = regs.X + fetch(); break;
+    case 0xd: opaddr = regs.X + fetch2(); break;
+    default: return(resHALT);
+  }
 
-   if (((prefix != 0x00) &&((code&0xf0) < 0xd0))||((prefix == 0x00) &&((code&0xf0) > 0xc0))) {
-      FLAG_ASSIGN (BIT_Z, (regs.Y & 0xffff) == 0);
-      FLAG_ASSIGN (BIT_N, 0x8000 & regs.Y);
+  FLAG_ASSIGN (BIT_Z, (operand & 0xffff) == 0);
+  FLAG_ASSIGN (BIT_N, 0x8000 & operand);
 
-      store2(opaddr, regs.Y);
-   } else {
-      FLAG_ASSIGN (BIT_Z, (regs.X & 0xffff) == 0);
-      FLAG_ASSIGN (BIT_N, 0x8000 & regs.X);
-
-      store2(opaddr, regs.X);
-   }
+  store2(opaddr, operand);
    
-   return(resGO);
+  return(resGO);
 }
 
 int
