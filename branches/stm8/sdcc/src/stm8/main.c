@@ -105,15 +105,25 @@ stm8_genInitStartup(FILE * of)
   /* Init static & global variables */
   fprintf (of, "__sdcc_init_data:\n");
   fprintf (of, "; stm8_genXINIT() start\n");
+  /* Zeroing memory (required by standard for static & global variables) */
   fprintf (of, "\tldw x, #0x0000\n");
   fprintf (of, "00001$:\n");
-  fprintf (of, "\tcpw x, #l_INITIALIZER\n");
+  fprintf (of, "\tcpw x, #l_DATA\n");
   fprintf (of, "\tjreq  00002$\n");
-  fprintf (of, "\tld a, (s_INITIALIZER, x)\n");
-  fprintf (of, "\tld (s_INITIALIZED, x), a\n");
+  fprintf (of, "\tclr (s_DATA, x)\n");
   fprintf (of, "\tincw x\n");
   fprintf (of, "\tjp  00001$\n");
   fprintf (of, "00002$:\n");
+  /* Copy l_INITIALIZER bytes from s_INITIALIZER to s_INITIALIZED */
+  fprintf (of, "\tldw x, #0x0000\n");
+  fprintf (of, "00003$:\n");
+  fprintf (of, "\tcpw x, #l_INITIALIZER\n");
+  fprintf (of, "\tjreq  00004$\n");
+  fprintf (of, "\tld a, (s_INITIALIZER, x)\n");
+  fprintf (of, "\tld (s_INITIALIZED, x), a\n");
+  fprintf (of, "\tincw x\n");
+  fprintf (of, "\tjp  00003$\n");
+  fprintf (of, "00004$:\n");
   fprintf (of, "; stm8_genXINIT() end\n");
   fprintf (of, "\t.area GSFINAL\n");
   fprintf (of, "\tjp\t__sdcc_program_startup\n\n");

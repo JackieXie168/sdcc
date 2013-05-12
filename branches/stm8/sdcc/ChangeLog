@@ -2,6 +2,8 @@
 
 	* sim/ucsim/stm8.src/inst.cc:
 	  STM8: Fix clr, partially by patch by Valentin Dudouyt.
+	* src/stm8/main.c:
+	  STM8:  Patch by Valentin Dudouyt to initialize global and static variables to zero.
 
 2013-05-12 Philipp Klaus Krause <pkk AT spth.de>
 
