@@ -2,6 +2,8 @@
 
 	* sim/ucsim/stm8.src/inst.cc:
 	  STM8: Patch by Valentin Dudouyt to fix ldw.
+	* src/stm8/main.c:
+	  STM8: Patches by Valentin Dudouyt to fix handling of global variables and startup.
 
 2013-05-11 Philipp Klaus Krause <pkk AT spth.de>
 

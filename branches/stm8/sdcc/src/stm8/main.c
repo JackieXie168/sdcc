@@ -82,6 +82,7 @@ stm8_setDefaultOptions (void)
   options.float_rent = 1;
   options.noRegParams = 0;
   options.noOptsdccInAsm = 1;
+  options.data_loc = 0x0001;
   options.code_loc = 0x8000;
 
   options.out_fmt = 'i';        /* Default output format is ihx */
@@ -119,7 +120,8 @@ stm8_genInitStartup(FILE * of)
 
   fprintf (of, "\t.area CSEG\n");
   fprintf (of, "__sdcc_program_startup:\n");
-  fprintf (of, "\tjp\t_main\n");
+
+  dbuf_printf(&statsg->oBuf, "\tjp _main\n");
 }
 
 int
