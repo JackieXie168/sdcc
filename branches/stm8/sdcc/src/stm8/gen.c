@@ -1091,7 +1091,7 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
 {
   int i;
 
-#if 1
+#if 0
   D (emitcode("; genCopyStack", "%d %d %d", a_free, x_free, y_free));
 #endif
 
@@ -1165,7 +1165,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
   bool a_free, x_free, y_free;
 
-#if 1
+#if 0
   D (emitcode(";  genCopy", "%d %d %d", a_dead, x_dead, y_dead));
 #endif
 
