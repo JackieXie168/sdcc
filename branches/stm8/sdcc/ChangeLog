@@ -2,6 +2,9 @@
 
 	* support/regression/ports/stm8/support.c:
 	  STM8: Remove unneeded global variable that clashes with identifiers in regression tests.
+	* support/regression/tests/malloc.c,
+	  support/regression/tests/gcc-torture-execute-920810-1.c:
+	  STM8: Disable regression tests for unimplemented malloc().
 
 2013-05-12 Philipp Klaus Krause <pkk AT spth.de>
 
