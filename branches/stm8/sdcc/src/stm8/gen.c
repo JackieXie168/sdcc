@@ -1720,7 +1720,7 @@ genNot (const iCode *ic)
     {
       if (i && aopInReg (left->aop, i, A_IDX))
         {
-          emitcode ("sbc", "a, (0, sp)");
+          emitcode ("sbc", "a, (1, sp)");
           cost (2, 1);
           continue;
         }
@@ -1811,7 +1811,7 @@ genCpl (const iCode *ic)
             }
           else if (pushed_left)
             {
-              emitcode ("ld", "a, (0, sp)");
+              emitcode ("ld", "a, (1, sp)");
               cost (2, 1);
             }
           else
@@ -1882,7 +1882,7 @@ genSub (const iCode *ic, asmop *result_aop, asmop *left_aop, asmop *right_aop)
 
           if (left_in_a == i && pushed_a)
             {
-              emitcode ("ld", "a, (0, sp)");
+              emitcode ("ld", "a, (1, sp)");
               cost (2, 1);
             }
           else
@@ -2559,7 +2559,7 @@ genPlus (const iCode *ic)
 
           if (left_in_a == i && pushed_a)
             {
-              emitcode ("ld", "a, (0, sp)");
+              emitcode ("ld", "a, (1, sp)");
               cost (2, 1);
             }
           else
@@ -2959,7 +2959,7 @@ genCmp (iCode *ic)
             }
           if (i && aopInReg (left->aop, 0, A_IDX))
             {
-              emitcode ("ld", "a, (0, sp)");
+              emitcode ("ld", "a, (1, sp)");
               cost (2, 1);
             }
           else
@@ -2967,7 +2967,7 @@ genCmp (iCode *ic)
           
           if (right_stacked || aopInReg (right->aop, i, A_IDX))
             {
-              emitcode (i ? "sbc" : "sub", "a, (0, sp)");
+              emitcode (i ? "sbc" : "sub", "a, (1, sp)");
               cost (2, 1);
             }
           else
@@ -3626,7 +3626,7 @@ genLeftShift (const iCode *ic)
   for(i = 0; i < size; i++)
     if (aopInReg (result->aop, i, A_IDX))
       save_a = TRUE;
-  if (save_a);
+  if (save_a)
     push (ASMOP_A, 0, 1);
 
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
@@ -3652,7 +3652,7 @@ genLeftShift (const iCode *ic)
 
         if (aopInReg (result->aop, i, A_IDX))
           {
-            emitcode (i ? "rlc" : "sll", "(0, sp)");
+            emitcode (i ? "rlc" : "sll", "(1, sp)");
             cost (2, 1);
             i++;
             continue;
@@ -3678,7 +3678,7 @@ genLeftShift (const iCode *ic)
   cost (2, 0);
   emitLabel (tlbl2);
 
-  if (save_a);
+  if (save_a)
     pop (ASMOP_A, 0, 1);
 
   freeAsmop (left);
@@ -3797,7 +3797,7 @@ genRightShift (const iCode *ic)
   for(i = 0; i < size; i++)
     if (aopInReg (result->aop, i, A_IDX))
       save_a = TRUE;
-  if (save_a);
+  if (save_a)
     push (ASMOP_A, 0, 1);
 
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
@@ -3822,7 +3822,7 @@ genRightShift (const iCode *ic)
           }
         else if (aopInReg (result->aop, i, A_IDX))
           {
-            emitcode ((i != size - 1) ? "rrc" : (sign ? "sra" : "srl"), "(0, sp)");
+            emitcode ((i != size - 1) ? "rrc" : (sign ? "sra" : "srl"), "(1, sp)");
             cost (2, 1);
             i--;
             continue;
@@ -3848,7 +3848,7 @@ genRightShift (const iCode *ic)
   cost (2, 0);
   emitLabel (tlbl2);
 
-  if (save_a);
+  if (save_a)
     pop (ASMOP_A, 0, 1);
 
   freeAsmop (left);
@@ -4084,7 +4084,7 @@ genPointerSet (iCode * ic)
 
       if (i && aopInReg (right->aop, i, A_IDX))
         {
-          emitcode ("ld", "a, (0, sp)");
+          emitcode ("ld", "a, (1, sp)");
           cost (2, 1);
         }
       else
