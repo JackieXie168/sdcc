@@ -1,5 +1,3 @@
-unsigned char c1;
-
 void
 _putchar(unsigned char c)
 {
