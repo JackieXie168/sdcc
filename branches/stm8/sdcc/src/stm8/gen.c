@@ -972,22 +972,22 @@ const asmop *stack_aop (const asmop *aop, int i, int *offset)
       if (aop->aopu.bytes[i].byteu.reg->rIdx == XL_IDX)
         {
           stacked = ASMOP_X;
-          *offset = 1;
+          *offset = 2;
         }
       else if (aop->aopu.bytes[i].byteu.reg->rIdx == XH_IDX)
         {
           stacked = ASMOP_X;
-          *offset = 0;
+          *offset = 1;
         }
       else if (aop->aopu.bytes[i].byteu.reg->rIdx == YL_IDX)
         {
           stacked = ASMOP_Y;
-          *offset = 1;
+          *offset = 2;
         }
       else if (aop->aopu.bytes[i].byteu.reg->rIdx == YH_IDX)
         {
           stacked = ASMOP_Y;
-          *offset = 0;
+          *offset = 1;
         }
       else
         wassert (0);
@@ -1091,7 +1091,7 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
 {
   int i;
 
-#if 0
+#if 1
   D (emitcode("; genCopyStack", "%d %d %d", a_free, x_free, y_free));
 #endif
 
@@ -1165,7 +1165,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
   bool assigned[8] = {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE};
   bool a_free, x_free, y_free;
 
-#if 0
+#if 1
   D (emitcode(";  genCopy", "%d %d %d", a_dead, x_dead, y_dead));
 #endif
 
@@ -1225,14 +1225,25 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
   y_free = y_dead;
   for (i = 0; i < n; i++)
     {
-      if (assigned[i])
-        continue;
+      asmop *operand;
+      int offset;
 
-      if (aopInReg (source, soffset + i, A_IDX))
+      if (!assigned[i])
+        {
+          operand = source;
+          offset = soffset + i;
+        }
+      else
+        {
+          operand = result;
+          offset = roffset + i;
+        }
+
+      if (aopInReg (operand, offset, A_IDX))
         a_free = FALSE;
-      else if (aopInReg (source, soffset + i, XL_IDX) || aopInReg (source, soffset + i, XH_IDX))
+      else if (aopInReg (operand, offset, XL_IDX) || aopInReg (operand, offset, XH_IDX))
         x_free = FALSE;
-      else if (aopInReg (source, soffset + i, YL_IDX) || aopInReg (source, soffset + i, YH_IDX))
+      else if (aopInReg (operand, offset, YL_IDX) || aopInReg (operand, offset, YH_IDX))
         y_free = FALSE;
     }
   genCopyStack (result, roffset, source, soffset, n, assigned, &size, a_free, x_free, y_free, FALSE);
@@ -4060,6 +4071,13 @@ genPointerSet (iCode * ic)
 
   for (i = 0; !bit_field ? i < size : blen > 0; i++, blen -= 8)
     {
+      if (use_y ? aopInReg (right->aop, i, YL_IDX) || aopInReg (right->aop, i, YH_IDX) : aopInReg (right->aop, i, XL_IDX) || aopInReg (right->aop, i, XH_IDX))
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Overwriting pointer");
+          cost (80, 80);
+        }
+
       if (i && aopInReg (right->aop, i, A_IDX))
         {
           emitcode ("ld", "a, (0, sp)");

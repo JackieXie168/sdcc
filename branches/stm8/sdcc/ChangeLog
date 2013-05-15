@@ -5,6 +5,8 @@
 	* support/regression/tests/malloc.c,
 	  support/regression/tests/gcc-torture-execute-920810-1.c:
 	  STM8: Disable regression tests for unimplemented malloc().
+	* src/stm8/gen.c:
+	  STM8: Fix saving of a in early stack-to-stack copy, fix offset in stacked register operand, fix handling of operand in wide register in pointer set.
 
 2013-05-12 Philipp Klaus Krause <pkk AT spth.de>
 
