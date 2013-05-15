@@ -3613,6 +3613,8 @@ genLeftShift (const iCode *ic)
       return;
     }
 
+  D (emitcode ("; genLeftShift", ""));
+
   aopOp (result, ic);
   aopOp (left, ic);
 
@@ -3629,8 +3631,8 @@ genLeftShift (const iCode *ic)
 
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
-  emitLabel (tlbl1);
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
+  emitLabel (tlbl1);
   emit3 (A_TNZ, ASMOP_A, 0);
   if (tlbl2)
     emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
@@ -3780,6 +3782,8 @@ genRightShift (const iCode *ic)
       return;
     }
 
+  D (emitcode ("; genRightShift", ""));
+
   sign =  !SPEC_USIGN (getSpec (operandType (left)));
 
   aopOp (result, ic);
@@ -3798,8 +3802,8 @@ genRightShift (const iCode *ic)
 
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
-  emitLabel (tlbl1);
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
+  emitLabel (tlbl1);
   emit3 (A_TNZ, ASMOP_A, 0);
   if (tlbl2)
     emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
