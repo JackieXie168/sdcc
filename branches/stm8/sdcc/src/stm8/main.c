@@ -302,7 +302,7 @@ PORT stm8_port = {
   hasExtBitOp,                  /* hasExtBitOp */
   NULL,                         /* oclsExpense */
   TRUE,
-  TRUE,                         /* little endian */
+  FALSE,                        /* little endian */
   0,                            /* leave lt */
   0,                            /* leave gt */
   1,                            /* transform <= to ! > */
