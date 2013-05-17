@@ -3927,7 +3927,7 @@ genPointerGet (const iCode *ic)
       if (bit_field && blen < 8 && !i) // The only byte might need shifting.
         while (bstr--)
           emit3 (A_SRL, ASMOP_A, 0);
-      else if (bit_field && blen < 8) // The partial byte.
+      if (bit_field && blen < 8) // The partial byte.
         {
           emitcode ("and", "a, #0x%02x", 0xff >> (8 - blen));
           cost (2, 1);
@@ -4031,9 +4031,9 @@ genPointerSet (iCode * ic)
 {
   operand *result = IC_RESULT (ic);
   operand *right = IC_RIGHT (ic);
-  int size, i;
+  int size, i, j;
   bool use_y;
-  bool pushed_a = FALSE;
+  int pushed_a = 0;
   int blen, bstr;
   bool bit_field = IS_BITVAR (getSpec (operandType (right))) || IS_BITVAR (getSpec (operandType (result)));
   
@@ -4061,7 +4061,7 @@ genPointerSet (iCode * ic)
     if (aopInReg (right->aop, i, A_IDX))
       {
         push (ASMOP_A, 0, 1);
-        pushed_a = TRUE;
+        pushed_a = 1;
         break;
       }
 
@@ -4092,20 +4092,26 @@ genPointerSet (iCode * ic)
 
       if (bit_field && blen < 8)
         {
-          emitcode ("and", "a, #0x%02x", 0xff >> (8 - blen));
-          cost (2, 1);
-          while (bstr--)
+          for (j = 0; j < bstr; j++)
             emit3 (A_SLL, ASMOP_A, 0);
+          emitcode ("and", "a, #0x%02x", (0xff >> (8 - blen)) << bstr);
+          cost (2, 1);
+          push (ASMOP_A, 0, 1);
+          pushed_a++;
+          emitcode ("ld", "a, #0x%02x", ~((0xff >> (8 - blen)) << bstr) & 0xff);
+          cost (2, 1);
           if (!(size - 1 - i))
             {
-              emitcode ("or", use_y ? "a, (y)" : "a, (x)", size - 1 - i);
+              emitcode ("and", use_y ? "a, (y)" : "a, (x)", size - 1 - i);
               cost (1 + use_y, 1);
             }
           else
             {
-              emitcode ("or", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i);
+              emitcode ("and", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i);
               cost ((size - 1 - i < 256 ? 2 : 3) + use_y, 1);
             }
+          emitcode ("or", "a, (1, sp)");
+          cost (2, 1);
         }
 
       if (!(size - 1 - i))
@@ -4120,7 +4126,7 @@ genPointerSet (iCode * ic)
         }
     }
 
-  if (pushed_a)
+  while (pushed_a--)
     pop (ASMOP_A, 0, 1);
 
 release:
