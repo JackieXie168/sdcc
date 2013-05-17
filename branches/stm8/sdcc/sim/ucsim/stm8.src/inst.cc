@@ -819,21 +819,25 @@ cl_stm8::inst_neg(t_mem code, unsigned char prefix)
       FLAG_ASSIGN (BIT_Z, (resval & 0xff) == 0);
       FLAG_ASSIGN (BIT_N, 0x80 & resval);
       FLAG_ASSIGN (BIT_V, (0x80 == operand));
+      FLAG_ASSIGN (BIT_C, 0x100 & resval);
    } else if (((code&0xf0)==0x50) &&(prefix == 0x00)) {
       regs.X = resval;
       FLAG_ASSIGN (BIT_Z, (resval & 0xffff) == 0);
       FLAG_ASSIGN (BIT_N, 0x8000 & resval);
       FLAG_ASSIGN (BIT_V, (0x8000 == operand));
+      FLAG_ASSIGN (BIT_C, 0x10000 & resval);
    } else if (((code&0xf0)==0x50) &&(prefix == 0x90)) {
       regs.Y = resval;
       FLAG_ASSIGN (BIT_Z, (resval & 0xffff) == 0);
       FLAG_ASSIGN (BIT_N, 0x8000 & resval);
       FLAG_ASSIGN (BIT_V, (0x8000 == operand));
+      FLAG_ASSIGN (BIT_C, 0x10000 & resval);
    } else {
       store1(opaddr, resval &0xff);
       FLAG_ASSIGN (BIT_Z, (resval & 0xff) == 0);
       FLAG_ASSIGN (BIT_N, 0x80 & resval);
       FLAG_ASSIGN (BIT_V, (0x80 == operand));
+      FLAG_ASSIGN (BIT_C, 0x100 & resval);
    }
   
    return(resGO);
