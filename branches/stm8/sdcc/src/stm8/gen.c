@@ -1020,7 +1020,7 @@ adjustStack (int n)
         }
       else if (n < -255)
         {
-          emitcode ("addw","sp, #255");
+          emitcode ("sub","sp, #255");
           cost (2, 1);
           n += 255;
           _G.stack.pushed += 255;
