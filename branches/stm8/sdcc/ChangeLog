@@ -3,6 +3,11 @@
 	* src/stm8/gen.c:
 	  STM8: Fix offset in wide addition, fix handling of a in copy from registers to global, fix stack adjustment for large variables, fix large arithmetic signed right shift.
 
+2013-05-18 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* doc/INSTALL.txt: small update
+	* support/scripts/repack_release.sh: added windows x64 setup
+
 2013-05-17 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
@@ -55,6 +60,18 @@
 	* src/hc08/gen.c,
 	  src/z80/gen.c:
 	  More efficient cast from _Bool.
+
+2013-05-11 Molnar Karoly <molnarkaroly AT users.sf.net>
+
+	* device/include/pic14/pic14devices.txt,
+	  device/include/pic14/pic16regs.h,
+	  device/non-free/include/pic14/pic16f753.h,
+	  device/non-free/include/pic14/pic16hv753.h,
+	  device/non-free/lib/pic14/libdev/devices.txt,
+	  device/non-free/lib/pic14/libdev/pic16f753.c,
+	  device/non-free/lib/pic14/libdev/pic16hv753.c,
+	  doc/sdccman.lyx:
+	  New devices.
 
 2013-05-10 Maarten Brock <sourceforge.brock AT dse.nl>
 
