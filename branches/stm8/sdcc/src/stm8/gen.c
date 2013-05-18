@@ -1602,7 +1602,6 @@ static void
 genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, bool a_dead, bool x_dead, bool y_dead)
 {
   int i;
-  bool a_still_dead = a_dead;
 
   wassertl (result->type != AOP_LIT, "Trying to write to literal.");
   wassertl (result->type != AOP_IMMD, "Trying to write to immediate.");
@@ -1630,8 +1629,6 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
       else if ((!aopRS (result) || aopOnStack(result, roffset + i, 1) || aopInReg (result, roffset + i, A_IDX)) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset + i))
         {
           emit3_o (A_CLR, result, roffset + i, 0, 0);
-          if (aopInReg (result, roffset + i, A_IDX))
-            a_still_dead = FALSE;
           i++;
         }
       else if (i + 1 < size && aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
@@ -1660,9 +1657,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
         }
       else
         {
-          cheapMove (result, roffset + i, source, soffset + i, !a_still_dead);
-          if (aopInReg (result, roffset + i, A_IDX))
-            a_still_dead = FALSE;
+          cheapMove (result, roffset + i, source, soffset + i, !(a_dead && result->regs[A_IDX] >= i && source->regs[A_IDX] <= i));
           i++;
         }
     }
@@ -2508,7 +2503,7 @@ genPlus (const iCode *ic)
         right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
         {
           bool x = aopInReg (result->aop, i, X_IDX);
-          genMove (x ? ASMOP_X : ASMOP_Y, left->aop,
+          genMove_o (x ? ASMOP_X : ASMOP_Y, 0, left->aop, i, 2,
             pushed_a || regDead (A_IDX, ic) && left_in_a <= i && !result_in_a, x, !x);
           emit3w (A_INCW, x ? ASMOP_X : ASMOP_Y, 0);
           cost (x ? 1 : 2, 1);
@@ -2517,10 +2512,10 @@ genPlus (const iCode *ic)
         }
       else if (!started && i == size - 2 &&
         (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX)) &&
-        right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 1 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
+        right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 255 && byteOfVal (right->aop->aopu.aop_lit, i + 1) == 0)
         {
           bool x = aopInReg (result->aop, i, X_IDX);
-          genMove (x ? ASMOP_X : ASMOP_Y, left->aop,
+          genMove_o (x ? ASMOP_X : ASMOP_Y, 0, left->aop, i, 2,
             pushed_a || regDead (A_IDX, ic) && left_in_a <= i && !result_in_a, x, !x);
           emit3w (A_DECW, x ? ASMOP_X : ASMOP_Y, 0);
           started = TRUE;
@@ -2531,7 +2526,7 @@ genPlus (const iCode *ic)
         (right->aop->type == AOP_LIT || right->aop->type == AOP_IMMD || aopOnStack (right->aop, i, 2)))
         {
           bool x = aopInReg (result->aop, i, X_IDX);
-          genMove (x ? ASMOP_X : ASMOP_Y, left->aop,
+          genMove_o (x ? ASMOP_X : ASMOP_Y, 0, left->aop, i, 2,
             pushed_a || regDead (A_IDX, ic) && left_in_a <= i && !result_in_a, x, !x);
           if (right->aop->type != AOP_LIT || byteOfVal (right->aop->aopu.aop_lit, i) || byteOfVal (right->aop->aopu.aop_lit, i + 1))
             {

@@ -1,3 +1,8 @@
+2013-05-18 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  STM8: Fix offset in wide addition, fix handling of a in copy from registers to global.
+
 2013-05-17 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:

@@ -863,15 +863,15 @@ cl_stm8::inst_rlc(t_mem code, unsigned char prefix)
   long int operand, resval;
   unsigned int opaddr;// = 0xffff;
 
-   if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
+   if (((code&0xf0)==0x40) && (prefix == 0x00)) {
       operand = regs.A;
-   } else if (((code&0xf0)==0x50) &&(prefix == 0x00)) {
+   } else if (((code&0xf0)==0x50) && (prefix == 0x00)) {
       operand = regs.X;
-   } else if (((code&0xf0)==0x50) &&(prefix == 0x90)) {
+   } else if (((code&0xf0)==0x50) && (prefix == 0x90)) {
       operand = regs.Y;
    } else {
-      opaddr = get_dest(code,prefix);
-      operand = get1(opaddr);
+      opaddr = get_dest (code, prefix);
+      operand = get1 (opaddr);
    }
    
    resval = operand << 0x1;
@@ -902,7 +902,7 @@ cl_stm8::inst_rlc(t_mem code, unsigned char prefix)
       FLAG_ASSIGN (BIT_C, (resval & 0x100));
    }
   
-   return(resGO);
+   return (resGO);
 }
 
 int
