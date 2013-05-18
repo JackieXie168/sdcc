@@ -2481,7 +2481,7 @@ genPlus (const iCode *ic)
   size = result->aop->size;
 
   /* Swap if left is literal or right is in A. */
-  if (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || aopInReg (right->aop, 0, A_IDX)) // todo: Swap in more cases when right in reg, left not.
+  if (left->aop->type == AOP_LIT || left->aop->type == AOP_IMMD || aopInReg (right->aop, 0, A_IDX)) // todo: Swap in more cases when right in reg, left not. Swap individually per-byte.
     {
       operand *t = right;
       right = left;
@@ -2496,7 +2496,7 @@ genPlus (const iCode *ic)
       }
   
   for(i = 0, started = FALSE; i < size;)
-    {
+    {// Todo: incw /decw x twice is cheaper than addw x, #2 / addw x, #254. 16-bit operation in dead source might be cheaper than add.
       // We can use incw / decw only for the only, top non-zero word, since it neither takes into account an existing carry nor does it update the carry.
       if (!started && i == size - 2 &&
         (aopInReg (result->aop, i, X_IDX) || aopInReg (result->aop, i, Y_IDX)) &&
@@ -3700,7 +3700,7 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
   /* I suppose that the left size >= result size */
   wassert (getSize (operandType (left)) >= size);
 
-  if (shCount >= (size * 8))
+  if (!sign && shCount >= (size * 8))
     {
       aopOp (left, ic);
       aopOp (result, ic);
