@@ -7,6 +7,8 @@
 	  sim/ucsim/stm8.src/stm8.cc,
 	  sdas/asstm8/stm8mch.c:
 	  STM8: Patches by Valentin Dudouyt to fix simulator.
+	* src/stm8/gen.c:
+	  STM8: Fix conditional jump.
 
 2013-05-18 Philipp Klaus Krause <pkk AT spth.de>
 

@@ -1657,7 +1657,7 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
         }
       else
         {
-          cheapMove (result, roffset + i, source, soffset + i, !(a_dead && result->regs[A_IDX] >= i && source->regs[A_IDX] <= i));
+          cheapMove (result, roffset + i, source, soffset + i, !(a_dead && (result->regs[A_IDX] >= i || result->regs[A_IDX] == -1) && source->regs[A_IDX] <= i));
           i++;
         }
     }
@@ -4178,20 +4178,43 @@ genIfx (const iCode *ic)
           inv = true;
         }
 
-      for (i = 0; i < cond->aop->size; i++)
+      for (i = 0; i < cond->aop->size; i++) // todo: Use tnzw; test a first, if dead, to free a; use swapw followed by exg to test xh if xl is dead (same for yh).
         {
-          // Need to swap when operand is in part of x or y.
-          int swapidx = -1;
-          if (aopRS (cond->aop) && !aopInReg (cond->aop, i, A_IDX) && cond->aop->aopu.bytes[i].in_reg)
-            swapidx = cond->aop->aopu.bytes[i].byteu.reg->rIdx;
-
-          if (swapidx != -1)
-            swap_to_a (swapidx);
-
-          emit3_o (A_TNZ, swapidx == -1 ? cond->aop : ASMOP_A, swapidx == -1 ? i : 0, 0, 0);
-
-          if (swapidx != -1)
-            swap_from_a (swapidx);
+          if ((aopInReg (cond->aop, i, XL_IDX) || aopInReg (cond->aop, i, XH_IDX) || aopInReg (cond->aop, i, YH_IDX)) && regDead (A_IDX, ic) && cond->aop->regs[A_IDX] <= i)
+            {
+              cheapMove (ASMOP_A, 0, cond->aop, 0, FALSE);
+              emit3(A_TNZ, ASMOP_A, 0);
+            }
+          else if (aopInReg (cond->aop, i, XL_IDX))
+            {
+              emitcode ("exg", "a, xl");
+              cost (1, 1);
+              emit3(A_TNZ, ASMOP_A, 0);
+              emitcode ("exg", "a, xl");
+              cost (1, 1);
+            }
+          else if (aopInReg (cond->aop, i, YL_IDX))
+            {
+              emitcode ("exg", "a, yl");
+              cost (1, 1);
+              emit3(A_TNZ, ASMOP_A, 0);
+              emitcode ("exg", "a, yl");
+              cost (1, 1);
+            }
+          else if (aopInReg (cond->aop, i, XH_IDX))
+            {
+              push (ASMOP_X, 0, 2);
+              emitcode ("tnz", "(1, sp)");
+              adjustStack (2);
+            }
+          else if (aopInReg (cond->aop, i, YH_IDX))
+            {
+              push (ASMOP_Y, 0, 2);
+              emitcode ("tnz", "(1, sp)");
+              adjustStack (2);
+            }
+          else
+            emit3_o (A_TNZ, cond->aop , i, 0, 0);
 
           if (tlbl)
             emitcode ((!!IC_FALSE (ic) ^ (inv && i != cond->aop->size - 1)) ? "jrne" : "jreq", "!tlabel", labelKey2num ((inv && i == cond->aop->size - 1) ? tlbl2->key : tlbl->key));
