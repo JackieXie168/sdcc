@@ -4165,6 +4165,12 @@ initCSupport (void)
 */
 
   /* byte */
+
+  /* PIC16 port wants __divschar/__modschar to return an int, so that both
+   * 100 / -4 = -25 and -128 / -1 = 128 can be handled correctly
+   * (first one would have to be sign extended, second one must not be).
+   * Similarly, modschar should be handled, but the iCode introduces cast
+   * here and forces '% : s8 x s8 -> s8' ... */
   bwd = 0;
   for (su = 0; su < 4; su++)
     {
@@ -4173,17 +4179,14 @@ initCSupport (void)
           /* muluchar, mulschar, mulsuchar and muluschar are separate functions, because e.g. the z80
              port is sign/zero-extending to int before calling mulint() */
           /* div and mod : s8_t x s8_t -> s8_t should be s8_t x s8_t -> s16_t, see below */
-          if (!TARGET_IS_PIC16 || muldivmod != 1 || su != 0)
-            {
-              struct dbuf_s dbuf;
+          struct dbuf_s dbuf;
 
-              dbuf_init (&dbuf, 128);
-              dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su], sbwd[bwd]);
-              muldiv[muldivmod][bwd][su] =
-                funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)), multypes[bwd][su % 2], multypes[bwd][su / 2], 2,
-                            options.intlong_rent);
-              dbuf_destroy (&dbuf);
-            }
+          dbuf_init (&dbuf, 128);
+          dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su], sbwd[bwd]);
+          muldiv[muldivmod][bwd][su] =
+            funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)), multypes[(TARGET_IS_PIC16 && muldivmod == 1 && bwd == 0 && su == 0 || TARGET_IS_STM8 && muldivmod == 0 && bwd == 0) ? 1 : bwd][su % 2], multypes[bwd][su / 2], 2,
+                        options.intlong_rent);
+          dbuf_destroy (&dbuf);
         }
     }
 
@@ -4193,40 +4196,15 @@ initCSupport (void)
         {
           for (muldivmod = 1; muldivmod < 3; muldivmod++)
             {
-              /* div and mod : s8_t x s8_t -> s8_t should be s8_t x s8_t -> s16_t, see below */
-              if (!TARGET_IS_PIC16 || muldivmod != 1 || bwd != 0 || su != 0)
-                {
-                  struct dbuf_s dbuf;
+              struct dbuf_s dbuf;
 
-                  dbuf_init (&dbuf, 128);
-                  dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su * 3], sbwd[bwd]);
-                  muldiv[muldivmod][bwd][su] =
-                    funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)), multypes[bwd][su], multypes[bwd][su], 2,
-                                options.intlong_rent);
-                  dbuf_destroy (&dbuf);
-                }
+              dbuf_init (&dbuf, 128);
+              dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su * 3], sbwd[bwd]);
+              muldiv[muldivmod][bwd][su] =
+                funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)), multypes[(TARGET_IS_PIC16 && muldivmod == 1 && bwd == 0 && su == 0 || TARGET_IS_STM8 && muldivmod == 0 && bwd == 0) ? 1 : bwd][su], multypes[bwd][su], 2,
+                            options.intlong_rent);
+              dbuf_destroy (&dbuf);
             }
-        }
-    }
-
-  if (TARGET_IS_PIC16)
-    {
-      /* PIC16 port wants __divschar/__modschar to return an int, so that both
-       * 100 / -4 = -25 and -128 / -1 = 128 can be handled correctly
-       * (first one would have to be sign extended, second one must not be).
-       * Similarly, modschar should be handled, but the iCode introduces cast
-       * here and forces '% : s8 x s8 -> s8' ... */
-      su = 0;
-      bwd = 0;
-      for (muldivmod = 1; muldivmod < 2; muldivmod++)
-        {
-          struct dbuf_s dbuf;
-
-          dbuf_init (&dbuf, 128);
-          dbuf_printf (&dbuf, "_%s%s%s", smuldivmod[muldivmod], ssu[su], sbwd[bwd]);
-          muldiv[muldivmod][bwd][su] =
-            funcOfType (_mangleFunctionName (dbuf_c_str (&dbuf)), multypes[1][su], multypes[bwd][su], 2, options.intlong_rent);
-          dbuf_destroy (&dbuf);
         }
     }
 

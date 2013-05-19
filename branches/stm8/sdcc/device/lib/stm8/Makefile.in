@@ -17,6 +17,7 @@ include $(srcdir)/../incl.mk
 STM8_FLOAT = $(COMMON_FLOAT)
 
 STM8_INT = $(COMMON_INT) \
+  _mulschar.c \
   _divschar.c \
   _divsint.c \
   _modschar.c \

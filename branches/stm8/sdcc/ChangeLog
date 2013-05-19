@@ -8,7 +8,14 @@
 	  sdas/asstm8/stm8mch.c:
 	  STM8: Patches by Valentin Dudouyt to fix simulator.
 	* src/stm8/gen.c:
-	  STM8: Fix conditional jump.
+	  STM8: Fix conditional jump, addres generation for on-stack variables.
+	* device/lib/_mullong.c,
+	  device/lib/_mulint.c,
+	  device/lib/stm8/Makefile.in,
+	  device/lib/_mulschar.c,
+	  src/SDCCsymt.c,
+	  src/stm8/main.c:
+	  STM8: Multiplication and division fixes.
 
 2013-05-18 Philipp Klaus Krause <pkk AT spth.de>
 

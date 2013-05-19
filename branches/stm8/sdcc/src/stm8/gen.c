@@ -2090,7 +2090,7 @@ emitCall (const iCode *ic, bool ispcall)
         }
 
       emitcode ("ldw", "x, sp");
-      emitcode ("addw", "x, #%d", sym->stack + _G.stack.pushed);
+      emitcode ("addw", "x, #%d", sym->stack + _G.stack.pushed + 1);
       cost (2 + 4, 1 + 2);
       push (ASMOP_X, 0, 2);
 
@@ -2701,7 +2701,7 @@ genDivMod1 (const iCode *ic)
   if (!regDead (A_IDX, ic))
     push (ASMOP_A, 0, 1);
 
-  genMove_o (use_y ? ASMOP_Y : ASMOP_X, 0, right->aop, 0, 2, FALSE, FALSE, FALSE); // todo: Allow more.
+  genMove_o (use_y ? ASMOP_Y : ASMOP_X, 0, left->aop, 0, 2, FALSE, FALSE, FALSE); // todo: Allow more.
   cheapMove (ASMOP_A, 0, right->aop, 0, TRUE);
 
   emitcode ("div", use_y ? "y, a" : "x, a");
@@ -4282,7 +4282,7 @@ genAddrOf (const iCode *ic)
       else
         {
           emitcode ("ldw", "y, sp");
-          emitcode ("addw", "y, #%d", sym->stack + _G.stack.pushed);
+          emitcode ("addw", "y, #%d", sym->stack + _G.stack.pushed + 1);
           cost (6, 3);
         }
       genMove (result->aop, ASMOP_Y, regDead (A_IDX, ic), FALSE, regDead (X_IDX, ic));
@@ -4298,7 +4298,7 @@ genAddrOf (const iCode *ic)
       else
         {
           emitcode ("ldw", "x, sp");
-          emitcode ("addw", "x, #%d", sym->stack + _G.stack.pushed);
+          emitcode ("addw", "x, #%d", sym->stack + _G.stack.pushed + 1);
           cost (4, 3);
         }
       genMove (result->aop, ASMOP_X, regDead (A_IDX, ic), TRUE, regDead (Y_IDX, ic));
