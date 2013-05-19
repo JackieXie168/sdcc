@@ -42,6 +42,6 @@ _moduschar (unsigned char x, unsigned char y)
 unsigned int
 _modsuchar (signed char x, signed char y)
 {
-  return ((int)x % (int)y);
+  return ((int)((unsigned char)x) % (int)y);
 }
 
