@@ -2858,6 +2858,7 @@ genCmp (iCode *ic)
   sym_link *letype, *retype;
   int sign, opcode;
   int size, i;
+  bool exchange = FALSE;
 
   D (emitcode ("; genCmp", ""));
 
@@ -2874,18 +2875,30 @@ genCmp (iCode *ic)
   aopOp (IC_RIGHT (ic), ic);
   aopOp (IC_RESULT (ic), ic);
 
+  size = max (left->aop->size, right->aop->size);
+
   /* Prefer literal operand on right */
   if (left->aop->type == AOP_LIT ||
     right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
     (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
+    exchange = TRUE;
+
+  /* Cannot do multibyte signed comparison, except for 2-byte using cpw */
+  if (sign && size > 1 && !(size == 2 && right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
+    {
+      if (exchange && (opcode ==  '<' || opcode == GE_OP))
+        exchange = FALSE;
+      if (!exchange && (opcode == '>' || opcode == LE_OP))
+        exchange = TRUE;
+    }
+
+  if (exchange)
     {
       operand *temp = left;
       left = right;
       right = temp;
       opcode = exchangedCmp (opcode);
     }
-
-  size = max (left->aop->size, right->aop->size);
 
   if (size == 1 &&
     (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK) &&
