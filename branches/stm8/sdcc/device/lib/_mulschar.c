@@ -36,12 +36,12 @@ _mulschar (signed char x, signed char y)
 signed int
 _muluschar (unsigned char x, unsigned char y)
 {
-  return ((int)x * (int)y);
+  return ((int)x * (int)((unsigned char)y));
 }
 
 unsigned int
 _mulsuchar (signed char x, signed char y)
 {
-  return ((int)x * (int)y);
+  return ((int)((unsigned char)x) * (int)y);
 }
 
