@@ -1,5 +1,10 @@
 2013-05-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/stm8/gen.c:
+	  STM8: Give up trying to fix big-endian bit-fields. Make bit-fields little-endian.
+
+2013-05-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* sim/ucsim/stm8.src/instcl.h,
 	  sim/ucsim/stm8.src/inst.cc,
 	  sim/ucsim/stm8.src/stm8mac.h,

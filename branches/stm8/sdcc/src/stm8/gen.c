@@ -3909,14 +3909,14 @@ genPointerGet (const iCode *ic)
   size = result->aop->size;
   for (i = 0; !bit_field ? i < size : blen > 0; i++, blen -= 8)
     {
-      if (!(size - 1 - i + offset))
+      if (!((bit_field ? i : size - 1 - i) + offset))
         {
           emitcode ("ld", use_y ? "a, (y)" : "a, (x)");
           cost (1 + use_y, 1);
         }
       else
         {
-          emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i + offset);
+          emitcode ("ld", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", (bit_field ? i : size - 1 - i) + offset);
           cost ((size - 1 - i + offset < 256 ? 2 : 3) + use_y, 1);
         }
 
@@ -3966,7 +3966,7 @@ genPointerGet (const iCode *ic)
   if (bit_field && i < size)
     {
       if (SPEC_USIGN (getSpec (operandType (result))))
-        genMove_o (result->aop, i, ASMOP_ZERO, 0, size - i - 1, FALSE, FALSE, FALSE);
+        genMove_o (result->aop, i, ASMOP_ZERO, 0, bit_field ? i : size - i - 1, FALSE, FALSE, FALSE);
       else
         wassertl (0, "Unimplemented multibyte sign extension for bit-field.");
     }
@@ -4096,28 +4096,28 @@ genPointerSet (iCode * ic)
           pushed_a++;
           emitcode ("ld", "a, #0x%02x", ~((0xff >> (8 - blen)) << bstr) & 0xff);
           cost (2, 1);
-          if (!(size - 1 - i))
+          if (!i)
             {
-              emitcode ("and", use_y ? "a, (y)" : "a, (x)", size - 1 - i);
+              emitcode ("and", use_y ? "a, (y)" : "a, (x)", i);
               cost (1 + use_y, 1);
             }
           else
             {
-              emitcode ("and", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", size - 1 - i);
+              emitcode ("and", use_y ? "a, (0x%x, y)" : "a, (0x%x, x)", i);
               cost ((size - 1 - i < 256 ? 2 : 3) + use_y, 1);
             }
           emitcode ("or", "a, (1, sp)");
           cost (2, 1);
         }
 
-      if (!(size - 1 - i))
+      if (!(bit_field ? i : size - 1 - i))
         {
           emitcode ("ld", use_y ? "(y), a" : "(x), a");
           cost (1 + use_y, 1);
         }
       else
         {
-          emitcode ("ld", use_y ? "(0x%x, y), a" : "(0x%x, x), a", size - 1 - i);
+          emitcode ("ld", use_y ? "(0x%x, y), a" : "(0x%x, x), a", bit_field ? i : size - 1 - i);
           cost ((size - 1 - i < 256 ? 2 : 3) + use_y, 1);
         }
     }
