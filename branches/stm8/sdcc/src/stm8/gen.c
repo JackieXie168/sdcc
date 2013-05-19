@@ -3482,7 +3482,7 @@ genAnd (const iCode *ic)
         continue;
 
       right_stacked = stack_aop (right->aop, i, &right_offset);
-
+emitcode(";A", "left %s right %s", aopGet(left->aop, i), aopGet(right->aop, i));
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
       if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
@@ -3505,6 +3505,7 @@ genAnd (const iCode *ic)
           push (ASMOP_A, 0, 1);
           pushed_a = TRUE;
         }
+emitcode(";B", "left %s right %s", aopGet(left->aop, i), aopGet(right->aop, i));
     }
 
   if (pushed_a)

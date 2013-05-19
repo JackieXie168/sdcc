@@ -36,7 +36,7 @@ _mulschar (signed char x, signed char y)
 signed int
 _muluschar (unsigned char x, unsigned char y)
 {
-  return ((int)x * (int)((unsigned char)y));
+  return ((int)((signed char)x) * (int)y);
 }
 
 unsigned int
