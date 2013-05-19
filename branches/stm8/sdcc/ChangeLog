@@ -1,3 +1,13 @@
+2013-05-19 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
+	* sim/ucsim/stm8.src/instcl.h,
+	  sim/ucsim/stm8.src/inst.cc,
+	  sim/ucsim/stm8.src/stm8mac.h,
+	  sim/ucsim/stm8.src/glob.cc,
+	  sim/ucsim/stm8.src/stm8.cc,
+	  sdas/asstm8/stm8mch.c:
+	  STM8: Patches by Valentin Dudouyt to fix simulator.
+
 2013-05-18 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:

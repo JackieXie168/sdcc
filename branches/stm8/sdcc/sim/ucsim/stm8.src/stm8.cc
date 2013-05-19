@@ -793,14 +793,14 @@ cl_stm8::exec_inst(void)
                return( resGO);
                break;
             case 0x40:
-               opaddr = fetch1();
                tempi = get1(fetch1());
+               opaddr = fetch1();
                store1(opaddr, tempi);
                return( resGO);
                break;
             case 0x50:
-               opaddr = fetch2();
                tempi = get1(fetch2());
+               opaddr = fetch2();
                store1(opaddr, tempi);
                return( resGO);
                break;

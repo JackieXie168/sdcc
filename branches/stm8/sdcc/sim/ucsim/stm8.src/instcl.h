@@ -2,8 +2,8 @@
 
    //virtual void incx(void);
    virtual int fetchea(t_mem code, unsigned char prefix);
-   virtual int fetch_sp_indexed2();
-   virtual int fetch_long2();
+   virtual int get2(unsigned int addr);
+   virtual int get3(unsigned int addr);
    virtual int get_dest(t_mem code, unsigned char prefix);
    virtual int operandw(t_mem code, unsigned char prefix);
    

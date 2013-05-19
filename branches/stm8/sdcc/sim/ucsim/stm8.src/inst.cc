@@ -59,7 +59,7 @@ cl_stm8::fetchea(t_mem code, unsigned char prefix)
          ftc = fetch();
          return get2(ftc);
       } else {
-         return( resHALT);
+         printf("************* bad prefix !!!!\n");
       }
 
    case 0xd:
@@ -232,17 +232,15 @@ cl_stm8::inst_add(t_mem code, unsigned char prefix)
 }
 
 int
-cl_stm8::fetch_sp_indexed2()
+cl_stm8::get2(unsigned int addr)
 {
-    int addr = (unsigned char)fetch()+regs.SP;  // SP indexed
-    return(get2(addr));
+    return((ram->get((t_addr) (addr)) << 8) | ram->get((t_addr) (addr+1)));
 }
 
 int
-cl_stm8::fetch_long2()
+cl_stm8::get3(unsigned int addr)
 {
-    int addr = fetch2(); // Long addr
-    return(get2(addr));
+    return((ram->get((t_addr) (addr)) << 16) | (ram->get((t_addr) (addr+1)) << 8) |ram->get((t_addr) (addr+2)));
 }
 
 int
@@ -257,9 +255,9 @@ cl_stm8::inst_addw(t_mem code, unsigned char prefix)
   switch((code & 0xf0) >> 4)
   {
     case 0x1:
-    case 0xa: operand2 = fetch2(); break;
-    case 0xb: operand2 = fetch_long2(); break;
-    case 0xf: operand2 = fetch_sp_indexed2(); break;
+    case 0xa: operand2 = fetch2(); break; // Immediate
+    case 0xb: operand2 = get2(fetch2()); break; // Long
+    case 0xf: operand2 = get2(regs.SP + fetch()); break; // sp-indexed
     default: return(resHALT);
   }
 
@@ -437,12 +435,17 @@ cl_stm8::inst_cpw(t_mem code, unsigned char prefix)
   long int operand1, operand2, result;
 
   operand1 = prefix == 0x90 ? regs.Y : regs.X;
+  operand2 = prefix == 0x90 ? regs.X : regs.Y;
 
   switch((code & 0xf0) >> 4)
   {
-    case 0x1: operand2 = fetch_sp_indexed2(); break;
-    case 0xa: operand2 = fetch2(); break;
-    case 0xc: operand2 = fetch_long2(); break;
+    case 0xa: operand2 = fetch2(); break; // Immediate
+    case 0xb: operand2 = get2(fetch()); break; // Short
+    case 0xc: operand2 = get2(fetch2()); break; // Long
+    case 0x1: operand2 = get2(regs.SP + fetch()); break; // SP-indexed
+    case 0xf: operand1 = get2(operand1); break; // cpw X|Y, (Y|X)
+    case 0xe: operand1 = get2(operand1 + fetch()); break;
+    case 0xd: operand1 = get2(operand1 + fetch2()); break;
     default: return(resHALT);
   }
    
@@ -723,33 +726,53 @@ cl_stm8::inst_lda(t_mem code, unsigned char prefix)
   return(resGO);
 }
 
-int cl_stm8::operandw(t_mem code, unsigned char prefix) {
-	if(EA_IMM(code)) {
-		return(fetch2());
-	} else {
-		int addr = fetchea(code,prefix);
-		int result = get2(addr);
-		return(result);
-	}
+int
+cl_stm8::operandw(t_mem code, unsigned char prefix)
+{
+       if(EA_IMM(code)) {
+               return(fetch2());
+       } else {
+               int addr = fetchea(code,prefix);
+               int result = get2(addr);
+               return(result);
+       }
 }
 
 int
 cl_stm8::inst_ldxy(t_mem code, unsigned char prefix)
 {
   int operand;
+  short unsigned int *dest_ptr;
+  dest_ptr = (prefix & 0x90) ? &regs.Y : &regs.X;
+  if(code == 0x16) dest_ptr = &regs.Y; 
 
-  operand = operandw(code, prefix);
+  switch((code & 0xf0) >> 4) {
+     case 0xa: operand = fetch2(); break; // Immediate
+     case 0xb: operand = get2(fetch()); break; // Short
+     case 0xc: operand = get2(fetch2()); break; // Long
+     case 0xf: operand = get2(*dest_ptr); break;
+     case 0xe: operand = get2(*dest_ptr + fetch()); break;
+     case 0xd: operand = get2(*dest_ptr + fetch2()); break;
+     case 0x1: operand = get2(regs.SP + fetch()); break;
+     case 0x9: // Special cases
+     	switch(code | (prefix << 8)) {
+		case 0x9093: dest_ptr = &regs.Y; operand = regs.X; break;
+		case 0x0093: dest_ptr = &regs.X; operand = regs.Y; break;
+		case 0x0096: dest_ptr = &regs.X; operand = regs.SP; break;
+		case 0x0094: dest_ptr = &regs.SP; operand = regs.X; break;
+		case 0x9096: dest_ptr = &regs.Y; operand = regs.SP; break;
+		case 0x9094: dest_ptr = &regs.SP; operand = regs.Y; break;
+		default: return(resHALT);
+	}
+     default:  return(resHALT);
+  }
 
 //  FLAG_ASSIGN (BIT_Z, (result & 0xff) == 0);
 //  FLAG_ASSIGN (BIT_C, 0x100 & result);
 //  FLAG_ASSIGN (BIT_N, 0x80 & result);
 //  FLAG_ASSIGN (BIT_H, 0x10 & (operand1 ^ operand2 ^ result));
 
-   if ((prefix == 0x90) || (prefix == 0x91)) {
-     regs.Y = operand;
-   } else {
-     regs.X = operand;
-   }
+  *dest_ptr = operand;
    
   return(resGO);
 }

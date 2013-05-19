@@ -340,7 +340,7 @@ struct mne *mp;
 			case SP:	opcy_aerr();	break;
 			default:			break;
 			}
-			outrb(&e1, R_USGN);
+			outrw(&e1, R_USGN);
 			break;
 		case S_IMM:	/* #arg */
 			switch(v2) {
