@@ -13,6 +13,8 @@
 	  device/lib/_mulint.c,
 	  device/lib/stm8/Makefile.in,
 	  device/lib/_mulschar.c,
+	  device/lib/_modschar.c,
+	  device/lib/_divschar.c,
 	  src/SDCCsymt.c,
 	  src/stm8/main.c:
 	  STM8: Multiplication and division fixes.

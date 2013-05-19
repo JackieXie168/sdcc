@@ -27,21 +27,21 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-signed char
+signed int
 _divschar (signed char x, signed char y)
 {
-  return (_divsint (x, y));
+  return ((int)x / (int)y);
 }
 
-signed char
+signed int
 _divuschar (unsigned char x, unsigned char y)
 {
-  return (_divsint (x, y));
+  return ((int)((signed char)x) / (int)y);
 }
 
-unsigned char
+unsigned int
 _divsuchar (signed char x, signed char y)
 {
-  return (_divsint (x, y));
+  return ((int)x / (int)y);
 }
 

@@ -27,21 +27,21 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-signed char
+signed int
 _modschar (signed char x, signed char y)
 {
-  return (_modsint (x, y));
+  return ((int)x % (int)y);
 }
 
-signed char
+signed int
 _moduschar (unsigned char x, unsigned char y)
 {
-  return (_modsint (x, y));
+  return ((int)((signed char)x) % (int)y);
 }
 
-unsigned char
+unsigned int
 _modsuchar (signed char x, signed char y)
 {
-  return (_modsint (x, y));
+  return ((int)x % (int)y);
 }
 
