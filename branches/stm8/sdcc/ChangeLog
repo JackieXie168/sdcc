@@ -1,3 +1,9 @@
+2013-05-21 Valentin Dudouyt <valentin dudouyt AT gmail.com>                                                              
+
+	* src/stm8/main.c,
+	* src/SDCCglue.c:
+	STM8: Fixed init code: some of GSINIT parts aren't executed under certain linking conditions.
+
 2013-05-20 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/z80/gen.c:

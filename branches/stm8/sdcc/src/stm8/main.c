@@ -99,7 +99,6 @@ stm8_getRegName (const struct reg_info *reg)
 void
 stm8_genInitStartup(FILE * of)
 {
-  fprintf (of, "\t.area GSINIT0\n");
   fprintf (of, "__sdcc_gs_init_startup:\n");
 
   /* Init static & global variables */
@@ -125,13 +124,6 @@ stm8_genInitStartup(FILE * of)
   fprintf (of, "\tjp  00003$\n");
   fprintf (of, "00004$:\n");
   fprintf (of, "; stm8_genXINIT() end\n");
-  fprintf (of, "\t.area GSFINAL\n");
-  fprintf (of, "\tjp\t__sdcc_program_startup\n\n");
-
-  fprintf (of, "\t.area CSEG\n");
-  fprintf (of, "__sdcc_program_startup:\n");
-
-  dbuf_printf(&statsg->oBuf, "\tjp _main\n");
 }
 
 int
@@ -139,7 +131,7 @@ stm8_genIVT(struct dbuf_s * oBuf, symbol ** intTable, int intCount)
 {
   #define STM8_INTERRUPTS_COUNT 30
   int i;
-  dbuf_tprintf (oBuf, "\tint __sdcc_gs_init_startup ;reset\n");
+  dbuf_tprintf (oBuf, "\tint s_GSINIT ;reset\n");
   dbuf_tprintf (oBuf, "\tint 0x0000 ;trap\n");
   for(i = 0; i < STM8_INTERRUPTS_COUNT; i++)
   {

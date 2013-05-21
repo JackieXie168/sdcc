@@ -2149,21 +2149,24 @@ glue (void)
 
   /* STM8 note: there are no such instructions supported.
      Also, we don't need this logic as well. */
-  if (port->general.glue_up_main && mainf && IFFUNC_HASBODY (mainf->type) && !TARGET_IS_STM8)
+  if (port->general.glue_up_main && mainf && IFFUNC_HASBODY (mainf->type))
     {
       /* This code is generated in the post-static area.
        * This area is guaranteed to follow the static area
        * by the ugly shucking and jiving about 20 lines ago.
        */
       tfprintf (asmFile, "\t!area\n", port->mem.post_static_name);
-      fprintf (asmFile, "\t%cjmp\t__sdcc_program_startup\n", options.acall_ajmp ? 'a' : 'l');
+      if(TARGET_IS_STM8)
+        fprintf (asmFile, "\tjp\t__sdcc_program_startup\n");
+      else
+        fprintf (asmFile, "\t%cjmp\t__sdcc_program_startup\n", options.acall_ajmp ? 'a' : 'l');
     }
 
   fprintf (asmFile, "%s" "; Home\n" "%s", iComments2, iComments2);
   tfprintf (asmFile, "\t!areahome\n", HOME_NAME);
   dbuf_write_and_destroy (&home->oBuf, asmFile);
 
-  if (mainf && IFFUNC_HASBODY (mainf->type) && !TARGET_IS_STM8)
+  if (mainf && IFFUNC_HASBODY (mainf->type))
     {
       /* STM8 note: there is no need to call main().
          Instead of that, it's address is specified in the 
@@ -2173,7 +2176,10 @@ glue (void)
       fprintf (asmFile, "__sdcc_program_startup:\n");
 
       /* put in jump or call to main */
-      fprintf (asmFile, "\t%cjmp\t_main\n", options.acall_ajmp ? 'a' : 'l');        /* needed? */
+      if(TARGET_IS_STM8)
+        fprintf (asmFile, "\tjp\t_main\n");
+      else
+        fprintf (asmFile, "\t%cjmp\t_main\n", options.acall_ajmp ? 'a' : 'l');        /* needed? */
       fprintf (asmFile, ";\treturn from main will return to caller\n");
     }
   /* copy over code */
