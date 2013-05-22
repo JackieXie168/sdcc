@@ -2884,7 +2884,7 @@ genCmp (iCode *ic)
     exchange = TRUE;
 
   /* Cannot do multibyte signed comparison, except for 2-byte using cpw */
-  if (sign && size > 1 && !(size == 2 && right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK))
+  if (sign && size > 1 && !(size == 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK)))
     {
       if (exchange && (opcode ==  '<' || opcode == GE_OP))
         exchange = FALSE;
@@ -2975,7 +2975,7 @@ genCmp (iCode *ic)
           
           if (right_stacked || aopInReg (right->aop, i, A_IDX))
             {
-              emitcode (i ? "sbc" : "sub", "a, (1, sp)");
+              emitcode (i ? "sbc" : "sub", "a, (%d, sp)", right_offset);
               cost (2, 1);
             }
           else
