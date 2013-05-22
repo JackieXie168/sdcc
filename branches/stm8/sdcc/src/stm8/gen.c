@@ -3495,7 +3495,7 @@ genAnd (const iCode *ic)
         continue;
 
       right_stacked = stack_aop (right->aop, i, &right_offset);
-emitcode(";A", "left %s right %s", aopGet(left->aop, i), aopGet(right->aop, i));
+
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
       if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
@@ -3518,7 +3518,6 @@ emitcode(";A", "left %s right %s", aopGet(left->aop, i), aopGet(right->aop, i));
           push (ASMOP_A, 0, 1);
           pushed_a = TRUE;
         }
-emitcode(";B", "left %s right %s", aopGet(left->aop, i), aopGet(right->aop, i));
     }
 
   if (pushed_a)
@@ -3641,12 +3640,12 @@ genLeftShift (const iCode *ic)
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
-  emitLabel (tlbl1);
   emit3 (A_TNZ, ASMOP_A, 0);
   if (tlbl2)
     emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
+  emitLabel (tlbl1);
   // todo: Shift in left if dead and cheaper?
   for (i = 0; i < size;)
      {
@@ -3812,12 +3811,12 @@ genRightShift (const iCode *ic)
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
-  emitLabel (tlbl1);
   emit3 (A_TNZ, ASMOP_A, 0);
   if (tlbl2)
     emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
   cost (2, 0);
 
+  emitLabel (tlbl1);
   // todo: Shift in left if free and cheaper, use sllw.
   for (i = size - 1; i >= 0;)
      {
@@ -4192,7 +4191,7 @@ genIfx (const iCode *ic)
           inv = true;
         }
 
-      for (i = 0; i < cond->aop->size; i++) // todo: Use tnzw; test a first, if dead, to free a; use swapw followed by exg to test xh if xl is dead (same for yh).
+      for (i = 0; i < cond->aop->size; i++) // todo: Use tnzw; test a first, if dead, to free a; use swapw followed by exg to test xh if xl is dead (same for yh), use tnzw independently of where in the operand xl and xh are.
         {
           if ((aopInReg (cond->aop, i, XL_IDX) || aopInReg (cond->aop, i, XH_IDX) || aopInReg (cond->aop, i, YH_IDX)) && regDead (A_IDX, ic) && cond->aop->regs[A_IDX] <= i)
             {

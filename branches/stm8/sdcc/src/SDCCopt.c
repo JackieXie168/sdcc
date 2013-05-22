@@ -1192,7 +1192,7 @@ miscOpt (eBBlock ** ebbs, int count)
                   unsigned litVal = ulFromVal (OP_VALUE (IC_RIGHT (ic)));
 
                   /* Only if the literal value is greater than 255 and a power of 2 */
-                  if (litVal >= 255 &&
+                  if (!TARGET_IS_STM8 && litVal >= 255 && /* Bug #2165 is so bad, I really don't want to see it on stm8. */
                     (isPowerOf2 (litVal) && (ic->op == '<' || ic->op == GE_OP) ||
                     isPowerOf2 (litVal + 1) && (ic->op == '>' || ic->op == LE_OP)))
                     {
