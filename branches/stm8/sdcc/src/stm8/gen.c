@@ -4475,12 +4475,12 @@ genCast (const iCode *ic)
         genMove_o (result->aop, offset, ASMOP_ZERO, 0, size, regDead (A_IDX, ic) && !result_in_a, regDead (X_IDX, ic) && !result_in_x, regDead (Y_IDX, ic) && !result_in_y);
       else
         {
-          bool result_pushed = FALSE;
+          bool pushed_a = FALSE;
 
-          if (result_in_a)
+          if (result_in_a || !regDead (A_IDX, ic))
             {
               push (ASMOP_A, 0, 1);
-              result_pushed = TRUE;
+              pushed_a = TRUE;
             }
 
           cheapMove (ASMOP_A, 0, result->aop, right->aop->size - 1, FALSE);
@@ -4492,14 +4492,14 @@ genCast (const iCode *ic)
               if (size && aopInReg (result->aop, offset, A_IDX))
                 {
                   push (ASMOP_A, 0, 1);
-                  result_pushed = TRUE;
+                  pushed_a = TRUE;
                 }
               else
                 cheapMove (result->aop, offset, ASMOP_A, 0, FALSE);
               offset++;
             }
 
-          if (result_pushed)
+          if (pushed_a)
             pop (ASMOP_A, 0, 1);
         }
     }
