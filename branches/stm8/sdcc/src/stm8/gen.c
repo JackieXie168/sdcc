@@ -1283,7 +1283,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
   // Try to use rlwa x.
   if (regsize >= 3)
     {
-      int ex[3] = {-1, -1};
+      int ex[3] = {-1, -1, -1};
 
       for (i = 0; i < n; i++)
         {
@@ -1308,7 +1308,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
   // Try to use rrwa x.
   if (regsize >= 3)
     {
-      int ex[3] = {-1, -1};
+      int ex[3] = {-1, -1, -1};
 
       for (i = 0; i < n; i++)
         {
@@ -1333,7 +1333,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
   // Try to use rlwa y.
   if (regsize >= 3)
     {
-      int ex[3] = {-1, -1};
+      int ex[3] = {-1, -1, -1};
 
       for (i = 0; i < n; i++)
         {
@@ -1358,7 +1358,7 @@ genCopy (asmop *result, int roffset, asmop *source, int soffset, int sizex, bool
   // Try to use rrwa y.
   if (regsize >= 3)
     {
-      int ex[3] = {-1, -1};
+      int ex[3] = {-1, -1, -1};
 
       for (i = 0; i < n; i++)
         {
