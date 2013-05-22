@@ -2943,7 +2943,7 @@ genCmp (iCode *ic)
       bool pushed_a = FALSE;
 
       for (i = 0; i < size; i++)
-        if (i && aopInReg (left->aop, 0, A_IDX) || aopInReg (right->aop, 0, A_IDX))
+        if (i && aopInReg (left->aop, i, A_IDX) || aopInReg (right->aop, i, A_IDX))
           {
             push (ASMOP_A, 0, 1);
             pushed_a = TRUE;
@@ -2960,12 +2960,12 @@ genCmp (iCode *ic)
 
           right_stacked = stack_aop (right->aop, i, &right_offset);
 
-          if (i && aopInReg (left->aop, 0, A_IDX) && regDead (A_IDX, ic))
+          if (i && aopInReg (left->aop, i, A_IDX) && regDead (A_IDX, ic))
             {
               pop (ASMOP_A, 0, 1);
               pushed_a = FALSE;
             }
-          if (i && aopInReg (left->aop, 0, A_IDX))
+          else if (i && aopInReg (left->aop, i, A_IDX))
             {
               emitcode ("ld", "a, (1, sp)");
               cost (2, 1);

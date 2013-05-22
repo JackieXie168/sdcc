@@ -1,7 +1,7 @@
 2013-05-22 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: More efficient xor, or, and. Fix overwriting of shift count in shifts.
+	  STM8: More efficient xor, or, and. Fix overwriting of shift count in shifts, fix comparison with upper byte in a.
 
 2013-05-22 Philipp Klaus Krause <pkk AT spth.de>
 
