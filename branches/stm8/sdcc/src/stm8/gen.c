@@ -4195,7 +4195,7 @@ genIfx (const iCode *ic)
         {
           if ((aopInReg (cond->aop, i, XL_IDX) || aopInReg (cond->aop, i, XH_IDX) || aopInReg (cond->aop, i, YH_IDX)) && regDead (A_IDX, ic) && cond->aop->regs[A_IDX] <= i)
             {
-              cheapMove (ASMOP_A, 0, cond->aop, 0, FALSE);
+              cheapMove (ASMOP_A, 0, cond->aop, i, FALSE);
               emit3(A_TNZ, ASMOP_A, 0);
             }
           else if (aopInReg (cond->aop, i, XL_IDX))
