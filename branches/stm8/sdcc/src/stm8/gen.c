@@ -2975,7 +2975,7 @@ genCmp (iCode *ic)
           
           if (right_stacked || aopInReg (right->aop, i, A_IDX))
             {
-              emitcode (i ? "sbc" : "sub", "a, (%d, sp)", right_offset);
+              emitcode (i ? "sbc" : "sub", "a, (%d, sp)", right_stacked ? right_offset : 1);
               cost (2, 1);
             }
           else
