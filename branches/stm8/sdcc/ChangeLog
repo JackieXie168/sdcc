@@ -1,5 +1,10 @@
 2013-05-22 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/stm8/gen.c:
+	  STM8: More efficient xor, or, and. Fix overwriting of shift count in shifts.
+
+2013-05-22 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCCopt.c:
 	  STM8: Disable broken optimization of comparisons into and.
 	* src/stm8/gen.c:

@@ -3230,13 +3230,22 @@ genXor (const iCode *ic)
       if (omitbyte == i)
         continue;
 
+      if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+        {
+          cheapMove (result->aop, i, left->aop, i, FALSE);
+          if (aopInReg (result->aop, i, A_IDX) && i != size - 1)
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+            }
+          continue;
+        }
+
       right_stacked = stack_aop (right->aop, i, &right_offset);
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
-      if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
-        ;
-      else if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
+      if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
         emit3 (A_CPL, ASMOP_A, 0);
       else if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_XOR, ASMOP_A, 0, right->aop, i);
@@ -3363,13 +3372,22 @@ genOr (const iCode *ic)
       if (omitbyte == i)
         continue;
 
+      if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+        {
+          cheapMove (result->aop, i, left->aop, i, FALSE);
+          if (aopInReg (result->aop, i, A_IDX) && i != size - 1)
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+            }
+          continue;
+        }
+
       right_stacked = stack_aop (right->aop, i, &right_offset);
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
-      if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
-        ;
-      else if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
+      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_OR, ASMOP_A, 0, right->aop, i);
       else
         {
@@ -3494,13 +3512,32 @@ genAnd (const iCode *ic)
       if (omitbyte == i)
         continue;
 
+      if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
+        {
+          cheapMove (result->aop, i, left->aop, i, FALSE);
+          if (aopInReg (result->aop, i, A_IDX) && i != size - 1)
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+            }
+          continue;
+        }
+      else if (right->aop->type == AOP_LIT && !byteOfVal (right->aop->aopu.aop_lit, i))
+        {
+          cheapMove (result->aop, i, ASMOP_ZERO, 0, FALSE);
+          if (aopInReg (result->aop, i, A_IDX) && i != size - 1)
+            {
+              push (ASMOP_A, 0, 1);
+              pushed_a = TRUE;
+            }
+          continue;
+        }
+
       right_stacked = stack_aop (right->aop, i, &right_offset);
 
       cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
 
-      if (right->aop->type == AOP_LIT && byteOfVal (right->aop->aopu.aop_lit, i) == 0xff)
-          ;
-      else if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
+      if (!right_stacked && !(i && aopInReg (right->aop, i, A_IDX)))
         emit3_o (A_AND, ASMOP_A, 0, right->aop, i);
       else
         {
@@ -3631,19 +3668,33 @@ genLeftShift (const iCode *ic)
   size = result->aop->size;
 
   save_a = !regDead (A_IDX, ic);
-  for(i = 0; i < size; i++)
-    if (aopInReg (result->aop, i, A_IDX))
-      save_a = TRUE;
+  for (i = 0; i < size; i++)
+    {
+      if (aopInReg (result->aop, i, A_IDX))
+        save_a = TRUE;
+      if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg &&
+        right->aop->regs[result->aop->aopu.bytes[i].byteu.reg->rIdx] == 0)
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Overwriting shift count");
+          cost (80, 80);
+        }
+    }
+
   if (save_a)
     push (ASMOP_A, 0, 1);
 
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
-  emit3 (A_TNZ, ASMOP_A, 0);
-  if (tlbl2)
-    emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
-  cost (2, 0);
+
+  if (right->aop->type != AOP_LIT || !byteOfVal (right->aop->aopu.aop_lit, 0))
+    {
+      emit3 (A_TNZ, ASMOP_A, 0);
+      if (tlbl2)
+        emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
+      cost (2, 0);
+    }
 
   emitLabel (tlbl1);
   // todo: Shift in left if dead and cheaper?
@@ -3802,19 +3853,32 @@ genRightShift (const iCode *ic)
   size = result->aop->size;
 
   save_a = !regDead (A_IDX, ic);
-  for(i = 0; i < size; i++)
-    if (aopInReg (result->aop, i, A_IDX))
-      save_a = TRUE;
+  for (i = 0; i < size; i++)
+    {
+      if (aopInReg (result->aop, i, A_IDX))
+        save_a = TRUE;
+      if (aopRS (result->aop) && !aopInReg (result->aop, i, A_IDX) && result->aop->aopu.bytes[i].in_reg &&
+        right->aop->regs[result->aop->aopu.bytes[i].byteu.reg->rIdx] == 0)
+        {
+          if (!regalloc_dry_run)
+            wassertl (0, "Overwriting shift count");
+          cost (80, 80);
+        }
+    }
   if (save_a)
     push (ASMOP_A, 0, 1);
 
   tlbl1 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
   cheapMove (ASMOP_A, 0, right->aop, 0, FALSE);
-  emit3 (A_TNZ, ASMOP_A, 0);
-  if (tlbl2)
-    emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
-  cost (2, 0);
+
+  if (right->aop->type != AOP_LIT || !byteOfVal (right->aop->aopu.aop_lit, 0))
+    {
+      emit3 (A_TNZ, ASMOP_A, 0);
+      if (tlbl2)
+        emitcode ("jreq", "!tlabel", labelKey2num (tlbl2->key));
+      cost (2, 0);
+    }
 
   emitLabel (tlbl1);
   // todo: Shift in left if free and cheaper, use sllw.
@@ -3917,7 +3981,7 @@ genPointerGet (const iCode *ic)
   // todo: What if right operand is negative?
   offset = byteOfVal (right->aop->aopu.aop_lit, 0) * 256 + byteOfVal (right->aop->aopu.aop_lit, 0);
 
-  // Get all the bytes.
+  // Get all the bytes. todo: Get the byte in a last (if not a bit-field), so we do not need to save a.
   size = result->aop->size;
   for (i = 0; !bit_field ? i < size : blen > 0; i++, blen -= 8)
     {
