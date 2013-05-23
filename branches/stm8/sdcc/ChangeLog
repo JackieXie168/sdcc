@@ -1,7 +1,7 @@
 2013-05-22 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  STM8: Fix float negation.
+	  STM8: Fix float negation, fix large stack-to-stack copy under high register pressure.
 	* support/regression/tests/gcc-torture-execute-20030408-1.c:
 	  STM8: Disable test for known front-end bug.
 

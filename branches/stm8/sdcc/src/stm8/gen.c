@@ -1125,6 +1125,11 @@ genCopyStack (asmop *result, int roffset, asmop *source, int soffset, int n, boo
               emitcode ("ldw", "x, %s", aopGet2 (source, soffset + i));
               emitcode ("ldw", "%s, x", aopGet2 (result, roffset + i));
             }
+          else
+            {
+              i++;
+              continue;
+            }
           cost (4, 4);  
           assigned[i] = TRUE;
           assigned[i + 1] = TRUE;
