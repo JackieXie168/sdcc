@@ -6,6 +6,10 @@
 	  STM8: Disable test for known front-end bug.
 	* sim/ucsim/stm8.src/inst.cc:
 	  STM8: Fix handling of V and H flags in cpw.
+	* sim/ucsim/stm8.src/inst.cc:
+	  STM8: Silence some warnings.
+	* src/stm8/ralloc.c:
+	  STM8: Fix missing include.
 
 2013-05-22 Philipp Klaus Krause <pkk AT spth.de>
 

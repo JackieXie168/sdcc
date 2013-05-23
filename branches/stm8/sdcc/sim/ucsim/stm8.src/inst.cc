@@ -387,7 +387,7 @@ cl_stm8::inst_call(t_mem code, unsigned char prefix)
 int
 cl_stm8::inst_clr(t_mem code, unsigned char prefix)
 {
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
   FLAG_SET (BIT_Z);
   FLAG_CLEAR (BIT_N);
@@ -463,7 +463,7 @@ int
 cl_stm8::inst_cpl(t_mem code, unsigned char prefix)
 {
   long int operand;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -505,7 +505,7 @@ int
 cl_stm8::inst_dec(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -596,7 +596,7 @@ int
 cl_stm8::inst_inc(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -822,7 +822,7 @@ int
 cl_stm8::inst_neg(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -884,7 +884,7 @@ int
 cl_stm8::inst_rlc(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) && (prefix == 0x00)) {
       operand = regs.A;
@@ -932,7 +932,7 @@ int
 cl_stm8::inst_rrc(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -998,7 +998,7 @@ int
 cl_stm8::inst_sll(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -1042,7 +1042,7 @@ int
 cl_stm8::inst_sra(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -1091,7 +1091,7 @@ int
 cl_stm8::inst_srl(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -1157,7 +1157,7 @@ int
 cl_stm8::inst_swap(t_mem code, unsigned char prefix)
 {
   long int operand, resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       operand = regs.A;
@@ -1193,7 +1193,7 @@ int
 cl_stm8::inst_tnz(t_mem code, unsigned char prefix)
 {
   long int resval;
-  unsigned int opaddr;// = 0xffff;
+  unsigned int opaddr = 0;
 
    if (((code&0xf0)==0x40) &&(prefix == 0x00)) {
       resval = regs.A;

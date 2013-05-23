@@ -1,6 +1,8 @@
 #include "ralloc.h"
 #include "gen.h"
 
+#include "dbuf_string.h"
+
 extern void genSTM08Code (iCode *);
 
 reg_info stm8_regs[] =
