@@ -257,7 +257,8 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_IMMD)
     {
-      snprintf (buffer, 256, "#%s+%d", aop->aopu.aop_immd, aop->size - 1 - offset);
+      wassertl (offset < 2, "Immediate operand out of range");
+      snprintf (buffer, 256, offset ? "#>%s" : "#<%s", aop->aopu.aop_immd);
       return (buffer);
     }
 
@@ -286,6 +287,11 @@ aopGet2(const asmop *aop, int offset)
   if (aop->type == AOP_LIT)
     {
       snprintf (buffer, 256, "#0x%02x%02x", byteOfVal (aop->aopu.aop_lit, offset + 1), byteOfVal (aop->aopu.aop_lit, offset));
+      return (buffer);
+    }
+  else if (aop->type == AOP_IMMD)
+    {
+      snprintf (buffer, 256, "#%s", aop->aopu.aop_immd);
       return (buffer);
     }
 
