@@ -1,4 +1,4 @@
-2013-05-22 Philipp Klaus Krause <pkk AT spth.de>
+2013-05-23 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
 	  STM8: Fix float negation, fix large stack-to-stack copy under high register pressure.
@@ -17,11 +17,15 @@
 	* src/stm8/gen.c:
 	  STM8: Slightly more efficient shifts, fix long ifx, fix use of word rotation in copy, fix handling of a in signed cast.
 
-2013-05-21 Valentin Dudouyt <valentin dudouyt AT gmail.com>                                                              
+2013-05-21 Valentin Dudouyt <valentin dudouyt AT gmail.com>
 
 	* src/stm8/main.c,
 	* src/SDCCglue.c:
 	STM8: Fixed init code: some of GSINIT parts aren't executed under certain linking conditions.
+
+2013-05-20 Maarten Brock <sourceforge.brock AT dse.nl>
+
+	* support/scripts/sdcc.nsi: added RequestExecutionLevel admin
 
 2013-05-20 Philipp Klaus Krause <pkk AT spth.de>
 
