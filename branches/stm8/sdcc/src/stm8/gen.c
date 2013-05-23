@@ -1715,12 +1715,18 @@ genNot (const iCode *ic)
     {
       if (i && aopInReg (left->aop, i, A_IDX))
         {
-          emitcode ("sbc", "a, (1, sp)");
+          emitcode ("ld", "a, (1, sp)");
           cost (2, 1);
-          continue;
+        }
+      else
+        cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
+
+      if (IS_FLOAT (operandType (left)) && i == left->aop->size - 1)
+        {
+          emitcode ("and", "a, #0x7f");
+          cost (2, 1);
         }
 
-      cheapMove (ASMOP_A, 0, left->aop, i, FALSE);
       if(!i)
         emit3 (A_SUB, ASMOP_A, ASMOP_ONE);
       else
