@@ -2,6 +2,10 @@
 
 	* support/regression/tests/gcc-torture-execute-20010224-1.c:
 	  STM8: Disable test that fails due to known CSE bug #1968.
+	* support/regression/ports/stm8/spec.mk:
+	  STM8: Remove definition for __reentrant.
+	* src/stm8/gen.c:
+	  STM8: Fix handling of out-of-range offsets.
 
 2013-05-23 Philipp Klaus Krause <pkk AT spth.de>
 

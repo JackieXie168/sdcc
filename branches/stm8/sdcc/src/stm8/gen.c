@@ -231,6 +231,9 @@ aopGet(const asmop *aop, int offset)
   if (regalloc_dry_run)
     return ("");
 
+  if (offset >= aop->size)
+    return ("#0x00");
+
   if (aop->type == AOP_LIT)
     {
       snprintf (buffer, 256, "#0x%02x", byteOfVal (aop->aopu.aop_lit, offset));
@@ -304,6 +307,9 @@ op8_cost (const asmop *op2, int offset2)
 {
   AOP_TYPE op2type = op2->type;
   int r2Idx = ((aopRS (op2) && op2->aopu.bytes[offset2].in_reg)) ? op2->aopu.bytes[offset2].byteu.reg->rIdx : -1;
+
+  if (offset2 >= op2->size)
+    op2type = AOP_LIT;
 
   switch (op2type)
     {
@@ -431,6 +437,9 @@ ld_cost (const asmop *op1, int offset1, const asmop *op2, int offset2)
 
   int r1Idx = ((aopRS (op1) && op1->aopu.bytes[offset1].in_reg)) ? op1->aopu.bytes[offset1].byteu.reg->rIdx : -1;
   int r2Idx = ((aopRS (op2) && op2->aopu.bytes[offset2].in_reg)) ? op2->aopu.bytes[offset2].byteu.reg->rIdx : -1;
+
+  if (offset2 >= op2->size)
+    op2type = AOP_LIT;
 
   switch (op1type)
     {
@@ -1070,7 +1079,7 @@ cheapMove (asmop *result, int roffset, asmop *source, int soffset, bool save_a)
     result->aopu.bytes[roffset].in_reg && source->aopu.bytes[soffset].in_reg &&
     result->aopu.bytes[roffset].byteu.reg == source->aopu.bytes[soffset].byteu.reg)
     return;
-  else if (!dummy && (!aopRS (result) || aopInReg (result, roffset, A_IDX) || aopOnStack (result, roffset, 1)) && source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset))
+  else if (!dummy && (!aopRS (result) || aopInReg (result, roffset, A_IDX) || aopOnStack (result, roffset, 1)) && (source->type == AOP_LIT && !byteOfVal (source->aopu.aop_lit, soffset) || soffset >= source->size))
     emit3_o (A_CLR, result, roffset, 0, 0);
   else if (!dummy && (aopInReg (result, roffset, A_IDX) || aopInReg (source, soffset, A_IDX)))
     emit3_o (A_LD, result, roffset, source, soffset);
