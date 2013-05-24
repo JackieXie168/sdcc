@@ -1,3 +1,8 @@
+2013-05-24 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/gcc-torture-execute-20010224-1.c:
+	  STM8: Disable test that fails due to known CSE bug #1968.
+
 2013-05-23 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
