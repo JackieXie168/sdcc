@@ -280,6 +280,10 @@ aopGet2(const asmop *aop, int offset)
 {
   static char buffer[256];
 
+  /* Don't really need the value during dry runs, so save some time. */
+  if (regalloc_dry_run)
+    return ("");
+
   if (aopInReg (aop, offset, X_IDX))
     return("x");
   if (aopInReg (aop, offset, Y_IDX))
@@ -1625,6 +1629,11 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
 
   wassertl (result->type != AOP_LIT, "Trying to write to literal.");
   wassertl (result->type != AOP_IMMD, "Trying to write to immediate.");
+  wassertl (roffset + size <= result->size, "Trying to writer beyond end of operand");
+
+#if 0
+  D (emitcode(";  genMove_o", "%d %d %d", a_dead, x_dead, y_dead));
+#endif
 
   if (aopRS (result) && aopRS (source))
     {
@@ -1651,13 +1660,13 @@ genMove_o (asmop *result, int roffset, asmop *source, int soffset, int size, boo
           emit3_o (A_CLR, result, roffset + i, 0, 0);
           i++;
         }
-      else if (i + 1 < size && aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
-        {
+      else if (i + 1 < size && aopInReg (result, roffset + i, X_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR && soffset + i + 1 < source->size || source->type == AOP_IMMD))
+        {emitcode(";", "type %d", source->type);
           emitcode ("ldw", "x, %s", aopGet2 (source, soffset + i));
           cost (3, 2);
           i += 2;
         }
-      else if (i + 1 < size && aopInReg (result, roffset + i, Y_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR || source->type == AOP_IMMD))
+      else if (i + 1 < size && aopInReg (result, roffset + i, Y_IDX) && (source->type == AOP_LIT || aopOnStack (source, soffset + i, 2) || source->type == AOP_DIR && soffset + i + 1 < source->size || source->type == AOP_IMMD))
         {
           emitcode ("ldw", "y, %s", aopGet2 (source, soffset + i));
           cost (4, 2);
