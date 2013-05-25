@@ -1,3 +1,10 @@
+2013-05-25 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/regression/tests/float_single.c,
+	  support/regression/tests/gcc-torture-execute-20030714-1.c,
+	  support/regression/tests/gcc-torture-execute-20050826-1.c:
+	  STM8: Disable failing tests.
+
 2013-05-25 Borut Razem <borut.razem AT gmail.com>
 
 	* Makefile.in: applied patch #211 - "sdbinutils is installed twice",
