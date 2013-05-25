@@ -3511,7 +3511,7 @@ genAnd (const iCode *ic)
 
        if (aopInReg (result->aop, i, A_IDX) && size > 1)
           {
-            push (ASMOP_A, 0, 1);
+            push (ASMOP_A, 0, 1); // todo: Do not push, if other bytes do not affect a (e.g. due to using clr).
             pushed_a = TRUE;
           }
         else
