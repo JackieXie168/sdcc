@@ -202,13 +202,13 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
   for (ai = alist.begin(); ai != alist.end(); ++ai)
     {
       ai->local.erase(i);
-      ai->s.get<1>() += ai->global[i]; // Add lifetime cost.
+      ai->s.get<1>() += (ai->global[i] & true); // Add lifetime cost.
       {
         typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
         n_iter_t n, n_end;
         for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
           {
-            if (ai->local.find(boost::target(*n, G)) == ai->local.end() || (ai->global[i] && !G[i].invalidates) >= (ai->global[boost::target(*n, G)] || G[boost::target(*n, G)].uses))
+            if (ai->local.find(boost::target(*n, G)) == ai->local.end() || ((ai->global[i] & true) && !G[i].invalidates) >= ((ai->global[boost::target(*n, G)] & true) || G[boost::target(*n, G)].uses))
               continue;
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
@@ -219,7 +219,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
         n_iter_t n, n_end;
         for (boost::tie(n, n_end) = boost::in_edges(i, G);  n != n_end; ++n)
           {
-            if (ai->local.find(boost::source(*n, G)) == ai->local.end() || (ai->global[boost::source(*n, G)] && !G[boost::source(*n, G)].invalidates) >= (ai->global[i] || G[i].uses))
+            if (ai->local.find(boost::source(*n, G)) == ai->local.end() || ((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) >= ((ai->global[i] & true) || G[i].uses))
               continue;
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
@@ -282,7 +282,7 @@ void tree_dec_lospre_join(T_t &T, typename boost::graph_traits<T_t>::vertex_desc
           ai2->s.get<0>() += ai3->s.get<0>();
           ai2->s.get<1>() += ai3->s.get<1>();
           for (size_t i = 0; i < ai2->global.size(); i++)
-            ai2->global[i] = (ai2->global[i] || ai3->global[i]);
+            ai2->global[i] = (ai2->global[i] | ai3->global[i]);
           alist1.push_back(*ai2);
 
           ++ai2;
@@ -634,7 +634,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
   std::set<edge_desc_t> calculation_edges; // Use descriptor, not iterator due to possible invalidation of iterators when inserting vertices or edges.
   edge_iter_t e, e_end;
   for(boost::tie(e, e_end) = boost::edges(G); e != e_end; ++e)
-    if((a.global[boost::source(*e, G)] && !G[boost::source(*e, G)].invalidates) < a.global[boost::target(*e, G)])
+    if(((a.global[boost::source(*e, G)] & true) && !G[boost::source(*e, G)].invalidates) < (a.global[boost::target(*e, G)] & true))
       calculation_edges.insert(*e);
 
   if(!calculation_edges.size())
@@ -666,7 +666,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       typename boost::graph_traits<G_t>::in_edge_iterator e = in_edges(*v, G).first;
       if (a.global.size() <= *v)
         continue;
-      if(!(a.global[*v] && !G[*v].invalidates || boost::source(*e, G) < a.global.size() && a.global[boost::source(*e, G)]))
+      if(!((a.global[*v] & true) && !G[*v].invalidates || boost::source(*e, G) < a.global.size() && (a.global[boost::source(*e, G)] & true)))
         continue;
 #ifdef DEBUG_LOSPRE
       std::cout << "Substituting ic " << G[*v].ic->key << "\n";

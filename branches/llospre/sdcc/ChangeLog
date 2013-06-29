@@ -5,7 +5,7 @@
 	  src/SDCClospre.hpp:
 	  Preparations for better handling of register-pressure in lospre.
 
-2013-06-27 Philipp Klaus Krause <pkk AT spth.de>
+2013-06-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCClospre.cc:
 	  Disable safety in division for stm8.
