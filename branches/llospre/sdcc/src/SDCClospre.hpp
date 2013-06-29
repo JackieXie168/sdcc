@@ -47,11 +47,13 @@ typedef stx::btree_set<unsigned short int> lospreset_t; // Faster than std::set
 typedef std::set<unsigned short int> lospreset_t;
 #endif
 
+static unsigned short int maxval;
+
 struct assignment_lospre
 {
   boost::tuple<float, float> s; // First entry: Calculation costs, second entry: Lifetime costs.
   lospreset_t local;
-  std::vector<bool> global;
+  std::vector<unsigned short int> global;
 
   bool operator<(const assignment_lospre& a) const
   {
@@ -167,10 +169,11 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
   for(ai = alist.begin(); ai != alist.end(); ++ai)
     {
       ai->local.insert(i);
-      ai->global[i] = false;
-      alist2.push_back(*ai);
-      ai->global[i] = true;
-      alist2.push_back(*ai);
+      for(unsigned short int j = 0; j <= maxval; j++)
+        {
+          ai->global[i] = j;
+          alist2.push_back(*ai);
+        }
     }
 
   alist.clear();
@@ -710,6 +713,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
 /*template <class T_t, class G_t>*/
 static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
 {
+  maxval = 1;
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
 
@@ -740,6 +744,8 @@ static void implement_safety(const assignment_lospre &a, G_t &G)
 /*template <class T_t, class G_t>*/
 static int tree_dec_safety (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
 {
+  maxval = 1;
+
   if(tree_dec_safety_nodes(T, find_root(T), G))
     return(-1);
 

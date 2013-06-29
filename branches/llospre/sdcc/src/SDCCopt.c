@@ -2204,6 +2204,12 @@ eBBlockFromiCode (iCode * ic)
 
   offsetFold (ebbi->bbOrder, ebbi->count);
 
+  /* Calcuate live-ranges for use in lospre. */
+  computeControlFlow (ebbi);
+  loops = createLoopRegions (ebbi);
+  computeDataFlow (ebbi);
+  computeLiveRanges (ebbi->bbOrder, ebbi->count, TRUE);
+
   /* lospre */
   adjustIChain (ebbi->bbOrder, ebbi->count);
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
@@ -2275,7 +2281,7 @@ eBBlockFromiCode (iCode * ic)
   miscOpt (ebbi->bbOrder, ebbi->count);
 
   /* compute the live ranges */
-  computeLiveRanges (ebbi->bbOrder, ebbi->count, TRUE);
+  recomputeLiveRanges (ebbi->bbOrder, ebbi->count);
 
   if (options.dump_range)
     dumpEbbsToFileExt (DUMP_RANGE, ebbi);
