@@ -313,6 +313,7 @@ iCode2eBBlock (iCode * ic)
 
   /* put the first one unconditionally */
   ebb->sch = ic;
+  ic->seq = 0;
 
   /* if this is a label then */
   if (ic->op == LABEL)
@@ -359,6 +360,7 @@ iCode2eBBlock (iCode * ic)
   /* loop thru till we find one with a label */
   for (loop = ic->next; loop; loop = loop->next)
     {
+      loop->seq = 0;
 
       /* if this is the last one */
       if (!loop->next)
