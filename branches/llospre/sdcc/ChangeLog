@@ -1,5 +1,11 @@
 2013-06-30 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Preparations for better handling of register-pressure in lospre.
+
+2013-06-30 Philipp Klaus Krause <pkk AT spth.de>
+
 	* sdccconf_in.h:
 	  Regenerated to make --disable-stm8-port work.
 

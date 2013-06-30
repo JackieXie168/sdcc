@@ -103,6 +103,9 @@ struct cfg_lospre_node
   bool uses;
   bool invalidates;
 
+  bool i_uses[2]; // Uses operand that is also used by expression
+  bool i_writes[2]; // Writes operand used in expression
+
   std::pair<int, int> forward;
 };
 
@@ -173,6 +176,12 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
       for(unsigned short int j = 0; j <= maxval; j++)
         {
           ai->global[i] = j;
+
+          if(maxval > 1 && G[i].i_uses[0] && !(j & 2))
+            continue;
+          if(maxval > 3 && G[i].i_uses[1] && !(j & 4))
+            continue;
+
           alist2.push_back(*ai);
         }
     }
@@ -200,16 +209,28 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
   assignment_list_lospre_t::iterator ai, aif;
 
-  for (ai = alist.begin(); ai != alist.end(); ++ai)
+  for (ai = alist.begin(); ai != alist.end();)
     {
       ai->local.erase(i);
+
       ai->s.get<1>() += (ai->global[i] & true); // Add lifetime cost.
+
       {
         typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
         n_iter_t n, n_end;
         for (boost::tie(n, n_end) = boost::out_edges(i, G);  n != n_end; ++n)
           {
-            if (ai->local.find(boost::target(*n, G)) == ai->local.end() || ((ai->global[i] & true) && !G[i].invalidates) >= ((ai->global[boost::target(*n, G)] & true) || G[boost::target(*n, G)].uses))
+            if (ai->local.find(boost::target(*n, G)) == ai->local.end())
+              continue;
+
+            if (maxval > 1 && !(ai->global[i] & 2) && (ai->global[boost::target(*n, G)] & 2) && !G[boost::target(*n, G)].i_writes[0] ||
+              maxval > 3 && !(ai->global[i] & 4) && (ai->global[boost::target(*n, G)] & 4) && !G[boost::target(*n, G)].i_writes[1])
+              {
+                ai = alist.erase(ai);
+                goto nextassignment;
+              }
+
+            if (((ai->global[i] & true) && !G[i].invalidates) >= ((ai->global[boost::target(*n, G)] & true) || G[boost::target(*n, G)].uses))
               continue;
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
@@ -220,12 +241,26 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
         n_iter_t n, n_end;
         for (boost::tie(n, n_end) = boost::in_edges(i, G);  n != n_end; ++n)
           {
-            if (ai->local.find(boost::source(*n, G)) == ai->local.end() || ((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) >= ((ai->global[i] & true) || G[i].uses))
+            if (ai->local.find(boost::source(*n, G)) == ai->local.end())
+              continue;
+
+            if (maxval > 1 && !(ai->global[boost::source(*n, G)] & 2) && (ai->global[i] & 2) && !G[boost::target(*n, G)].i_writes[0] ||
+              maxval > 3 && !(ai->global[boost::source(*n, G)] & 4) && (ai->global[i] & 4) && !G[boost::target(*n, G)].i_writes[1])
+              {
+                ai = alist.erase(ai);
+                goto nextassignment;
+              }
+
+            if (((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) >= ((ai->global[i] & true) || G[i].uses))
               continue;
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
       }
+
+      ++ai;
+nextassignment:
+      ;
     }
 
   alist.sort();
@@ -715,7 +750,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
 static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
 {
   // The lowest bit of maxval is used for savings by redundancy elimination, while the upper bits are used to measure savings in the live-ranges of operands.
-  maxval = 1 + 2 * (IC_LEFT(ic) && IS_ITEMP(IC_LEFT(ic))) + 2 * (IC_RIGHT(ic) && IS_ITEMP(IC_RIGHT(ic)));
+  maxval = (1 << (1 + (IC_LEFT(ic) && IS_ITEMP(IC_LEFT(ic))) + (IC_RIGHT(ic) && IS_ITEMP(IC_RIGHT(ic))))) - 1;
 
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
