@@ -213,6 +213,9 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
        (*cfg)[i].i_writes[1] = false;
        (*cfg)[i].i_uses[0] = false;
        (*cfg)[i].i_uses[1] = false;
+       (*cfg)[i].i_live[0] = false;
+       (*cfg)[i].i_live[1] = false;
+
        if (IC_RESULT (ic) && !IS_OP_LITERAL (IC_RESULT (ic)) && !POINTER_SET(ic))
          {
            (*cfg)[i].i_writes[0] = (eleft && isOperandEqual (eleft, IC_RESULT (ic)));
@@ -228,6 +231,9 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
 
        (*cfg)[i].i_uses[0] = (eleft && (IC_LEFT(ic) && isOperandEqual (eleft, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eleft, IC_RIGHT (ic))));
        (*cfg)[i].i_uses[bool(eleft)] = (eright && (IC_LEFT(ic) && isOperandEqual (eright, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eright, IC_RIGHT (ic))));
+
+       (*cfg)[i].i_live[0] = (eleft && bitVectBitValue (ic->rlive, eleft->key));
+       (*cfg)[i].i_live[bool(eleft)] = (eright && bitVectBitValue (ic->rlive, eright->key));
 
        (*cfg)[i].forward = std::pair<int, int>(-1, -1);
     }
