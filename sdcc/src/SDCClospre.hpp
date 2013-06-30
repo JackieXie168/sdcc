@@ -34,6 +34,7 @@ extern "C"
 #include "SDCCopt.h"
 #include "SDCCy.h"
 #include "SDCCasm.h"
+#include "SDCClrange.h"
 #include "port.h"
 }
 
@@ -672,7 +673,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       std::cout << "Substituting ic " << G[*v].ic->key << "\n";
 #endif
       substituted++;
-      // Todo: split unconnected iTemps.
+      // Todo: split unconnected iTemps. Maybe rather do it after lospre (so we can also split whatever unconnected live-ranges other optimizations created)?
       iCode *ic = G[*v].ic;
       IC_RIGHT(ic) = tmpop;
       if (!POINTER_SET (ic))
@@ -713,7 +714,9 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
 /*template <class T_t, class G_t>*/
 static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G, const iCode *ic)
 {
-  maxval = 1;
+  // The lowest bit of maxval is used for savings by redundancy elimination, while the upper bits are used to measure savings in the live-ranges of operands.
+  maxval = 1 + 2 * (IC_LEFT(ic) && IS_ITEMP(IC_LEFT(ic))) + 2 * (IC_RIGHT(ic) && IS_ITEMP(IC_RIGHT(ic)));
+
   if(tree_dec_lospre_nodes(T, find_root(T), G))
     return(-1);
 
