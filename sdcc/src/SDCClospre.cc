@@ -209,15 +209,25 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
        const iCode *const ic = (*cfg)[i].ic;
        (*cfg)[i].uses = same_expression (eic, ic);
        (*cfg)[i].invalidates = false;
-       if (IC_RESULT (ic) && !IS_OP_LITERAL (IC_RESULT (ic)) && !POINTER_SET(ic) &&
-         (eleft && isOperandEqual (eleft, IC_RESULT (ic)) || eright && isOperandEqual (eright, IC_RESULT (ic))))
-         (*cfg)[i].invalidates = true;
-       if (ic->op == FUNCTION || ic->op == ENDFUNCTION)
+       (*cfg)[i].i_writes[0] = false;
+       (*cfg)[i].i_writes[1] = false;
+       (*cfg)[i].i_uses[0] = false;
+       (*cfg)[i].i_uses[1] = false;
+       if (IC_RESULT (ic) && !IS_OP_LITERAL (IC_RESULT (ic)) && !POINTER_SET(ic))
+         {
+           (*cfg)[i].i_writes[0] = (eleft && isOperandEqual (eleft, IC_RESULT (ic)));
+           (*cfg)[i].i_writes[bool(eleft)] = (eright && isOperandEqual (eright, IC_RESULT (ic)));
+           (*cfg)[i].invalidates = (*cfg)[i].i_writes[0] || (*cfg)[i].i_writes[1];
+         }
+       if(ic->op == FUNCTION || ic->op == ENDFUNCTION)
          (*cfg)[i].invalidates = true;
        if(uses_global && (ic->op == CALL || ic->op == PCALL))
          (*cfg)[i].invalidates = true;
        if(uses_global && POINTER_SET (ic)) // TODO: More accuracy here!
          (*cfg)[i].invalidates = true;
+
+       (*cfg)[i].i_uses[0] = (eleft && (IC_LEFT(ic) && isOperandEqual (eleft, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eleft, IC_RIGHT (ic))));
+       (*cfg)[i].i_uses[bool(eleft)] = (eright && (IC_LEFT(ic) && isOperandEqual (eright, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eright, IC_RIGHT (ic))));
 
        (*cfg)[i].forward = std::pair<int, int>(-1, -1);
     }
