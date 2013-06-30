@@ -105,6 +105,7 @@ struct cfg_lospre_node
 
   bool i_uses[2]; // Uses operand that is also used by expression
   bool i_writes[2]; // Writes operand used in expression
+  bool i_live[2];
 
   std::pair<int, int> forward;
 };
@@ -213,7 +214,8 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
     {
       ai->local.erase(i);
 
-      ai->s.get<1>() += (ai->global[i] & true); // Add lifetime cost.
+      ai->s.get<1>() += (ai->global[i] & true); // Lifetime cost for new temporary variable.
+      //ai->s.get<1>() -= (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)); // Lifetime savings in operands.
 
       {
         typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
@@ -232,6 +234,8 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
             if (((ai->global[i] & true) && !G[i].invalidates) >= ((ai->global[boost::target(*n, G)] & true) || G[boost::target(*n, G)].uses))
               continue;
+
+            //ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) + 1 + (maxval > 1) + (maxval > 3);
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
@@ -253,6 +257,8 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
             if (((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) >= ((ai->global[i] & true) || G[i].uses))
               continue;
+
+            //ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) + 1 + (maxval > 1) + (maxval > 3);
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
