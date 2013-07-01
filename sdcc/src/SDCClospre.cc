@@ -19,7 +19,7 @@
 //
 // Lifetime-optimal speculative partial redundancy elimination.
 
-//#define DEBUG_LOSPRE // Uncomment to get debug messages while doing lospre.
+// #define DEBUG_LOSPRE // Uncomment to get debug messages while doing lospre.
 
 #include "SDCClospre.hpp"
 
@@ -310,7 +310,9 @@ lospre (iCode *sic, ebbIndex *ebbi)
 
   int lkey = operandKey;
 
-  for (bool change = true; change;)
+  int iterations = 0;
+
+  for (bool change = true; change && iterations < 16; iterations++)
     {
       change = false;
 
@@ -338,5 +340,8 @@ lospre (iCode *sic, ebbIndex *ebbi)
             }
         }
     }
+
+  if (iterations >= 16)
+    std::cout << "Reached lospre iteration limit.\n";
 }
 

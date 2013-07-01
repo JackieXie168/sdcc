@@ -235,7 +235,10 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             if (((ai->global[i] & true) && !G[i].invalidates) >= ((ai->global[boost::target(*n, G)] & true) || G[boost::target(*n, G)].uses))
               continue;
 
-            //ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) + 1 + (maxval > 1) + (maxval > 3);
+            if(((ai->global[i] & true) && !G[i].invalidates) < (ai->global[boost::target(*n, G)] & true))
+              ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
+
+            ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
@@ -258,7 +261,10 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             if (((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) >= ((ai->global[i] & true) || G[i].uses))
               continue;
 
-            //ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) + 1 + (maxval > 1) + (maxval > 3);
+            if(((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) < (ai->global[i] & true))
+              ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
+
+            ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
@@ -764,8 +770,10 @@ static int tree_dec_lospre (tree_dec_lospre_t/*T_t*/ &T, cfg_lospre_t/*G_t*/ &G,
   wassert(T[find_root(T)].assignments.begin() != T[find_root(T)].assignments.end());
   const assignment_lospre &winner = *(T[find_root(T)].assignments.begin());
 
-  //std::cout << "Winner (lospre): ";
-  //print_assignment(winner, G);
+#ifdef DEBUG_LOSPRE
+  std::cout << "Winner (lospre): ";
+  print_assignment(winner, G);
+#endif
 
   int change;
   if (change = implement_lospre_assignment(winner, T, G, ic))
