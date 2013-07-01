@@ -222,7 +222,7 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
            (*cfg)[i].i_writes[bool(eleft)] = (eright && isOperandEqual (eright, IC_RESULT (ic)));
            (*cfg)[i].invalidates = (*cfg)[i].i_writes[0] || (*cfg)[i].i_writes[1];
          }
-       if(ic->op == FUNCTION || ic->op == ENDFUNCTION)
+       if(ic->op == FUNCTION || ic->op == ENDFUNCTION || ic->op == RECEIVE)
          (*cfg)[i].invalidates = true;
        if(uses_global && (ic->op == CALL || ic->op == PCALL))
          (*cfg)[i].invalidates = true;
