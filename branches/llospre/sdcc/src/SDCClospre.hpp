@@ -240,7 +240,13 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
             ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
 
-            ai->s.get<0>() += G[*n]; // Add calculation cost.
+            if (maxval > 1 && !(ai->global[i] & 2) || maxval > 3 && !(ai->global[i] & 4))
+              {
+                ai = alist.erase(ai);
+                goto nextassignment;
+              }
+
+            ai->s.get<0>() += G[*n]/*G[boost::target(*n, G)]more correct, but doesn't compile - doesn't make a difference now, but will when we implement profiler-driven optimization for speed*/; // Add calculation cost.
           }
       }
       {
@@ -265,6 +271,12 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
               ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
 
             ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
+
+            if (maxval > 1 && !(ai->global[boost::source(*n, G)] & 2) || maxval > 3 && !(ai->global[boost::source(*n, G)] & 4))
+              {
+                ai = alist.erase(ai);
+                goto nextassignment;
+              }
 
             ai->s.get<0>() += G[*n]; // Add calculation cost.
           }
