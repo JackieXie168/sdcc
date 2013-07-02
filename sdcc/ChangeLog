@@ -1,8 +1,14 @@
+2013-07-02 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Preparations for better handling of register-pressure in lospre (reduction of live-ranges of operands).
+
 2013-07-01 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCClospre.hpp,
 	  src/SDCClospre.cc:
-	  Improve handling of register-pressure in lospre.
+	  Improve handling of register-pressure in lospre (introduced temporaries).
 
 2013-07-01 Philipp Klaus Krause <pkk AT spth.de>
 
