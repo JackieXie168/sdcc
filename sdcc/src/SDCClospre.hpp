@@ -625,7 +625,7 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
       if (isOperandEqual(IC_RESULT(ic), IC_LEFT(nic)) && nic->op != ADDRESS_OF && (!POINTER_GET(nic) || !IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_LEFT(nic))->next) || compareType(operandType(IC_LEFT(nic)), operandType(tmpop)) == 1))
         {
 #ifdef DEBUG_LOSPRE
-          std::cout << "Forward substituted left operand at " << nic->key << "\n";
+          std::cout << "Forward substituted left operand " << OP_SYMBOL_CONST(IC_LEFT(nic))->name << " at " << nic->key << "\n";
 #endif
           //const operand *const oldop = IC_LEFT(nic);
           IC_LEFT(nic) = operandFromOperand (tmpop);
@@ -634,7 +634,7 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
       if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
         {
 #ifdef DEBUG_LOSPRE
-          std::cout << "Forward substituted right operand at " << nic->key << "\n";
+          std::cout << "Forward substituted right operand " << OP_SYMBOL_CONST(IC_RIGHT(nic))->name << " at " << nic->key << "\n";
 #endif
           //const operand *const oldop = IC_RIGHT(nic);
           IC_RIGHT(nic) = operandFromOperand (tmpop);
@@ -643,7 +643,7 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
       if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
         {
 #ifdef DEBUG_LOSPRE
-          std::cout << "Forward substituted result operand at " << nic->key << "\n";
+          std::cout << "Forward substituted result operand " << OP_SYMBOL_CONST(IC_RESULT(nic))->name << " at " << nic->key << "\n";
 #endif
           //const operand *const oldop = IC_RESULT(nic);
           IC_RESULT(nic) = operandFromOperand (tmpop);
@@ -661,7 +661,7 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
           if(e != e_end)
             break;
         }
-      if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic))
+      if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic) || G[i].uses)
         break;  
       if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
         break;
