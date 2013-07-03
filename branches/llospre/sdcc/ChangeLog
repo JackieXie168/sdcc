@@ -1,3 +1,9 @@
+2013-07-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Better handling of register-pressure in lospre (try not to separate condition from ifx).
+
 2013-07-03 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/SDCClospre.hpp,
