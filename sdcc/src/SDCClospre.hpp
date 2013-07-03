@@ -215,7 +215,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
       ai->local.erase(i);
 
       ai->s.get<1>() += (ai->global[i] & true); // Lifetime cost for new temporary variable.
-      //ai->s.get<1>() -= (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)); // Lifetime savings in operands.
+      ai->s.get<1>() -= (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)); // Lifetime savings in operands.
 
       {
         typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
@@ -237,6 +237,8 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
             if(((ai->global[i] & true) && !G[i].invalidates) < (ai->global[boost::target(*n, G)] & true))
               ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
+            else
+              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)); // Avoid double-counting lifetime cost when not moving calculation.
 
             ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
 
@@ -269,6 +271,8 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
 
             if(((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) < (ai->global[i] & true))
               ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
+            else
+              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)); // Avoid double-counting lifetime cost when not moving calculation.
 
             ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
 

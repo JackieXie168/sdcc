@@ -2,7 +2,7 @@
 
 	* src/SDCClospre.hpp,
 	  src/SDCClospre.cc:
-	  Preparations for better handling of register-pressure in lospre (reduction of live-ranges of operands).
+	  Better handling of register-pressure in lospre (reduction of live-ranges of operands).
 
 2013-07-03 Philipp Klaus Krause <pkk AT spth.de>
 

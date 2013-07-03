@@ -312,7 +312,7 @@ lospre (iCode *sic, ebbIndex *ebbi)
 
   int iterations = 0;
 
-  for (bool change = true; change && iterations < 16; iterations++)
+  for (bool change = true; change && iterations < 64; iterations++)
     {
       change = false;
 
