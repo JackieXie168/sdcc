@@ -764,10 +764,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       return (-1);
     }
 
-  if(substituted <= 1) // Todo: Remove this warning when optimization for speed instead of code size is implemented!
-    std::cout << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did not substitute multiple calculations.\n"; std::cout.flush();
-
-  if(substituted <= split) // Todo: Remove this warning when optimization for speed instead of code size is implemented!
+  if(substituted < split) // Todo: Remove this warning when optimization for speed instead of code size is implemented!
     std::cout << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", but did substitute only " << substituted << " calculations, while introducing "<< split << ".\n"; std::cout.flush();
 
   return(1);
