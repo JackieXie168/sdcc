@@ -19,7 +19,7 @@
 //
 // Lifetime-optimal speculative partial redundancy elimination.
 
-#define DEBUG_LOSPRE // Uncomment to get debug messages while doing lospre.
+// #define DEBUG_LOSPRE // Uncomment to get debug messages while doing lospre.
 
 #include "SDCClospre.hpp"
 
@@ -229,8 +229,8 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
        if(uses_global && POINTER_SET (ic)) // TODO: More accuracy here!
          (*cfg)[i].invalidates = true;
 
-       (*cfg)[i].i_uses[0] = !(*cfg)[i].uses && (eleft && (IC_LEFT(ic) && isOperandEqual (eleft, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eleft, IC_RIGHT (ic))));
-       (*cfg)[i].i_uses[bool(eleft)] = !(*cfg)[i].uses && (eright && (IC_LEFT(ic) && isOperandEqual (eright, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eright, IC_RIGHT (ic))));
+       (*cfg)[i].i_uses[0] = !(*cfg)[i].uses && (eleft && (IC_LEFT(ic) && isOperandEqual (eleft, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eleft, IC_RIGHT (ic))) || POINTER_SET(ic) && isOperandEqual (eleft, IC_RESULT (ic)));
+       (*cfg)[i].i_uses[bool(eleft)] = !(*cfg)[i].uses && (eright && (IC_LEFT(ic) && isOperandEqual (eright, IC_LEFT (ic)) || IC_RIGHT(ic) && isOperandEqual (eright, IC_RIGHT (ic))) || POINTER_SET(ic) && isOperandEqual (eright, IC_RESULT (ic)));
 
        (*cfg)[i].i_live[0] = (eleft && bitVectBitValue (ic->rlive, eleft->key));
        (*cfg)[i].i_live[bool(eleft)] = (eright && bitVectBitValue (ic->rlive, eright->key));
