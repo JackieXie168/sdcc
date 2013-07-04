@@ -1,5 +1,14 @@
 2013-07-04 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCClospre.cc,
+	  src/SDCClrange.c,
+	  src/SDCClrange.h,
+	  src/SDCCopt.c,
+	  src/*/ralloc.c:
+	  Fix handling of warnings in live-range computation for lospre.
+
+2013-07-04 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCClospre.hpp,
 	  src/SDCClospre.cc:
 	  Better handling of register-pressure in lospre (try not to separate condition from ifx).
