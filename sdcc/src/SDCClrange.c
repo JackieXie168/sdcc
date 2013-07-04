@@ -136,7 +136,7 @@ setLiveFrom (symbol * sym, int from)
 /* setToRange - set the range to for an operand                    */
 /*-----------------------------------------------------------------*/
 static void
-setLiveTo (symbol * sym, int to)
+setLiveTo (symbol *sym, int to)
 {
   if (!sym->liveTo || sym->liveTo < to)
     sym->liveTo = to;
@@ -146,7 +146,7 @@ setLiveTo (symbol * sym, int to)
 /* markLiveRanges - for each operand mark the liveFrom & liveTo    */
 /*-----------------------------------------------------------------*/
 static void
-markLiveRanges (eBBlock ** ebbs, int count)
+markLiveRanges (const eBBlock **ebbs, int count)
 {
   int i, key;
   symbol *sym;
@@ -456,7 +456,7 @@ findPrevUse (eBBlock *ebp, iCode *ic, operand *op,
   /* There must be a definition in each branch of predecessors */
   if (!findPrevUseSym (ebp, ic->prev, OP_SYMBOL(op)))
     {
-      /* computeLiveRanges() is called twice */
+      /* computeLiveRanges() is called at least twice */
       if (emitWarnings)
         {
           if (IS_ITEMP (op))
@@ -501,7 +501,7 @@ incUsed (iCode *ic, operand *op)
 /* rliveClear - clears the rlive bitVectors                        */
 /*-----------------------------------------------------------------*/
 static void
-rliveClear (eBBlock ** ebbs, int count)
+rliveClear (const eBBlock **ebbs, int count)
 {
   int i;
 
@@ -513,9 +513,9 @@ rliveClear (eBBlock ** ebbs, int count)
       /* for all instructions in this block do */
       for (ic = ebbs[i]->sch; ic; ic = ic->next)
         {
-	  freeBitVect (ic->rlive);
-	  ic->rlive = NULL;
-	}
+	      freeBitVect (ic->rlive);
+	      ic->rlive = NULL;
+	    }
     }
 }
 
@@ -846,7 +846,7 @@ adjustIChain (eBBlock ** ebbs, int count)
 /* computeLiveRanges - computes the live ranges for variables      */
 /*-----------------------------------------------------------------*/
 void
-computeLiveRanges (eBBlock ** ebbs, int count, bool emitWarnings)
+computeLiveRanges (eBBlock **ebbs, int count, bool emitWarnings)
 {
   /* first look through all blocks and adjust the
      sch and ech pointers */
@@ -878,7 +878,7 @@ computeLiveRanges (eBBlock ** ebbs, int count, bool emitWarnings)
 /* recomputeLiveRanges - recomputes the live ranges for variables  */
 /*-----------------------------------------------------------------*/
 void
-recomputeLiveRanges (eBBlock ** ebbs, int count)
+recomputeLiveRanges (eBBlock **ebbs, int count, bool emitWarnings)
 {
   symbol * sym;
   int key;
@@ -899,7 +899,7 @@ recomputeLiveRanges (eBBlock ** ebbs, int count)
     }
 
   /* do the LR computation again */
-  computeLiveRanges (ebbs, count, FALSE);
+  computeLiveRanges (ebbs, count, emitWarnings);
 }
 
 /*-----------------------------------------------------------------*/

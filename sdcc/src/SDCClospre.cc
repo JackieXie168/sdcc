@@ -336,7 +336,7 @@ lospre (iCode *sic, ebbIndex *ebbi)
           if (tree_dec_lospre (tree_decomposition, control_flow_graph, ic) > 0)
             {
               change = true;
-              recomputeLiveRanges (ebbi->bbOrder, ebbi->count);
+              recomputeLiveRanges (ebbi->bbOrder, ebbi->count, FALSE);
             }
         }
     }

@@ -2204,13 +2204,11 @@ eBBlockFromiCode (iCode * ic)
 
   offsetFold (ebbi->bbOrder, ebbi->count);
 
-  /* Calcuate live-ranges for use in lospre. */
+  /* lospre */
   computeControlFlow (ebbi);
   loops = createLoopRegions (ebbi);
   computeDataFlow (ebbi);
-  computeLiveRanges (ebbi->bbOrder, ebbi->count, TRUE);
-
-  /* lospre */
+  computeLiveRanges (ebbi->bbOrder, ebbi->count, FALSE);
   adjustIChain (ebbi->bbOrder, ebbi->count);
   ic = iCodeLabelOptimize (iCodeFromeBBlock (ebbi->bbOrder, ebbi->count));
   if (optimize.lospre && (TARGET_Z80_LIKE || TARGET_HC08_LIKE || TARGET_IS_STM8)) /* Todo: enable for other ports. */
@@ -2281,7 +2279,7 @@ eBBlockFromiCode (iCode * ic)
   miscOpt (ebbi->bbOrder, ebbi->count);
 
   /* compute the live ranges */
-  recomputeLiveRanges (ebbi->bbOrder, ebbi->count);
+  recomputeLiveRanges (ebbi->bbOrder, ebbi->count, TRUE);
 
   if (options.dump_range)
     dumpEbbsToFileExt (DUMP_RANGE, ebbi);
