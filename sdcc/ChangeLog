@@ -1,5 +1,17 @@
 2013-07-04 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/SDCClospre.hpp,
+	  src/SDCClospre.cc:
+	  Better handling of register-pressure in lospre (try not to separate calculation from use).
+
+2013-07-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCbitv.h,
+	  src/SDCCbitv.c:
+	  Improve const use in bit vectors.
+
+2013-07-04 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/SDCClospre.cc,
 	  src/SDCClrange.c,
 	  src/SDCClrange.h,

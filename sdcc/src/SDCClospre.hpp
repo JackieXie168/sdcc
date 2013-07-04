@@ -192,6 +192,17 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
   return(0);
 }
 
+// A generalized ifxForOp - returns register pressure in case result is only used for following ifx, 1 in case result is used only in following inst, 0 otherweise.
+static int forNextIcOnly(const iCode *ic)
+{
+  operand *op = IC_RESULT(ic);
+
+  if(!IS_TRUE_SYMOP (op) || !(ic = ic->next) || OP_SYMBOL (op)->liveTo != ic->seq)
+    return 0;
+
+  return (1 + (ic->op == IFX) * (1 + bitVectnBitsOn(ic->rlive)));
+}
+
 // Handle forget nodes in the nice tree decomposition
 template <class T_t, class G_t>
 void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_descriptor t, const G_t &G)
@@ -238,7 +249,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             if(((ai->global[i] & true) && !G[i].invalidates) < (ai->global[boost::target(*n, G)] & true))
               ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
             else
-              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)) - bool(ifxForOp(IC_RESULT(G[boost::target(*n, G)].ic), G[boost::target(*n, G)].ic)) * 2.0; // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
+              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)) - forNextIcOnly(G[boost::target(*n, G)].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
 
             ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
 
@@ -272,7 +283,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             if(((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) < (ai->global[i] & true))
               ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
             else
-              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)) - bool(ifxForOp(IC_RESULT(G[i].ic), G[i].ic)) * 2.0; // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
+              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)) - forNextIcOnly(G[i].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
 
             ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
 

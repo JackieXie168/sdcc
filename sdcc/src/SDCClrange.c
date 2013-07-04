@@ -146,7 +146,7 @@ setLiveTo (symbol *sym, int to)
 /* markLiveRanges - for each operand mark the liveFrom & liveTo    */
 /*-----------------------------------------------------------------*/
 static void
-markLiveRanges (const eBBlock **ebbs, int count)
+markLiveRanges (eBBlock **ebbs, int count)
 {
   int i, key;
   symbol *sym;
@@ -501,7 +501,7 @@ incUsed (iCode *ic, operand *op)
 /* rliveClear - clears the rlive bitVectors                        */
 /*-----------------------------------------------------------------*/
 static void
-rliveClear (const eBBlock **ebbs, int count)
+rliveClear (eBBlock **ebbs, int count)
 {
   int i;
 
