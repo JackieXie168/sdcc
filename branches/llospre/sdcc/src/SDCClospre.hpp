@@ -35,6 +35,9 @@ extern "C"
 #include "SDCCy.h"
 #include "SDCCasm.h"
 #include "SDCClrange.h"
+#include "SDCCdflow.h"
+#include "SDCCloop.h"
+#include "SDCCcflow.h"
 #include "port.h"
 }
 
@@ -585,6 +588,12 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
   G[boost::source(e, G)].ic->next = newic;
   G[boost::target(e, G)].ic->prev = newic;
 
+  //if (ic->op != ADDRESS_OF && IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
+  //  bitVectSetBit (OP_SYMBOL (IC_LEFT (ic))->uses, ic->key);
+  //if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
+  //  bitVectSetBit (OP_SYMBOL (IC_RIGHT (ic))->uses, ic->key);
+  //bitVectSetBit (OP_SYMBOL (IC_RESULT (ic))->defs, ic->key);
+
   // Insert node into cfg.
   typename boost::graph_traits<G_t>::vertex_descriptor n = boost::add_vertex(G);
   // TODO: Exact cost.
@@ -642,28 +651,28 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
 #ifdef DEBUG_LOSPRE
           std::cout << "Forward substituted left operand " << OP_SYMBOL_CONST(IC_LEFT(nic))->name << " at " << nic->key << "\n";
 #endif
-          //const operand *const oldop = IC_LEFT(nic);
+          //bitVectUnSetBit (OP_SYMBOL (IC_LEFT (nic))->uses, nic->key);
           IC_LEFT(nic) = operandFromOperand (tmpop);
-          //setOperandType (IC_LEFT(nic), operandType (oldop));
+          //bitVectSetBit (OP_SYMBOL (IC_LEFT (nic))->uses, nic->key);
         }
       if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
         {
 #ifdef DEBUG_LOSPRE
           std::cout << "Forward substituted right operand " << OP_SYMBOL_CONST(IC_RIGHT(nic))->name << " at " << nic->key << "\n";
 #endif
-          //const operand *const oldop = IC_RIGHT(nic);
+          //bitVectUnSetBit (OP_SYMBOL (IC_RIGHT (nic))->uses, nic->key);
           IC_RIGHT(nic) = operandFromOperand (tmpop);
-          //setOperandType (IC_RIGHT(nic), operandType (oldop));
+          //bitVectSetBit (OP_SYMBOL (IC_RIGHT (nic))->uses, nic->key);
         }
       if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
         {
 #ifdef DEBUG_LOSPRE
           std::cout << "Forward substituted result operand " << OP_SYMBOL_CONST(IC_RESULT(nic))->name << " at " << nic->key << "\n";
 #endif
-          //const operand *const oldop = IC_RESULT(nic);
+          //bitVectUnSetBit (OP_SYMBOL (IC_RESULT (nic))->uses, nic->key);
           IC_RESULT(nic) = operandFromOperand (tmpop);
-          //setOperandType(IC_RESULT(nic), operandType (oldop));
           IC_RESULT(nic)->isaddr = true;
+          //bitVectSetBit (OP_SYMBOL (IC_RESULT (nic))->uses, nic->key);
         }
 
       if (nic->op == LABEL) // Reached label. Continue only if all edges goining here are safe.
@@ -747,9 +756,14 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       std::cout << "Substituting ic " << G[*v].ic->key << "\n";
 #endif
       substituted++;
-      // Todo: split unconnected iTemps. Maybe rather do it after lospre (so we can also split whatever unconnected live-ranges other optimizations created)?
+
       iCode *ic = G[*v].ic;
+      //if (IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
+      //  bitVectUnSetBit (OP_SYMBOL (IC_LEFT (ic))->uses, ic->key);
+      //if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
+       // bitVectUnSetBit (OP_SYMBOL (IC_RIGHT (ic))->uses, ic->key);
       IC_RIGHT(ic) = tmpop;
+      //bitVectSetBit (OP_SYMBOL (IC_RIGHT(ic))->uses, ic->key);
       if (!POINTER_SET (ic))
         {
           IC_LEFT(ic) = 0;
