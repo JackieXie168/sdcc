@@ -939,3 +939,129 @@ dumpIcRlive (eBBlock ** ebbs, int count)
     }
 }
 #endif
+
+static void visit (set **visited, iCode *ic, const int key)
+{
+  symbol *lbl;
+
+  while (ic && !isinSet (*visited, ic) && bitVectBitValue (ic->rlive, key))
+    {
+      addSet (visited, ic);
+
+      switch (ic->op)
+        {
+        case GOTO:
+          ic = hTabItemWithKey (labelDef, (IC_LABEL (ic))->key);
+          break;
+        case RETURN:
+          ic = hTabItemWithKey (labelDef, returnLabel->key);
+          break;
+        case JUMPTABLE:
+          for (lbl = setFirstItem (IC_JTLABELS (ic)); lbl; lbl = setNextItem (IC_JTLABELS (ic)))
+            visit (visited, hTabItemWithKey (labelDef, lbl->key), key);
+          break;
+        case IFX:
+          visit (visited, hTabItemWithKey (labelDef, (IC_TRUE(ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key), key);
+        default:
+          ic = ic->next;
+        }
+    }
+}
+
+/*-----------------------------------------------------------------*/
+/* Split temporaries that have non-connected live ranges           */
+/* Such temporaries can result from GCSE and losrpe,               */
+/* And can confuse register allcoation and rematerialization.      */
+/*-----------------------------------------------------------------*/
+void
+separateLiveRanges (iCode *sic, ebbIndex *ebbi)
+{
+  iCode *ic;
+  set *candidates = 0;
+  symbol *sym;
+
+  // printf("separateLiveRanges()\n");
+
+  for (ic = sic; ic; ic = ic->next)
+    {
+      if (ic->op == IFX || ic->op == GOTO || ic->op == JUMPTABLE || !IC_RESULT (ic) || !IS_ITEMP (IC_RESULT (ic)) || bitVectnBitsOn (OP_DEFS (IC_RESULT (ic))) <= 1 || isinSet (candidates, OP_SYMBOL (IC_RESULT (ic))))
+        continue;
+
+      addSet (&candidates, OP_SYMBOL (IC_RESULT (ic)));
+    }
+
+  if (!candidates)
+    return;
+
+  for(sym = setFirstItem (candidates); sym; sym = setNextItem (candidates))
+    {
+      // printf("Looking at %s, %d definitions\n", sym->name, bitVectnBitsOn (sym->defs));
+
+      int i;
+      set *defs = 0;
+
+      for (i = 0; i < sym->defs->size; i++)
+        if (bitVectBitValue (sym->defs, i))
+          addSet (&defs, hTabItemWithKey (iCodehTab, i));
+
+      wassert (defs);
+
+      do
+        {
+          set *visited = 0;
+          set *newdefs;
+          int oldsize;
+
+          // printf("Looking at def at %d now\n", ((iCode *)(setFirstItem (defs)))->key);
+
+          visit (&visited, setFirstItem (defs), sym->key);
+
+          do
+            {
+              oldsize = elementsInSet(visited);
+              ic = setFirstItem (defs);
+              for(ic = setNextItem (defs); ic; ic = setNextItem (defs))
+                {
+                  set *visited2 = 0;
+                  visit (&visited2, ic, sym->key);
+                  if (intersectSets (visited, visited2, THROW_NONE))
+                    visited = unionSets (visited, visited2, THROW_DEST);
+                  deleteSet (&visited2);
+                }
+             }
+          while (oldsize < elementsInSet(visited));
+
+          newdefs = intersectSets (defs, visited, THROW_NONE);
+          defs = subtractFromSet (defs, visited, THROW_DEST);
+
+          if (newdefs && defs)
+            {
+              operand *tmpop = newiTempOperand (operandType (IC_RESULT ((iCode *)(setFirstItem (newdefs)))), TRUE);
+
+              // printf("Splitting %s from %s, using def at %d, op %d\n", OP_SYMBOL_CONST(tmpop)->name, sym->name, ((iCode *)(setFirstItem (newdefs)))->key, ((iCode *)(setFirstItem (newdefs)))->op);
+
+              for (ic = setFirstItem (visited); ic; ic = setNextItem (visited))
+                {
+                  if (IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)) && OP_SYMBOL (IC_LEFT (ic)) == sym)
+                    IC_LEFT (ic) = operandFromOperand (tmpop);
+                  if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)) && OP_SYMBOL (IC_RIGHT (ic)) == sym)
+                      IC_RIGHT (ic) = operandFromOperand (tmpop);
+                  if (IC_RESULT (ic) && IS_ITEMP (IC_RESULT (ic)) && OP_SYMBOL (IC_RESULT (ic)) == sym)
+                    {
+                      IC_RESULT (ic) = operandFromOperand (tmpop);
+                      if (POINTER_SET (ic))
+                        IC_RESULT(ic)->isaddr = TRUE;
+                    }
+                }
+            }
+          deleteSet (&newdefs);
+          deleteSet (&visited);
+        }
+      while (elementsInSet(defs) > 1);
+
+      deleteSet (&defs);
+    }
+
+  deleteSet (&candidates);
+}
+
