@@ -630,7 +630,7 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
 
 
 template <class G_t>
-static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>::vertex_descriptor i, const iCode *ic)
+static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>::vertex_descriptor i, const iCode *ic, const assignment_lospre& a)
 {
   typedef typename boost::graph_traits<G_t>::adjacency_iterator adjacency_iter_t;
 
@@ -685,8 +685,8 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
           if(e != e_end)
             break;
         }
-      if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic) || G[i].uses)
-        break;  
+      if (isOperandEqual(IC_RESULT (ic), IC_RESULT(nic)) && !POINTER_SET(nic) /*|| G[i].uses*/)
+        break;
       if ((nic->op == CALL || nic->op == PCALL || POINTER_SET(nic)) && IS_TRUE_SYMOP(IC_RESULT(ic)))
         break;
 
@@ -695,13 +695,19 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
       if (nic->op == GOTO || nic->op == IFX || nic->op == JUMPTABLE)
         {
           adjacency_iter_t c, c_end;
-          for(boost::tie(c, c_end) = boost::adjacent_vertices(i, G); c != c_end; ++c) 
-            forward_lospre_assignment(G, *c, ic);
+          for(boost::tie(c, c_end) = boost::adjacent_vertices(i, G); c != c_end; ++c)
+            {
+              if(((a.global[i] & true) && !G[i].invalidates) < (a.global[*c] & true)) // Calculation edge
+                continue;
+              forward_lospre_assignment(G, *c, ic, a);
+            }
           break;
         }
 
       boost::tie(c, c_end) = adjacent_vertices(i, G);
-      if (c == c_end)
+      if(c == c_end)
+        break;
+      if(((a.global[i] & true) && !G[i].invalidates) < (a.global[*c] & true)) // Calculation edge
         break;
       i = *c;
     }
@@ -779,7 +785,7 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
         adjacency_iter_t c, c_end;
         boost::tie(c, c_end) = adjacent_vertices(*v, G);
         if (c != c_end)
-          forward_lospre_assignment(G, *c, ic);
+          forward_lospre_assignment(G, *c, ic, a);
       }
     }
 
