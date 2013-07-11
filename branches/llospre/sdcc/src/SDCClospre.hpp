@@ -38,6 +38,7 @@ extern "C"
 #include "SDCCdflow.h"
 #include "SDCCloop.h"
 #include "SDCCcflow.h"
+#include "SDCClabel.h"
 #include "port.h"
 }
 
@@ -200,8 +201,21 @@ static int forNextIcOnly(const iCode *ic)
 {
   operand *op = IC_RESULT(ic);
 
-  if(!IS_TRUE_SYMOP (op) || !(ic = ic->next) || OP_SYMBOL (op)->liveTo != ic->seq)
+  if(!IS_ITEMP (op) || !(ic = ic->next))
     return 0;
+
+  if (ic->next && bitVectBitValue(ic->next->rlive, op->key))
+    return 0;
+
+  if (ic->op == IFX && bitVectBitValue(((const iCode *)(hTabItemWithKey (labelDef, (IC_TRUE(ic) ? IC_TRUE (ic) : IC_FALSE (ic))->key)))->rlive, op->key))
+    return 0;
+  else if (ic->op == JUMPTABLE)
+    {
+      symbol *lbl;
+      for (lbl = (symbol *)(setFirstItem (IC_JTLABELS (ic))); lbl; lbl = (symbol *)(setNextItem (IC_JTLABELS (ic))))
+        if (bitVectBitValue(((const iCode *)(hTabItemWithKey (labelDef, lbl->key)))->rlive, op->key))
+          return 0;
+    }
 
   return (1 + (ic->op == IFX) * (1 + bitVectnBitsOn(ic->rlive)));
 }
@@ -788,6 +802,10 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
           forward_lospre_assignment(G, *c, ic, a);
       }
     }
+
+#ifdef DEBUG_LOSPRE
+  std::cout << "Introduced " << OP_SYMBOL_CONST(tmpop)->name << ", substituting " << substituted << ", introducing " << split << " calculations.\n";
+#endif
 
   if(substituted <= 0)
     {
