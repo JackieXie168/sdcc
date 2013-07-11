@@ -1,5 +1,10 @@
 2013-07-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
+	* src/SDCClospre.hpp,:
+	  Better handling of register-pressure in lospre (try not to separate calculation from use).
+
+2013-07-11 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
+
 	* src/SDCClospre.hpp:
 	  Fix lospre forwarding.
 
