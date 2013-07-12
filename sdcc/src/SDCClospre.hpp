@@ -54,6 +54,8 @@ typedef std::set<unsigned short int> lospreset_t;
 
 static unsigned short int maxval;
 
+static int leftsize, rightsize, resultsize;
+
 struct assignment_lospre
 {
   boost::tuple<float, float> s; // First entry: Calculation costs, second entry: Lifetime costs.
@@ -196,7 +198,7 @@ int tree_dec_lospre_introduce(T_t &T, typename boost::graph_traits<T_t>::vertex_
   return(0);
 }
 
-// A generalized ifxForOp - returns register pressure in case result is only used for following ifx, 1 in case result is used only in following inst, 0 otherweise.
+// A generalized ifxForOp - returns register pressure in case result is only used for following ifx, 8 in case result is used only in following inst, 0 otherweise.
 static int forNextIcOnly(const iCode *ic)
 {
   operand *op = IC_RESULT(ic);
@@ -217,7 +219,7 @@ static int forNextIcOnly(const iCode *ic)
           return 0;
     }
 
-  return (1 + (ic->op == IFX) * (1 + bitVectnBitsOn(ic->rlive)));
+  return (((ic->op == IFX) + 1) * (operandSize(op) + bitVectnBitsOn(ic->rlive)));
 }
 
 // Handle forget nodes in the nice tree decomposition
@@ -242,8 +244,8 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
     {
       ai->local.erase(i);
 
-      ai->s.get<1>() += (ai->global[i] & true); // Lifetime cost for new temporary variable.
-      ai->s.get<1>() -= (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)); // Lifetime savings in operands.
+      ai->s.get<1>() += (ai->global[i] & true) * resultsize; // Lifetime cost for new temporary variable.
+      ai->s.get<1>() -= (G[i].i_live[0] - (ai->global[i] & 2)) * leftsize + (G[i].i_live[1] - (ai->global[i] & 4)) * rightsize; // Lifetime savings in operands.
 
       {
         typedef typename boost::graph_traits<cfg_lospre_t>::out_edge_iterator n_iter_t;
@@ -266,9 +268,9 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             if(((ai->global[i] & true) && !G[i].invalidates) < (ai->global[boost::target(*n, G)] & true))
               ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
             else
-              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)) - forNextIcOnly(G[boost::target(*n, G)].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
+              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) * leftsize + (G[i].i_live[1] - (ai->global[i] & 4)) * rightsize - forNextIcOnly(G[boost::target(*n, G)].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
 
-            ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
+            ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) * std::max(leftsize, rightsize) + resultsize + (maxval > 1) * leftsize + (maxval > 3) * rightsize; // Lifetime cost at point of calculation.
 
             if (maxval > 1 && !(ai->global[i] & 2) || maxval > 3 && !(ai->global[i] & 4))
               {
@@ -300,9 +302,9 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             if(((ai->global[boost::source(*n, G)] & true) && !G[boost::source(*n, G)].invalidates) < (ai->global[i] & true))
               ai->s.get<1>() += 0.1f; // Small bias against moving calculations - also ensures termination of the algorithm by avoiding pointless moves.
             else
-              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) + (G[i].i_live[1] - (ai->global[i] & 4)) - forNextIcOnly(G[i].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
+              ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) * leftsize + (G[i].i_live[1] - (ai->global[i] & 4)) * rightsize - forNextIcOnly(G[i].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
 
-            ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) + 1 + (maxval > 1) + (maxval > 3); // Lifetime cost at point of calculation.
+            ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) * std::max(leftsize, rightsize) + resultsize + (maxval > 1) * leftsize + (maxval > 3) * rightsize; // Lifetime cost at point of calculation.
 
             if (maxval > 1 && !(ai->global[boost::source(*n, G)] & 2) || maxval > 3 && !(ai->global[boost::source(*n, G)] & 4))
               {
@@ -602,11 +604,11 @@ static void split_edge(T_t &T, G_t &G, typename boost::graph_traits<G_t>::edge_d
   G[boost::source(e, G)].ic->next = newic;
   G[boost::target(e, G)].ic->prev = newic;
 
-  //if (ic->op != ADDRESS_OF && IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
-  //  bitVectSetBit (OP_SYMBOL (IC_LEFT (ic))->uses, ic->key);
-  //if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
-  //  bitVectSetBit (OP_SYMBOL (IC_RIGHT (ic))->uses, ic->key);
-  //bitVectSetBit (OP_SYMBOL (IC_RESULT (ic))->defs, ic->key);
+  if (ic->op != ADDRESS_OF && IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
+    bitVectSetBit (OP_SYMBOL (IC_LEFT (ic))->uses, ic->key);
+  if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
+    bitVectSetBit (OP_SYMBOL (IC_RIGHT (ic))->uses, ic->key);
+  bitVectSetBit (OP_SYMBOL (IC_RESULT (ic))->defs, ic->key);
 
   // Insert node into cfg.
   typename boost::graph_traits<G_t>::vertex_descriptor n = boost::add_vertex(G);
@@ -665,28 +667,28 @@ static void forward_lospre_assignment(G_t &G, typename boost::graph_traits<G_t>:
 #ifdef DEBUG_LOSPRE
           std::cout << "Forward substituted left operand " << OP_SYMBOL_CONST(IC_LEFT(nic))->name << " at " << nic->key << "\n";
 #endif
-          //bitVectUnSetBit (OP_SYMBOL (IC_LEFT (nic))->uses, nic->key);
+          bitVectUnSetBit (OP_SYMBOL (IC_LEFT (nic))->uses, nic->key);
           IC_LEFT(nic) = operandFromOperand (tmpop);
-          //bitVectSetBit (OP_SYMBOL (IC_LEFT (nic))->uses, nic->key);
+          bitVectSetBit (OP_SYMBOL (IC_LEFT (nic))->uses, nic->key);
         }
       if (isOperandEqual(IC_RESULT(ic), IC_RIGHT(nic)))
         {
 #ifdef DEBUG_LOSPRE
           std::cout << "Forward substituted right operand " << OP_SYMBOL_CONST(IC_RIGHT(nic))->name << " at " << nic->key << "\n";
 #endif
-          //bitVectUnSetBit (OP_SYMBOL (IC_RIGHT (nic))->uses, nic->key);
+          bitVectUnSetBit (OP_SYMBOL (IC_RIGHT (nic))->uses, nic->key);
           IC_RIGHT(nic) = operandFromOperand (tmpop);
-          //bitVectSetBit (OP_SYMBOL (IC_RIGHT (nic))->uses, nic->key);
+          bitVectSetBit (OP_SYMBOL (IC_RIGHT (nic))->uses, nic->key);
         }
       if (POINTER_SET(nic) && isOperandEqual(IC_RESULT(ic), IC_RESULT(nic)) && (!IS_PTR(operandType(IC_RESULT(nic))) || !IS_BITFIELD(operandType(IC_RESULT(nic))->next) || compareType(operandType(IC_RESULT(nic)), operandType(tmpop)) == 1))
         {
 #ifdef DEBUG_LOSPRE
           std::cout << "Forward substituted result operand " << OP_SYMBOL_CONST(IC_RESULT(nic))->name << " at " << nic->key << "\n";
 #endif
-          //bitVectUnSetBit (OP_SYMBOL (IC_RESULT (nic))->uses, nic->key);
+          bitVectUnSetBit (OP_SYMBOL (IC_RESULT (nic))->uses, nic->key);
           IC_RESULT(nic) = operandFromOperand (tmpop);
           IC_RESULT(nic)->isaddr = true;
-          //bitVectSetBit (OP_SYMBOL (IC_RESULT (nic))->uses, nic->key);
+          bitVectSetBit (OP_SYMBOL (IC_RESULT (nic))->uses, nic->key);
         }
 
       if (nic->op == LABEL) // Reached label. Continue only if all edges goining here are safe.
@@ -778,12 +780,12 @@ static int implement_lospre_assignment(const assignment_lospre a, T_t &T, G_t &G
       substituted++;
 
       iCode *ic = G[*v].ic;
-      //if (IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
-      //  bitVectUnSetBit (OP_SYMBOL (IC_LEFT (ic))->uses, ic->key);
-      //if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
-       // bitVectUnSetBit (OP_SYMBOL (IC_RIGHT (ic))->uses, ic->key);
+      if (IC_LEFT (ic) && IS_ITEMP (IC_LEFT (ic)))
+        bitVectUnSetBit (OP_SYMBOL (IC_LEFT (ic))->uses, ic->key);
+      if (IC_RIGHT (ic) && IS_ITEMP (IC_RIGHT (ic)))
+        bitVectUnSetBit (OP_SYMBOL (IC_RIGHT (ic))->uses, ic->key);
       IC_RIGHT(ic) = tmpop;
-      //bitVectSetBit (OP_SYMBOL (IC_RIGHT(ic))->uses, ic->key);
+      bitVectSetBit (OP_SYMBOL (IC_RIGHT(ic))->uses, ic->key);
       if (!POINTER_SET (ic))
         {
           IC_LEFT(ic) = 0;

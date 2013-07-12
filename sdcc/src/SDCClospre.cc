@@ -238,6 +238,10 @@ setup_cfg_for_expression (cfg_lospre_t *const cfg, const iCode *const eic)
        (*cfg)[i].forward = std::pair<int, int>(-1, -1);
     }
 
+  leftsize = operandSize(eleft ? eleft : eright);
+  rightsize = operandSize(eright);
+  resultsize = operandSize(IC_RESULT(eic));
+
   return (safety_required);
 }
 
