@@ -326,7 +326,7 @@ symbol *newiTempLabel (const char *);
 symbol *newiTempLoopHeaderLabel (bool);
 iCode *newiCode (int, operand *, operand *);
 sym_link *operandType (const operand *);
-unsigned int operandSize (operand *);
+unsigned int operandSize (const operand *);
 operand *operandFromValue (value *);
 operand *operandFromSymbol (symbol *);
 operand *operandFromLink (sym_link *);

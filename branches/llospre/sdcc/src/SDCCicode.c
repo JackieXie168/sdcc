@@ -832,7 +832,7 @@ operandType (const operand *op)
 /* operandSize - returns size of an operand in bytes               */
 /*-----------------------------------------------------------------*/
 unsigned int
-operandSize (operand * op)
+operandSize (const operand * op)
 {
   sym_link *type;
 
