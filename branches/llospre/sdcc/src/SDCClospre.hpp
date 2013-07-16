@@ -270,7 +270,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             else
               ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) * leftsize + (G[i].i_live[1] - (ai->global[i] & 4)) * rightsize - forNextIcOnly(G[boost::target(*n, G)].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
 
-            ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) * std::max(leftsize, rightsize) + resultsize + (maxval > 1) * leftsize + (maxval > 3) * rightsize; // Lifetime cost at point of calculation.
+            ai->s.get<1>() += bitVectBitsInCommon(G[i].ic->rlive, G[boost::target(*n, G)].ic->rlive) /** std::max(leftsize, rightsize)*/ + resultsize + (maxval > 1) * leftsize + (maxval > 3) * rightsize; // Lifetime cost at point of calculation.
 
             if (maxval > 1 && !(ai->global[i] & 2) || maxval > 3 && !(ai->global[i] & 4))
               {
@@ -304,7 +304,7 @@ void tree_dec_lospre_forget(T_t &T, typename boost::graph_traits<T_t>::vertex_de
             else
               ai->s.get<1>() += (G[i].i_live[0] - (ai->global[i] & 2)) * leftsize + (G[i].i_live[1] - (ai->global[i] & 4)) * rightsize - forNextIcOnly(G[i].ic); // Avoid double-counting lifetime cost when not moving calculation. Avoid separating condition from ifx.
 
-            ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) * std::max(leftsize, rightsize) + resultsize + (maxval > 1) * leftsize + (maxval > 3) * rightsize; // Lifetime cost at point of calculation.
+            ai->s.get<1>() += bitVectBitsInCommon(G[boost::source(*n, G)].ic->rlive, G[i].ic->rlive) /** std::max(leftsize, rightsize)*/ + resultsize + (maxval > 1) * leftsize + (maxval > 3) * rightsize; // Lifetime cost at point of calculation.
 
             if (maxval > 1 && !(ai->global[boost::source(*n, G)] & 2) || maxval > 3 && !(ai->global[boost::source(*n, G)] & 4))
               {
