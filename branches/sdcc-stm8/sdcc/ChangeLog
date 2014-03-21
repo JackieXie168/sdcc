@@ -1,3 +1,15 @@
+2014-03-21 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c:
+	  Applied patch #227 by Ben Shi to fix jumping on float in y and to speed up jumping on byte in yl.
+	* device/lib/z80/setjmp.s:
+	  Slightly more efficient longjmp().
+	* device/lib/stm8/setjmp.s,
+	  support/regression/tests/setjmp.c:
+	  Implement setjmp() / longjmp() for stm8.
+	* src/z80/ralloc2.cc:
+	  Allow use of hl in 16-bit additions with global variables as long as de or bc is free.
+
 2014-03-18 Philipp Klaus Krause <philipp AT informatik.uni-frankfurt.de>
 
 	* doc/sdccman.lyx:

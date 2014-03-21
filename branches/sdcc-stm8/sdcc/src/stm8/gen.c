@@ -275,6 +275,9 @@ aopOnStackNotExt (const asmop *aop, int offset, int size)
   return (aopOnStack (aop, offset, size) && (aop->aopu.bytes[offset].byteu.stk + G.stack.pushed <= 255 || regalloc_dry_run));// Todo: Stack offsets might be unavailable during dry run (messes with addition costs, so we should have a mechanism to do it better).
 }
 
+/*-----------------------------------------------------------------*/
+/* aopIsLitVal - asmop from offset is val                          */
+/*-----------------------------------------------------------------*/
 static bool
 aopIsLitVal (const asmop *aop, int offset, int size, unsigned long val)
 {
@@ -765,6 +768,7 @@ emit3w (enum asminst inst, asmop *op1, asmop *op2)
   emit3w_o (inst, op1, 0, op2, 0);
 }
 
+#if 0
 static bool
 regFree (int idx, const iCode *ic)
 {
@@ -774,6 +778,7 @@ regFree (int idx, const iCode *ic)
     return (regFree (YL_IDX, ic) && regFree (YH_IDX, ic));
   return (!bitVectBitValue (ic->rMask, idx));
 }
+#endif
 
 static bool
 regDead (int idx, const iCode *ic)
@@ -5796,11 +5801,11 @@ genIfx (const iCode *ic)
             (aopOnStack (cond->aop, i, 2) || cond->aop->type == AOP_DIR))
             {
               genMove_o (ASMOP_Y, 0, cond->aop, i, 2, regDead (A_IDX, ic) && cond->aop->regs[A_IDX] < i, FALSE, TRUE);
-              if (floattopbyte)
+              if (floattopword)
                 emit3w (A_SLLW, ASMOP_Y, 0);
               i += 2;
             }
-          else if ((aopInReg (cond->aop, i, XL_IDX) || aopInReg (cond->aop, i, XH_IDX) || aopInReg (cond->aop, i, YH_IDX)) && regDead (A_IDX, ic) && cond->aop->regs[A_IDX] <= i)
+          else if ((aopInReg (cond->aop, i, XL_IDX) || aopInReg (cond->aop, i, XH_IDX) || aopInReg (cond->aop, i, YL_IDX) || aopInReg (cond->aop, i, YH_IDX)) && regDead (A_IDX, ic) && cond->aop->regs[A_IDX] <= i)
             {
               cheapMove (ASMOP_A, 0, cond->aop, i, FALSE);
               emit3 (floattopbyte ? A_SLL : A_TNZ, ASMOP_A, 0);
