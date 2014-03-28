@@ -1,7 +1,7 @@
 2014-03-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:
-	  Fix range error check in aopIsLitVal(), improve range checks in snprintf() calls.
+	  Comment for range error check in aopIsLitVal(), improve range checks in snprintf() calls.
 
 2014-03-22 Maarten Brock <sourceforge.brock AT dse.nl>
 
