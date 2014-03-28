@@ -3863,6 +3863,16 @@ branchInstCmp (int opcode, int sign, bool negated)
 
 /*------------------------------------------------------------------*/
 /* genCmp :- greater or less than (and maybe with equal) comparison */
+/* Handles cases where the decision can be made based on top bytes. */
+/*------------------------------------------------------------------*/
+static bool
+genCmpTop (void)
+{
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+/* genCmp :- greater or less than (and maybe with equal) comparison */
 /*------------------------------------------------------------------*/
 static void
 genCmp (const iCode *ic, iCode *ifx)
@@ -3897,6 +3907,14 @@ genCmp (const iCode *ic, iCode *ifx)
     right->aop->type != AOP_LIT && left->aop->type == AOP_DIR ||
     (aopInReg (right->aop, 0, A_IDX) || aopInReg (right->aop, 0, X_IDX) || aopInReg (right->aop, 0, Y_IDX)) && left->aop->type == AOP_STK)
     exchange = TRUE;
+
+  if (genCmpTop())
+    {
+      freeAsmop (result);
+      freeAsmop (right);
+      freeAsmop (left);
+      return;
+    }
 
   /* Cannot do multibyte signed comparison, except for 2-byte using cpw */
   if (size > 1 && !(size == 2 && (right->aop->type == AOP_LIT || right->aop->type == AOP_DIR || right->aop->type == AOP_STK)))
