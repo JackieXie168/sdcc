@@ -323,7 +323,7 @@ aopGet(const asmop *aop, int offset)
 
   if (aop->type == AOP_LIT)
     {
-      SNPRINTF (buffer, 256, "#0x%02x", byteOfVal (aop->aopu.aop_lit, offset));
+      SNPRINTF (buffer, sizeof(buffer), "#0x%02x", byteOfVal (aop->aopu.aop_lit, offset));
       return (buffer);
     }
 
@@ -341,10 +341,10 @@ aopGet(const asmop *aop, int offset)
           wassertl (regalloc_dry_run || stm8_extend_stack, "Extended stack access, but y not prepared for extended stack access.");
           wassertl (regalloc_dry_run || eoffset >= 0l && eoffset <= 0xffffl, "Stack access out of extended stack range."); // Stack > 64K.
 
-          SNPRINTF (buffer, 256, "(0x%x, y)", (unsigned)eoffset);
+          SNPRINTF (buffer, sizeof(buffer), "(0x%x, y)", (unsigned)eoffset);
         }
       else
-        SNPRINTF (buffer, 256, "(0x%02x, sp)", (unsigned)soffset);
+        SNPRINTF (buffer, sizeof(buffer), "(0x%02x, sp)", (unsigned)soffset);
       return (buffer);
     }
 
@@ -355,13 +355,13 @@ aopGet(const asmop *aop, int offset)
       cost (80, 80);
 
       wassertl (offset < 2, "Immediate operand out of range");
-      SNPRINTF (buffer, 256, offset ? "#>%s" : "#<%s", aop->aopu.aop_immd);
+      SNPRINTF (buffer, sizeof(buffer), offset ? "#>%s" : "#<%s", aop->aopu.aop_immd);
       return (buffer);
     }
 
   if (aop->type == AOP_DIR)
     {
-      SNPRINTF (buffer, 256, "%s+%d", aop->aopu.aop_dir, aop->size - 1 - offset);
+      SNPRINTF (buffer, sizeof(buffer), "%s+%d", aop->aopu.aop_dir, aop->size - 1 - offset);
       return (buffer);
     }
 
@@ -387,12 +387,12 @@ aopGet2(const asmop *aop, int offset)
 
   if (aop->type == AOP_LIT)
     {
-      SNPRINTF (buffer, 256, "#0x%02x%02x", byteOfVal (aop->aopu.aop_lit, offset + 1), byteOfVal (aop->aopu.aop_lit, offset));
+      SNPRINTF (buffer, sizeof(buffer), "#0x%02x%02x", byteOfVal (aop->aopu.aop_lit, offset + 1), byteOfVal (aop->aopu.aop_lit, offset));
       return (buffer);
     }
   else if (aop->type == AOP_IMMD)
     {
-      SNPRINTF (buffer, 256, "#%s", aop->aopu.aop_immd);
+      SNPRINTF (buffer, sizeof(buffer), "#%s", aop->aopu.aop_immd);
       return (buffer);
     }
 
