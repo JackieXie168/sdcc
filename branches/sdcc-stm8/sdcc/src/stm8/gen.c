@@ -5829,53 +5829,46 @@ genIfx (const iCode *ic)
               emit3 (floattopbyte ? A_SLL : A_TNZ, ASMOP_A, 0);
               i++;
             }
-          else if (!floattopbyte && aopInReg (cond->aop, i, XL_IDX))
+          // We can't just use swap_to_a() to improve the following four cases because it might use rrwa and rlwa which destroy the Z flag.
+          else if (aopInReg (cond->aop, i, XL_IDX) && (!floattopbyte || regDead (XL_IDX, ic)))
             {
               emitcode ("exg", "a, xl");
               cost (1, 1);
-              emit3(A_TNZ, ASMOP_A, 0);
+              emit3(floattopbyte ? A_SLL : A_TNZ, ASMOP_A, 0);
               emitcode ("exg", "a, xl");
               cost (1, 1);
               i++;
             }
-          else if (!floattopbyte && aopInReg (cond->aop, i, YL_IDX))
+          else if (aopInReg (cond->aop, i, YL_IDX) && (!floattopbyte || regDead (YL_IDX, ic)))
             {
               emitcode ("exg", "a, yl");
               cost (1, 1);
-              emit3(A_TNZ, ASMOP_A, 0);
+              emit3(floattopbyte ? A_SLL : A_TNZ, ASMOP_A, 0);
               emitcode ("exg", "a, yl");
               cost (1, 1);
               i++;
             }
-          else if (!floattopbyte && aopInReg (cond->aop, i, XH_IDX))
-            {
-              push (ASMOP_X, 0, 2);
-              emitcode ("tnz", "(1, sp)");
-              adjustStack (2, FALSE, FALSE, FALSE);
-              i++;
-            }
-          else if (!floattopbyte && aopInReg (cond->aop, i, YH_IDX))
-            {
-              push (ASMOP_Y, 0, 2);
-              emitcode ("tnz", "(1, sp)");
-              adjustStack (2, FALSE, FALSE, FALSE);
-              i++;
-            }
-          else if(!floattopbyte)
+          else if (!floattopbyte && !aopInReg (cond->aop, i, XH_IDX) && !aopInReg (cond->aop, i, YH_IDX))
             {
               emit3_o (A_TNZ, cond->aop, i, 0, 0);
+              i++;
+            }
+          else if (floattopbyte && aopInReg (cond->aop, i, A_IDX))
+            {
+              emitcode ("and", "a, 0x7f");
+              cost (2, 1);
               i++;
             }
           else
             {
               push (ASMOP_A, 0, 1);
               cheapMove (ASMOP_A, 0, cond->aop, i, FALSE);
-              emit3 (A_SLL, ASMOP_A, 0);
+              emit3(floattopbyte ? A_SLL : A_TNZ, ASMOP_A, 0);
               pop (ASMOP_A, 0, 1);
               i++;
             }
 
-          if(!inv && i < cond->aop->size && !IC_FALSE (ic))
+          if (!inv && i < cond->aop->size && !IC_FALSE (ic))
             {
               tlbl2 = (regalloc_dry_run ? 0 : newiTempLabel (NULL));
               inv = TRUE;
