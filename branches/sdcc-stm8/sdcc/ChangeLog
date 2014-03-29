@@ -1,5 +1,10 @@
 2014-03-29 Philipp Klaus Krause <pkk AT spth.de>
 
+	* src/stm8/peeph.def:
+	  Patch #233 by Pascal S, and further peepholes for improving io access.
+
+2014-03-29 Philipp Klaus Krause <pkk AT spth.de>
+
 	* src/stm8/gen.c,
 	  support/regression/tests/patch-235.c:
 	  Fix a bug in long and long long right shift on stm8.
