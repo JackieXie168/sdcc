@@ -1,3 +1,9 @@
+2014-03-29 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/stm8/gen.c,
+	  support/regression/tests/patch-235.c:
+	  Fix a bug in long and long long right shift on stm8.
+
 2014-03-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/gen.c:

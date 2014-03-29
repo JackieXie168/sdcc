@@ -5247,9 +5247,10 @@ genRightShiftLiteral (operand *left, operand *right, operand *result, const iCod
               }
             else if (aopInReg (shiftop, i, X_IDX) || aopInReg (shiftop, i, Y_IDX)) // Skipped top byte, but 16-bit shift is cheaper than going through a and doing 8-bit shift.
               {
+                wassert (i == size - 1);
                 wassert (!sign);
                 emit3w_o (A_SRLW, shiftop, i, 0, 0);
-                i -= 2;
+                i -= 1;
               }
             else
               {
