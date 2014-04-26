@@ -15990,7 +15990,7 @@ fi
 #curses_ok="no")
 #,
 #-lcurses)
-
+CURSES_LIBS=""
 if test $curses_h_ok != yes; then
   panel_ok="no"
   curses_ok="no"
@@ -16033,7 +16033,7 @@ fi
 $as_echo "$ac_cv_lib_panel_panel_above" >&6; }
 if test "x$ac_cv_lib_panel_panel_above" = xyes; then :
   panel_ok="yes"
-    curses_ok="yes"
+    curses_ok="no"
     CURSES_LIBS="-lpanel"
 else
   panel_ok="no"
@@ -16081,7 +16081,7 @@ fi
 $as_echo "$ac_cv_lib_curses_nl" >&6; }
 if test "x$ac_cv_lib_curses_nl" = xyes; then :
   curses_ok="yes"
-      CURSES_LIBS="-lcurses"
+      CURSES_LIBS="${CURSES_LIBS} -lcurses"
 else
   curses_ok="no"
 fi
@@ -16127,7 +16127,7 @@ fi
 $as_echo "$ac_cv_lib_ncurses_nl" >&6; }
 if test "x$ac_cv_lib_ncurses_nl" = xyes; then :
   curses_ok="yes"
-      CURSES_LIBS="-lncurses"
+      CURSES_LIBS="${CURSES_LIBS} -lncurses"
 else
   curses_ok="no"
 fi
