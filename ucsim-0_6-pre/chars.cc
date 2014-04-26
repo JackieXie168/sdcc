@@ -97,8 +97,10 @@ chars::append(char *s)
   else
     temp[0]= '\0';
   strcat(temp, s);
-  allocate_string(temp);
-  delete [] temp;
+  //allocate_string(temp);
+  chars_string= temp;
+  chars_length+= strlen(s);
+  //delete [] temp;
 
   return *this;
 }
