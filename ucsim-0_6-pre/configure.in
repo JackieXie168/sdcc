@@ -278,14 +278,14 @@ AC_SUBST(DL)
 #curses_ok="no")
 #,
 #-lcurses)
-
+CURSES_LIBS=""
 if test $curses_h_ok != yes; then
   panel_ok="no"
   curses_ok="no"
 else
   AC_CHECK_LIB(panel,panel_above,
     panel_ok="yes"
-    curses_ok="yes"
+    curses_ok="no"
     CURSES_LIBS="-lpanel",
     panel_ok="no"
     curses_ok="no"
@@ -294,14 +294,14 @@ else
   if test $curses_ok != yes; then
     AC_CHECK_LIB(curses,nl,
       curses_ok="yes"
-      CURSES_LIBS="-lcurses",
+      CURSES_LIBS="${CURSES_LIBS} -lcurses",
       curses_ok="no")
   fi
 
   if test $curses_ok != yes; then
     AC_CHECK_LIB(ncurses,nl,
       curses_ok="yes"
-      CURSES_LIBS="-lncurses",
+      CURSES_LIBS="${CURSES_LIBS} -lncurses",
       curses_ok="no")
   fi
 fi
