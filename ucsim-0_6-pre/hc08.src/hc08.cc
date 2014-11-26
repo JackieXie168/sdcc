@@ -484,10 +484,10 @@ cl_hc08::exec_inst(void)
         case 0x9:
         case 0xa:
         case 0xb: return(inst_pushpull(code, FALSE));
-        case 0xc: return(inst_clrh(code, FALSE));
-        case 0xe: return(inst_stop(code, FALSE));
-        case 0xf: return(inst_wait(code, FALSE));
-        default: return(resHALT);
+        case 0xc: return(inst_clrh(code, false));
+        case 0xe: return(inst_stop(code, false));
+        case 0xf: return(inst_wait(code, false));
+        default: return(resINV_INST); // 0x82 and 0x8d not valid
       }
     case 0x9:
       switch (code & 0xf) {
@@ -503,10 +503,10 @@ cl_hc08::exec_inst(void)
         case 0x8:
         case 0x9:
         case 0xa:
-        case 0xb: return(inst_setclearflags(code, FALSE));
-        case 0xc: return(inst_rsp(code, FALSE));
+        case 0xb: return(inst_setclearflags(code, false));
+        case 0xc: return(inst_rsp(code, false));
         case 0xd: return(inst_nop(code, false));
-        case 0xe:
+        case 0xe: // start 0x9e prefix handling
           code = fetch();
           tick(1);
           switch ((code >> 4) & 0xf) {
@@ -522,25 +522,25 @@ cl_hc08::exec_inst(void)
                 case 0x9: return(inst_rol(code, TRUE));
                 case 0xa: return(inst_dec(code, TRUE));
                 case 0xb: return(inst_dbnz(code, TRUE));
-                case 0xc: return(inst_inc(code, TRUE));
-                case 0xd: return(inst_tst(code, TRUE));
+                case 0xc: return(inst_inc(code, true));
+                case 0xd: return(inst_tst(code, true));
                 case 0xf: return(inst_clr(code, true));
-                default: return(resHALT);
+                default: return(resINV_INST); // 0x9e62, 0x9e65, 0x9e6e not valid
               }
             case 0xa:
               switch (code) {
                 case 0xae: return(inst_ldhx(code,true));
-                default: return(resHALT);
+                default: return(resINV_INST);
               }
             case 0xb:
               switch (code) {
                 case 0xbe: return(inst_ldhx(code,true));
-                default: return(resHALT);
+                default: return(resINV_INST);
               }
             case 0xc:
               switch (code) {
                 case 0xce: return(inst_ldhx(code,true));
-                default: return(resHALT);
+                default: return(resINV_INST);
               }
             case 0xd:
             case 0xe:
@@ -554,12 +554,12 @@ cl_hc08::exec_inst(void)
                 case 0x6: return(inst_lda(code, TRUE));
                 case 0x7: return(inst_sta(code, TRUE));
                 case 0x8: return(inst_eor(code, TRUE));
-                case 0x9: return(inst_adc(code, TRUE));
-                case 0xa: return(inst_ora(code, TRUE));
-                case 0xb: return(inst_add(code, TRUE));
-                case 0xc: return(resHALT);
-                case 0xd: putchar(regs.A); fflush(stdout); return(resGO);
-                case 0xe: return(inst_ldx(code, TRUE));
+                case 0x9: return(inst_adc(code, true));
+                case 0xa: return(inst_ora(code, true));
+                case 0xb: return(inst_add(code, true));
+		case 0xc: return(resHALT); // not real instruction: regression test hack to exit simulation
+		case 0xd: putchar(regs.A); fflush(stdout); return(resGO); // not real instruction: regression test hack to output results
+                case 0xe: return(inst_ldx(code, true));
                 case 0xf: return(inst_stx(code, true));
                 default: return(resHALT);
               }
@@ -569,7 +569,8 @@ cl_hc08::exec_inst(void)
                 case 0xe: return(inst_ldhx(code, true));
                 case 0xf: return(inst_sthx(code, true));
               }
-            default: return(resHALT);
+            default: return(resINV_INST);
+	    // end 0x9e prefix handling
           }
 
       }
@@ -595,12 +596,12 @@ cl_hc08::exec_inst(void)
         case 0x8: return(inst_eor(code, FALSE));
         case 0x9: return(inst_adc(code, FALSE));
         case 0xa: return(inst_ora(code, FALSE));
-        case 0xb: return(inst_add(code, FALSE));
+        case 0xb: return(inst_add(code, false));
         case 0xc:
           if (code==0xac)
-            return(resHALT);
+            return(resINV_INST);
           else
-            return(inst_jmp(code, FALSE));
+            return(inst_jmp(code, false));
         case 0xd:
           if (code==0xad)
             return(inst_bsr(code, FALSE));

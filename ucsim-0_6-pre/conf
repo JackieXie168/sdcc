@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
 TARGET=linux
+
 PREFIX="${HOME}/local"
 DD_HOSTS="p4 anb anb1 render mms box mazsola"
 

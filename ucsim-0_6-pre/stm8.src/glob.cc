@@ -214,7 +214,7 @@ struct dis_entry disass_stm8[]= {
   { 0x0094, 0x00ff, ' ', 1, "ldw SP,X" },
   { 0x0096, 0x00ff, ' ', 1, "ldw X,SP" },
 
-  { 0x0035, 0x00ff, ' ', 4, "mov %x,%b" },
+  { 0x0035, 0x00ff, ' ', 4, "mov %b,%x" },
   { 0x0045, 0x00ff, ' ', 3, "mov %d,%d" },
   { 0x0055, 0x00ff, ' ', 5, "mov %x,%x" },
   { 0x0042, 0x00ff, ' ', 1, "mul X,A" },
@@ -344,7 +344,8 @@ struct dis_entry disass_stm8_72[]= {
   { 0x00d9, 0x00ff, ' ', 3, "adc A,([%2.w],X)" },
   { 0x00cb, 0x00ff, ' ', 3, "add A,[%2.w]" },
   { 0x00db, 0x00ff, ' ', 3, "add A,([%2.w],X)" },
-  { 0x00bb, 0x00ff, ' ', 3, "addw X,%d" },
+  { 0x00bb, 0x00ff, ' ', 3, "addw X,%x" },
+  { 0x00b9, 0x00ff, ' ', 3, "addw Y,%x" },
   { 0x00a9, 0x00ff, ' ', 3, "addw Y,%w" },
   { 0x00f9, 0x00ff, ' ', 3, "addw Y,%d" },
   { 0x00fb, 0x00ff, ' ', 2, "addw X,(%1,SP)" },

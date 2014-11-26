@@ -1089,7 +1089,7 @@ cl_hc08::inst_cbeq(t_mem code, bool prefix)
   if (operand1==operand2)
     PC += ofs;  
 
-  if (code == 0x71 || code == 0x61)
+  if (code == 0x71 || (!prefix && code == 0x61))
     incx();
   tick(1); // extra cycle to reload pipeline
 
@@ -1198,7 +1198,7 @@ cl_hc08::inst_sthx(t_mem code, bool prefix)
     tick(1);
   }
   else
-    return(resHALT);
+    return(resINV_INST);
   
   store1(ea, regs.H);
   tick(1);
@@ -1271,7 +1271,7 @@ cl_hc08::inst_ldhx(t_mem code, bool prefix)
     tick(1);
   }
   else
-    return(resHALT);
+    return(resINV_INST);
   
   FLAG_CLEAR(BIT_V);
   FLAG_ASSIGN(BIT_N, regs.H & 0x80);
@@ -1314,7 +1314,7 @@ cl_hc08::inst_cphx(t_mem code, bool prefix)
     tick(1);
   }
   else
-    return(resHALT);
+    return(resINV_INST);
 
   hx = (regs.H << 8) | regs.X;
   result = hx-operand;

@@ -22,8 +22,6 @@
                             ram->set((t_addr) (addr+1), val & 0xff); }
 #define store1(addr, val) ram->set((t_addr) (addr), val)
 #define get1(addr) ram->get((t_addr) (addr))
-#define get2(addr) ((ram->get((t_addr) (addr)) << 8) | ram->get((t_addr) (addr+1)) )
-#define get3(addr) ((ram->get((t_addr) (addr)) << 16) | (ram->get((t_addr) (addr+1)) << 8) |ram->get((t_addr) (addr+2)) )
 #define fetch2() ((fetch() << 8) | fetch() )
 #define fetch1() fetch()
 #define push2(val) {store2(regs.SP-1,(val)); regs.SP-=2; }
@@ -42,7 +40,7 @@
       ; }
 #define EA_IMM(c) ((((c) >> 4) & 0xf)==0xa)
 #define OPERAND(code,prefix) (EA_IMM(code) ? fetch() : get1(fetchea(code,prefix)))
-#define OPERANDW(code,prefix) (EA_IMM(code) ? fetch2() : get1(fetchea(code,prefix)))
+#define OPERANDW(code,prefix) (EA_IMM(code) ? fetch2() : get2(fetchea(code,prefix)))
 
 
 
