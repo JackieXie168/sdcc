@@ -539,7 +539,7 @@ cl_memory_cell::read(enum hw_cath skip)
   return(*data);
 }
 
-t_mem
+/*t_mem*/int
 cl_memory_cell::get(void)
 {
   return(*data);
@@ -779,7 +779,7 @@ cl_address_space::read(t_addr addr, enum hw_cath skip)
   return(cells[idx]->read(skip));
 }
 
-t_mem
+/*t_mem*/int
 cl_address_space::get(t_addr addr)
 {
   t_addr idx= addr-start_address;
@@ -1161,7 +1161,7 @@ cl_memory_chip::get_slot(t_addr addr)
 }
 
 
-t_mem
+/*t_mem*/int
 cl_memory_chip::get(t_addr addr)
 {
   if (!array ||

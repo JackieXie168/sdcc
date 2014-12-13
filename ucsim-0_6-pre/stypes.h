@@ -30,6 +30,12 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #include "ddconfig.h"
 
+#define TYPE_BYTE int8_t
+#define TYPE_UBYTE uint8_t
+#define TYPE_WORD int16_t
+#define TYPE_UWORD uint16_t
+#define TYPE_DWORD int32_t
+#define TYPE_UDWORD uint32_t
 
 typedef unsigned char	uchar;
 typedef unsigned int	uint;

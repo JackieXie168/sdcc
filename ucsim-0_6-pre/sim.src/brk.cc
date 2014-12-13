@@ -237,12 +237,6 @@ brk_coll::del_bp(t_addr addr)
       free_at(idx);
     }
   return;
-  /*if (rom &&
-      addr < rom->size)
-    {
-      fprintf(stderr, "brk_coll::del_bp(0x%"_A_"x\n", addr);//FIXME
-      //rom->bp_map->clear(addr);
-      }*/
 }
 
 void

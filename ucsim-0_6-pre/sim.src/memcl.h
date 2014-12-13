@@ -112,7 +112,7 @@ public:
 
   virtual t_mem read(t_addr addr)=0;
   virtual t_mem read(t_addr addr, enum hw_cath skip)=0;
-  virtual t_mem get(t_addr addr)=0;
+  virtual /*t_mem*/int get(t_addr addr)=0;
   virtual t_mem write(t_addr addr, t_mem val)=0;
   virtual void set(t_addr addr, t_mem val)=0;
   virtual void set_bit1(t_addr addr, t_mem bits)=0;
@@ -236,7 +236,7 @@ public:
 
   virtual t_mem read(void);
   virtual t_mem read(enum hw_cath skip);
-  virtual t_mem get(void);
+  virtual /*t_mem*/int get(void);
   virtual t_mem write(t_mem val);
   virtual t_mem set(t_mem val);
 
@@ -287,7 +287,7 @@ public:
 
   virtual t_mem read(t_addr addr);
   virtual t_mem read(t_addr addr, enum hw_cath skip);
-  virtual t_mem get(t_addr addr);
+  virtual /*t_mem*/int get(t_addr addr);
   virtual t_mem write(t_addr addr, t_mem val);
   virtual void set(t_addr addr, t_mem val);
   virtual t_mem wadd(t_addr addr, long what);
@@ -351,7 +351,7 @@ public:
 
   virtual t_mem read(t_addr addr) { return(get(addr)); }
   virtual t_mem read(t_addr addr, enum hw_cath skip) { return(get(addr)); }
-  virtual t_mem get(t_addr addr);
+  virtual /*t_mem*/int get(t_addr addr);
   virtual t_mem write(t_addr addr, t_mem val) { set(addr, val); return(val); }
   virtual void set(t_addr addr, t_mem val);
   virtual void set_bit1(t_addr addr, t_mem bits);

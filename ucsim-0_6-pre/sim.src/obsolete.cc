@@ -233,7 +233,8 @@ cl_mem::read(t_addr addr)
   if (addr >= size)
     {
       //FIXME
-      fprintf(stderr, "Address 0x%06"_A_"x is over 0x%06"_A_"x\n", addr, size);
+      fprintf(stderr, "Address 0x%06x is over 0x%06x\n",
+	      (int)addr, (int)size);
       return(0);
     }
   /*if ((loc= read_locs->get_loc(addr)))
@@ -281,8 +282,8 @@ cl_mem::write(t_addr addr, t_mem val)
     ((TYPE_UWORD*)mem)[addr]= (*val)&mask;
   else
   ((TYPE_UDWORD*)mem)[addr]= (*val)&mask;*/
-  fprintf(stderr, "FIXME cl_mem::write(0x%06"_A_"x, 0x%04"_M_"x)\n",
-	  addr, val);
+  fprintf(stderr, "FIXME cl_mem::write(0x%06x, 0x%04x)\n",
+	  (int)addr, (int)val);
   return(0);
 }
 
@@ -1047,11 +1048,11 @@ cl_normal_cell::add(long what)
   t_mem d;
   
   if (width <= 8)
-    d= TYPE_BYTE(data) + what;
+    d= /*TYPE_BYTE*/int8_t(data) + what;
   else if (width <= 16)
-    d= TYPE_WORD(data) + what;
+    d= /*TYPE_WORD*/int16_t(data) + what;
   else
-    d= TYPE_DWORD(data) + what;
+    d= /*TYPE_DWORD*/int32_t(data) + what;
   return(data= d & mask);
 }
 

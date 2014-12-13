@@ -265,8 +265,8 @@ cl_avr::disass(t_addr addr, const char *sep)
 		int k= code&0xfff;
 		if (code&0x800)
 		  k|= -4096;
-		sprintf(temp, "0x%06"_A_"x",
-			rom->validate_address(k+1+(signed int)addr));
+		sprintf(temp, "0x%06x",
+			(int)rom->validate_address(k+1+(signed int)addr));
 		break;
 	      }
 	    default:
