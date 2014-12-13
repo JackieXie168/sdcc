@@ -54,7 +54,7 @@ do_rw_test(class cl_mem *mem, int time)
 	    d2= mem->write(a, d2);
 	    d= mem->read(a);
 	    if (d != d2)
-	      printf("%"_M_"d written to mem and %"_M_"d read back!\n", d2, d);
+	      printf("%d written to mem and %d read back!\n", (int)d2, (int)d);
 	    counter+= 1;
 	  }
       }

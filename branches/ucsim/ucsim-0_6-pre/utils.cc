@@ -166,7 +166,7 @@ print_char_octal(char c, FILE *f)
   else if (isprint(c))
     fprintf(f, "%c", c);
   else
-    fprintf(f, "\\%03hho", c);
+    fprintf(f, "\\%03o", (int)c);
 }
 
 

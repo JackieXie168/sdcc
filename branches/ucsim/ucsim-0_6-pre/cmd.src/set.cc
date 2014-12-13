@@ -69,8 +69,8 @@ COMMAND_DO_WORK_UC(cl_set_mem_cmd)
     if (len == 0)
       con->dd_printf("Error: no data\n");
     else if (start < mem->get_start_address())
-      con->dd_printf("Start address less then 0x%"_A_"x\n",
-		     mem->get_start_address());
+      con->dd_printf("Start address less then 0x%x\n",
+		     (int)mem->get_start_address());
     else
       {
 	int i;
