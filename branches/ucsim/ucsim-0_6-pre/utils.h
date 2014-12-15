@@ -50,6 +50,8 @@ extern void print_char_octal(char c, FILE *f);
 extern const char *object_name(class cl_base *o);
 extern char *case_string(enum letter_case lcase, char *str);
 
+extern double dnow(void);
+
 
 #endif
 

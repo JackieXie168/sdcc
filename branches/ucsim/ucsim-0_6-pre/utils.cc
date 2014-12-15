@@ -36,6 +36,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include "i_string.h"
 
   // prj
@@ -226,6 +227,14 @@ case_string(enum letter_case lcase, const char *str)
   p= strdup(str);
   return case_string(lcase, p);
 }*/
+
+double
+dnow(void)
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (double)tv.tv_sec + ((double)tv.tv_usec/1000000.0);
+}
 
 
 /* End of utils.cc */

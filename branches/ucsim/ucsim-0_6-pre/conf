@@ -45,7 +45,7 @@ case $TARGET in
 	fi
 #	echo CC=$CC CXX=$CXX HOST=$HOST_OPT
 	./configure --prefix=${PREFIX} \
-	    --disable-ucsim \
+	    --enable-ucsim \
 	    --disable-dlso \
 	    --disable-serio \
 	    --enable-z80 \
