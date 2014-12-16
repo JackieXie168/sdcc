@@ -99,10 +99,10 @@ cl_st7::reset(void)
 }
 
 
-const char *
+char *
 cl_st7::id_string(void)
 {
-  return("unspecified ST7");
+  return((char*)"unspecified ST7");
 }
 
 

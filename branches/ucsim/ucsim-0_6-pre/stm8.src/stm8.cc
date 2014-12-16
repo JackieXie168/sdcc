@@ -100,10 +100,10 @@ cl_stm8::reset(void)
 }
 
 
-const char *
+char *
 cl_stm8::id_string(void)
 {
-  return("unspecified STM8");
+  return((char*)"unspecified STM8");
 }
 
 
