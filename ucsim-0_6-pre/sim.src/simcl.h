@@ -55,6 +55,9 @@ public:
   class cl_uc *uc;
   class cl_gui *gui;
 
+  double start_at;
+  unsigned long start_tick;
+  
   //char *accept_args;
   //class cl_list *arguments;
   

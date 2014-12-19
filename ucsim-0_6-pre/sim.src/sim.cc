@@ -34,6 +34,7 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 // prj
 #include "globals.h"
+#include "utils.h"
 
 // cmd
 #include "cmdsetcl.h"
@@ -145,6 +146,9 @@ cl_sim::start(class cl_console_base *con)
   con->flags|= CONS_FROZEN;
   app->get_commander()->frozen_console= con;
   app->get_commander()->set_fd_set();
+  start_at= dnow();
+  if (uc)
+    start_tick= uc->ticks->ticks;
 }
 
 void
@@ -199,6 +203,11 @@ cl_sim::stop(int reason)
 	  break;
 	}
       cmd->frozen_console->dd_printf("F 0x%06x\n", uc->PC); // for sdcdb
+      unsigned long dt= uc?(uc->ticks->ticks - start_tick):0;
+      cmd->frozen_console->dd_printf("Simulated %ul ticks in %f sec, rate=%f\n",
+				     dt,
+				     dnow() - start_at,
+				     (dt*(1/uc->xtal)) / (dnow() - start_at));
       //if (cmd->actual_console != cmd->frozen_console)
       cmd->frozen_console->flags&= ~CONS_FROZEN;
       cmd->frozen_console->print_prompt();

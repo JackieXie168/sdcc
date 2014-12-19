@@ -39,6 +39,7 @@ class cl_f: public cl_base
   char *file_name, *file_mode;
   FILE *file_f;
   int file_id;
+  bool tty;
  public:
   cl_f(char *fn, char *mode);
   virtual ~cl_f(void);

@@ -220,8 +220,14 @@ operator!=(const char *s, const chars &cs)
   return(!(chars(cs)).equal((char*)s));
 }
 
-
+/*
 cchars::cchars(const char *s):
+chars(s)
+{
+}
+*/
+
+cchars::cchars(char const *s):
 chars(s)
 {
 }

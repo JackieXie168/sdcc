@@ -81,7 +81,8 @@ extern bool operator!=(const char *s, const chars &cs);
 class cchars: public chars
 {
  public:
-  cchars(const char *s);
+  //cchars(const char *s);
+  cchars(char const *s);
   virtual ~cchars(void);
  private:
   virtual void allocate_string(const char *s);
