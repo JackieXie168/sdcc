@@ -158,6 +158,7 @@ cl_app::run(void)
 {
   int done= 0;
   unsigned  input_check_skip = 0;
+  double input_last_checked= 0;
   
   while (!done &&
          going)
@@ -166,18 +167,21 @@ cl_app::run(void)
         {
           if (sim->state & SIM_GO)
             {
-              if ((!input_check_skip) && (commander->input_avail()))
-                {
-                  done= commander->proc_input();
-                  
-                  // run a few steps before checking for more input
-                  ++input_check_skip;
+              //if ((!input_check_skip) && (commander->input_avail()))
+	      if (dnow() - input_last_checked > 0.3)
+		{
+		  input_last_checked= dnow();
+		  if (commander->input_avail())
+		    {
+		      done= commander->proc_input();
+		      // run a few steps before checking for more input
+		      ++input_check_skip;
+		    }
                 }
               else
                 {
                   sim->step();
-                  
-                  input_check_skip = (input_check_skip + 1) % 50;
+                  //input_check_skip = (input_check_skip + 1) % 50;
                 }
             }
           else

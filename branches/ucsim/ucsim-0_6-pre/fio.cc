@@ -45,6 +45,7 @@ cl_f::cl_f(char *fn, char *mode):
   file_id= -1;
   file_name= fn;
   file_mode= mode;
+  tty= 0;
 }
 
 
@@ -52,7 +53,10 @@ int
 cl_f::init(void)
 {
   if ((file_f= fopen(file_name, file_mode)) != NULL)
-    file_id= fileno(file_f);
+    {
+      file_id= fileno(file_f);
+      tty= isatty(file_id);
+    }
   return file_id;
 }
 
@@ -158,7 +162,9 @@ cl_f::input_avail(void)
 
   if (file_id<0)
     return 0;
-
+  if (!tty)
+    return 1;
+  
   FD_ZERO(&s);
   FD_SET(file_id, &s);
   i= select(FD_SETSIZE, &s, NULL, NULL, &tv);
