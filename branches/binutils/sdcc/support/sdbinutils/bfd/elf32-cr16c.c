@@ -1,6 +1,5 @@
 /* BFD back-end for National Semiconductor's CR16C ELF
-   Copyright 2004, 2005, 2006, 2007, 2009, 2010, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2004-2014 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -29,14 +28,14 @@
 
 #define USE_REL	1	/* CR16C uses REL relocations instead of RELA.  */
 
-/* The following definition is based on EMPTY_HOWTO macro, 
+/* The following definition is based on EMPTY_HOWTO macro,
    but also initiates the "name" field in HOWTO struct.  */
 #define ONLY_NAME_HOWTO(C) \
   HOWTO ((C), 0, 0, 0, FALSE, 0, complain_overflow_dont, NULL, \
 	  STRINGX(C), FALSE, 0, 0, FALSE)
 
 /* reloc_map_index array maps CRASM relocation type into a BFD
-   relocation enum. The array's indices are synchronized with 
+   relocation enum. The array's indices are synchronized with
    RINDEX_16C_* indices, created in include/elf/cr16c.h.
    The array is used in:
    1. elf32-cr16c.c : elf_cr16c_reloc_type_lookup().
@@ -715,12 +714,12 @@ elf32_cr16c_relocate_section (bfd *output_bfd,
 	}
       else
 	{
-	  bfd_boolean unresolved_reloc, warned;
+	  bfd_boolean unresolved_reloc, warned, ignored;
 
 	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
 				   r_symndx, symtab_hdr, sym_hashes,
 				   h, sec, relocation,
-				   unresolved_reloc, warned);
+				   unresolved_reloc, warned, ignored);
 	}
 
       if (sec != NULL && discarded_section (sec))
@@ -940,7 +939,7 @@ elf32_cr16c_link_output_symbol_hook (struct bfd_link_info *info ATTRIBUTE_UNUSED
 }
 
 /* Definitions for setting CR16C target vector.  */
-#define TARGET_LITTLE_SYM		bfd_elf32_cr16c_vec
+#define TARGET_LITTLE_SYM		cr16c_elf32_vec
 #define TARGET_LITTLE_NAME		"elf32-cr16c"
 #define ELF_ARCH			bfd_arch_cr16c
 #define ELF_MACHINE_CODE		EM_CR

@@ -1,5 +1,5 @@
 /* 32-bit ELF support for S+core.
-   Copyright 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 2009-2014 Free Software Foundation, Inc.
    Contributed by
    Brain.lin (brain.lin@sunplusct.com)
    Mei Ligang (ligang@sunnorth.com.cn)
@@ -2376,6 +2376,12 @@ s7_bfd_score_elf_relocate_section (bfd *output_bfd,
           /* For global symbols we look up the symbol in the hash-table.  */
           h = ((struct score_elf_link_hash_entry *)
                elf_sym_hashes (input_bfd) [r_symndx - extsymoff]);
+
+	  if (info->wrap_hash != NULL
+	      && (input_section->flags & SEC_DEBUGGING) != 0)
+	    h = ((struct score_elf_link_hash_entry *)
+		  unwrap_hash_lookup (info, input_bfd, &h->root.root));
+
           /* Find the real hash-table entry for this symbol.  */
           while (h->root.root.type == bfd_link_hash_indirect
                  || h->root.root.type == bfd_link_hash_warning)
@@ -2641,6 +2647,10 @@ s7_bfd_score_elf_check_relocs (bfd *abfd,
             {
               while (h->root.type == bfd_link_hash_indirect)
                 h = (struct elf_link_hash_entry *) h->root.u.i.link;
+
+	      /* PR15323, ref flags aren't set for references in the
+		 same object.  */
+	      h->root.non_ir_ref = 1;
             }
         }
 
@@ -2996,7 +3006,7 @@ s7_bfd_score_elf_always_size_sections (bfd *output_bfd,
 
   /* Calculate the total loadable size of the output.  That will give us the
      maximum number of GOT_PAGE entries required.  */
-  for (sub = info->input_bfds; sub; sub = sub->link_next)
+  for (sub = info->input_bfds; sub; sub = sub->link.next)
     {
       asection *subsection;
 
@@ -3345,7 +3355,8 @@ s7_bfd_score_elf_finish_dynamic_symbol (bfd *output_bfd,
 
   /* Mark _DYNAMIC and _GLOBAL_OFFSET_TABLE_ as absolute.  */
   name = h->root.root.string;
-  if (strcmp (name, "_DYNAMIC") == 0 || strcmp (name, "_GLOBAL_OFFSET_TABLE_") == 0)
+  if (h == elf_hash_table (info)->hdynamic
+      || h == elf_hash_table (info)->hgot)
     sym->st_shndx = SHN_ABS;
   else if (strcmp (name, "_DYNAMIC_LINK") == 0)
     {
@@ -3721,10 +3732,10 @@ s7_bfd_score_elf_grok_prstatus (bfd *abfd, Elf_Internal_Note *note)
     case 272:                  /* Linux/Score elf_prstatus */
 
       /* pr_cursig */
-      elf_tdata (abfd)->core_signal = bfd_get_16 (abfd, note->descdata + 12);
+      elf_tdata (abfd)->core->signal = bfd_get_16 (abfd, note->descdata + 12);
 
       /* pr_pid */
-      elf_tdata (abfd)->core_lwpid = bfd_get_32 (abfd, note->descdata + 24);
+      elf_tdata (abfd)->core->lwpid = bfd_get_32 (abfd, note->descdata + 24);
 
       /* pr_reg */
       offset = 72;
@@ -3736,7 +3747,8 @@ s7_bfd_score_elf_grok_prstatus (bfd *abfd, Elf_Internal_Note *note)
     }
 
   /* Make a ".reg/999" section.  */
-  return _bfd_elfcore_make_pseudosection (abfd, ".reg", raw_size, note->descpos + offset);
+  return _bfd_elfcore_make_pseudosection (abfd, ".reg", raw_size,
+					  note->descpos + offset);
 }
 
 bfd_boolean
@@ -3749,10 +3761,12 @@ s7_bfd_score_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
 
     case 128:                  /* Linux/Score elf_prpsinfo.  */
       /* pr_fname */
-      elf_tdata (abfd)->core_program = _bfd_elfcore_strndup (abfd, note->descdata + 32, 16);
+      elf_tdata (abfd)->core->program
+	= _bfd_elfcore_strndup (abfd, note->descdata + 32, 16);
 
       /* pr_psargs */
-      elf_tdata (abfd)->core_command = _bfd_elfcore_strndup (abfd, note->descdata + 48, 80);
+      elf_tdata (abfd)->core->command
+	= _bfd_elfcore_strndup (abfd, note->descdata + 48, 80);
       break;
     }
 
@@ -3761,7 +3775,7 @@ s7_bfd_score_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
      implementations, so strip it off if it exists.  */
 
   {
-    char *command = elf_tdata (abfd)->core_command;
+    char *command = elf_tdata (abfd)->core->command;
     int n = strlen (command);
 
     if (0 < n && command[n - 1] == ' ')

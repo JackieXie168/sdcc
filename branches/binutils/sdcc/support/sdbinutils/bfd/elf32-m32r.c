@@ -1,6 +1,5 @@
 /* M32R-specific support for 32-bit ELF.
-   Copyright 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
-   2006, 2007, 2008, 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 1996-2014 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -1390,7 +1389,8 @@ m32r_elf_add_symbol_hook (bfd *abfd,
 						  flags);
 	  if (s == NULL)
 	    return FALSE;
-	  bfd_set_section_alignment (abfd, s, 2);
+	  if (! bfd_set_section_alignment (abfd, s, 2))
+	    return FALSE;
 	}
 
       bh = bfd_link_hash_lookup (info->hash, "_SDA_BASE_",
@@ -1585,7 +1585,7 @@ m32r_elf_link_hash_table_create (bfd *abfd)
   struct elf_m32r_link_hash_table *ret;
   bfd_size_type amt = sizeof (struct elf_m32r_link_hash_table);
 
-  ret = bfd_malloc (amt);
+  ret = bfd_zmalloc (amt);
   if (ret == NULL)
     return NULL;
 
@@ -1597,15 +1597,6 @@ m32r_elf_link_hash_table_create (bfd *abfd)
       free (ret);
       return NULL;
     }
-
-  ret->sgot = NULL;
-  ret->sgotplt = NULL;
-  ret->srelgot = NULL;
-  ret->splt = NULL;
-  ret->srelplt = NULL;
-  ret->sdynbss = NULL;
-  ret->srelbss = NULL;
-  ret->sym_cache.abfd = NULL;
 
   return &ret->root.root;
 }
@@ -2186,7 +2177,7 @@ m32r_elf_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 
   /* Set up .got offsets for local syms, and space for local dynamic
      relocs.  */
-  for (ibfd = info->input_bfds; ibfd != NULL; ibfd = ibfd->link_next)
+  for (ibfd = info->input_bfds; ibfd != NULL; ibfd = ibfd->link.next)
     {
       bfd_signed_vma *local_got;
       bfd_signed_vma *end_local_got;
@@ -2499,6 +2490,12 @@ m32r_elf_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 	  relocation = 0;
 
 	  h = sym_hashes[r_symndx - symtab_hdr->sh_info];
+
+	  if (info->wrap_hash != NULL
+	      && (input_section->flags & SEC_DEBUGGING) != 0)
+	    h = ((struct elf_link_hash_entry *)
+		 unwrap_hash_lookup (info, input_bfd, &h->root));
+
 	  while (h->root.type == bfd_link_hash_indirect
 		 || h->root.type == bfd_link_hash_warning)
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
@@ -3295,8 +3292,7 @@ m32r_elf_finish_dynamic_symbol (bfd *output_bfd,
     }
 
   /* Mark some specially defined symbols as absolute.  */
-  if (strcmp (h->root.root.string, "_DYNAMIC") == 0
-      || h == htab->root.hgot)
+  if (h == htab->root.hdynamic || h == htab->root.hgot)
     sym->st_shndx = SHN_ABS;
 
   return TRUE;
@@ -3756,6 +3752,10 @@ m32r_elf_check_relocs (bfd *abfd,
 	  while (h->root.type == bfd_link_hash_indirect
 		 || h->root.type == bfd_link_hash_warning)
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
+
+	  /* PR15323, ref flags aren't set for references in the same
+	     object.  */
+	  h->root.non_ir_ref = 1;
 	}
 
       /* Some relocs require a global offset table.  */
@@ -3991,7 +3991,9 @@ static const struct bfd_elf_special_section m32r_elf_special_sections[] =
 };
 
 static enum elf_reloc_type_class
-m32r_elf_reloc_type_class (const Elf_Internal_Rela *rela)
+m32r_elf_reloc_type_class (const struct bfd_link_info *info ATTRIBUTE_UNUSED,
+			   const asection *rel_sec ATTRIBUTE_UNUSED,
+			   const Elf_Internal_Rela *rela)
 {
   switch ((int) ELF32_R_TYPE (rela->r_info))
     {
@@ -4008,9 +4010,9 @@ m32r_elf_reloc_type_class (const Elf_Internal_Rela *rela)
 #define ELF_MACHINE_ALT1	EM_CYGNUS_M32R
 #define ELF_MAXPAGESIZE		0x1 /* Explicitly requested by Mitsubishi.  */
 
-#define TARGET_BIG_SYM          bfd_elf32_m32r_vec
+#define TARGET_BIG_SYM          m32r_elf32_vec
 #define TARGET_BIG_NAME		"elf32-m32r"
-#define TARGET_LITTLE_SYM       bfd_elf32_m32rle_vec
+#define TARGET_LITTLE_SYM       m32r_elf32_le_vec
 #define TARGET_LITTLE_NAME      "elf32-m32rle"
 
 #define elf_info_to_howto			m32r_info_to_howto
@@ -4066,11 +4068,11 @@ m32r_elf_reloc_type_class (const Elf_Internal_Rela *rela)
 #define ELF_MAXPAGESIZE         0x1000
 
 #undef  TARGET_BIG_SYM
-#define TARGET_BIG_SYM          bfd_elf32_m32rlin_vec
+#define TARGET_BIG_SYM          m32r_elf32_linux_vec
 #undef  TARGET_BIG_NAME
 #define TARGET_BIG_NAME         "elf32-m32r-linux"
 #undef  TARGET_LITTLE_SYM
-#define TARGET_LITTLE_SYM       bfd_elf32_m32rlelin_vec
+#define TARGET_LITTLE_SYM       m32r_elf32_linux_le_vec
 #undef  TARGET_LITTLE_NAME
 #define TARGET_LITTLE_NAME      "elf32-m32rle-linux"
 #undef  elf32_bed

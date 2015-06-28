@@ -1,5 +1,5 @@
 /* Lattice Mico32-specific support for 32-bit ELF
-   Copyright 2008, 2009, 2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 2008-2014 Free Software Foundation, Inc.
    Contributed by Jon Beniston <jon@beniston.com>
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -43,9 +43,9 @@
 
 #define ELF_DYNAMIC_INTERPRETER "/usr/lib/libc.so.1"
 
-extern const bfd_target bfd_elf32_lm32fdpic_vec;
+extern const bfd_target lm32_elf32_fdpic_vec;
 
-#define IS_FDPIC(bfd) ((bfd)->xvec == &bfd_elf32_lm32fdpic_vec)
+#define IS_FDPIC(bfd) ((bfd)->xvec == &lm32_elf32_fdpic_vec)
 
 static bfd_reloc_status_type lm32_elf_gprel_reloc
   (bfd *, arelent *, asymbol *, void *, asection *, bfd *, char **);
@@ -159,7 +159,7 @@ lm32_elf_link_hash_table_create (bfd *abfd)
   struct elf_lm32_link_hash_table *ret;
   bfd_size_type amt = sizeof (struct elf_lm32_link_hash_table);
 
-  ret = bfd_malloc (amt);
+  ret = bfd_zmalloc (amt);
   if (ret == NULL)
     return NULL;
 
@@ -171,16 +171,6 @@ lm32_elf_link_hash_table_create (bfd *abfd)
       free (ret);
       return NULL;
     }
-
-  ret->sgot = NULL;
-  ret->sgotplt = NULL;
-  ret->srelgot = NULL;
-  ret->sfixup32 = NULL;
-  ret->splt = NULL;
-  ret->srelplt = NULL;
-  ret->sdynbss = NULL;
-  ret->srelbss = NULL;
-  ret->relocs32 = 0;
 
   return &ret->root.root;
 }
@@ -785,8 +775,7 @@ _lm32fdpic_osec_to_segment (bfd *output_bfd, asection *osec)
   Elf_Internal_Phdr *p;
 
   /* Find the segment that contains the output_section.  */
-  for (m = elf_tdata (output_bfd)->segment_map,
-	 p = elf_tdata (output_bfd)->phdr;
+  for (m = elf_seg_map (output_bfd), p = elf_tdata (output_bfd)->phdr;
        m != NULL;
        m = m->next, p++)
     {
@@ -886,12 +875,12 @@ lm32_elf_relocate_section (bfd *output_bfd,
         {
           /* It's a global symbol.  */
           bfd_boolean unresolved_reloc;
-	  bfd_boolean warned;
+	  bfd_boolean warned, ignored;
 
 	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
 				   r_symndx, symtab_hdr, sym_hashes,
 				   h, sec, relocation,
-				   unresolved_reloc, warned);
+				   unresolved_reloc, warned, ignored);
 	  name = h->root.root.string;
         }
 
@@ -1316,6 +1305,10 @@ lm32_elf_check_relocs (bfd *abfd,
 	  while (h->root.type == bfd_link_hash_indirect
 		 || h->root.type == bfd_link_hash_warning)
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
+
+	  /* PR15323, ref flags aren't set for references in the same
+	     object.  */
+	  h->root.non_ir_ref = 1;
 	}
 
       /* Some relocs require a global offset table.  */
@@ -1745,15 +1738,16 @@ lm32_elf_finish_dynamic_symbol (bfd *output_bfd,
     }
 
   /* Mark some specially defined symbols as absolute.  */
-  if (strcmp (h->root.root.string, "_DYNAMIC") == 0
-      || h == htab->root.hgot)
+  if (h == htab->root.hdynamic || h == htab->root.hgot)
     sym->st_shndx = SHN_ABS;
 
   return TRUE;
 }
 
 static enum elf_reloc_type_class
-lm32_elf_reloc_type_class (const Elf_Internal_Rela *rela)
+lm32_elf_reloc_type_class (const struct bfd_link_info *info ATTRIBUTE_UNUSED,
+			   const asection *rel_sec ATTRIBUTE_UNUSED,
+			   const Elf_Internal_Rela *rela)
 {
   switch ((int) ELF32_R_TYPE (rela->r_info))
     {
@@ -2152,7 +2146,7 @@ lm32_elf_size_dynamic_sections (bfd *output_bfd,
 
   /* Set up .got offsets for local syms, and space for local dynamic
      relocs.  */
-  for (ibfd = info->input_bfds; ibfd != NULL; ibfd = ibfd->link_next)
+  for (ibfd = info->input_bfds; ibfd != NULL; ibfd = ibfd->link.next)
     {
       bfd_signed_vma *local_got;
       bfd_signed_vma *end_local_got;
@@ -2330,7 +2324,7 @@ lm32_elf_size_dynamic_sections (bfd *output_bfd,
       int r32_count = 0;
       int rgot_count = 0;
       /* Look for deleted sections.  */
-      for (ibfd = info->input_bfds; ibfd != NULL; ibfd = ibfd->link_next)
+      for (ibfd = info->input_bfds; ibfd != NULL; ibfd = ibfd->link.next)
         {
           for (s = ibfd->sections; s != NULL; s = s->next)
             {
@@ -2616,154 +2610,21 @@ lm32_elf_copy_indirect_symbol (struct bfd_link_info *info,
 }
 
 static bfd_boolean
-lm32_elf_always_size_sections (bfd *output_bfd,
-				 struct bfd_link_info *info)
+lm32_elf_always_size_sections (bfd *output_bfd, struct bfd_link_info *info)
 {
   if (!info->relocatable)
     {
-      struct elf_link_hash_entry *h;
+      if (!bfd_elf_stack_segment_size (output_bfd, info,
+				       "__stacksize", DEFAULT_STACK_SIZE))
+	return FALSE;
 
-      /* Force a PT_GNU_STACK segment to be created.  */
-      if (! elf_tdata (output_bfd)->stack_flags)
-	elf_tdata (output_bfd)->stack_flags = PF_R | PF_W | PF_X;
-
-      /* Define __stacksize if it's not defined yet.  */
-      h = elf_link_hash_lookup (elf_hash_table (info), "__stacksize",
-				FALSE, FALSE, FALSE);
-      if (! h || h->root.type != bfd_link_hash_defined
-	  || h->type != STT_OBJECT
-	  || !h->def_regular)
-	{
-	  struct bfd_link_hash_entry *bh = NULL;
-
-	  if (!(_bfd_generic_link_add_one_symbol
-		(info, output_bfd, "__stacksize",
-		 BSF_GLOBAL, bfd_abs_section_ptr, DEFAULT_STACK_SIZE,
-		 (const char *) NULL, FALSE,
-		 get_elf_backend_data (output_bfd)->collect, &bh)))
-	    return FALSE;
-
-	  h = (struct elf_link_hash_entry *) bh;
-	  h->def_regular = 1;
-	  h->type = STT_OBJECT;
-	  /* This one must NOT be hidden.  */
-	}
-    }
-
-  return TRUE;
-}
-
-static bfd_boolean
-lm32_elf_modify_segment_map (bfd *output_bfd,
-			     struct bfd_link_info *info)
-{
-  struct elf_segment_map *m;
-
-  /* objcopy and strip preserve what's already there using elf32_lm32fdpic_copy_
-     private_bfd_data ().  */
-  if (! info)
-    return TRUE;
-
-  for (m = elf_tdata (output_bfd)->segment_map; m != NULL; m = m->next)
-    if (m->p_type == PT_GNU_STACK)
-      break;
-
-  if (m)
-    {
       asection *sec = bfd_get_section_by_name (output_bfd, ".stack");
-      struct elf_link_hash_entry *h;
-
       if (sec)
-	{
-	  /* Obtain the pointer to the __stacksize symbol.  */
-	  h = elf_link_hash_lookup (elf_hash_table (info), "__stacksize",
-				    FALSE, FALSE, FALSE);
-	  while (h->root.type == bfd_link_hash_indirect
-		 || h->root.type == bfd_link_hash_warning)
-	    h = (struct elf_link_hash_entry *)h->root.u.i.link;
-	  BFD_ASSERT (h->root.type == bfd_link_hash_defined);
-
-	  /* Set the section size from the symbol value.  We
-	     intentionally ignore the symbol section.  */
-	  if (h->root.type == bfd_link_hash_defined)
-	    sec->size = h->root.u.def.value;
-	  else
-	    sec->size = DEFAULT_STACK_SIZE;
-
-	  /* Add the stack section to the PT_GNU_STACK segment,
-	     such that its size and alignment requirements make it
-	     to the segment.  */
-	  m->sections[m->count] = sec;
-	  m->count++;
-	}
+	sec->size = info->stacksize >= 0 ? info->stacksize : 0;
     }
 
   return TRUE;
 }
-
-static bfd_boolean
-lm32_elf_modify_program_headers (bfd *output_bfd,
-				       struct bfd_link_info *info)
-{
-  struct elf_obj_tdata *tdata = elf_tdata (output_bfd);
-  struct elf_segment_map *m;
-  Elf_Internal_Phdr *p;
-
-  if (! info)
-    return TRUE;
-
-  for (p = tdata->phdr, m = tdata->segment_map; m != NULL; m = m->next, p++)
-    if (m->p_type == PT_GNU_STACK)
-      break;
-
-  if (m)
-    {
-      struct elf_link_hash_entry *h;
-
-      /* Obtain the pointer to the __stacksize symbol.  */
-      h = elf_link_hash_lookup (elf_hash_table (info), "__stacksize",
-				FALSE, FALSE, FALSE);
-      if (h)
-	{
-	  while (h->root.type == bfd_link_hash_indirect
-		 || h->root.type == bfd_link_hash_warning)
-	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
-	  BFD_ASSERT (h->root.type == bfd_link_hash_defined);
-	}
-
-      /* Set the header p_memsz from the symbol value.  We
-	 intentionally ignore the symbol section.  */
-      if (h && h->root.type == bfd_link_hash_defined)
-	p->p_memsz = h->root.u.def.value;
-      else
-	p->p_memsz = DEFAULT_STACK_SIZE;
-
-      p->p_align = 8;
-    }
-
-  return TRUE;
-}
-
-
-static bfd_boolean
-lm32_elf_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
-{
-  if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour
-      || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
-    return TRUE;
-
-  BFD_ASSERT (!elf_flags_init (obfd)
-	      || elf_elfheader (obfd)->e_flags == elf_elfheader (ibfd)->e_flags);
-
-  elf_elfheader (obfd)->e_flags = elf_elfheader (ibfd)->e_flags;
-  elf_flags_init (obfd) = TRUE;
-
-  /* Copy object attributes.  */
-  _bfd_elf_copy_obj_attributes (ibfd, obfd);
-
-  return TRUE;
-}
-
 
 static bfd_boolean
 lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
@@ -2774,7 +2635,7 @@ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
       || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
     return TRUE;
 
-  if (! lm32_elf_copy_private_bfd_data (ibfd, obfd))
+  if (! _bfd_elf_copy_private_bfd_data (ibfd, obfd))
     return FALSE;
 
   if (! elf_tdata (ibfd) || ! elf_tdata (ibfd)->phdr
@@ -2813,7 +2674,7 @@ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
 #define ELF_MACHINE_CODE        EM_LATTICEMICO32
 #define ELF_MAXPAGESIZE         0x1000
 
-#define TARGET_BIG_SYM          bfd_elf32_lm32_vec
+#define TARGET_BIG_SYM          lm32_elf32_vec
 #define TARGET_BIG_NAME         "elf32-lm32"
 
 #define bfd_elf32_bfd_reloc_type_lookup         lm32_reloc_type_lookup
@@ -2823,6 +2684,7 @@ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
 #define elf_backend_rela_normal                 1
 #define elf_backend_object_p                    lm32_elf_object_p
 #define elf_backend_final_write_processing      lm32_elf_final_write_processing
+#define elf_backend_stack_align			8
 #define elf_backend_can_gc_sections             1
 #define elf_backend_can_refcount                1
 #define elf_backend_gc_mark_hook                lm32_elf_gc_mark_hook
@@ -2850,7 +2712,7 @@ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
 
 
 #undef  TARGET_BIG_SYM
-#define TARGET_BIG_SYM          bfd_elf32_lm32fdpic_vec
+#define TARGET_BIG_SYM          lm32_elf32_fdpic_vec
 #undef  TARGET_BIG_NAME
 #define TARGET_BIG_NAME		"elf32-lm32fdpic"
 #undef	elf32_bed
@@ -2858,10 +2720,6 @@ lm32_elf_fdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
 
 #undef  elf_backend_always_size_sections
 #define elf_backend_always_size_sections        lm32_elf_always_size_sections
-#undef  elf_backend_modify_segment_map
-#define elf_backend_modify_segment_map          lm32_elf_modify_segment_map
-#undef  elf_backend_modify_program_headers
-#define elf_backend_modify_program_headers      lm32_elf_modify_program_headers
 #undef  bfd_elf32_bfd_copy_private_bfd_data
 #define bfd_elf32_bfd_copy_private_bfd_data     lm32_elf_fdpic_copy_private_bfd_data
 

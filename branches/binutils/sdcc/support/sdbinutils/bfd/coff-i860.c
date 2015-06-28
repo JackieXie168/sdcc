@@ -1,6 +1,5 @@
 /* BFD back-end for Intel i860 COFF files.
-   Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1999, 2000, 2001, 2002,
-   2003, 2004, 2005, 2007, 2008, 2010, 2011  Free Software Foundation, Inc.
+   Copyright (C) 1990-2014 Free Software Foundation, Inc.
    Created mostly by substituting "860" for "386" in coff-i386.c
    Harry Dolan <dolan@ssd.intel.com>, October 1995
 
@@ -131,7 +130,7 @@ coff_i860_reloc (bfd *abfd,
   return bfd_reloc_continue;
 }
 
-/* This is just a temporary measure until we teach bfd to generate 
+/* This is just a temporary measure until we teach bfd to generate
    these relocations.  */
 
 static bfd_reloc_status_type
@@ -657,7 +656,7 @@ const bfd_target
 #ifdef TARGET_SYM
   TARGET_SYM =
 #else
-  i860coff_vec =
+  i860_coff_vec =
 #endif
 {
 #ifdef TARGET_NAME

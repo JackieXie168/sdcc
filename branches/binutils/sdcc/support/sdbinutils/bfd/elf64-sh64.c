@@ -1,6 +1,5 @@
 /* SuperH SH64-specific support for 64-bit ELF
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-   2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 2000-2014 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -2286,8 +2285,8 @@ sh_elf64_copy_private_data_internal (bfd *ibfd, bfd *obfd)
     }
 
   /* Copy object attributes.  */
-  _bfd_elf_copy_obj_attributes (ibfd, obfd);
-
+  _bfd_elf_copy_private_bfd_data (ibfd, obfd);
+  
   return sh_elf64_set_private_flags (obfd, elf_elfheader (ibfd)->e_flags);
 }
 
@@ -2424,6 +2423,10 @@ sh_elf64_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  while (h->root.type == bfd_link_hash_indirect
 		 || h->root.type == bfd_link_hash_warning)
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
+
+	  /* PR15323, ref flags aren't set for references in the same
+	     object.  */
+	  h->root.non_ir_ref = 1;
 	}
 
       /* Some relocs require a global offset table.  */
@@ -3069,7 +3072,7 @@ sh64_elf64_link_hash_table_create (bfd *abfd)
 {
   struct elf_link_hash_table *ret;
 
-  ret = (struct elf_link_hash_table *) bfd_malloc (sizeof (* ret));
+  ret = (struct elf_link_hash_table *) bfd_zmalloc (sizeof (* ret));
   if (ret == (struct elf_link_hash_table *) NULL)
     return NULL;
 
@@ -3769,7 +3772,7 @@ sh64_elf64_finish_dynamic_symbol (bfd *output_bfd,
     }
 
   /* Mark _DYNAMIC and _GLOBAL_OFFSET_TABLE_ as absolute.  */
-  if (strcmp (h->root.root.string, "_DYNAMIC") == 0
+  if (h == elf_hash_table (info)->hdynamic
       || h == elf_hash_table (info)->hgot)
     sym->st_shndx = SHN_ABS;
 
@@ -3954,9 +3957,9 @@ static const struct bfd_elf_special_section sh64_elf64_special_sections[]=
   { NULL,                       0, 0, 0,            0 }
 };
 
-#define TARGET_BIG_SYM		bfd_elf64_sh64_vec
+#define TARGET_BIG_SYM		sh64_elf64_vec
 #define TARGET_BIG_NAME		"elf64-sh64"
-#define TARGET_LITTLE_SYM	bfd_elf64_sh64l_vec
+#define TARGET_LITTLE_SYM	sh64_elf64_le_vec
 #define TARGET_LITTLE_NAME	"elf64-sh64l"
 #define ELF_ARCH		bfd_arch_sh
 #define ELF_MACHINE_CODE	EM_SH
@@ -4026,11 +4029,11 @@ static const struct bfd_elf_special_section sh64_elf64_special_sections[]=
 
 /* NetBSD support.  */
 #undef	TARGET_BIG_SYM
-#define	TARGET_BIG_SYM			bfd_elf64_sh64nbsd_vec
+#define	TARGET_BIG_SYM			sh64_elf64_nbsd_vec
 #undef	TARGET_BIG_NAME
 #define	TARGET_BIG_NAME			"elf64-sh64-nbsd"
 #undef	TARGET_LITTLE_SYM
-#define	TARGET_LITTLE_SYM		bfd_elf64_sh64lnbsd_vec
+#define	TARGET_LITTLE_SYM		sh64_elf64_nbsd_le_vec
 #undef	TARGET_LITTLE_NAME
 #define	TARGET_LITTLE_NAME		"elf64-sh64l-nbsd"
 #undef	ELF_MAXPAGESIZE
@@ -4044,11 +4047,11 @@ static const struct bfd_elf_special_section sh64_elf64_special_sections[]=
 
 /* Linux support.  */
 #undef	TARGET_BIG_SYM
-#define	TARGET_BIG_SYM			bfd_elf64_sh64blin_vec
+#define	TARGET_BIG_SYM			sh64_elf64_linux_be_vec
 #undef	TARGET_BIG_NAME
 #define	TARGET_BIG_NAME			"elf64-sh64big-linux"
 #undef	TARGET_LITTLE_SYM
-#define	TARGET_LITTLE_SYM		bfd_elf64_sh64lin_vec
+#define	TARGET_LITTLE_SYM		sh64_elf64_linux_vec
 #undef	TARGET_LITTLE_NAME
 #define	TARGET_LITTLE_NAME		"elf64-sh64-linux"
 #undef elf64_bed

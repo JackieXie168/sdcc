@@ -1,6 +1,11 @@
 2015-06-28 Philipp Klaus Krause <pkk AT spth.de>
 
 	* support/sdbinutils/*
+	  Merge upstream binutils 2.25.
+
+2015-06-28 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/sdbinutils/*
 	  Import more parts of upstream binutils 2.23.2.
 
 2015-06-27 Philipp Klaus Krause <pkk AT spth.de>

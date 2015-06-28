@@ -1,7 +1,5 @@
 /* BFD backend for SunOS binaries.
-   Copyright 1990, 1991, 1992, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
-   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1990-2014 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -26,7 +24,7 @@
 /* Do not "beautify" the CONCAT* macro args.  Traditional C will not
    remove whitespace added here, and thus will fail to concatenate
    the tokens.  */
-#define MY(OP) CONCAT2 (sunos_big_,OP)
+#define MY(OP) CONCAT2 (sparc_aout_sunos_be_,OP)
 
 #include "sysdep.h"
 #include "bfd.h"
@@ -679,7 +677,7 @@ sunos_link_hash_table_create (bfd *abfd)
   struct sunos_link_hash_table *ret;
   bfd_size_type amt = sizeof (struct sunos_link_hash_table);
 
-  ret = bfd_malloc (amt);
+  ret = bfd_zmalloc (amt);
   if (ret ==  NULL)
     return NULL;
   if (!NAME (aout, link_hash_table_init) (&ret->root, abfd,
@@ -689,15 +687,6 @@ sunos_link_hash_table_create (bfd *abfd)
       free (ret);
       return NULL;
     }
-
-  ret->dynobj = NULL;
-  ret->dynamic_sections_created = FALSE;
-  ret->dynamic_sections_needed = FALSE;
-  ret->got_needed = FALSE;
-  ret->dynsymcount = 0;
-  ret->bucketcount = 0;
-  ret->needed = NULL;
-  ret->got_base = 0;
 
   return &ret->root.root;
 }
@@ -1902,7 +1891,7 @@ bfd_sunos_size_dynamic_sections (bfd *output_bfd,
      to determine the number of dynamic relocs we need, and, more
      importantly, there is no other way to know which symbols should
      get an entry in the procedure linkage table.  */
-  for (sub = info->input_bfds; sub != NULL; sub = sub->link_next)
+  for (sub = info->input_bfds; sub != NULL; sub = sub->link.next)
     {
       if ((sub->flags & DYNAMIC) == 0
 	  && sub->xvec == output_bfd->xvec)

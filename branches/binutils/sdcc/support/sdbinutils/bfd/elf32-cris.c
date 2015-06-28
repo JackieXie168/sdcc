@@ -1,6 +1,5 @@
 /* CRIS-specific support for 32-bit ELF.
-   Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-   2010, 2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 2000-2014 Free Software Foundation, Inc.
    Contributed by Axis Communications AB.
    Written by Hans-Peter Nilsson, based on elf32-fr30.c
    PIC and shlib bits based primarily on elf32-m68k.c and elf32-i386.c.
@@ -511,10 +510,10 @@ cris_elf_grok_prstatus (bfd *abfd, Elf_Internal_Note *note)
 
       case 202:		/* Linux/CRISv32 */
 	/* pr_cursig */
-	elf_tdata (abfd)->core_signal = bfd_get_16 (abfd, note->descdata + 12);
+	elf_tdata (abfd)->core->signal = bfd_get_16 (abfd, note->descdata + 12);
 
 	/* pr_pid */
-	elf_tdata (abfd)->core_lwpid = bfd_get_32 (abfd, note->descdata + 22);
+	elf_tdata (abfd)->core->lwpid = bfd_get_32 (abfd, note->descdata + 22);
 
 	/* pr_reg */
 	offset = 70;
@@ -530,10 +529,10 @@ cris_elf_grok_prstatus (bfd *abfd, Elf_Internal_Note *note)
 
       case 214:		/* Linux/CRIS */
 	/* pr_cursig */
-	elf_tdata (abfd)->core_signal = bfd_get_16 (abfd, note->descdata + 12);
+	elf_tdata (abfd)->core->signal = bfd_get_16 (abfd, note->descdata + 12);
 
 	/* pr_pid */
-	elf_tdata (abfd)->core_lwpid = bfd_get_32 (abfd, note->descdata + 22);
+	elf_tdata (abfd)->core->lwpid = bfd_get_32 (abfd, note->descdata + 22);
 
 	/* pr_reg */
 	offset = 70;
@@ -557,9 +556,9 @@ cris_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
 	return FALSE;
 
       case 124:		/* Linux/CRISv32 elf_prpsinfo */
-	elf_tdata (abfd)->core_program
+	elf_tdata (abfd)->core->program
 	  = _bfd_elfcore_strndup (abfd, note->descdata + 28, 16);
-	elf_tdata (abfd)->core_command
+	elf_tdata (abfd)->core->command
 	  = _bfd_elfcore_strndup (abfd, note->descdata + 44, 80);
       }
   else
@@ -569,9 +568,9 @@ cris_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
 	return FALSE;
 
       case 124:		/* Linux/CRIS elf_prpsinfo */
-	elf_tdata (abfd)->core_program
+	elf_tdata (abfd)->core->program
 	  = _bfd_elfcore_strndup (abfd, note->descdata + 28, 16);
-	elf_tdata (abfd)->core_command
+	elf_tdata (abfd)->core->command
 	  = _bfd_elfcore_strndup (abfd, note->descdata + 44, 80);
       }
 
@@ -580,7 +579,7 @@ cris_elf_grok_psinfo (bfd *abfd, Elf_Internal_Note *note)
      implementations, so strip it off if it exists.  */
 
   {
-    char *command = elf_tdata (abfd)->core_command;
+    char *command = elf_tdata (abfd)->core->command;
     int n = strlen (command);
 
     if (0 < n && command[n - 1] == ' ')
@@ -884,7 +883,7 @@ elf_cris_link_hash_table_create (bfd *abfd)
   struct elf_cris_link_hash_table *ret;
   bfd_size_type amt = sizeof (struct elf_cris_link_hash_table);
 
-  ret = ((struct elf_cris_link_hash_table *) bfd_malloc (amt));
+  ret = ((struct elf_cris_link_hash_table *) bfd_zmalloc (amt));
   if (ret == (struct elf_cris_link_hash_table *) NULL)
     return NULL;
 
@@ -900,9 +899,6 @@ elf_cris_link_hash_table_create (bfd *abfd)
   /* Initialize to skip over the first three entries in the gotplt; they
      are used for run-time symbol evaluation.  */
   ret->next_gotplt_entry = 12;
-
-  /* We haven't seen any R_CRIS_nn_GOT_TPREL initially.  */
-  ret->dtpmod_refcount = 0;
 
   return &ret->root.root;
 }
@@ -1043,13 +1039,13 @@ cris_elf_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 	}
       else
 	{
-	  bfd_boolean warned;
+	  bfd_boolean warned, ignored;
 	  bfd_boolean unresolved_reloc;
 
 	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
 				   r_symndx, symtab_hdr, sym_hashes,
 				   h, sec, relocation,
-				   unresolved_reloc, warned);
+				   unresolved_reloc, warned, ignored);
 
 	  symname = h->root.root.string;
 
@@ -2288,7 +2284,7 @@ elf_cris_finish_dynamic_symbol (bfd *output_bfd,
     }
 
   /* Mark _DYNAMIC and _GLOBAL_OFFSET_TABLE_ as absolute.  */
-  if (strcmp (h->root.root.string, "_DYNAMIC") == 0
+  if (h == elf_hash_table (info)->hdynamic
       || h == elf_hash_table (info)->hgot)
     sym->st_shndx = SHN_ABS;
 
@@ -2698,7 +2694,7 @@ cris_elf_plt_sym_val (bfd_vma i ATTRIBUTE_UNUSED, const asection *plt,
     {
       bfd_size_type got_offset;
       bfd_byte gotoffs_raw[4];
-      
+
       if (!bfd_get_section_contents (abfd, (asection *) plt, gotoffs_raw,
 				     pltoffs + plt_entry_got_offset,
 				     sizeof (gotoffs_raw)))
@@ -3180,6 +3176,10 @@ cris_elf_check_relocs (bfd *abfd,
 	  while (h->root.type == bfd_link_hash_indirect
 		 || h->root.type == bfd_link_hash_warning)
 	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
+
+	  /* PR15323, ref flags aren't set for references in the same
+	     object.  */
+	  h->root.non_ir_ref = 1;
 	}
 
       r_type = ELF32_R_TYPE (rel->r_info);
@@ -3235,15 +3235,20 @@ cris_elf_check_relocs (bfd *abfd,
 		     abfd, sec);
 		  return FALSE;
 		}
-
-	      /* Create the .got section, so we can assume it's always
-		 present whenever there's a dynobj.  */
-	      if (!_bfd_elf_create_got_section (dynobj, info))
-		return FALSE;
 	    }
 
 	  if (sgot == NULL)
-	    sgot = bfd_get_linker_section (dynobj, ".got");
+	    {
+	      /* We may have a dynobj but no .got section, if machine-
+		 independent parts of the linker found a reason to create
+		 a dynobj.  We want to create the .got section now, so we
+		 can assume it's always present whenever there's a dynobj.
+		 It's ok to call this function more than once.  */
+	      if (!_bfd_elf_create_got_section (dynobj, info))
+		return FALSE;
+
+	      sgot = bfd_get_linker_section (dynobj, ".got");
+	    }
 
 	  if (local_got_refcounts == NULL)
 	    {
@@ -4244,7 +4249,9 @@ cris_elf_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
 }
 
 static enum elf_reloc_type_class
-elf_cris_reloc_type_class (const Elf_Internal_Rela *rela)
+elf_cris_reloc_type_class (const struct bfd_link_info *info ATTRIBUTE_UNUSED,
+			   const asection *rel_sec ATTRIBUTE_UNUSED,
+			   const Elf_Internal_Rela *rela)
 {
   enum elf_cris_reloc_type r_type = ELF32_R_TYPE (rela->r_info);
   switch (r_type)
@@ -4327,7 +4334,7 @@ elf_cris_got_elt_size (bfd *abfd ATTRIBUTE_UNUSED,
 #define ELF_MACHINE_CODE	EM_CRIS
 #define ELF_MAXPAGESIZE		0x2000
 
-#define TARGET_LITTLE_SYM	bfd_elf32_cris_vec
+#define TARGET_LITTLE_SYM	cris_elf32_vec
 #define TARGET_LITTLE_NAME	"elf32-cris"
 #define elf_symbol_leading_char 0
 
@@ -4396,7 +4403,7 @@ elf_cris_got_elt_size (bfd *abfd ATTRIBUTE_UNUSED,
 #undef TARGET_LITTLE_NAME
 #undef elf_symbol_leading_char
 
-#define TARGET_LITTLE_SYM bfd_elf32_us_cris_vec
+#define TARGET_LITTLE_SYM cris_elf32_us_vec
 #define TARGET_LITTLE_NAME "elf32-us-cris"
 #define elf_symbol_leading_char '_'
 #undef elf32_bed

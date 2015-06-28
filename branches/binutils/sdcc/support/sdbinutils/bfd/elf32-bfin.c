@@ -1,6 +1,5 @@
 /* ADI Blackfin BFD support for 32-bit ELF.
-   Copyright 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 2005-2014 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -1187,7 +1186,13 @@ bfin_check_relocs (bfd * abfd,
       if (r_symndx < symtab_hdr->sh_info)
 	h = NULL;
       else
-	h = sym_hashes[r_symndx - symtab_hdr->sh_info];
+	{
+	  h = sym_hashes[r_symndx - symtab_hdr->sh_info];
+
+	  /* PR15323, ref flags aren't set for references in the same
+	     object.  */
+	  h->root.non_ir_ref = 1;
+	}
 
       switch (ELF32_R_TYPE (rel->r_info))
 	{
@@ -1301,7 +1306,9 @@ bfin_check_relocs (bfd * abfd,
 }
 
 static enum elf_reloc_type_class
-elf32_bfin_reloc_type_class (const Elf_Internal_Rela * rela)
+elf32_bfin_reloc_type_class (const struct bfd_link_info *info ATTRIBUTE_UNUSED,
+			     const asection *rel_sec ATTRIBUTE_UNUSED,
+			     const Elf_Internal_Rela * rela)
 {
   switch ((int) ELF32_R_TYPE (rela->r_info))
     {
@@ -1436,12 +1443,12 @@ bfin_relocate_section (bfd * output_bfd,
 	}
       else
 	{
-	  bfd_boolean warned;
+	  bfd_boolean warned, ignored;
 
 	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
 				   r_symndx, symtab_hdr, sym_hashes,
 				   h, sec, relocation,
-				   unresolved_reloc, warned);
+				   unresolved_reloc, warned, ignored);
 	}
 
       if (sec != NULL && discarded_section (sec))
@@ -1725,8 +1732,8 @@ bfin_gc_sweep_hook (bfd * abfd,
   return TRUE;
 }
 
-extern const bfd_target bfd_elf32_bfinfdpic_vec;
-#define IS_FDPIC(bfd) ((bfd)->xvec == &bfd_elf32_bfinfdpic_vec)
+extern const bfd_target bfin_elf32_fdpic_vec;
+#define IS_FDPIC(bfd) ((bfd)->xvec == &bfin_elf32_fdpic_vec)
 
 /* An extension of the elf hash table data structure,
    containing some additional Blackfin-specific data.  */
@@ -1821,7 +1828,7 @@ bfinfdpic_elf_link_hash_table_create (bfd *abfd)
   struct bfinfdpic_elf_link_hash_table *ret;
   bfd_size_type amt = sizeof (struct bfinfdpic_elf_link_hash_table);
 
-  ret = bfd_zalloc (abfd, amt);
+  ret = bfd_zmalloc (amt);
   if (ret == NULL)
     return NULL;
 
@@ -2654,13 +2661,13 @@ bfinfdpic_relocate_section (bfd * output_bfd,
 	}
       else
 	{
-	  bfd_boolean warned;
+	  bfd_boolean warned, ignored;
 	  bfd_boolean unresolved_reloc;
 
 	  RELOC_FOR_GLOBAL_SYMBOL (info, input_bfd, input_section, rel,
 				   r_symndx, symtab_hdr, sym_hashes,
 				   h, sec, relocation,
-				   unresolved_reloc, warned);
+				   unresolved_reloc, warned, ignored);
 	  osec = sec;
 	}
 
@@ -4311,35 +4318,10 @@ static bfd_boolean
 elf32_bfinfdpic_always_size_sections (bfd *output_bfd,
 				     struct bfd_link_info *info)
 {
-  if (!info->relocatable)
-    {
-      struct elf_link_hash_entry *h;
-
-      /* Force a PT_GNU_STACK segment to be created.  */
-      if (! elf_tdata (output_bfd)->stack_flags)
-	elf_tdata (output_bfd)->stack_flags = PF_R | PF_W | PF_X;
-
-      /* Define __stacksize if it's not defined yet.  */
-      h = elf_link_hash_lookup (elf_hash_table (info), "__stacksize",
-				FALSE, FALSE, FALSE);
-      if (! h || h->root.type != bfd_link_hash_defined
-	  || h->type != STT_OBJECT
-	  || !h->def_regular)
-	{
-	  struct bfd_link_hash_entry *bh = NULL;
-
-	  if (!(_bfd_generic_link_add_one_symbol
-		(info, output_bfd, "__stacksize",
-		 BSF_GLOBAL, bfd_abs_section_ptr, DEFAULT_STACK_SIZE,
-		 (const char *) NULL, FALSE,
-		 get_elf_backend_data (output_bfd)->collect, &bh)))
-	    return FALSE;
-
-	  h = (struct elf_link_hash_entry *) bh;
-	  h->def_regular = 1;
-	  h->type = STT_OBJECT;
-	}
-    }
+  if (!info->relocatable
+      && !bfd_elf_stack_segment_size (output_bfd, info,
+				      "__stacksize", DEFAULT_STACK_SIZE))
+    return FALSE;
 
   return TRUE;
 }
@@ -4454,51 +4436,6 @@ bfinfdpic_elf_discard_info (bfd *ibfd,
 
       if (!_bfinfdpic_size_got_plt (obfd, &gpinfo))
 	return FALSE;
-    }
-
-  return TRUE;
-}
-
-static bfd_boolean
-elf32_bfinfdpic_modify_program_headers (bfd *output_bfd,
-					struct bfd_link_info *info)
-{
-  struct elf_obj_tdata *tdata = elf_tdata (output_bfd);
-  struct elf_segment_map *m;
-  Elf_Internal_Phdr *p;
-
-  /* objcopy and strip preserve what's already there using
-     elf32_bfinfdpic_copy_private_bfd_data ().  */
-  if (! info)
-    return TRUE;
-
-  for (p = tdata->phdr, m = tdata->segment_map; m != NULL; m = m->next, p++)
-    if (m->p_type == PT_GNU_STACK)
-      break;
-
-  if (m)
-    {
-      struct elf_link_hash_entry *h;
-
-      /* Obtain the pointer to the __stacksize symbol.  */
-      h = elf_link_hash_lookup (elf_hash_table (info), "__stacksize",
-				FALSE, FALSE, FALSE);
-      if (h)
-	{
-	  while (h->root.type == bfd_link_hash_indirect
-		 || h->root.type == bfd_link_hash_warning)
-	    h = (struct elf_link_hash_entry *) h->root.u.i.link;
-	  BFD_ASSERT (h->root.type == bfd_link_hash_defined);
-	}
-
-      /* Set the header p_memsz from the symbol value.  We
-	 intentionally ignore the symbol section.  */
-      if (h && h->root.type == bfd_link_hash_defined)
-	p->p_memsz = h->root.u.def.value;
-      else
-	p->p_memsz = DEFAULT_STACK_SIZE;
-
-      p->p_align = 8;
     }
 
   return TRUE;
@@ -4993,72 +4930,6 @@ elf32_bfin_set_private_flags (bfd * abfd, flagword flags)
   return TRUE;
 }
 
-/* Copy backend specific data from one object module to another.  */
-
-static bfd_boolean
-bfin_elf_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
-{
-  if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour
-      || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
-    return TRUE;
-
-  BFD_ASSERT (!elf_flags_init (obfd)
-	      || elf_elfheader (obfd)->e_flags == elf_elfheader (ibfd)->e_flags);
-
-  elf_elfheader (obfd)->e_flags = elf_elfheader (ibfd)->e_flags;
-  elf_flags_init (obfd) = TRUE;
-
-  /* Copy object attributes.  */
-  _bfd_elf_copy_obj_attributes (ibfd, obfd);
-
-  return TRUE;
-}
-
-static bfd_boolean
-elf32_bfinfdpic_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
-{
-  unsigned i;
-
-  if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour
-      || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
-    return TRUE;
-
-  if (! bfin_elf_copy_private_bfd_data (ibfd, obfd))
-    return FALSE;
-
-  if (! elf_tdata (ibfd) || ! elf_tdata (ibfd)->phdr
-      || ! elf_tdata (obfd) || ! elf_tdata (obfd)->phdr)
-    return TRUE;
-
-  /* Copy the stack size.  */
-  for (i = 0; i < elf_elfheader (ibfd)->e_phnum; i++)
-    if (elf_tdata (ibfd)->phdr[i].p_type == PT_GNU_STACK)
-      {
-	Elf_Internal_Phdr *iphdr = &elf_tdata (ibfd)->phdr[i];
-
-	for (i = 0; i < elf_elfheader (obfd)->e_phnum; i++)
-	  if (elf_tdata (obfd)->phdr[i].p_type == PT_GNU_STACK)
-	    {
-	      memcpy (&elf_tdata (obfd)->phdr[i], iphdr, sizeof (*iphdr));
-
-	      /* Rewrite the phdrs, since we're only called after they
-		 were first written.  */
-	      if (bfd_seek (obfd, (bfd_signed_vma) get_elf_backend_data (obfd)
-			    ->s->sizeof_ehdr, SEEK_SET) != 0
-		  || get_elf_backend_data (obfd)->s
-		  ->write_out_phdrs (obfd, elf_tdata (obfd)->phdr,
-				     elf_elfheader (obfd)->e_phnum) != 0)
-		return FALSE;
-	      break;
-	    }
-
-	break;
-      }
-
-  return TRUE;
-}
-
-
 /* Display the flags field.  */
 static bfd_boolean
 elf32_bfin_print_private_bfd_data (bfd * abfd, void * ptr)
@@ -5185,7 +5056,7 @@ bfin_link_hash_table_create (bfd * abfd)
   struct bfin_link_hash_table *ret;
   bfd_size_type amt = sizeof (struct bfin_link_hash_table);
 
-  ret = bfd_zalloc (abfd, amt);
+  ret = bfd_zmalloc (amt);
   if (ret == NULL)
     return NULL;
 
@@ -5753,7 +5624,7 @@ struct bfd_elf_special_section const elf32_bfin_special_sections[] =
 };
 
 
-#define TARGET_LITTLE_SYM		bfd_elf32_bfin_vec
+#define TARGET_LITTLE_SYM		bfin_elf32_vec
 #define TARGET_LITTLE_NAME		"elf32-bfin"
 #define ELF_ARCH			bfd_arch_bfin
 #define ELF_TARGET_ID			BFIN_ELF_DATA
@@ -5802,6 +5673,7 @@ struct bfd_elf_special_section const elf32_bfin_special_sections[] =
 #define elf_backend_final_write_processing \
                                         elf32_bfin_final_write_processing
 #define elf_backend_reloc_type_class    elf32_bfin_reloc_type_class
+#define elf_backend_stack_align		8
 #define elf_backend_can_gc_sections 1
 #define elf_backend_special_sections	elf32_bfin_special_sections
 #define elf_backend_can_refcount 1
@@ -5814,7 +5686,7 @@ struct bfd_elf_special_section const elf32_bfin_special_sections[] =
 #include "elf32-target.h"
 
 #undef TARGET_LITTLE_SYM
-#define TARGET_LITTLE_SYM          bfd_elf32_bfinfdpic_vec
+#define TARGET_LITTLE_SYM          bfin_elf32_fdpic_vec
 #undef TARGET_LITTLE_NAME
 #define TARGET_LITTLE_NAME		"elf32-bfinfdpic"
 #undef	elf32_bed
@@ -5837,12 +5709,6 @@ struct bfd_elf_special_section const elf32_bfin_special_sections[] =
 #undef elf_backend_always_size_sections
 #define elf_backend_always_size_sections \
 		elf32_bfinfdpic_always_size_sections
-#undef elf_backend_modify_program_headers
-#define elf_backend_modify_program_headers \
-		elf32_bfinfdpic_modify_program_headers
-#undef bfd_elf32_bfd_copy_private_bfd_data
-#define bfd_elf32_bfd_copy_private_bfd_data \
-		elf32_bfinfdpic_copy_private_bfd_data
 
 #undef elf_backend_create_dynamic_sections
 #define elf_backend_create_dynamic_sections \
