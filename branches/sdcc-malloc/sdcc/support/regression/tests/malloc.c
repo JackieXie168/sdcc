@@ -160,6 +160,8 @@ testMalloc (void)
   LOG (("p3, after freeing p2: %u\n", (unsigned) p3));
 #endif
 
+  free (p1);
+  free (p3);
   mallocfree();
 }
 

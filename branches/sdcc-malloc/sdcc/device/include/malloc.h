@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
-   malloc.h - malloc header file
+   malloc.h - memory management
 
-   Copyright (C) 1997, Dmitry S. Obukhov <dmitry.obukhov AT gmail.com>
+   Copyright (C) 2015, Philipp Klaus Krause, pkk@spth.de
 
    This library is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -10,7 +10,7 @@
 
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License 
@@ -26,25 +26,22 @@
    might be covered by the GNU General Public License.
 -------------------------------------------------------------------------*/
 
-#ifndef __SDCC51_MALLOC_H
-#define __SDCC51_MALLOC_H
-#include <sdcc-lib.h>
+#ifndef __SDCC_MALLOC_H
+#define __SDCC_MALLOC_H
+
 #include <stddef.h>
 
-#if _SDCC_MALLOC_TYPE_MLH
-
-void * calloc (size_t nmemb, size_t size);
-void * malloc (size_t size);
-void * realloc (void * ptr, size_t size);
-void free (void * ptr);
-
+#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
+void __xdata *calloc (size_t nmemb, size_t size);
+void __xdata *malloc (size_t size);
+void __xdata *realloc (void *ptr, size_t size);
 #else
+void *calloc (size_t nmemb, size_t size);
+void *malloc (size_t size);
+void *realloc (void *ptr, size_t size);
+#endif
 
-extern void __xdata * calloc (size_t nmemb, size_t size);
-extern void __xdata * malloc (size_t size);
-extern void __xdata * realloc (void * ptr, size_t size);
 extern void free (void * ptr);
 
 #endif
 
-#endif
