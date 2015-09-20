@@ -27,6 +27,7 @@
 -------------------------------------------------------------------------*/
 
 #include <stdlib.h>
+#include <stddef.h>
 
 #if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400)
 #define XDATA __xdata
@@ -62,7 +63,7 @@ extern header_t _sdcc_heap_end; // Just beyond the end of the heap. Must be high
 
 void _sdcc_heap_init(void)
 {
-	__sdcc_heap_free = HEAP_START ? HEAP_START : ((header_t *)((char *)HEAP_START  + 1));
+	__sdcc_heap_free = HEAP_START;
 	__sdcc_heap_free->next = HEAP_END;
 	__sdcc_heap_free->next_free = HEAP_END;
 }
