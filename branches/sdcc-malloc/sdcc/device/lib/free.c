@@ -35,19 +35,20 @@
 #define XDATA
 #endif
 
+typedef struct header XDATA header_t;
+
 struct header
 {
-	struct header XDATA *next;
-	struct header XDATA *next_free; // Next free block. Used in free blocks only.
+	header_t *next;
+	header_t *next_free;
 };
 
-extern struct header XDATA *__sdcc_heap_free;
+extern header_t *XDATA __sdcc_heap_free;
 
 void free(void *ptr)
 {
-	struct header XDATA *h, *next_free;
-	struct header XDATA **f;
-	struct header XDATA **p;
+	header_t *h, *next_free;
+	header_t *XDATA *f, *XDATA *p;
 
 	if(!ptr)
 		return;

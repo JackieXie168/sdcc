@@ -1,5 +1,13 @@
 2015-09-20 Philipp Klaus Krause <pkk AT spth.de>
 
+	* device/lib/calloc.c,
+	  device/lib/malloc.c,
+	  device/lib/realloc.c,
+	  device/lib/free.c:
+	  Use typedefs for memory block header type, use more pointers to __xdata.
+
+2015-09-20 Philipp Klaus Krause <pkk AT spth.de>
+
 	* device/include/asm/*/features.h,
 	  device/include/malloc.h,
 	  device/lib/calloc.c,

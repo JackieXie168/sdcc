@@ -36,21 +36,23 @@
 #define XDATA
 #endif
 
+typedef struct header XDATA header_t;
+
 struct header
 {
-	struct header XDATA *next;
-	struct header XDATA *next_free; // Next free block. Used in free blocks only.
+	header_t *next;
+	header_t *next_free;
 };
 
-extern struct header XDATA *__sdcc_heap_free;
+extern header_t *XDATA __sdcc_heap_free;
 
 void _sdcc_heap_init(void);
 
 void XDATA *realloc(void *ptr, size_t size)
 {
 	void XDATA *ret;
-	struct header XDATA *h, *next_free, *prev_free;
-	struct header XDATA **f, **pf;
+	header_t *h, *next_free, *prev_free;
+	header_t *XDATA *f, *XDATA *pf;
 	size_t blocksize, oldblocksize, maxblocksize;
 
 	if(!__sdcc_heap_free)
@@ -100,7 +102,7 @@ void XDATA *realloc(void *ptr, size_t size)
 
 		if(maxblocksize >= blocksize + sizeof(struct header)) // Create new block from free space
 		{
-			struct header XDATA *const newheader = (struct header XDATA *const)((char XDATA *)h + blocksize);
+			header_t *const newheader = (header_t *const)((char XDATA *)h + blocksize);
 			newheader->next = h->next;
 			newheader->next_free = (*f)->next_free;
 			*f = newheader;

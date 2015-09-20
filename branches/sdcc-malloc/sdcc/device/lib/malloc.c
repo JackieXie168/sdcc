@@ -34,13 +34,15 @@
 #define XDATA
 #endif
 
+typedef struct header XDATA header_t;
+
 struct header
 {
-	struct header XDATA *next;
-	struct header XDATA *next_free; // Next free block. Used in free blocks only. Overlaps with user data in non-free blocks.
+	header_t *next;
+	header_t *next_free; // Next free block. Used in free blocks only. Overlaps with user data in non-free blocks.
 };
 
-struct header XDATA *__sdcc_heap_free;
+header_t *XDATA __sdcc_heap_free;
 
 #if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08)
 
@@ -51,8 +53,8 @@ extern const unsigned int _sdcc_heap_size;
 
 #else
 
-extern struct header XDATA _sdcc_heap_start;
-extern struct header XDATA _sdcc_heap_end; // Just beyond the end of the heap. Must be higher in memory than _sdcc_heap_start.
+extern header_t _sdcc_heap_start;
+extern header_t _sdcc_heap_end; // Just beyond the end of the heap. Must be higher in memory than _sdcc_heap_start.
 #define HEAP_START &_sdcc_heap_start
 #define HEAP_END &_sdcc_heap_end
 
@@ -60,15 +62,15 @@ extern struct header XDATA _sdcc_heap_end; // Just beyond the end of the heap. M
 
 void _sdcc_heap_init(void)
 {
-	__sdcc_heap_free = HEAP_START ? HEAP_START : ((struct header XDATA *)((char *)HEAP_START  + 1));
+	__sdcc_heap_free = HEAP_START ? HEAP_START : ((header_t *)((char *)HEAP_START  + 1));
 	__sdcc_heap_free->next = HEAP_END;
 	__sdcc_heap_free->next_free = HEAP_END;
 }
 
 void XDATA *malloc(size_t size)
 {
-	struct header XDATA *h;
-	struct header XDATA **f;
+	header_t *h;
+	header_t *XDATA *f;
 
 	if(!__sdcc_heap_free)
 		_sdcc_heap_init();
@@ -86,7 +88,7 @@ void XDATA *malloc(size_t size)
 		{
 			if(blocksize >= size + sizeof(struct header)) // It is worth creating a new free block
 			{
-				struct header XDATA *const newheader = (struct header XDATA *const)((char XDATA*)h + size);
+				header_t *const newheader = (header_t *const)((char XDATA*)h + size);
 				newheader->next = h->next;
 				newheader->next_free = h->next_free;
 				*f = newheader;
