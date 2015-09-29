@@ -39,8 +39,8 @@ typedef struct header XDATA header_t;
 
 struct header
 {
-	header_t *next;
-	header_t *next_free; // Next free block. Used in free blocks only. Overlaps with user data in non-free blocks.
+	header_t *next; // Next block. Linked list of all blocks, terminated by pointer to end of heap (or to the byte beyond the end of the heap).
+	header_t *next_free; // Next free block. Used in free blocks only. Overlaps with user data in non-free blocks. Linked list of free blocks, null-terminated.
 };
 
 header_t *XDATA __sdcc_heap_free;
@@ -65,7 +65,7 @@ void _sdcc_heap_init(void)
 {
 	__sdcc_heap_free = HEAP_START;
 	__sdcc_heap_free->next = HEAP_END;
-	__sdcc_heap_free->next_free = HEAP_END;
+	__sdcc_heap_free->next_free = 0;
 }
 
 void XDATA *malloc(size_t size)
@@ -78,11 +78,13 @@ void XDATA *malloc(size_t size)
 
 	if(!size)
 		return(0);
+	if(size + offsetof(struct header, next_free) < size)
+		return(0);
 	size += offsetof(struct header, next_free);
 	if(size < sizeof(struct header)) // Requiring a minimum size makes it easier to implement free(), and avoid memory leaks.
 		size = sizeof(struct header);
 
-	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h < HEAP_END; f = &(h->next_free), h = h->next_free)
+	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h; f = &(h->next_free), h = h->next_free)
 	{
 		size_t blocksize = (char XDATA *)(h->next) - (char XDATA *)h;
 		if(blocksize >= size) // Found free block of sufficient size.

@@ -1,3 +1,10 @@
+2015-09-29 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/lib/malloc.c,
+	  device/lib/free.c,
+	  device/lib/realloc.c:
+	  Use 0-terminated free list, fix merge with last free block, fix blocksize overflow.
+
 2015-09-29 Ben Shi <powerstudio1st AT 163 DOT com>
 
 	* src/stm8/main.c:

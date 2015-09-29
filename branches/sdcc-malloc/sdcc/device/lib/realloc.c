@@ -68,10 +68,12 @@ void XDATA *realloc(void *ptr, size_t size)
 	}
 
 	prev_free = 0, pf = 0;
-	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h < ptr; prev_free = *f, pf = f, f = &(h->next_free), h = h->next_free);
+	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h && h < ptr; prev_free = *f, pf = f, f = &(h->next_free), h = h->next_free);
 	next_free = *f;
 
 	blocksize = size + offsetof(struct header, next_free);
+	if(blocksize < size)
+		return(0);
 	if(size < sizeof(struct header)) // Requiring a minimum size makes it easier to implement free(), and avoid memory leaks.
 		size = sizeof(struct header);
 
@@ -94,7 +96,7 @@ void XDATA *realloc(void *ptr, size_t size)
 			f = pf;
 		}
 
-		if(next_free == h->next) // Merge with following block
+		if(next_free && next_free == h->next) // Merge with following block
 		{
 			h->next = next_free->next;
 			*f = next_free->next_free;
