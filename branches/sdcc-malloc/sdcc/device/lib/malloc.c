@@ -47,21 +47,21 @@ header_t *XDATA __sdcc_heap_free;
 
 #if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08)
 
-extern XDATA char _sdcc_heap[];
-extern const unsigned int _sdcc_heap_size;
-#define HEAP_START (struct header XDATA *)_sdcc_heap
-#define HEAP_END (struct header XDATA *)((char XDATA *)_sdcc_heap + (_sdcc_heap_size - 1)) // -1 To be sure that HEAP_END is bigger than HEAP_START.
+extern XDATA char __sdcc_heap[];
+extern const unsigned int __sdcc_heap_size;
+#define HEAP_START (struct header XDATA *)__sdcc_heap
+#define HEAP_END (struct header XDATA *)((char XDATA *)__sdcc_heap + (__sdcc_heap_size - 1)) // -1 To be sure that HEAP_END is bigger than HEAP_START.
 
 #else
 
-extern header_t _sdcc_heap_start;
-extern header_t _sdcc_heap_end; // Just beyond the end of the heap. Must be higher in memory than _sdcc_heap_start.
-#define HEAP_START &_sdcc_heap_start
-#define HEAP_END &_sdcc_heap_end
+extern header_t __sdcc_heap_start;
+extern header_t __sdcc_heap_end; // Just beyond the end of the heap. Must be higher in memory than _sdcc_heap_start.
+#define HEAP_START &__sdcc_heap_start
+#define HEAP_END &__sdcc_heap_end
 
 #endif
 
-void _sdcc_heap_init(void)
+void __sdcc_heap_init(void)
 {
 	__sdcc_heap_free = HEAP_START;
 	__sdcc_heap_free->next = HEAP_END;
@@ -73,8 +73,10 @@ void XDATA *malloc(size_t size)
 	header_t *h;
 	header_t *XDATA *f;
 
+#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08)
 	if(!__sdcc_heap_free)
-		_sdcc_heap_init();
+		__sdcc_heap_init();
+#endif
 
 	if(!size)
 		return(0);

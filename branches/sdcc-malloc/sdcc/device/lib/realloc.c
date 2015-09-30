@@ -46,7 +46,7 @@ struct header
 
 extern header_t *XDATA __sdcc_heap_free;
 
-void _sdcc_heap_init(void);
+void __sdcc_heap_init(void);
 
 void XDATA *realloc(void *ptr, size_t size)
 {
@@ -55,8 +55,10 @@ void XDATA *realloc(void *ptr, size_t size)
 	header_t *XDATA *f, *XDATA *pf;
 	size_t blocksize, oldblocksize, maxblocksize;
 
+#if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08)
 	if(!__sdcc_heap_free)
-		_sdcc_heap_init();
+		__sdcc_heap_init();
+#endif
 
 	if(!ptr)
 		return(malloc(size));

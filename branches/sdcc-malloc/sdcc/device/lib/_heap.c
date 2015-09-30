@@ -36,5 +36,6 @@
 #define HEAP_SIZE 1024
 #endif
 
-__xdata char _sdcc_heap[HEAP_SIZE];
-const unsigned int _sdcc_heap_size = HEAP_SIZE;
+__xdata char __sdcc_heap[HEAP_SIZE];
+const unsigned int __sdcc_heap_size = HEAP_SIZE;
+

@@ -1,3 +1,11 @@
+2015-09-30 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/lib/*/heap.s,
+	  device/lib/_heap.c,
+	  device/lib/malloc.c,
+	  device/lib/realloc.c:
+	  Use identifiers reserved for implementation.
+
 2015-09-29 Philipp Klaus Krause <pkk AT spth.de>
 
 	* device/lib/malloc.c,
