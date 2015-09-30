@@ -35,7 +35,7 @@
         call    ___sdcc_heap_init
 
         .area   _HEAP
-___sdcc_heap_start::
+___sdcc_heap::
         ;; For now just allocate 1k of heap.
         .ds     1023
 

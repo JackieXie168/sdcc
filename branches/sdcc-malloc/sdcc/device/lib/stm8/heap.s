@@ -27,7 +27,7 @@
 ;--------------------------------------------------------------------------
 
 	.globl ___sdcc_heap_init
-	.globl ___sdcc_heap_start
+	.globl ___sdcc_heap
 	.globl ___sdcc_heap_end
 
 	.area GSINIT
@@ -35,7 +35,7 @@
 
 	.area DATA
 	; For now just allocate 128 bytes for the heap.
-___sdcc_heap_start::
+___sdcc_heap::
 	.ds 255
 ___sdcc_heap_end::
 	.ds 1 

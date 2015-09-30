@@ -4,7 +4,7 @@
 	  device/lib/_heap.c,
 	  device/lib/malloc.c,
 	  device/lib/realloc.c:
-	  Use identifiers reserved for implementation.
+	  Use identifiers reserved for implementation, unify name for heap start symbol.
 
 2015-09-29 Philipp Klaus Krause <pkk AT spth.de>
 

@@ -45,18 +45,17 @@ struct header
 
 header_t *XDATA __sdcc_heap_free;
 
+extern header_t __sdcc_heap;
+#define HEAP_START &__sdcc_heap
+
 #if defined(__SDCC_mcs51) || defined(__SDCC_ds390) || defined(__SDCC_ds400) || defined(__SDCC_hc08) || defined(__SDCC_s08)
 
-extern XDATA char __sdcc_heap[];
 extern const unsigned int __sdcc_heap_size;
-#define HEAP_START (struct header XDATA *)__sdcc_heap
-#define HEAP_END (struct header XDATA *)((char XDATA *)__sdcc_heap + (__sdcc_heap_size - 1)) // -1 To be sure that HEAP_END is bigger than HEAP_START.
+#define HEAP_END (struct header XDATA *)((char XDATA *)&__sdcc_heap + (__sdcc_heap_size - 1)) // -1 To be sure that HEAP_END is bigger than HEAP_START.
 
 #else
 
-extern header_t __sdcc_heap_start;
 extern header_t __sdcc_heap_end; // Just beyond the end of the heap. Must be higher in memory than _sdcc_heap_start.
-#define HEAP_START &__sdcc_heap_start
 #define HEAP_END &__sdcc_heap_end
 
 #endif
