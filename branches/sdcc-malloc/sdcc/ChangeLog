@@ -1,8 +1,13 @@
 2015-10-02 Philipp Klaus Krause <pkk AT spth.de>
 
 	* device/lib/free.c,
-	  device/lib/realloc.c:
-	  Simplify free(), document search of free list.
+	  device/lib/realloc.c,
+	  device/lib/malloc.c,
+	  device/lib/realloc.c,
+	  support/regression/tests/malloc.c:
+	  Simplify memory management, document search of free list.
+	* support/regression/fwk/lib/testfwk.c:
+	  Support printing unsigned in test logs
 
 2015-10-02 Ben Shi <powerstudio1st AT 163 DOT com>
 

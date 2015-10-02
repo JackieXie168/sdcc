@@ -47,15 +47,15 @@ extern header_t *XDATA __sdcc_heap_free;
 
 void free(void *ptr)
 {
-	header_t *h, *next_free;
-	header_t *XDATA *f, *XDATA *p;
+	header_t *h, *next_free, *prev_free;
+	header_t *XDATA *f;
 
 	if(!ptr)
 		return;
 
-	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h && h < ptr; f = &(h->next_free), h = h->next_free); // Find adjacent blocks in free list
-	next_free = *f;
-	for(h = *f, p = f; h < ptr; p = &(h->next), h = h->next); // Find previous block
+	prev_free = 0;
+	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h && h < ptr; prev_free = h, f = &(h->next_free), h = h->next_free); // Find adjacent blocks in free list
+	next_free = h;
 
 	h = (void XDATA *)((char XDATA *)(ptr) - offsetof(struct header, next_free));
 
@@ -69,10 +69,10 @@ void free(void *ptr)
 		h->next = h->next->next;
 	}
 
-	if ((char XDATA *)f == (char XDATA *)p + offsetof(struct header, next_free) - offsetof(struct header, next)) // Merge with previous block
+	if (prev_free && prev_free->next == h) // Merge with previous block
 	{
-		*p = h->next;
-		*f = h->next_free;
+		prev_free->next = h->next;
+		prev_free->next_free = h->next_free;
 	}
 }
 

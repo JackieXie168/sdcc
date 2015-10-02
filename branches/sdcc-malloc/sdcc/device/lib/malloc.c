@@ -77,9 +77,7 @@ void XDATA *malloc(size_t size)
 		__sdcc_heap_init();
 #endif
 
-	if(!size)
-		return(0);
-	if(size + offsetof(struct header, next_free) < size)
+	if(!size || size + offsetof(struct header, next_free) < size)
 		return(0);
 	size += offsetof(struct header, next_free);
 	if(size < sizeof(struct header)) // Requiring a minimum size makes it easier to implement free(), and avoid memory leaks.
