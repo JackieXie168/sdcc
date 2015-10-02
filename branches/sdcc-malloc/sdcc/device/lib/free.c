@@ -53,9 +53,9 @@ void free(void *ptr)
 	if(!ptr)
 		return;
 
-	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h && h < ptr; f = &(h->next_free), h = h->next_free);
+	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h && h < ptr; f = &(h->next_free), h = h->next_free); // Find adjacent blocks in free list
 	next_free = *f;
-	for(h = *f, p = f; h && h < ptr; p = &(h->next), h = h->next);
+	for(h = *f, p = f; h < ptr; p = &(h->next), h = h->next); // Find previous block
 
 	h = (void XDATA *)((char XDATA *)(ptr) - offsetof(struct header, next_free));
 

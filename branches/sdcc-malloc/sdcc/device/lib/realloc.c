@@ -70,7 +70,7 @@ void XDATA *realloc(void *ptr, size_t size)
 	}
 
 	prev_free = 0, pf = 0;
-	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h && h < ptr; prev_free = *f, pf = f, f = &(h->next_free), h = h->next_free);
+	for(h = __sdcc_heap_free, f = &__sdcc_heap_free; h && h < ptr; prev_free = *f, pf = f, f = &(h->next_free), h = h->next_free); // Find adjacent blocks in free list
 	next_free = *f;
 
 	blocksize = size + offsetof(struct header, next_free);
