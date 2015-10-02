@@ -1,5 +1,10 @@
 2015-10-02 Philipp Klaus Krause <pkk AT spth.de>
 
+	* device/lib/realloc.c:
+	  Fix a bug in realloc() freeing.
+
+2015-10-02 Philipp Klaus Krause <pkk AT spth.de>
+
 	* device/lib/free.c,
 	  device/lib/realloc.c,
 	  device/lib/malloc.c,

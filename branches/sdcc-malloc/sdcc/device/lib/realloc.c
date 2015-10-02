@@ -108,7 +108,7 @@ void XDATA *realloc(void *ptr, size_t size)
 		{
 			header_t *const newheader = (header_t *const)((char XDATA *)h + blocksize);
 			newheader->next = h->next;
-			newheader->next_free = (*f)->next_free;
+			newheader->next_free = *f;
 			*f = newheader;
 			h->next = newheader;
 		}
