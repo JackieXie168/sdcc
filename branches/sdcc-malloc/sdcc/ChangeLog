@@ -1,3 +1,9 @@
+2015-10-04 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/stdlib.h,
+	  device/lib/aligned_alloc.c:
+	  Implement aligned_alloc().
+
 2015-10-02 Philipp Klaus Krause <pkk AT spth.de>
 
 	* device/lib/realloc.c:

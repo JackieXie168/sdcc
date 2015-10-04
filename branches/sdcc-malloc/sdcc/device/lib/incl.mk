@@ -91,6 +91,7 @@ COMMON_SDCC = \
   _memcmp.c \
   _memcpy.c \
   _memset.c \
+  aligned_alloc.c \
   calloc.c \
   malloc.c \
   realloc.c \
