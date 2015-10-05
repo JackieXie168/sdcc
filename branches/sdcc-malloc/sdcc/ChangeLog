@@ -1,3 +1,8 @@
+2015-10-05 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/lib/malloc.c:
+	  Improve comments on heap data structures.
+
 2015-10-04 Philipp Klaus Krause <pkk AT spth.de>
 
 	* device/include/stdlib.h,

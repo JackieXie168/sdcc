@@ -40,10 +40,10 @@ typedef struct header XDATA header_t;
 struct header
 {
 	header_t *next; // Next block. Linked list of all blocks, terminated by pointer to end of heap (or to the byte beyond the end of the heap).
-	header_t *next_free; // Next free block. Used in free blocks only. Overlaps with user data in non-free blocks. Linked list of free blocks, null-terminated.
+	header_t *next_free; // Next free block. Used in free blocks only. Overlaps with user data in non-free blocks. Linked list of free blocks, 0-terminated.
 };
 
-header_t *XDATA __sdcc_heap_free;
+header_t *XDATA __sdcc_heap_free; // First free block, 0 if no free blocks.
 
 extern header_t __sdcc_heap;
 #define HEAP_START &__sdcc_heap
