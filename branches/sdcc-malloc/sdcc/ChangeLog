@@ -1,3 +1,28 @@
+2015-10-06 Philipp Klaus Krause <pkk AT spth.de>
+
+	* src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  src/SDCCutil.h,
+	  src/SDCCutil.c,
+	  src/SDCCval.c,
+	  support/regression/tests/charconst.c,
+	  support/regression/tests/escape.c:
+	  Implement escape sequences for wide character constants, fix universal escape sequences.
+
+2015-10-06 Philipp Klaus Krause <pkk AT spth.de>
+
+	* device/include/uchar.h,
+	  src/SDCCval.h,
+	  src/SDCCval.c,
+	  src/SDCC.lex,
+	  src/SDCCutil.c,
+	  src/SDCCmain.c,
+	  src/SDCCglobl.h,
+	  src/SDCCerr.h,
+	  src/SDCCerr.c,
+	  support/regression/tests/charconst.c:
+	  Wide character constants.
+
 2015-10-05 Philipp Klaus Krause <pkk AT spth.de>
 
 	* device/lib/malloc.c:
