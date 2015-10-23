@@ -2,6 +2,10 @@
 
 	* support/cpp/Makefile.in:
 	  Fix build-dependency of sdcpp on libiberty.
+	* support/cpp/sdcpp.opt,
+	  support/cpp/sdcpp-opts.c,
+	  support/cpp/libcpp/init.c:
+	  Support C11 in preprocessor.
 
 2015-10-19 Ben Shi <powerstudio1st AT 163 DOT com>
 
