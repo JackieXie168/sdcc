@@ -6,6 +6,8 @@
 	  support/cpp/sdcpp-opts.c,
 	  support/cpp/libcpp/init.c:
 	  Support C11 in preprocessor.
+	* src/SDCCmain.c:
+	  Fix standard support, add support for c95 and sdcc11 dialects.
 
 2015-10-19 Ben Shi <powerstudio1st AT 163 DOT com>
 
