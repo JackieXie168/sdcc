@@ -1,3 +1,8 @@
+2015-10-23 Philipp Klaus Krause <pkk AT spth.de>
+
+	* support/cpp/Makefile.in:
+	  Fix build-dependency of sdcpp on libiberty.
+
 2015-10-19 Ben Shi <powerstudio1st AT 163 DOT com>
 
 	* src/SDCCast.c:
