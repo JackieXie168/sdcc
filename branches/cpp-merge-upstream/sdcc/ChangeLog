@@ -1,3 +1,8 @@
+2015-10-26 Philipp Klaus Krause <pkk AT spth.de>
+
+	* .version:
+	  Bump version due to improved standard support.
+
 2015-10-24 Philipp Klaus Krause <pkk AT spth.de>
 
 	* src/stm8/ralloc.c,
