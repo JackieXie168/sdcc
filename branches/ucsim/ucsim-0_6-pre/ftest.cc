@@ -6,39 +6,23 @@
 #include "charscl.h"
 
 
-int
-main(int argc, char *argv[])
+void
+regular_ftest(char *fn)
 {
+  int i;
   class cl_f *f;
-  int i, j;
-  char buf[100];
-  chars *fn;
 
-  if (argc > 1)
-    fn= new chars(argv[1]);
-  else
-    fn= new cchars("ftest.txt");
-  f= new cl_f(*fn, cchars("w"));
+  printf("Testing regular file access: %s\n", fn);
+  printf("Write test\n");
+  f= new cl_f(fn, cchars("w"));
   f->init();
-
   f->write_str("proba\n");
 
-  /*
-    f->open(cchars("ftest.txt"), cchars("r"));
-  i= read(f->id(), buf, 99);
-  if (i)
-    {
-      buf[i]= 0;
-      printf("%s", buf);
-    }
-  */
-
-  f->open(*fn, cchars("r"));
-  j= 0;
-  printf("j=%d\n", j);
-  
+  printf("Read test\n");
+  f->open(fn, cchars("r"));
   while (f->input_avail())
     {
+      char buf[100];
       i= f->read(buf, 99);
       printf("read=%d\n", i);
       if (i)
@@ -50,14 +34,29 @@ main(int argc, char *argv[])
   f->close();
 
   delete f;
+}
 
+int
+main(int argc, char *argv[])
+{
+  char *fn;
+
+  if (argc > 1)
+    fn= argv[1];
+  else
+    fn= (char*)"ftest.txt";
+  regular_ftest(fn);
+  
   double last= dnow();
+  int cnt= 0;
   while (1)
     {
       if (dnow() - last > 0.5)
 	{
 	  last= dnow();
 	  printf("HUKK\n");
+	  if (++cnt > 5)
+	    return 0;
 	}
     }
   return 0;
