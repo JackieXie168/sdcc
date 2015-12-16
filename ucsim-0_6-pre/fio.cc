@@ -82,6 +82,25 @@ cl_f::open(char *fn, char *mode)
   return init();
 }
 
+int
+cl_f::use_opened(int opened_file_id, char *mode)
+{
+  close();
+  if (mode)
+    file_mode= mode;
+  if (opened_file_id >= 0)
+    {
+      file_f= fdopen(opened_file_id, mode);
+      if (file_f != NULL)
+	{
+	  file_id= opened_file_id;
+	  tty= isatty(file_id);
+	}
+      else
+	file_id= -1;
+    }
+  return file_id;
+}
 
 int
 cl_f::close(void)
@@ -126,14 +145,22 @@ cl_f::write(char *buf, int count)
 int
 cl_f::write_str(char *s)
 {
-  return fprintf(file_f, "%s", s);
+  //return fprintf(file_f, "%s", s);
+  if (!s ||
+      !*s)
+    return 0;
+  return ::write(file_id, s, strlen(s));
 }
 
 
 int
 cl_f::write_str(const char *s)
 {
-  return fprintf(file_f, "%s", s);
+  if (!s ||
+      !*s)
+    return 0;
+  //return fprintf(file_f, "%s", s);
+  return ::write(file_id, s, strlen(s));
 }
 
 

@@ -47,6 +47,7 @@ class cl_f: public cl_base
   virtual int open(void) { return init(); }
   virtual int open(char *fn);
   virtual int open(char *fn, char *mode);
+  virtual int use_opened(int opened_file_id, char *mode);
   virtual int close(void);
   
   FILE *f(void) { return file_f; };
